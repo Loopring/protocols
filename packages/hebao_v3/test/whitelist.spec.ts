@@ -5,24 +5,29 @@ import {
   getBlockTimestamp,
   sortSignersAndSignatures,
 } from "./commons";
+import { fixture } from "./helper/fixture";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
-import { Contract, Signer } from "ethers";
+import { Contract, Wallet } from "ethers";
 import BN = require("bn.js");
 
 describe("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
+  let account1: Wallet;
+  let guardians: Wallet[];
   let wallet: Contract;
 
   const whiteListedAddr = "0x" + "11".repeat(20);
   before(async () => {
-    [account1] = await ethers.getSigners();
-
-    const owner = await account1.getAddress();
-    wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
+    const {
+      account,
+      guardians: _guardians,
+      accountOwner,
+    } = await loadFixture(fixture);
+    wallet = account;
+    account1 = accountOwner;
+    guardians = _guardians;
   });
 
   describe("whitelist", () => {
@@ -44,20 +49,8 @@ describe("wallet", () => {
     });
 
     it("majority(owner required) should be able to whitelist address immediately", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
       const owner = await account1.getAddress();
-      const guardians: string[] = [
-        await account2.getAddress(),
-        await account3.getAddress(),
-      ];
       const salt = new Date().getTime();
-      let wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
-
       const masterCopy = await wallet.getMasterCopy();
       const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
       const addr = "0x" + "12".repeat(20);
@@ -66,18 +59,20 @@ describe("wallet", () => {
         wallet.address,
         new BN(validUntil),
         addr,
-        owner
+        owner,
+        account1.privateKey.slice(2)
       );
       const sig2 = signAddToWhitelistWA(
         masterCopy,
         wallet.address,
         new BN(validUntil),
         addr,
-        guardians[0]
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
-        [owner, guardians[0]],
+        [owner, guardians[0].address],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
           Buffer.from(sig2.txSignature.slice(2), "hex"),

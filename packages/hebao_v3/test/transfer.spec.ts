@@ -15,27 +15,34 @@ import {
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
-import { Contract, Signer } from "ethers";
+import { Contract, Signer, Wallet } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { baseFixture, fixture } from "./helper/fixture";
 import BN = require("bn.js");
 
 describe("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
+  // let account1: Signer;
+  let account2: Wallet;
+  let guardians: Wallet[];
+  // let account3: Signer;
   let owner: string;
   let wallet: Contract;
   let LRC: Contract;
   before(async () => {
-    [account1, account2, account3] = await ethers.getSigners();
+    const loadedFixtures = await loadFixture(fixture);
+    // [account1, account2, account3] = await ethers.getSigners();
 
-    owner = await account2.getAddress();
-    wallet = (await newWallet(owner, ethers.constants.AddressZero, 0)).connect(
-      account2
-    );
+    // owner = await account2.getAddress();
+    // wallet = (await newWallet(owner, ethers.constants.AddressZero, 0)).connect(
+    // account2
+    // );
+    account2 = loadedFixtures.accountOwner;
+    owner = account2.address;
+    wallet = loadedFixtures.account;
+    guardians = loadedFixtures.guardians;
 
     // feed wallet:
-    await account2.sendTransaction({
-      from: owner,
+    await loadedFixtures.deployer.sendTransaction({
       to: wallet.address,
       value: ethers.utils.parseEther("100"),
     });
@@ -99,26 +106,20 @@ describe("wallet", () => {
     });
 
     it("transfer token with approval(owner required)", async () => {
-      const guardians: string[] = [
-        await account1.getAddress(),
-        await account3.getAddress(),
-      ];
-      const salt = new Date().getTime();
-      wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
-      wallet = await wallet.connect(account2);
+      // const guardians: string[] = [
+      // await account1.getAddress(),
+      // await account3.getAddress(),
+      // ];
+      // const salt = new Date().getTime();
+      // wallet = await newWallet(
+      // owner,
+      // ethers.constants.AddressZero,
+      // salt,
+      // guardians
+      // );
+      // wallet = await wallet.connect(account2);
 
       // feed wallet:
-      await account2.sendTransaction({
-        from: owner,
-        to: wallet.address,
-        value: ethers.utils.parseEther("100"),
-      });
-
       await wallet.changeDailyQuota(ethers.utils.parseEther("10"));
       await advanceTime(3600 * 24 + 1);
 
@@ -137,7 +138,8 @@ describe("wallet", () => {
         toAddr,
         amount,
         Buffer.from(""),
-        owner
+        owner,
+        account2.privateKey.slice(2)
       );
       const sig2 = signTransferTokenWA(
         masterCopy,
@@ -147,11 +149,12 @@ describe("wallet", () => {
         toAddr,
         amount,
         Buffer.from(""),
-        guardians[0]
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
-        [owner, guardians[0]],
+        [owner, guardians[0].address],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
           Buffer.from(sig2.txSignature.slice(2), "hex"),
@@ -193,18 +196,18 @@ describe("wallet", () => {
     });
 
     it("approve token with approval(owner required)", async () => {
-      const guardians: string[] = [
-        await account1.getAddress(),
-        await account3.getAddress(),
-      ];
-      const salt = new Date().getTime();
-      wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
-      wallet = await wallet.connect(account2);
+      // const guardians: string[] = [
+      // await account1.getAddress(),
+      // await account3.getAddress(),
+      // ];
+      // const salt = new Date().getTime();
+      // wallet = await newWallet(
+      // owner,
+      // ethers.constants.AddressZero,
+      // salt,
+      // guardians
+      // );
+      // wallet = await wallet.connect(account2);
 
       const masterCopy = await wallet.getMasterCopy();
       const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
@@ -220,7 +223,8 @@ describe("wallet", () => {
         LRC.address,
         toAddr,
         amount,
-        owner
+        owner,
+        account2.privateKey.slice(2)
       );
       const sig2 = signApproveTokenWA(
         masterCopy,
@@ -229,11 +233,12 @@ describe("wallet", () => {
         LRC.address,
         toAddr,
         amount,
-        guardians[0]
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
-        [owner, guardians[0]],
+        [owner, guardians[0].address],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
           Buffer.from(sig2.txSignature.slice(2), "hex"),

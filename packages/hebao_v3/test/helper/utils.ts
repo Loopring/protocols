@@ -56,6 +56,33 @@ export interface WalletConfig {
   inheritor: typ.address;
 }
 
+export async function createRandomAccount(
+  accountOwner: Wallet,
+  entryPoint: EntryPoint,
+  walletFactory: WalletFactory
+) {
+  const guardians: Wallet[] = [];
+  for (let i = 0; i < 2; i++) {
+    guardians.push(
+      await ethers.Wallet.createRandom().connect(entryPoint.provider)
+    );
+  }
+  const walletConfig = await createRandomWalletConfig(
+    accountOwner.address,
+    undefined,
+    guardians
+  );
+
+  const { proxy: account } = await createAccount(
+    accountOwner,
+    walletConfig,
+    entryPoint.address,
+    walletFactory
+  );
+
+  return { account, guardians };
+}
+
 // Deploys an implementation and a proxy pointing to this implementation
 export async function createAccount(
   ethersSigner: Signer,
@@ -278,11 +305,17 @@ export async function activateWalletOp(
   };
 }
 
-export async function createRandomWalletConfig(owner?: string, quota?: number) {
-  const guardians = [];
+export async function createRandomWalletConfig(
+  owner?: string,
+  quota?: number,
+  guardians = []
+) {
+  // const guardians = [];
 
-  for (let i = 0; i < 3; i++) {
-    guardians.push(await ethers.Wallet.createRandom());
+  if (!guardians.length) {
+    for (let i = 0; i < 3; i++) {
+      guardians.push(await ethers.Wallet.createRandom());
+    }
   }
   const walletConfig = {
     accountOwner: owner ?? (await ethers.Wallet.createRandom().address),

@@ -50,8 +50,16 @@ describe("wallet", () => {
       await ethers.getContractFactory("VerifyingPaymaster")
     ).deploy(entrypoint.address, paymasterOwner.address);
 
-    const accountOwner = await signers[3];
-    const walletConfig = await createRandomWalletConfig(accountOwner.address);
+    const accountOwner = await createAccountOwner();
+    const guardians = [];
+    for (let i = 0; i < 2; i++) {
+      guardians.push(await ethers.Wallet.createRandom());
+    }
+    const walletConfig = await createRandomWalletConfig(
+      accountOwner.address,
+      undefined,
+      guardians
+    );
 
     await paymaster.addStake(1, { value: parseEther("2") });
     await entrypoint.depositTo(paymaster.address, { value: parseEther("1") });
@@ -75,6 +83,7 @@ describe("wallet", () => {
       accountOwner,
       deployer,
       account,
+      guardians,
       walletFactory,
     };
   }
@@ -152,22 +161,15 @@ describe("wallet", () => {
       expect(quotaInfo4.pendingUntil).to.equal(0);
     });
 
-    it.only("majority(owner required) should be able to change dialy quota immediately", async () => {
+    it("majority(owner required) should be able to change dialy quota immediately", async () => {
       const {
         walletFactory,
         entrypoint,
         deployer,
         account: wallet,
+        guardians,
         accountOwner,
       } = await loadFixture(fixture);
-      const owner = await accountOwner.getAddress();
-      const signers = await ethers.getSigners();
-      const account2 = signers[7];
-      const account3 = signers[8];
-      const guardians: string[] = [
-        await account2.getAddress(),
-        await account3.getAddress(),
-      ];
       const salt = new Date().getTime();
       const walletDataBefore = await wallet.wallet();
       expect(walletDataBefore.locked).to.equal(false);
@@ -183,18 +185,20 @@ describe("wallet", () => {
         wallet.address,
         new BN(validUntil),
         new BN(newQuota),
-        owner
+        accountOwner.address,
+        accountOwner.privateKey.slice(2)
       );
       const sig2 = signChangeDailyQuotaWA(
         masterCopy,
         wallet.address,
         new BN(validUntil),
         new BN(newQuota),
-        guardians[0]
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
-        [owner, guardians[0]],
+        [accountOwner.address, guardians[0].address],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
           Buffer.from(sig2.txSignature.slice(2), "hex"),

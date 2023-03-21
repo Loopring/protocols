@@ -89,7 +89,8 @@ export function signChangeMasterCopy(
   masterCopy: string,
   validUntil: BN,
   newMasterCopy: string,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -103,7 +104,7 @@ export function signChangeMasterCopy(
 
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -112,7 +113,8 @@ export function signAddGuardianWA(
   walletAddress: string,
   guardian: string,
   validUntil: BN,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -126,7 +128,7 @@ export function signAddGuardianWA(
 
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -207,7 +209,8 @@ export function signUnlock(
   masterCopy: string,
   wallet: string,
   validUntil: BN,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR = "unlock(address wallet,uint256 validUntil)";
@@ -219,7 +222,7 @@ export function signUnlock(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -228,7 +231,8 @@ export function signChangeDailyQuotaWA(
   wallet: string,
   validUntil: BN,
   newQuota: BN,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -241,7 +245,7 @@ export function signChangeDailyQuotaWA(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -250,7 +254,8 @@ export function signAddToWhitelistWA(
   wallet: string,
   validUntil: BN,
   addr: string,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -263,7 +268,7 @@ export function signAddToWhitelistWA(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -275,7 +280,8 @@ export function signTransferTokenWA(
   to: string,
   amount: BN,
   logdata: Buffer,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -296,7 +302,7 @@ export function signTransferTokenWA(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -307,7 +313,8 @@ export function signCallContractWA(
   to: string,
   value: BN,
   data: Buffer,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -320,7 +327,7 @@ export function signCallContractWA(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -331,7 +338,8 @@ export function signApproveTokenWA(
   token: string,
   to: string,
   amount: BN,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -344,7 +352,7 @@ export function signApproveTokenWA(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }
 
@@ -357,7 +365,8 @@ export function signApproveThenCallContractWA(
   amount: BN,
   value: BN,
   data: Buffer,
-  signer: string
+  signer: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -388,6 +397,6 @@ export function signApproveThenCallContractWA(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign(signer, hash);
+  const txSignature = sign2(signer, privateKey, hash);
   return { txSignature, hash };
 }

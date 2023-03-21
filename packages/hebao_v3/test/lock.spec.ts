@@ -4,81 +4,54 @@ import { sign } from "./helper/Signature";
 import { newWallet, sortSignersAndSignatures } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
+import { parseEther } from "ethers/lib/utils";
 
 import { Contract, Signer } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { fixture } from "./helper/fixture";
 import BN = require("bn.js");
 
 describe("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
-
   describe("lock", () => {
     it("owner should be able to lock wallet", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
-
-      const owner = await account1.getAddress();
-
-      const guardians: string[] = [
-        await account2.getAddress(),
-        await account3.getAddress(),
-      ];
-
-      const salt = new Date().getTime();
-      let wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
+      const { accountOwner, account: wallet } = await loadFixture(fixture);
+      const owner = await accountOwner.address;
 
       const walletDataBefore = await wallet.wallet();
       expect(walletDataBefore.locked).to.equal(false);
-      const tx1 = await wallet.lock();
+      await wallet.lock();
       const walletDataAfter = await wallet.wallet();
       expect(walletDataAfter.locked).to.equal(true);
     });
 
     it("guardian should be able to lock wallet", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
+      const {
+        accountOwner,
+        account: wallet,
+        guardians,
+        deployer,
+      } = await loadFixture(fixture);
+      const owner = await accountOwner.address;
 
-      const owner = await account1.getAddress();
-
-      const guardians: string[] = [
-        await account2.getAddress(),
-        await account3.getAddress(),
-      ];
-
-      const salt = new Date().getTime();
-      let wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
-      wallet = await wallet.connect(account2);
+      await deployer.sendTransaction({
+        to: guardians[0].address,
+        value: parseEther("1"),
+      });
 
       const walletDataBefore = await wallet.wallet();
       expect(walletDataBefore.locked).to.equal(false);
-      const tx1 = await wallet.lock();
+      await wallet.connect(guardians[0]).lock();
       const walletDataAfter = await wallet.wallet();
       expect(walletDataAfter.locked).to.equal(true);
     });
 
     it("unlock wallet with majority's approval(owner required)", async () => {
-      [account1, account2, account3] = await ethers.getSigners();
-      const owner = await account1.getAddress();
-      const guardians: string[] = [
-        await account2.getAddress(),
-        await account3.getAddress(),
-      ];
-      const salt = new Date().getTime();
-      let wallet = await newWallet(
-        owner,
-        ethers.constants.AddressZero,
-        salt,
-        guardians
-      );
+      const {
+        accountOwner,
+        account: wallet,
+        guardians,
+      } = await loadFixture(fixture);
+      const owner = await accountOwner.address;
       const walletDataBefore = await wallet.wallet();
       expect(walletDataBefore.locked).to.equal(false);
       const tx1 = await wallet.lock();
@@ -92,17 +65,19 @@ describe("wallet", () => {
         masterCopy,
         wallet.address,
         new BN(validUntil),
-        owner
+        owner,
+        accountOwner.privateKey.slice(2)
       );
       const sig2 = signUnlock(
         masterCopy,
         wallet.address,
         new BN(validUntil),
-        guardians[0]
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
-        [owner, guardians[0]],
+        [owner, guardians[0].address],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
           Buffer.from(sig2.txSignature.slice(2), "hex"),
@@ -116,7 +91,7 @@ describe("wallet", () => {
         wallet: wallet.address,
       };
 
-      const tx = await wallet.unlock(approval);
+      await wallet.unlock(approval);
       const walletDataAfter2 = await wallet.wallet();
       expect(walletDataAfter2.locked).to.equal(false);
     });

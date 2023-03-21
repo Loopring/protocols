@@ -93,13 +93,6 @@ export async function newWalletFactoryContract(deployer?: string) {
       },
     })
   ).deploy();
-  // const MetaTxLib = await (
-  // await ethers.getContractFactory("MetaTxLib", {
-  // libraries: {
-  // ERC20Lib: ERC20Lib.address,
-  // },
-  // })
-  // ).deploy();
   const QuotaLib = await (await ethers.getContractFactory("QuotaLib")).deploy();
   const RecoverLib = await (
     await ethers.getContractFactory("RecoverLib", {
@@ -124,7 +117,6 @@ export async function newWalletFactoryContract(deployer?: string) {
         GuardianLib: GuardianLib.address,
         InheritanceLib: InheritanceLib.address,
         LockLib: LockLib.address,
-        // MetaTxLib: MetaTxLib.address,
         QuotaLib: QuotaLib.address,
         RecoverLib: RecoverLib.address,
         UpgradeLib: UpgradeLib.address,
@@ -230,7 +222,7 @@ export async function getAllEvent(contract: any, fromBlock: number) {
 }
 
 export async function getFirstEvent(
-  contract: any,
+  contract: Contract,
   fromBlock: number,
   eventName: string
 ) {

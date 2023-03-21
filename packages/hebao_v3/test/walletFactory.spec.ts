@@ -1,11 +1,20 @@
 import { expect } from "./setup";
 import { signCreateWallet } from "./helper/signatureUtils";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import {
   attachWallet,
   newWalletFactoryContract,
   getBlockTimestamp,
   getFirstEvent,
 } from "./commons";
+import { baseFixture } from "./helper/fixture";
+import {
+  createRandomWalletConfig,
+  activateWalletOp,
+  createAccountOwner,
+} from "./helper/utils";
+import { localUserOpSender, fillAndSign } from "./helper/AASigner";
+import { SmartWallet__factory } from "../typechain-types";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -13,49 +22,39 @@ import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
 describe("walletFactory", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
+  // let account1: Signer;
+  // let account2: Signer;
+  // let account3: Signer;
 
   describe("A EOA", () => {
     it("should be able to create a new wallet with owner's signature", async () => {
-      const walletFactory = await newWalletFactoryContract();
-      [account1, account2, account3] = await ethers.getSigners();
+      const { walletFactory, deployer, accountOwner } = await loadFixture(
+        baseFixture
+      );
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
 
-      const owner = await account2.getAddress();
-      const salt = 1;
-      const signature = signCreateWallet(
-        walletFactory.address,
-        owner,
-        [],
-        new BN(0),
-        ethers.constants.AddressZero,
-        ethers.constants.AddressZero,
-        ethers.constants.AddressZero,
-        new BN(0),
+      const salt = ethers.utils.randomBytes(32);
+      const tx = await walletFactory.createAccount(
+        walletConfig.accountOwner,
+        walletConfig.guardians,
+        walletConfig.quota,
+        walletConfig.inheritor,
         salt
       );
-      // console.log("signature:", signature);
+      const recipt = await tx.wait();
+      console.log("event name: ", recipt.events[0].event);
 
-      const walletConfig: any = {
-        owner,
-        guardians: [],
-        quota: 0,
-        inheritor: ethers.constants.AddressZero,
-        feeRecipient: ethers.constants.AddressZero,
-        feeToken: ethers.constants.AddressZero,
-        maxFeeAmount: 0,
-        salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
-      };
-
-      const walletAddrComputed = await walletFactory.computeWalletAddress(
-        owner,
+      const accountAddress = await walletFactory.getAddress(
+        walletConfig.accountOwner,
+        walletConfig.guardians,
+        walletConfig.quota,
+        walletConfig.inheritor,
         salt
       );
-
-      const tx = await walletFactory.createWallet(walletConfig, 0);
-
+      const smartWallet = SmartWallet__factory.connect(
+        accountAddress,
+        accountOwner
+      );
       // get WalletCreated event:
       const fromBlock = tx.blockNumber;
       const walletCreatedEvent = await getFirstEvent(
@@ -63,10 +62,10 @@ describe("walletFactory", () => {
         fromBlock,
         "WalletCreated"
       );
-      expect(owner).to.equal(walletCreatedEvent.args.owner);
-      expect(walletAddrComputed).to.equal(walletCreatedEvent.args.wallet);
+      expect(accountOwner.address).to.equal(walletCreatedEvent.args.owner);
+      expect(smartWallet.address).to.equal(walletCreatedEvent.args.wallet);
 
-      const smartWallet = await attachWallet(walletAddrComputed);
+      // const smartWallet = await attachWallet(walletAddrComputed);
 
       // Check creation timestamp
       const blockTime = await getBlockTimestamp(tx.blockNumber);
@@ -75,183 +74,78 @@ describe("walletFactory", () => {
 
       // Check owner
       const walletOwner = await smartWallet.getOwner();
-      expect(walletOwner).to.equal(owner);
+      expect(walletOwner).to.equal(accountOwner.address);
     });
 
     it("should be able to charge fees when creating a new wallet", async () => {
-      const walletFactory = await newWalletFactoryContract();
-      [account1, account2, account3] = await ethers.getSigners();
+      const { walletFactory, deployer, accountOwner, entrypoint } =
+        await loadFixture(baseFixture);
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
+      const activateOp = await activateWalletOp(walletFactory, walletConfig);
 
-      const owner = await account2.getAddress();
-      const feeRecipient = "0x" + "13".repeat(20);
-      const maxFeeAmount = ethers.utils.parseEther("0.01");
-      const feeAmount = maxFeeAmount;
-      const salt = new Date().getTime();
-      const signature = signCreateWallet(
-        walletFactory.address,
-        owner,
-        [],
-        new BN(0),
-        ethers.constants.AddressZero,
-        feeRecipient,
-        ethers.constants.AddressZero,
-        maxFeeAmount,
-        salt
-      );
-      // console.log("signature:", signature);
-
-      const walletConfig: any = {
-        owner,
-        guardians: [],
-        quota: 0,
-        inheritor: ethers.constants.AddressZero,
-        feeRecipient,
-        feeToken: ethers.constants.AddressZero,
-        maxFeeAmount,
-        salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
-      };
-
-      const walletAddrComputed = await walletFactory.computeWalletAddress(
-        owner,
-        salt
-      );
-
-      await account2.sendTransaction({
-        from: owner,
-        to: walletAddrComputed,
-        value: ethers.utils.parseEther("0.1"),
+      // prefund
+      const walletEthBalanceBefore = ethers.utils.parseEther("0.1");
+      await entrypoint.depositTo(activateOp.sender, {
+        value: walletEthBalanceBefore,
       });
-      const feeRecipientEthBalanceBefore = await ethers.provider.getBalance(
-        feeRecipient
+
+      const newOp = await fillAndSign(
+        activateOp,
+        accountOwner,
+        walletFactory.address,
+        entrypoint
+      );
+      const beneficiary = createAccountOwner();
+      const beneficiaryEthBalanceBefore = await beneficiary.getBalance();
+      const sendUserOp = localUserOpSender(
+        entrypoint.address,
+        deployer,
+        beneficiary.address
       );
 
-      const tx = await walletFactory.createWallet(walletConfig, feeAmount);
+      // send create wallet tx
+      const rcpt = await sendUserOp(newOp);
 
       // get WalletCreated event:
-      const fromBlock = tx.blockNumber;
+      const fromBlock = rcpt.blockNumber;
       const walletCreatedEvent = await getFirstEvent(
         walletFactory,
         fromBlock,
         "WalletCreated"
       );
-      expect(owner).to.equal(walletCreatedEvent.args.owner);
-      expect(walletAddrComputed).to.equal(walletCreatedEvent.args.wallet);
-
-      const smartWallet = await attachWallet(walletAddrComputed);
+      expect(accountOwner.address).to.equal(walletCreatedEvent.args.owner);
+      expect(activateOp.sender).to.equal(walletCreatedEvent.args.wallet);
+      const smartWallet = SmartWallet__factory.connect(
+        activateOp.sender,
+        ethers.provider
+      );
 
       // Check creation timestamp
-      const blockTime = await getBlockTimestamp(tx.blockNumber);
+      const blockTime = await getBlockTimestamp(rcpt.blockNumber);
       const creationTimestamp = await smartWallet.getCreationTimestamp();
       expect(creationTimestamp.toNumber()).to.equal(blockTime);
 
       // Check owner
       const walletOwner = await smartWallet.getOwner();
-      expect(walletOwner).to.equal(owner);
+      expect(walletOwner).to.equal(accountOwner.address);
 
-      const walletEthBalanceAfter = await ethers.provider.getBalance(
-        walletAddrComputed
+      const walletEthBalanceAfter = await entrypoint.balanceOf(
+        activateOp.sender
       );
-      const feeRecipientEthBalanceAfter = await ethers.provider.getBalance(
-        feeRecipient
+      const beneficiaryEthBalanceAfter = await beneficiary.getBalance();
+      // get actualGasCost
+      const userOpEvents = await entrypoint.queryFilter(
+        entrypoint.filters.UserOperationEvent(),
+        rcpt.blockNumber
       );
-      expect(
-        ethers.utils.parseEther("0.1").sub(walletEthBalanceAfter)
-      ).to.equal(feeAmount);
-      expect(feeRecipientEthBalanceBefore.add(feeAmount)).to.equal(
-        feeRecipientEthBalanceAfter
+      expect(userOpEvents.length).to.eq(1);
+      const actualGasCost = userOpEvents[0].args.actualGasCost;
+
+      expect(walletEthBalanceBefore.sub(walletEthBalanceAfter)).to.equal(
+        actualGasCost
       );
-    });
-
-    it("require(feeAmount <= maxFeeAmount) when creating a new wallet", async () => {
-      const walletFactory = await newWalletFactoryContract();
-      [account1, account2, account3] = await ethers.getSigners();
-
-      const owner = await account2.getAddress();
-      const feeRecipient = "0x" + "14".repeat(20);
-      const maxFeeAmount = ethers.utils.parseEther("0.01");
-      const salt = new Date().getTime();
-      const signature = signCreateWallet(
-        walletFactory.address,
-        owner,
-        [],
-        new BN(0),
-        ethers.constants.AddressZero,
-        feeRecipient,
-        ethers.constants.AddressZero,
-        maxFeeAmount,
-        salt
-      );
-      // console.log("signature:", signature);
-
-      const walletConfig: any = {
-        owner,
-        guardians: [],
-        quota: 0,
-        inheritor: ethers.constants.AddressZero,
-        feeRecipient,
-        feeToken: ethers.constants.AddressZero,
-        maxFeeAmount,
-        salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
-      };
-
-      const walletAddrComputed = await walletFactory.computeWalletAddress(
-        owner,
-        salt
-      );
-
-      await account2.sendTransaction({
-        from: owner,
-        to: walletAddrComputed,
-        value: ethers.utils.parseEther("0.1"),
-      });
-      const feeRecipientEthBalanceBefore = await ethers.provider.getBalance(
-        feeRecipient
-      );
-
-      let feeAmount = maxFeeAmount.add(ethers.utils.parseEther("0.00001"));
-      try {
-        const tx = await walletFactory.createWallet(walletConfig, feeAmount);
-      } catch (err) {
-        expect(err.message.includes("INVALID_FEE_AMOUNT"));
-      }
-
-      feeAmount = maxFeeAmount.sub(ethers.utils.parseEther("0.00001"));
-      const tx = await walletFactory.createWallet(walletConfig, feeAmount);
-
-      // get WalletCreated event:
-      const fromBlock = tx.blockNumber;
-      const walletCreatedEvent = await getFirstEvent(
-        walletFactory,
-        fromBlock,
-        "WalletCreated"
-      );
-      expect(owner).to.equal(walletCreatedEvent.args.owner);
-      expect(walletAddrComputed).to.equal(walletCreatedEvent.args.wallet);
-
-      const smartWallet = await attachWallet(walletAddrComputed);
-
-      // Check creation timestamp
-      const blockTime = await getBlockTimestamp(tx.blockNumber);
-      const creationTimestamp = await smartWallet.getCreationTimestamp();
-      expect(creationTimestamp.toNumber()).to.equal(blockTime);
-
-      // Check owner
-      const walletOwner = await smartWallet.getOwner();
-      expect(walletOwner).to.equal(owner);
-
-      const walletEthBalanceAfter = await ethers.provider.getBalance(
-        walletAddrComputed
-      );
-      const feeRecipientEthBalanceAfter = await ethers.provider.getBalance(
-        feeRecipient
-      );
-      expect(
-        ethers.utils.parseEther("0.1").sub(walletEthBalanceAfter)
-      ).to.equal(feeAmount);
-      expect(feeRecipientEthBalanceBefore.add(feeAmount)).to.equal(
-        feeRecipientEthBalanceAfter
+      expect(beneficiaryEthBalanceBefore.add(actualGasCost)).to.equal(
+        beneficiaryEthBalanceAfter
       );
     });
   });

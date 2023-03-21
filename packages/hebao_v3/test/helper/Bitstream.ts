@@ -111,7 +111,7 @@ export class Bitstream {
   }
 
   public extractBytesX(offset: number, length: number) {
-    return new Buffer(this.extractData(offset, length), "hex");
+    return Buffer.from(this.extractData(offset, length), "hex");
   }
 
   public extractChar(offset: number) {

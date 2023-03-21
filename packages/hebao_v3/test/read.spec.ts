@@ -4,34 +4,38 @@ import { sign } from "./helper/Signature";
 import { newWallet, getFirstEvent, getBlockTimestamp } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
+import { baseFixture } from "./helper/fixture";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { createRandomWalletConfig, createAccount } from "./helper/utils";
+import { SmartWallet } from "../typechain-types";
 
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
 describe("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
-
-  let wallet: any;
+  let wallet: SmartWallet;
 
   before(async () => {
-    [account1, account2, account3] = await ethers.getSigners();
-    const owner = await account1.getAddress();
+    const { accountOwner, entrypoint, walletFactory } = await loadFixture(
+      baseFixture
+    );
     const guardians = ["0x" + "11".repeat(20)];
-    wallet = await newWallet(owner, ethers.constants.AddressZero, 0, guardians);
-
+    const walletConfig = await createRandomWalletConfig(accountOwner.address);
+    const { proxy } = await createAccount(
+      accountOwner,
+      { ...walletConfig, guardians },
+      entrypoint.address,
+      walletFactory
+    );
+    wallet = proxy;
     const quotaAmount = ethers.utils.parseEther("10");
     await wallet.changeDailyQuota(quotaAmount);
-    // const quotaInfo = (await wallet.wallet())["quota"];
   });
 
   describe("read methods", () => {
     it("quota", async () => {
       const walletData = await wallet.wallet();
-      // console.log("walletData:", walletData);
       const quotaInfo = walletData["quota"];
-      // console.log("quota:", quotaInfo);
     });
 
     it("guardians", async () => {
@@ -47,7 +51,7 @@ describe("wallet", () => {
     it("getNonce", async () => {
       const walletData = await wallet.wallet();
       const nonce = walletData["nonce"];
-      // console.log("nonce:", nonce);
+      expect(nonce).to.eq(0);
     });
   });
 });

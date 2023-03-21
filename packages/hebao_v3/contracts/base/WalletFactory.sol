@@ -17,6 +17,8 @@ import {WalletProxy} from "../thirdparty/proxies/WalletProxy.sol";
 contract WalletFactory {
     SmartWallet public immutable accountImplementation;
 
+    event WalletCreated(address wallet, address owner);
+
     constructor(
         PriceOracle _priceOracle,
         IEntryPoint _entryPoint,
@@ -42,6 +44,8 @@ contract WalletFactory {
         address inheritor,
         uint256 salt
     ) public returns (SmartWallet ret) {
+        require(owner != address(0), "INVALID_OWNER");
+
         address addr = getAddress(owner, guardians, quota, inheritor, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
@@ -58,6 +62,7 @@ contract WalletFactory {
                 )
             )
         );
+        emit WalletCreated(address(ret), owner);
     }
 
     /**

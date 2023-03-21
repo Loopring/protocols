@@ -9,28 +9,49 @@ import {
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
+import { Wallet } from "ethers";
+import { baseFixture } from "./helper/fixture";
+import {
+  createRandomAccount,
+  createRandomWalletConfig,
+  createAccount,
+} from "./helper/utils";
+import {
+  GuardianLib__factory,
+  SmartWallet,
+  EntryPoint,
+  WalletFactory,
+} from "../typechain-types";
 
 import { Contract, Signer } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import BN = require("bn.js");
 
 describe("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
-  let guardianInterfact: any;
+  let accountOwner: Wallet;
+  let entrypoint: EntryPoint;
+  let walletFactory: WalletFactory;
+  const guardianInterfact = GuardianLib__factory.createInterface();
 
   before(async () => {
-    [account1, account2, account3] = await ethers.getSigners();
-    const GuardianLib = await ethers.getContractFactory("GuardianLib");
-    guardianInterfact = GuardianLib.interface;
+    const loadedFixtures = await loadFixture(baseFixture);
+    accountOwner = loadedFixtures.accountOwner;
+    entrypoint = loadedFixtures.entrypoint;
+    walletFactory = loadedFixtures.walletFactory;
   });
 
   describe("guardian", () => {
     it("owner should be able to add guardians", async () => {
-      const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 0);
-
       const guardian1 = "0x" + "12".repeat(20);
+
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
+      const { proxy: wallet } = await createAccount(
+        accountOwner,
+        // use empty guardians list instead
+        { ...walletConfig, guardians: [] },
+        entrypoint.address,
+        walletFactory
+      );
       const tx1 = await wallet.addGuardian(guardian1);
       const receipt1 = await tx1.wait();
       // console.log("receipt1:", receipt1);
@@ -50,10 +71,15 @@ describe("wallet", () => {
     });
 
     it("first two guardian additions should be effective immediately", async () => {
-      const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 1);
-
       const guardian1 = "0x" + "12".repeat(20);
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
+      const { proxy: wallet } = await createAccount(
+        accountOwner,
+        // use empty guardians list instead
+        { ...walletConfig, guardians: [] },
+        entrypoint.address,
+        walletFactory
+      );
       const tx1 = await wallet.addGuardian(guardian1);
       const receipt1 = await tx1.wait();
 
@@ -91,15 +117,15 @@ describe("wallet", () => {
     });
 
     it("the third guardian addition will be effective in 3 days", async () => {
-      const owner = await account1.getAddress();
-      const guardian1 = "0x" + "11".repeat(20);
-      const guardian2 = "0x" + "22".repeat(20);
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 1, [
-        guardian1,
-        guardian2,
-      ]);
-
       const guardian3 = "0x" + "33".repeat(20);
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
+      const { proxy: wallet } = await createAccount(
+        accountOwner,
+        // use empty guardians list instead
+        walletConfig,
+        entrypoint.address,
+        walletFactory
+      );
       const tx1 = await wallet.addGuardian(guardian3);
       const receipt1 = await tx1.wait();
 
@@ -121,10 +147,15 @@ describe("wallet", () => {
     });
 
     it("guardian deletion will be effective in 3 days", async () => {
-      const owner = await account1.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 3);
-
       const guardian1 = "0x" + "12".repeat(20);
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
+      const { proxy: wallet } = await createAccount(
+        accountOwner,
+        // use empty guardians list instead
+        { ...walletConfig, guardians: [] },
+        entrypoint.address,
+        walletFactory
+      );
       await wallet.addGuardian(guardian1);
       const tx1 = await wallet.removeGuardian(guardian1);
       const receipt1 = await tx1.wait();
@@ -145,35 +176,53 @@ describe("wallet", () => {
     });
 
     it("guardian can not be owner", async () => {
-      const owner = await account1.getAddress();
-      const guardian1 = await account2.getAddress();
+      const guardian1 = await ethers.Wallet.createRandom();
+      // const guardian1 = await account2.getAddress();
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
       try {
-        const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
-          owner,
-          guardian1,
-        ]);
+        const { proxy: wallet } = await createAccount(
+          accountOwner,
+          {
+            ...walletConfig,
+            guardians: [accountOwner, guardian1]
+              .map((g) => g.address.toLowerCase())
+              .sort(),
+          },
+          entrypoint.address,
+          walletFactory
+        );
       } catch (err) {
         expect(err.message.includes("GUARDIAN_CAN_NOT_BE_OWNER"));
       }
+      const { proxy: wallet } = await createAccount(
+        accountOwner,
+        { ...walletConfig, guardians: [guardian1.address.toLowerCase()] },
+        entrypoint.address,
+        walletFactory
+      );
 
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
-        guardian1,
-      ]);
       try {
-        await wallet.addGuardian(owner);
+        await wallet.addGuardian(accountOwner.address);
       } catch (err) {
         expect(err.message.includes("GUARDIAN_CAN_NOT_BE_OWNER"));
       }
     });
 
     it("add guardian with approval", async () => {
-      const owner = await account1.getAddress();
-      const guardian1 = await account2.getAddress();
-      const guardian2 = await account3.getAddress();
-      const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
-        guardian1,
-        guardian2,
-      ]);
+      const guardians = [];
+      for (let i = 0; i < 2; i++) {
+        guardians.push(await ethers.Wallet.createRandom());
+      }
+      const walletConfig = await createRandomWalletConfig(accountOwner.address);
+      const { proxy: wallet } = await createAccount(
+        accountOwner,
+        {
+          ...walletConfig,
+          guardians: guardians.map((g) => g.address.toLowerCase()).sort(),
+        },
+        entrypoint.address,
+        walletFactory
+      );
       const masterCopy = await wallet.getMasterCopy();
 
       const guardian3 = "0x" + "12".repeat(20);
@@ -184,7 +233,8 @@ describe("wallet", () => {
         wallet.address,
         guardian3,
         new BN(validUntil),
-        owner
+        accountOwner.address,
+        accountOwner.privateKey.slice(2)
       );
 
       const sig2 = signAddGuardianWA(
@@ -192,11 +242,12 @@ describe("wallet", () => {
         wallet.address,
         guardian3,
         new BN(validUntil),
-        guardian1
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
-        [owner, guardian1],
+        [accountOwner.address, guardians[0].address],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
           Buffer.from(sig2.txSignature.slice(2), "hex"),

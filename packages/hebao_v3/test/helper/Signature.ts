@@ -70,7 +70,7 @@ function signEthereum(message: Buffer, privateKey: string) {
     message,
   ];
   const totalHash = ethUtil.keccak(Buffer.concat(parts));
-  const signature = ethUtil.ecsign(totalHash, new Buffer(privateKey, "hex"));
+  const signature = ethUtil.ecsign(totalHash, Buffer.from(privateKey, "hex"));
 
   const data = new Bitstream();
   data.addHex(ethUtil.bufferToHex(signature.r));
@@ -80,7 +80,7 @@ function signEthereum(message: Buffer, privateKey: string) {
 }
 
 function signEIP712(message: Buffer, privateKey: string) {
-  const signature = ethUtil.ecsign(message, new Buffer(privateKey, "hex"));
+  const signature = ethUtil.ecsign(message, Buffer.from(privateKey, "hex"));
 
   const data = new Bitstream();
   data.addHex(ethUtil.bufferToHex(signature.r));

@@ -460,7 +460,7 @@ describe("eip4337", () => {
     it("activate wallet(ETH)", activateWallet_withETH);
     it("activate wallet(USDC)", activateWallet_WithUSDCPaymaster);
     it("execute tx with usdc paymaster", executeTxWithPaymaster);
-    it.only("execute tx with eth", executeTxWithEth);
+    it("execute tx with eth", executeTxWithEth);
     // it("activate wallet(ETH)", activateWallet_withETHUsingWalletFactory);
     // it("update guardian", updateGuardian);
     // it("recovery wallet", recoveryWallet);

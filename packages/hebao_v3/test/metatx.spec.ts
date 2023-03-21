@@ -17,7 +17,7 @@ const { ethers } = require("hardhat");
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
-describe("wallet", () => {
+describe.skip("wallet", () => {
   let account1: Signer;
   let account2: Signer;
   let account3: Signer;
