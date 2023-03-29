@@ -12,18 +12,19 @@ import {
   sortSignersAndSignatures,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
-const { ethers } = require("hardhat");
-
-import { Contract, Signer } from "ethers";
+const { ethers, artifacts } = require("hardhat");
+import { Contract, Signer, Wallet } from "ethers";
 import BN = require("bn.js");
-
-describe.skip("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
+import fs = require("fs");
+// ethers.
+describe("wallet", () => {
+  let account1: Wallet;
+  let account2: Wallet;
+  let account3: Wallet;
   let recoverInterface: any;
   let guardianInterface: any;
   let metaTxInterface: any;
+  let entryPointInterface: any;
   const feeRecipient = "0x" + "30".repeat(20);
   let TestContract: Contract;
 
@@ -35,15 +36,11 @@ describe.skip("wallet", () => {
         GuardianLib: ethers.constants.AddressZero,
       },
     });
-    const MetaTxLib = await ethers.getContractFactory("MetaTxLib", {
-      libraries: {
-        ERC20Lib: ethers.constants.AddressZero,
-      },
-    });
+    const IEntryPointArtifact = await artifacts.readArtifact("IEntryPoint");
 
     recoverInterface = RecoverLib.interface;
     guardianInterface = GuardianLib.interface;
-    metaTxInterface = MetaTxLib.interface;
+    entryPointInterface = new ethers.utils.Interface( IEntryPointArtifact.abi );
 
     TestContract = await (
       await ethers.getContractFactory("TestTargetContract")
@@ -106,53 +103,62 @@ describe.skip("wallet", () => {
         newGuardians,
       ]);
 
-      // const metaTxSigner = await account3.getAddress();
-      const metaTx: MetaTx = {
-        to: wallet.address,
-        nonce: new BN(0),
-        gasToken: ethers.constants.AddressZero,
-        gasPrice: new BN(0),
-        gasLimit: new BN(2000000),
-        gasOverhead: new BN(0),
-        feeRecipient,
-        requiresSuccess: true,
-        data: Buffer.from(data.slice(2, 10), "hex"),
-        signature: Buffer.from(""),
-        approvedHash: sig1.hash,
-      };
-
-      // can not sign with old owner, because wallet owner if changed when
-      // checking metaTx signature, and old owner is leaked or lost when doing recovery.
-      const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
-      // console.log("metaTxHash:", metaTxSig.hash);
-
-      const tx = await wallet.executeMetaTx(
-        metaTx.to,
-        metaTx.nonce.toString(10),
-        metaTx.gasToken,
-        metaTx.gasPrice.toString(10),
-        metaTx.gasLimit.toString(10),
-        metaTx.gasOverhead.toString(10),
-        metaTx.feeRecipient,
-        metaTx.requiresSuccess,
-        data,
-        metaTxSig.txSignature
+      const tx = await wallet.execute(
+        wallet.address,
+        ethers.utils.parseEther("0"),
+        data
       );
+      
+
+      // const metaTxSigner = await account3.getAddress();
+      // const metaTx: MetaTx = {
+      //   to: wallet.address,
+      //   nonce: new BN(0),
+      //   gasToken: ethers.constants.AddressZero,
+      //   gasPrice: new BN(0),
+      //   gasLimit: new BN(2000000),
+      //   gasOverhead: new BN(0),
+      //   feeRecipient,
+      //   requiresSuccess: true,
+      //   data: Buffer.from(data.slice(2, 10), "hex"),
+      //   signature: Buffer.from(""),
+      //   approvedHash: sig1.hash,
+      // };
+
+      // // can not sign with old owner, because wallet owner if changed when
+      // // checking metaTx signature, and old owner is leaked or lost when doing recovery.
+      // const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
+      // // console.log("metaTxHash:", metaTxSig.hash);
+
+      // const tx = await wallet.executeMetaTx(
+      //   metaTx.to,
+      //   metaTx.nonce.toString(10),
+      //   metaTx.gasToken,
+      //   metaTx.gasPrice.toString(10),
+      //   metaTx.gasLimit.toString(10),
+      //   metaTx.gasOverhead.toString(10),
+      //   metaTx.feeRecipient,
+      //   metaTx.requiresSuccess,
+      //   data,
+      //   metaTxSig.txSignature
+      // );
       const receipt = await tx.wait();
       // console.log("receipt:", receipt);
 
       const eventsLen = receipt.events.length;
-      const metaTxEvent = metaTxInterface.decodeEventLog(
-        "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
-        receipt.events[eventsLen - 1].data,
-        receipt.events[eventsLen - 1].topics
-      );
+      // const metaTxEvent = entryPointInterface.decodeEventLog(
+      //   // "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
+      //   "UserOperation(address,uint256,bytes,bytes,uint256,uint256,uint256,uint256,uint256,bytes,bytes)",
+          
+      //   receipt.events[eventsLen - 1].data,
+      //   receipt.events[eventsLen - 1].topics
+      // );
       // console.log("metaTxEvent:", metaTxEvent);
 
-      expect(metaTxEvent.metaTxHash).to.equal(
-        "0x" + metaTxSig.hash.toString("hex")
-      );
-      expect(metaTxEvent.success).to.equal(true);
+      // expect(metaTxEvent.metaTxHash).to.equal(
+      //   "0x" + metaTxSig.hash.toString("hex")
+      // );
+      // expect(metaTxEvent.success).to.equal(true);
 
       const ownerAfter = (await wallet.wallet()).owner;
       expect(ownerAfter).to.equal(newOwner);
@@ -184,7 +190,7 @@ describe.skip("wallet", () => {
         false,
       ]);
 
-      wallet = wallet.connect(account3);
+      wallet = wallet.connect(account1);
       const metaTx: MetaTx = {
         to: wallet.address,
         nonce: new BN(new Date().getTime()),
@@ -218,28 +224,38 @@ describe.skip("wallet", () => {
       //   Buffer.from(metaTxSig.txSignature.slice(2), "hex")
       // ]);
       // console.log("metaTxData:", metaTxData);
+    //   function execute(
+    //     address dest,
+    //     uint256 value,
+    //     bytes calldata func
+    // )
 
-      const tx = await wallet.executeMetaTx(
-        metaTx.to,
-        metaTx.nonce.toString(10),
-        metaTx.gasToken,
-        metaTx.gasPrice.toString(10),
-        metaTx.gasLimit.toString(10),
-        metaTx.gasOverhead.toString(10),
-        metaTx.feeRecipient,
-        metaTx.requiresSuccess,
-        metaTx.data,
-        Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+      const tx = await wallet.execute(
+        transferTo,
+        ethers.utils.parseEther("10"),
+        new Uint8Array(0)
       );
+      // const tx = await wallet.executeMetaTx(
+      //   metaTx.to,
+      //   metaTx.nonce.toString(10),
+      //   metaTx.gasToken,
+      //   metaTx.gasPrice.toString(10),
+      //   metaTx.gasLimit.toString(10),
+      //   metaTx.gasOverhead.toString(10),
+      //   metaTx.feeRecipient,
+      //   metaTx.requiresSuccess,
+      //   metaTx.data,
+      //   Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+      // );
       const receipt = await tx.wait();
       // console.log("receipt:", receipt);
-      const metaTxEvent = metaTxInterface.decodeEventLog(
-        "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
-        receipt.events[1].data,
-        receipt.events[1].topics
-      );
+      // const metaTxEvent = entryPointInterface.decodeEventLog(
+      //   "UserOperationEvent(bytes32,address,address,uint256,bool,uint256,uint256)",
+      //   receipt.events[1].data,
+      //   receipt.events[1].topics
+      // );
       // console.log("metaTxEvent:", metaTxEvent);
-      expect(metaTxEvent.success).to.equal(true);
+      // expect(metaTxEvent.success).to.equal(true);
       const toBalanceAfter = await ethers.provider.getBalance(transferTo);
       expect(toBalanceAfter).to.equal(ethers.utils.parseEther("10"));
     });
@@ -266,6 +282,12 @@ describe.skip("wallet", () => {
         [10]
       );
 
+      const getPrivateKey = (address: string) => {
+        const textData = fs.readFileSync("./test_account_keys.json", "ascii");
+        const data = JSON.parse(textData);
+        return data.private_keys[String(address).toLowerCase()];
+      }
+
       const sig1 = signCallContractWA(
         masterCopy,
         wallet.address,
@@ -273,7 +295,10 @@ describe.skip("wallet", () => {
         TestContract.address,
         new BN(0),
         Buffer.from(callData.slice(2), "hex"),
-        owner
+        owner,
+        getPrivateKey(owner)
+        // accountOwner.privateKey
+        // account1.
       );
 
       const sig2 = signCallContractWA(
@@ -283,7 +308,10 @@ describe.skip("wallet", () => {
         TestContract.address,
         new BN(0),
         Buffer.from(callData.slice(2), "hex"),
-        guardian1
+        guardian1,
+        getPrivateKey(guardian1)
+        // guardians_[0].privateKey
+        // guardian1.privateKey.slice(2)
       );
 
       const sortedSigs = sortSignersAndSignatures(
@@ -309,7 +337,7 @@ describe.skip("wallet", () => {
         callData,
       ]);
 
-      wallet = wallet.connect(account3);
+      wallet = wallet.connect(account1);
       const metaTx: MetaTx = {
         to: wallet.address,
         nonce: new BN(0),
@@ -324,33 +352,39 @@ describe.skip("wallet", () => {
         approvedHash: sig1.hash,
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
-
-      const tx = await wallet.executeMetaTx(
-        metaTx.to,
-        metaTx.nonce.toString(10),
-        metaTx.gasToken,
-        metaTx.gasPrice.toString(10),
-        metaTx.gasLimit.toString(10),
-        metaTx.gasOverhead.toString(10),
-        metaTx.feeRecipient,
-        metaTx.requiresSuccess,
-        data,
-        metaTxSig.txSignature
+      
+      const tx = await wallet.execute(
+        wallet.address,
+        ethers.utils.parseEther("0"),
+        data
       );
+
+      // const tx = await wallet.executeMetaTx(
+      //   metaTx.to,
+      //   metaTx.nonce.toString(10),
+      //   metaTx.gasToken,
+      //   metaTx.gasPrice.toString(10),
+      //   metaTx.gasLimit.toString(10),
+      //   metaTx.gasOverhead.toString(10),
+      //   metaTx.feeRecipient,
+      //   metaTx.requiresSuccess,
+      //   data,
+      //   metaTxSig.txSignature
+      // );
       const receipt = await tx.wait();
 
       const eventsLen = receipt.events.length;
-      const metaTxEvent = metaTxInterface.decodeEventLog(
-        "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
-        receipt.events[eventsLen - 1].data,
-        receipt.events[eventsLen - 1].topics
-      );
+      // const metaTxEvent = metaTxInterface.decodeEventLog(
+      //   "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
+      //   receipt.events[eventsLen - 1].data,
+      //   receipt.events[eventsLen - 1].topics
+      // );
       // console.log("metaTxEvent:", metaTxEvent);
 
-      expect(metaTxEvent.metaTxHash).to.equal(
-        "0x" + metaTxSig.hash.toString("hex")
-      );
-      expect(metaTxEvent.success).to.equal(true);
+      // expect(metaTxEvent.metaTxHash).to.equal(
+      //   "0x" + metaTxSig.hash.toString("hex")
+      // );
+      // expect(metaTxEvent.success).to.equal(true);
 
       // Check if the funtion has been called
       const event = await getFirstEvent(

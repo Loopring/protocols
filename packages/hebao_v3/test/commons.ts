@@ -68,13 +68,13 @@ export async function newWalletImpl() {
 }
 
 export async function newWalletFactoryContract(deployer?: string) {
-  let testPriceOracle: Contract;
-  let smartWallet: Contract;
+  // let testPriceOracle: Contract;
+  // let smartWallet: Contract;
   let walletFactory: Contract;
 
-  testPriceOracle = await (
-    await ethers.getContractFactory("TestPriceOracle")
-  ).deploy();
+  // testPriceOracle = await (
+  //   await ethers.getContractFactory("TestPriceOracle")
+  // ).deploy();
 
   const ERC1271Lib = await (
     await ethers.getContractFactory("ERC1271Lib")
@@ -107,10 +107,35 @@ export async function newWalletFactoryContract(deployer?: string) {
   const WhitelistLib = await (
     await ethers.getContractFactory("WhitelistLib")
   ).deploy();
+  const entrypoint = await (
+    await ethers.getContractFactory("EntryPoint")
+  ).deploy();
 
   const ownerSetter = deployer ? deployer : ethers.constants.AddressZero;
-  smartWallet = await (
-    await ethers.getContractFactory("SmartWallet", {
+  // smartWallet = await (
+  //   await ethers.getContractFactory("SmartWallet", {
+  //     libraries: {
+  //       ERC1271Lib: ERC1271Lib.address,
+  //       ERC20Lib: ERC20Lib.address,
+  //       GuardianLib: GuardianLib.address,
+  //       InheritanceLib: InheritanceLib.address,
+  //       LockLib: LockLib.address,
+  //       QuotaLib: QuotaLib.address,
+  //       RecoverLib: RecoverLib.address,
+  //       UpgradeLib: UpgradeLib.address,
+  //       WhitelistLib: WhitelistLib.address,
+  //     },
+  //   })
+  // ).deploy(
+  //   ethers.constants.AddressZero /*testPriceOracle.address*/,
+  //   entrypoint.address,
+  //   ownerSetter
+  // );
+
+  // .deploy(priceOracle.address, entrypoint.address, blankOwner.address);
+
+  walletFactory = await (
+    await ethers.getContractFactory("WalletFactory", {
       libraries: {
         ERC1271Lib: ERC1271Lib.address,
         ERC20Lib: ERC20Lib.address,
@@ -125,12 +150,9 @@ export async function newWalletFactoryContract(deployer?: string) {
     })
   ).deploy(
     ethers.constants.AddressZero /*testPriceOracle.address*/,
+    entrypoint.address,
     ownerSetter
   );
-
-  walletFactory = await (
-    await ethers.getContractFactory("WalletFactory")
-  ).deploy(smartWallet.address);
 
   await walletFactory.deployed();
 
@@ -177,12 +199,21 @@ export async function newWallet(
     signature: Buffer.from(signature.txSignature.slice(2), "hex"),
   };
 
-  const walletAddrComputed = await walletFactory.computeWalletAddress(
+  const walletAddrComputed = await walletFactory.getAddress(
     owner,
+    _guardians,
+    0,
+    ethers.constants.AddressZero,
     salt
   );
 
-  const tx = await walletFactory.createWallet(walletConfig, 0);
+  await walletFactory.createAccount(
+    owner,
+    _guardians,
+    0,
+    ethers.constants.AddressZero,
+    salt
+  );
   // const allEvents = await getAllEvent(walletFactory, tx.blockNumber);
   // console.log(allEvents);
 
