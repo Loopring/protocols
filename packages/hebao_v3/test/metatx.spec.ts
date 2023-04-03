@@ -27,6 +27,7 @@ describe("wallet", () => {
   let entryPointInterface: any;
   const feeRecipient = "0x" + "30".repeat(20);
   let TestContract: Contract;
+  let LRC: Contract;
 
   before(async () => {
     [account1, account2, account3] = await ethers.getSigners();
@@ -36,11 +37,13 @@ describe("wallet", () => {
         GuardianLib: ethers.constants.AddressZero,
       },
     });
-    const IEntryPointArtifact = await artifacts.readArtifact("IEntryPoint");
+    const EntryPoint = await ethers.getContractFactory("EntryPoint");
+    const LRCFactory = await ethers.getContractFactory("LRC")
 
     recoverInterface = RecoverLib.interface;
     guardianInterface = GuardianLib.interface;
-    entryPointInterface = new ethers.utils.Interface( IEntryPointArtifact.abi );
+    entryPointInterface = EntryPoint.interface;
+    LRC = await LRCFactory.deploy();
 
     TestContract = await (
       await ethers.getContractFactory("TestTargetContract")
@@ -61,7 +64,6 @@ describe("wallet", () => {
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
-      // console.log("guardian1.privateKey:", guardian1.privateKey);
       const newGuardians = ["0x" + "11".repeat(20), "0x" + "22".repeat(20)];
       const sig1 = signRecover(
         masterCopy,
@@ -108,63 +110,11 @@ describe("wallet", () => {
         ethers.utils.parseEther("0"),
         data
       );
-      
-
-      // const metaTxSigner = await account3.getAddress();
-      // const metaTx: MetaTx = {
-      //   to: wallet.address,
-      //   nonce: new BN(0),
-      //   gasToken: ethers.constants.AddressZero,
-      //   gasPrice: new BN(0),
-      //   gasLimit: new BN(2000000),
-      //   gasOverhead: new BN(0),
-      //   feeRecipient,
-      //   requiresSuccess: true,
-      //   data: Buffer.from(data.slice(2, 10), "hex"),
-      //   signature: Buffer.from(""),
-      //   approvedHash: sig1.hash,
-      // };
-
-      // // can not sign with old owner, because wallet owner if changed when
-      // // checking metaTx signature, and old owner is leaked or lost when doing recovery.
-      // const metaTxSig = signMetaTx(masterCopy, metaTx, newOwner);
-      // // console.log("metaTxHash:", metaTxSig.hash);
-
-      // const tx = await wallet.executeMetaTx(
-      //   metaTx.to,
-      //   metaTx.nonce.toString(10),
-      //   metaTx.gasToken,
-      //   metaTx.gasPrice.toString(10),
-      //   metaTx.gasLimit.toString(10),
-      //   metaTx.gasOverhead.toString(10),
-      //   metaTx.feeRecipient,
-      //   metaTx.requiresSuccess,
-      //   data,
-      //   metaTxSig.txSignature
-      // );
-      const receipt = await tx.wait();
-      // console.log("receipt:", receipt);
-
-      const eventsLen = receipt.events.length;
-      // const metaTxEvent = entryPointInterface.decodeEventLog(
-      //   // "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
-      //   "UserOperation(address,uint256,bytes,bytes,uint256,uint256,uint256,uint256,uint256,bytes,bytes)",
-          
-      //   receipt.events[eventsLen - 1].data,
-      //   receipt.events[eventsLen - 1].topics
-      // );
-      // console.log("metaTxEvent:", metaTxEvent);
-
-      // expect(metaTxEvent.metaTxHash).to.equal(
-      //   "0x" + metaTxSig.hash.toString("hex")
-      // );
-      // expect(metaTxEvent.success).to.equal(true);
-
+      await tx.wait();
       const ownerAfter = (await wallet.wallet()).owner;
       expect(ownerAfter).to.equal(newOwner);
 
       const guardiansAfter = await wallet.getGuardians(false);
-      // console.log("guardiansAfter:", guardiansAfter);
       expect(guardiansAfter[0].addr).to.equal(newGuardians[0]);
       expect(guardiansAfter[1].addr).to.equal(newGuardians[1]);
     });
@@ -172,92 +122,53 @@ describe("wallet", () => {
     it("transfer", async () => {
       const owner = await account1.getAddress();
       let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, []);
-      const masterCopy = await wallet.getMasterCopy();
-
       await account2.sendTransaction({
         from: await account2.getAddress(),
         to: wallet.address,
         value: ethers.utils.parseEther("100"),
       });
-
       const transferTo = "0x" + "30".repeat(20);
-      // transfer ETH:
-      const data = wallet.interface.encodeFunctionData("transferToken", [
-        ethers.constants.AddressZero,
-        transferTo,
-        ethers.utils.parseEther("10"),
-        [],
-        false,
-      ]);
-
       wallet = wallet.connect(account1);
-      const metaTx: MetaTx = {
-        to: wallet.address,
-        nonce: new BN(new Date().getTime()),
-        gasToken: ethers.constants.AddressZero,
-        gasPrice: new BN(0),
-        gasLimit: new BN(1000000),
-        gasOverhead: new BN(0),
-        feeRecipient,
-        requiresSuccess: true,
-        data: Buffer.from(data.slice(2), "hex"),
-        signature: Buffer.from(""),
-        approvedHash: Buffer.from(
-          "0000000000000000000000000000000000000000000000000000000000000000",
-          "hex"
-        ),
-      };
-      const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
-
       const toBalanceBefore = await ethers.provider.getBalance(transferTo);
       expect(toBalanceBefore).to.equal(0);
-
-      // const metaTxData = wallet.interface.encodeFunctionData("executeMetaTx", [
-      //   metaTx.to,
-      //   metaTx.nonce.toString(10),
-      //   metaTx.gasToken,
-      //   metaTx.gasPrice.toString(10),
-      //   metaTx.gasLimit.toString(10),
-      //   metaTx.gasOverhead.toString(10),
-      //   metaTx.requiresSuccess,
-      //   metaTx.data,
-      //   Buffer.from(metaTxSig.txSignature.slice(2), "hex")
-      // ]);
-      // console.log("metaTxData:", metaTxData);
-    //   function execute(
-    //     address dest,
-    //     uint256 value,
-    //     bytes calldata func
-    // )
-
       const tx = await wallet.execute(
         transferTo,
         ethers.utils.parseEther("10"),
         new Uint8Array(0)
       );
-      // const tx = await wallet.executeMetaTx(
-      //   metaTx.to,
-      //   metaTx.nonce.toString(10),
-      //   metaTx.gasToken,
-      //   metaTx.gasPrice.toString(10),
-      //   metaTx.gasLimit.toString(10),
-      //   metaTx.gasOverhead.toString(10),
-      //   metaTx.feeRecipient,
-      //   metaTx.requiresSuccess,
-      //   metaTx.data,
-      //   Buffer.from(metaTxSig.txSignature.slice(2), "hex")
-      // );
-      const receipt = await tx.wait();
-      // console.log("receipt:", receipt);
-      // const metaTxEvent = entryPointInterface.decodeEventLog(
-      //   "UserOperationEvent(bytes32,address,address,uint256,bool,uint256,uint256)",
-      //   receipt.events[1].data,
-      //   receipt.events[1].topics
-      // );
-      // console.log("metaTxEvent:", metaTxEvent);
-      // expect(metaTxEvent.success).to.equal(true);
+      await tx.wait();
       const toBalanceAfter = await ethers.provider.getBalance(transferTo);
       expect(toBalanceAfter).to.equal(ethers.utils.parseEther("10"));
+    });
+    
+    it("transferERC20", async () => {
+      const owner = await account1.getAddress();
+      let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, []);
+      await account2.sendTransaction({
+        from: await account2.getAddress(),
+        to: wallet.address,
+        value: ethers.utils.parseEther("100"),
+      });
+      const transferTo = "0x" + "30".repeat(20);
+      const toBalanceBefore = await LRC.functions.balanceOf(transferTo);
+      expect(toBalanceBefore.balance).to.equal(0);
+      await LRC.setBalance(wallet.address, ethers.utils.parseEther("1000"));
+      wallet = wallet.connect(account1);
+      const data = wallet.interface.encodeFunctionData("transferToken", [
+        LRC.address,
+        transferTo,
+        ethers.utils.parseEther("10"),
+        new Uint8Array(0),
+        false
+      ]);
+      const tx = await wallet.execute(
+        wallet.address,
+        "0",
+        data
+      );
+      await tx.wait();
+      const toBalanceAfter = await LRC.functions.balanceOf(transferTo);
+      expect(toBalanceAfter.balance).to.equal(ethers.utils.parseEther("10"));
     });
 
     it("call contract WA", async () => {
@@ -328,65 +239,19 @@ describe("wallet", () => {
         validUntil,
         wallet: wallet.address,
       };
-
-      // callContractWA
       const data = wallet.interface.encodeFunctionData("callContractWA", [
         approval,
         TestContract.address,
         0,
         callData,
       ]);
-
       wallet = wallet.connect(account1);
-      const metaTx: MetaTx = {
-        to: wallet.address,
-        nonce: new BN(0),
-        gasToken: ethers.constants.AddressZero,
-        gasPrice: new BN(0),
-        gasLimit: new BN(2000000),
-        gasOverhead: new BN(0),
-        feeRecipient,
-        requiresSuccess: true,
-        data: Buffer.from(data.slice(2, 10), "hex"),
-        signature: Buffer.from(""),
-        approvedHash: sig1.hash,
-      };
-      const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
-      
       const tx = await wallet.execute(
         wallet.address,
         ethers.utils.parseEther("0"),
         data
       );
-
-      // const tx = await wallet.executeMetaTx(
-      //   metaTx.to,
-      //   metaTx.nonce.toString(10),
-      //   metaTx.gasToken,
-      //   metaTx.gasPrice.toString(10),
-      //   metaTx.gasLimit.toString(10),
-      //   metaTx.gasOverhead.toString(10),
-      //   metaTx.feeRecipient,
-      //   metaTx.requiresSuccess,
-      //   data,
-      //   metaTxSig.txSignature
-      // );
-      const receipt = await tx.wait();
-
-      const eventsLen = receipt.events.length;
-      // const metaTxEvent = metaTxInterface.decodeEventLog(
-      //   "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
-      //   receipt.events[eventsLen - 1].data,
-      //   receipt.events[eventsLen - 1].topics
-      // );
-      // console.log("metaTxEvent:", metaTxEvent);
-
-      // expect(metaTxEvent.metaTxHash).to.equal(
-      //   "0x" + metaTxSig.hash.toString("hex")
-      // );
-      // expect(metaTxEvent.success).to.equal(true);
-
-      // Check if the funtion has been called
+      await tx.wait();
       const event = await getFirstEvent(
         TestContract,
         tx.blockNumber,
