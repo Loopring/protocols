@@ -22,8 +22,6 @@ import {
 import { TestCounter, TestCounter__factory } from "../typechain-types";
 
 describe("eip4337", () => {
-  // const loadFixture = waffle.createFixtureLoader()
-
   async function fixture() {
     const signers = await ethers.getSigners();
     const deployer = signers[0];
@@ -323,10 +321,6 @@ describe("eip4337", () => {
     // prepare tokens
     // send tokens to wallet or deposit to entrypoint by wallet's name
     await entrypoint.depositTo(walletAddress, { value: parseEther("1") });
-    // await deployer.sendTransaction({
-    // to: walletAddress,
-    // value: ethAmount,
-    // });
 
     // some outside contract
     const justemit = await testCounter.populateTransaction.count();
@@ -412,7 +406,7 @@ describe("eip4337", () => {
       to: accountOwner.address,
     };
 
-    // some outside contract
+    // test contract
     const justemit = await testCounter.populateTransaction.count();
 
     const actions = [approveToken, transferToken, transferEth, justemit];
@@ -485,10 +479,5 @@ describe("eip4337", () => {
     it("activate wallet(USDC)", activateWallet_WithUSDCPaymaster);
     it("execute tx with usdc paymaster", executeTxWithPaymaster);
     it("execute tx with eth", executeTxWithEth);
-    // it("activate wallet(ETH)", activateWallet_withETHUsingWalletFactory);
-    // it("update guardian", updateGuardian);
-    // it("recovery wallet", recoveryWallet);
-    // it("interface resolver", interfaceResolver);
-    // it("other coverage test", coverageTest);
   });
 });

@@ -20,6 +20,7 @@ import {
   sortSignersAndSignatures,
   deployLibs,
 } from "./commons";
+import { fixture } from "./helper/fixture";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -27,67 +28,6 @@ import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
 
 describe("wallet", () => {
-  let account1: Signer;
-  let account2: Signer;
-  let account3: Signer;
-  async function fixture() {
-    const signers = await ethers.getSigners();
-    const deployer = signers[0];
-    const blankOwner = signers[1];
-    const paymasterOwner = signers[2];
-    const libraries = await deployLibs();
-    const entrypoint = await (
-      await ethers.getContractFactory("EntryPoint")
-    ).deploy();
-    const priceOracle = await (
-      await ethers.getContractFactory("ChainlinkPriceOracle")
-    ).deploy(entrypoint.address);
-
-    const walletFactory = await (
-      await ethers.getContractFactory("WalletFactory", { libraries })
-    ).deploy(priceOracle.address, entrypoint.address, blankOwner.address);
-    const paymaster = await (
-      await ethers.getContractFactory("VerifyingPaymaster")
-    ).deploy(entrypoint.address, paymasterOwner.address);
-
-    const accountOwner = await createAccountOwner();
-    const guardians = [];
-    for (let i = 0; i < 2; i++) {
-      guardians.push(await ethers.Wallet.createRandom());
-    }
-    const walletConfig = await createRandomWalletConfig(
-      accountOwner.address,
-      undefined,
-      guardians
-    );
-
-    await paymaster.addStake(1, { value: parseEther("2") });
-    await entrypoint.depositTo(paymaster.address, { value: parseEther("1") });
-
-    const { proxy: account } = await createAccount(
-      accountOwner,
-      walletConfig,
-      entrypoint.address,
-      walletFactory
-    );
-
-    await deployer.sendTransaction({
-      to: accountOwner.address,
-      value: parseEther("2"),
-    });
-
-    return {
-      entrypoint,
-      paymaster,
-      paymasterOwner,
-      accountOwner,
-      deployer,
-      account,
-      guardians,
-      walletFactory,
-    };
-  }
-
   describe("quota", () => {
     it("owner should be able to changeDialyQuota", async () => {
       const {
