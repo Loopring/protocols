@@ -240,13 +240,28 @@ export function calculateWalletAddress(
   return walletAddress;
 }
 
+export function computeRequiredPreFund(
+  userOp: UserOperation,
+  usePaymaster = false
+) {
+  // get required fund
+  const requiredGas = BigNumber.from(userOp.verificationGasLimit)
+    .mul(usePaymaster ? 3 : 1)
+    .add(userOp.callGasLimit)
+    .add(userOp.preVerificationGas);
+
+  const requiredPrefund = requiredGas.mul(userOp.maxFeePerGas);
+  return requiredPrefund;
+}
+
 export async function activateCreate2WalletOp(
   walletLogicAddress: string,
   walletFactory: Create2Factory,
   walletConfig: WalletConfig,
-  callData?: BytesLike
+  callData?: BytesLike,
+  salt?: BytesLike
 ) {
-  const salt = ethers.utils.randomBytes(32);
+  salt = salt ?? ethers.utils.randomBytes(32);
   const walletAddress = calculateWalletAddress(
     walletLogicAddress,
     walletConfig,
@@ -412,4 +427,46 @@ export async function evInfo(
       diff: gasUsed - actualGasUsed.toNumber(),
     };
   });
+}
+
+export async function create2Deploy(
+  deployFactory: Create2Factory,
+  contractName: string,
+  args?: any[],
+  libs?: Map<string, any>
+) {
+  // use same salt for all deployments:
+  const salt = ethers.utils.formatBytes32String("0x5");
+
+  const libraries = {}; // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
+  libs && libs.forEach((value, key) => (libraries[key] = value));
+  // console.log("libraries:", libraries);
+
+  const contract = await ethers.getContractFactory(contractName, { libraries });
+
+  let deployableCode = contract.bytecode;
+  if (args && args.length > 0) {
+    deployableCode = ethers.utils.hexConcat([
+      deployableCode,
+      contract.interface.encodeDeploy(args),
+    ]);
+  }
+
+  const deployedAddress = ethers.utils.getCreate2Address(
+    deployFactory.address,
+    salt,
+    ethers.utils.keccak256(deployableCode)
+  );
+  // check if it is deployed already
+  if ((await ethers.provider.getCode(deployedAddress)) != "0x") {
+  } else {
+    const gasLimit = await deployFactory.estimateGas.deploy(
+      deployableCode,
+      salt
+    );
+    const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit });
+    await tx.wait();
+  }
+
+  return contract.attach(deployedAddress);
 }

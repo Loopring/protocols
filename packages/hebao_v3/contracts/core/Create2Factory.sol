@@ -20,5 +20,11 @@ contract Create2Factory {
                 _salt
             )
         }
+
+        require(createdContract != address(0), "CREATE2_FAILED");
     }
 }
+
+/**
+ *Submitted for verification at Etherscan.io on 2020-03-30
+ */

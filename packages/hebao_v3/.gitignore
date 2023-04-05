@@ -8,3 +8,4 @@ build/
 ABI/
 typechain-types/
 libraries.js
+.env

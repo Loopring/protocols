@@ -17,6 +17,7 @@ import {
   getPaymasterAndData,
   getCallData,
   activateCreate2WalletOp,
+  create2Deploy,
 } from "./helper/utils";
 import { TestCounter, TestCounter__factory } from "../typechain-types";
 
@@ -31,12 +32,31 @@ describe("eip4337", () => {
 
     const libraries = await deployLibs();
 
+    const create2Factory = await (
+      await ethers.getContractFactory("Create2Factory")
+    ).deploy();
+
     const entrypoint = await (
       await ethers.getContractFactory("EntryPoint")
     ).deploy();
     const priceOracle = await (
       await ethers.getContractFactory("ChainlinkPriceOracle")
     ).deploy(entrypoint.address);
+
+    // proxy implementation
+    const smartWalletImpl = await (
+      await ethers.getContractFactory("SmartWallet", { libraries })
+    ).deploy(priceOracle.address, entrypoint.address, blankOwner.address);
+
+    const implementationManager = await create2Deploy(
+      create2Factory,
+      "DelayedImplementationManager",
+      [smartWalletImpl.address, deployer.address]
+    );
+
+    const forwardProxy = await create2Deploy(create2Factory, "ForwardProxy", [
+      implementationManager.address,
+    ]);
 
     const walletFactory = await (
       await ethers.getContractFactory("WalletFactory", { libraries })
@@ -73,22 +93,20 @@ describe("eip4337", () => {
       account,
       testCounter,
       walletFactory,
+      create2Factory,
+      forwardProxy,
     };
   }
 
   async function activateCreate2Wallet_withETH() {
-    const { walletFactory, entrypoint, deployer, testCounter } =
+    const { forwardProxy, entrypoint, deployer, testCounter, create2Factory } =
       await loadFixture(fixture);
 
     const accountOwner = await createAccountOwner();
     const walletConfig = await createRandomWalletConfig(accountOwner.address);
 
-    const create2Factory = await (
-      await ethers.getContractFactory("Create2Factory")
-    ).deploy();
-
     const sendUserOp = localUserOpSender(entrypoint.address, deployer);
-    const accountImplementation = await walletFactory.accountImplementation();
+    const accountImplementation = forwardProxy.address;
     const activateOp = await activateCreate2WalletOp(
       accountImplementation,
       create2Factory,
@@ -98,7 +116,7 @@ describe("eip4337", () => {
     const newOp = await fillAndSign(
       activateOp,
       accountOwner,
-      walletFactory.address,
+      create2Factory.address,
       entrypoint
     );
 
@@ -121,14 +139,14 @@ describe("eip4337", () => {
 
     const depositPaid = preDeposit.sub(await entrypoint.balanceOf(myAddress));
     const gasPaid = prebalance.sub(await ethers.provider.getBalance(myAddress));
-    console.log(
-      "paid (from balance)=",
-      gasPaid.toNumber() / 1e9,
-      "paid (from deposit)",
-      depositPaid.div(1e9).toString(),
-      "gasUsed=",
-      rcpt.gasUsed
-    );
+    // console.log(
+    // "paid (from balance)=",
+    // gasPaid.toNumber() / 1e9,
+    // "paid (from deposit)",
+    // depositPaid.div(1e9).toString(),
+    // "gasUsed=",
+    // rcpt.gasUsed
+    // );
 
     // AA10 sender already constructed
     await expect(entrypoint.estimateGas.handleOps([newOp], deployer.address)).to
@@ -172,14 +190,14 @@ describe("eip4337", () => {
 
     const depositPaid = preDeposit.sub(await entrypoint.balanceOf(myAddress));
     const gasPaid = prebalance.sub(await ethers.provider.getBalance(myAddress));
-    console.log(
-      "paid (from balance)=",
-      gasPaid.toNumber() / 1e9,
-      "paid (from deposit)",
-      depositPaid.div(1e9).toString(),
-      "gasUsed=",
-      rcpt.gasUsed
-    );
+    // console.log(
+    // "paid (from balance)=",
+    // gasPaid.toNumber() / 1e9,
+    // "paid (from deposit)",
+    // depositPaid.div(1e9).toString(),
+    // "gasUsed=",
+    // rcpt.gasUsed
+    // );
   }
 
   async function activateWallet_WithUSDCPaymaster() {
@@ -203,9 +221,10 @@ describe("eip4337", () => {
       activateOp.sender,
       ethers.utils.parseUnits("1000", 6)
     );
+    const approvalAmount = ethers.utils.parseUnits("1000", 6);
     const approveToken = await usdcToken.populateTransaction.approve(
       paymaster.address,
-      ethers.utils.parseUnits("1000", 6)
+      approvalAmount
     );
 
     activateOp.callData = getCallData(approveToken);
@@ -258,26 +277,31 @@ describe("eip4337", () => {
     const depositPaid = preDeposit.sub(await entrypoint.balanceOf(payer));
     const gasPaid = prebalance.sub(await ethers.provider.getBalance(payer));
     const tokenBalanceAfter = await usdcToken.balanceOf(activateOp.sender);
-    console.log(
-      "paid (from balance)=",
-      gasPaid.toNumber() / 1e9,
-      "paid (from deposit)=",
-      depositPaid.div(1e9).toString(),
-      "gasUsed=",
-      rcpt.gasUsed
-    );
-    console.log(
-      "usdc balance before=",
-      tokenBalanceBefore,
-      "usdc balance after=",
-      tokenBalanceAfter,
-      "usdc paid (from account)=",
-      tokenBalanceBefore.sub(tokenBalanceAfter)
-    );
-    console.log(
-      "usdc allowance of paymaster: ",
+    // console.log(
+    // "paid (from balance)=",
+    // gasPaid.toNumber() / 1e9,
+    // "paid (from deposit)=",
+    // depositPaid.div(1e9).toString(),
+    // "gasUsed=",
+    // rcpt.gasUsed
+    // );
+
+    const paidToken = tokenBalanceBefore.sub(tokenBalanceAfter);
+    // console.log(
+    // "usdc balance before=",
+    // tokenBalanceBefore,
+    // "usdc balance after=",
+    // tokenBalanceAfter,
+    // "usdc paid (from account)=",
+    // tokenBalanceBefore.sub(tokenBalanceAfter)
+    // );
+    // console.log(
+    // "usdc allowance of paymaster: ",
+    // await usdcToken.allowance(activateOp.sender, paymaster.address)
+    // );
+    expect(
       await usdcToken.allowance(activateOp.sender, paymaster.address)
-    );
+    ).to.eq(approvalAmount.sub(paidToken));
   }
 
   async function executeTxWithEth() {
@@ -438,7 +462,7 @@ describe("eip4337", () => {
 
       const preDeposit = await entrypoint.balanceOf(paymaster.address);
       const recipt = await sendUserOp(userOp);
-      console.log(await evInfo(entrypoint, recipt));
+      // console.log(await evInfo(entrypoint, recipt));
       // check effect
       const allowance = await usdcToken.allowance(
         walletAddress,
@@ -447,7 +471,7 @@ describe("eip4337", () => {
       const depositPaid = preDeposit.sub(
         await entrypoint.balanceOf(paymaster.address)
       );
-      console.log("paymaster paid(ETH): ", depositPaid.div(1e9));
+      // console.log("paymaster paid(ETH): ", depositPaid.div(1e9));
     }
     expect(await usdcToken.balanceOf(accountOwner.address)).to.eq(tokenAmount);
     expect(await ethers.provider.getBalance(accountOwner.address)).to.eq(

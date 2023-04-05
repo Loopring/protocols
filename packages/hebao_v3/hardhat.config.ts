@@ -1,6 +1,10 @@
 import { HardhatUserConfig } from "hardhat/types";
 import { task } from "hardhat/config";
 
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-toolbox";
 
@@ -57,14 +61,21 @@ export default {
     },
 
     goerli: {
-      chainId: 5,
       url: "https://goerli.infura.io/v3/b7c22d73c16e4c0ea3f88dadbdffbe03",
-      gas: 8000000,
-      gasPrice: 11e9,
-      gasMultiplier: 1,
-      timeout: 20000,
-      httpHeaders: undefined,
-      accounts: loadTestAccounts().map((item) => item.privateKey),
+      accounts: [process.env.PRIVATE_KEY],
+    },
+
+    taiko: {
+      url: "https://l2rpc.hackathon.taiko.xyz",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    taiko2: {
+      url: "https://l2rpc.a2.taiko.xyz/",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    sepolia: {
+      url: "https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB",
+      accounts: [process.env.PRIVATE_KEY],
     },
 
     bsctestnet: {

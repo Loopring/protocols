@@ -143,7 +143,7 @@ export function fillUserOpDefaults(
 export async function fillUserOp(
   op: Partial<UserOperation>,
   walletFactoryAddress: string,
-  entryPoint?: EntryPoint
+  entryPoint?: Contract
 ): Promise<UserOperation> {
   const op1 = { ...op };
   const provider = entryPoint?.provider;
@@ -228,7 +228,7 @@ export async function fillAndSign(
   op: Partial<UserOperation>,
   signer: Wallet | Signer,
   walletFactoryAddress: string,
-  entryPoint?: EntryPoint
+  entryPoint?: Contract
 ): Promise<UserOperation> {
   const provider = entryPoint?.provider;
   const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
