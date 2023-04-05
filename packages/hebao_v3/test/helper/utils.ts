@@ -119,6 +119,33 @@ export async function createAccount(
   };
 }
 
+export async function createAccountV2(
+  ethersSigner: Signer,
+  walletConfig: WalletConfig,
+  entryPoint: string,
+  implementation: string,
+  accountFactory: Create2Factory
+) {
+  // const implementation = await accountFactory.accountImplementation();
+  const salt = ethers.utils.randomBytes(32);
+  await accountFactory.deploy(
+    getWalletCode(implementation, walletConfig),
+    salt
+  );
+  const accountAddress = calculateWalletAddress(
+    implementation,
+    walletConfig,
+    salt,
+    accountFactory.address
+  );
+  const proxy = SmartWallet__factory.connect(accountAddress, ethersSigner);
+  return {
+    implementation,
+    accountFactory,
+    proxy,
+  };
+}
+
 // helper function to create the initCode to deploy the account, using our account factory.
 export function getAccountInitCode(
   walletConfig: WalletConfig,

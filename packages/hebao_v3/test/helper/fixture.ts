@@ -4,6 +4,7 @@ import {
   createAccountOwner,
   createRandomWalletConfig,
   createRandomAccount,
+  createAccountV2,
 } from "./utils";
 import { parseEther, arrayify, hexConcat, hexlify } from "ethers/lib/utils";
 
@@ -24,6 +25,37 @@ export async function walletImplFixture() {
     blankOwner.address
   );
   return smartWallet;
+}
+
+export async function proxyFixture() {
+  const signers = await ethers.getSigners();
+  const create2 = await (
+    await ethers.getContractFactory("Create2Factory")
+  ).deploy();
+  const smartWalletImpl = await walletImplFixture();
+  const implStorage = await (
+    await ethers.getContractFactory("DelayedImplementationManager")
+  ).deploy(smartWalletImpl.address, signers[0].address);
+  const forwardProxy = await (
+    await ethers.getContractFactory("ForwardProxy")
+  ).deploy(implStorage.address);
+
+  const entrypoint = await (
+    await ethers.getContractFactory("EntryPoint")
+  ).deploy();
+
+  const accountOwner = await createAccountOwner();
+  const walletConfig = await createRandomWalletConfig(accountOwner.address);
+
+  const { proxy: account } = await createAccountV2(
+    accountOwner,
+    walletConfig,
+    entrypoint.address,
+    forwardProxy.address,
+    create2
+  );
+
+  return { forwardProxy, implStorage, account, accountOwner, entrypoint };
 }
 
 export async function baseFixture() {

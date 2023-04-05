@@ -12,8 +12,15 @@ import {
   getAllEvent,
   newWalletImpl,
   sortSignersAndSignatures,
+  advanceTime,
+  getBlockTimestamp,
 } from "./commons";
-import { baseFixture, fixture, walletImplFixture } from "./helper/fixture";
+import {
+  baseFixture,
+  fixture,
+  walletImplFixture,
+  proxyFixture,
+} from "./helper/fixture";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
 
@@ -31,7 +38,6 @@ describe("wallet", () => {
       const newSmartWalletImpl = await loadFixture(walletImplFixture);
       const validUntil = 9999999999;
       const currentImpl = await wallet.getMasterCopy();
-      console.log("old impl:", currentImpl);
       const sig1 = signChangeMasterCopy(
         wallet.address,
         currentImpl,
@@ -68,9 +74,73 @@ describe("wallet", () => {
       );
 
       const masterCopyOfWallet = await wallet.getMasterCopy();
-      console.log("masterCopyofwallet:", masterCopyOfWallet);
-
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
+    });
+  });
+
+  describe("DelayedImplementationManager", () => {
+    it("only owner is able to set nextImpl & effectiveTime", async () => {
+      const [account1, account2, account3] = await ethers.getSigners();
+      const newSmartWalletImpl = await walletImplFixture();
+      const storage = await (
+        await ethers.getContractFactory("DelayedImplementationManager")
+      ).deploy(newSmartWalletImpl.address, account1.address);
+      const owner = await storage.owner();
+      const signer = storage.signer;
+      expect(owner).to.equal(signer.address);
+
+      await expect(storage.executeUpgrade()).to.revertedWith("NOT_IN_EFFECT");
+
+      const newImpl = "0x" + "11".repeat(20);
+      const tx = await storage.delayedUpgradeTo(newImpl, 1);
+      const blockTime = await getBlockTimestamp(tx.blockNumber);
+      const receipt = await tx.wait();
+      const upgradeScheduledEvent = receipt.events[0].args;
+      expect(upgradeScheduledEvent.nextImpl).to.equal(newImpl);
+      expect(upgradeScheduledEvent.effectiveTime.toNumber()).to.equal(
+        blockTime + 3600 * 24
+      );
+
+      const storageWithAnotherSigner = await storage.connect(account2);
+      const signer2 = storageWithAnotherSigner.signer.address;
+      expect(owner).not.to.equal(signer2);
+      const newImpl2 = "0x" + "22".repeat(20);
+      await expect(
+        storageWithAnotherSigner.delayedUpgradeTo(newImpl2, 1)
+      ).to.revertedWith("UNAUTHORIZED");
+
+      // execute upgrade before nexeEffectiveTime:
+      await expect(storageWithAnotherSigner.executeUpgrade()).to.revertedWith(
+        "NOT_IN_EFFECT"
+      );
+
+      await advanceTime(3600 * 24);
+      const executeTx = await storageWithAnotherSigner.executeUpgrade();
+      const executeReceipt = await executeTx.wait();
+      const implementationChangedEvent = executeReceipt.events[0].args;
+      expect(implementationChangedEvent.newImpl).to.equal(newImpl);
+
+      // upgrade can not be executed agin:
+      await expect(storage.executeUpgrade()).to.revertedWith("NOT_IN_EFFECT");
+    });
+
+    it("upgrade for user wallet", async () => {
+      const {
+        forwardProxy,
+        account: wallet,
+        accountOwner,
+        implStorage,
+      } = await loadFixture(proxyFixture);
+      const currentImpl = await wallet.getMasterCopy();
+      expect(currentImpl).to.eq(forwardProxy.address);
+      const blankOwnerBefore = await wallet.blankOwner();
+
+      const newSmartWalletImpl = await walletImplFixture();
+      await implStorage.delayedUpgradeTo(newSmartWalletImpl.address, 1);
+      await advanceTime(3600 * 24);
+      await implStorage.executeUpgrade();
+      const blankOwnerAfter = await wallet.blankOwner();
+      expect(blankOwnerBefore).not.to.eq(blankOwnerAfter);
     });
   });
 });
