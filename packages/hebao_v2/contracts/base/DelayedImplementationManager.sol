@@ -34,6 +34,7 @@ contract DelayedImplementationManager is Ownable {
             emit UpgradeCancelled(nextImpl);
             nextImpl = address(0);
         } else {
+            require(_daysToDelay >= 1, "INVALID_DAYS");
             uint _nextEffectiveTime = block.timestamp + _daysToDelay * 1 days;
             nextImpl = _nextImpl;
             nextEffectiveTime = _nextEffectiveTime;
