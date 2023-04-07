@@ -1,10 +1,10 @@
-import { expect } from "./setup";
+import { expect } from "chai";
 import { signCreateWallet } from "./helper/signatureUtils";
 import {
   attachWallet,
   newWalletFactoryContract,
   getBlockTimestamp,
-  getFirstEvent
+  getFirstEvent,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -46,7 +46,7 @@ describe("walletFactory", () => {
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount: 0,
         salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex")
+        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
       };
 
       const walletAddrComputed = await walletFactory.computeWalletAddress(
@@ -109,7 +109,7 @@ describe("walletFactory", () => {
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount,
         salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex")
+        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
       };
 
       const walletAddrComputed = await walletFactory.computeWalletAddress(
@@ -120,7 +120,7 @@ describe("walletFactory", () => {
       await account2.sendTransaction({
         from: owner,
         to: walletAddrComputed,
-        value: ethers.utils.parseEther("0.1")
+        value: ethers.utils.parseEther("0.1"),
       });
       const feeRecipientEthBalanceBefore = await ethers.provider.getBalance(
         feeRecipient
@@ -193,7 +193,7 @@ describe("walletFactory", () => {
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount,
         salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex")
+        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
       };
 
       const walletAddrComputed = await walletFactory.computeWalletAddress(
@@ -204,7 +204,7 @@ describe("walletFactory", () => {
       await account2.sendTransaction({
         from: owner,
         to: walletAddrComputed,
-        value: ethers.utils.parseEther("0.1")
+        value: ethers.utils.parseEther("0.1"),
       });
       const feeRecipientEthBalanceBefore = await ethers.provider.getBalance(
         feeRecipient
@@ -253,6 +253,69 @@ describe("walletFactory", () => {
       expect(feeRecipientEthBalanceBefore.add(feeAmount)).to.equal(
         feeRecipientEthBalanceAfter
       );
+    });
+  });
+
+  describe("operator management", () => {
+    it("only owner can add operators", async () => {
+      const walletFactory = await newWalletFactoryContract();
+      [account1, account2, account3] = await ethers.getSigners();
+      const account1Addr = await account1.getAddress();
+      const account2Addr = await account2.getAddress();
+      expect(await walletFactory.isOperator(account2Addr)).to.be.false;
+      await walletFactory.addOperator(account2Addr);
+      expect(await walletFactory.isOperator(account2Addr)).to.be.true;
+
+      // others cannot add operators
+      const account3Addr = await account3.getAddress();
+      await expect(
+        walletFactory.connect(account2).addOperator(account3Addr)
+      ).to.revertedWith("UNAUTHORIZED");
+    });
+
+    it("can create wallet only by operator", async () => {
+      const walletFactory = await newWalletFactoryContract();
+      [account1, account2, account3] = await ethers.getSigners();
+      const account1Addr = await account1.getAddress();
+      const account2Addr = await account2.getAddress();
+      const account3Addr = await account3.getAddress();
+      // create wallet
+      const owner = account2Addr;
+      const salt = 1;
+
+      const walletConfig: any = {
+        owner,
+        initOwner: owner,
+        guardians: [],
+        quota: 0,
+        inheritor: ethers.constants.AddressZero,
+        feeRecipient: ethers.constants.AddressZero,
+        feeToken: ethers.constants.AddressZero,
+        maxFeeAmount: 0,
+        salt
+      };
+
+      const walletAddrComputed = await walletFactory.computeWalletAddress(
+        owner,
+        salt
+      );
+
+      await expect(
+        walletFactory.connect(account2).createWalletByOperator(walletConfig, 0)
+      ).to.revertedWith("DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
+      await walletFactory.addOperator(account2Addr);
+      await walletFactory
+        .connect(account2)
+        .createWalletByOperator(walletConfig, 0);
+
+      // check wallet is created successfully
+      const smartWallet = await attachWallet(walletAddrComputed);
+      expect(await smartWallet.getOwner()).to.eq(account2Addr);
+
+      await walletFactory.removeOperator(account2Addr);
+      await expect(
+        walletFactory.connect(account2).createWalletByOperator(walletConfig, 0)
+      ).to.revertedWith("DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
     });
   });
 });

@@ -1,5 +1,8 @@
 import { HardhatUserConfig } from "hardhat/types";
 import { task } from "hardhat/config";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
@@ -26,7 +29,7 @@ function loadTestAccounts() {
   for (const addr in accountKeys) {
     accounts.push({
       privateKey: accountKeys[addr],
-      balance: "1" + "0".repeat(24)
+      balance: "1" + "0".repeat(24),
     });
   }
 
@@ -36,15 +39,21 @@ function loadTestAccounts() {
 export default {
   defaultNetwork: "hardhat",
   networks: {
+    localhost: {
+      chainId: 31337,
+      url: "http://127.0.0.1:8545",
+    },
     hardhat: {
-      accounts: loadTestAccounts()
+      accounts: loadTestAccounts(),
     },
 
     optimistic: {
       chainId: 420,
-      url: 'http://127.0.0.1:8545',
+      url: "http://127.0.0.1:8545",
       gas: 6700000,
-      accounts: { mnemonic: 'test test test test test test test test test test test junk' }
+      accounts: {
+        mnemonic: "test test test test test test test test test test test junk",
+      },
     },
 
     // HttpNetworkConfig
@@ -56,25 +65,36 @@ export default {
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
-      accounts: loadTestAccounts().map(item => item.privateKey)
+      accounts: loadTestAccounts().map((item) => item.privateKey),
     },
 
     goerli: {
       chainId: 5,
-      url: "https://goerli.infura.io/v3/b7c22d73c16e4c0ea3f88dadbdffbe03",
-      gas: 8000000,
-      gasPrice: 11e9,
-      gasMultiplier: 1,
-      timeout: 20000,
-      httpHeaders: undefined,
-      accounts: loadTestAccounts().map(item => item.privateKey)
+      url: "https://eth-goerli.g.alchemy.com/v2/Vf2BpEUqjAj4fV8pZ6hFXuyNLAFDb0s2",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+
+    taiko: {
+      chainId: 167002,
+      url: "https://l2rpc.hackathon.taiko.xyz",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    taiko2: {
+      chainId: 167004,
+      url: "https://l2rpc.a2.taiko.xyz/",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    sepolia: {
+      chainId: 11155111,
+      url: "https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB",
+      accounts: [process.env.PRIVATE_KEY],
     },
 
     bsctestnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
       gasPrice: 20000000000,
-      accounts: loadTestAccounts().map(item => item.privateKey)
+      accounts: loadTestAccounts().map((item) => item.privateKey),
     },
 
     arbitrum_test: {
@@ -86,8 +106,8 @@ export default {
       timeout: 60000,
       httpHeaders: undefined,
       accounts: loadTestAccounts()
-        .map(item => item.privateKey)
-        .slice()
+        .map((item) => item.privateKey)
+        .slice(),
     },
 
     arbitrum_one: {
@@ -98,8 +118,8 @@ export default {
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
-      accounts: []
-    }
+      accounts: [],
+    },
   },
 
   solidity: {
@@ -107,18 +127,18 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 100000
-      }
-    }
+        runs: 100000,
+      },
+    },
   },
 
   gasReporter: {
     currency: "USD",
-    gasPrice: 100
+    gasPrice: 100,
   },
 
   etherscan: {
     // Your API key for Etherscan
-    apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI"
-  }
+    apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI",
+  },
 };
