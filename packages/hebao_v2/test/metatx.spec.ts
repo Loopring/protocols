@@ -157,7 +157,7 @@ describe("wallet", () => {
       const ownerAfter = (await wallet.wallet()).owner;
       expect(ownerAfter).to.equal(newOwner);
 
-      const guardiansAfter = await wallet.getGuardians(false);
+      const guardiansAfter = await wallet.getGuardians(true);
       // console.log("guardiansAfter:", guardiansAfter);
       expect(guardiansAfter[0].addr).to.equal(newGuardians[0]);
       expect(guardiansAfter[1].addr).to.equal(newGuardians[1]);
