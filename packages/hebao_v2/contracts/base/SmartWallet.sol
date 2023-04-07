@@ -318,11 +318,12 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     }
 
     function inherit(
-        address newOwner
+        address newOwner,
+        bool    removeGuardians
         )
         external
     {
-        wallet.inherit(newOwner);
+        wallet.inherit(newOwner, removeGuardians);
     }
 
     //

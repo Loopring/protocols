@@ -46,7 +46,7 @@ describe("wallet", () => {
       expect(addEvent.guardian).to.equal(guardian1);
       const blockTime = await getBlockTimestamp(tx1.blockNumber);
       // first guardian should be effective immediately:
-      expect(addEvent.effectiveTime.toNumber()).to.equal(blockTime);
+      expect(addEvent.effectiveTime.toNumber()).to.equal(blockTime + 1);
     });
 
     it("first two guardian additions should be effective immediately", async () => {
@@ -69,7 +69,7 @@ describe("wallet", () => {
       expect(addEvent1.guardian).to.equal(guardian1);
       const blockTime1 = await getBlockTimestamp(tx1.blockNumber);
       // first guardian should be effective immediately:
-      expect(addEvent1.effectiveTime.toNumber()).to.equal(blockTime1);
+      expect(addEvent1.effectiveTime.toNumber()).to.equal(blockTime1 + 1);
 
       const guardian2 = "0x" + "22".repeat(20);
       const tx2 = await wallet.addGuardian(guardian2);
@@ -87,7 +87,7 @@ describe("wallet", () => {
       expect(addEvent2.guardian).to.equal(guardian2);
       const blockTime2 = await getBlockTimestamp(tx2.blockNumber);
       // second guardian should be effective immediately:
-      expect(addEvent2.effectiveTime.toNumber()).to.equal(blockTime2);
+      expect(addEvent2.effectiveTime.toNumber()).to.equal(blockTime2 + 1);
     });
 
     it("the third guardian addition will be effective in 3 days", async () => {
