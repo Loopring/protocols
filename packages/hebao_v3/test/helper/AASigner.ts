@@ -79,8 +79,12 @@ export function packUserOp(op: UserOperation, forSignature = true): string {
     [userOpType as any],
     [{ ...op, signature: "0x" }]
   );
-  // remove leading word (total length) and trailing word (zero-length signature)
-  encoded = "0x" + encoded.slice(66, encoded.length - 64);
+  if (forSignature) {
+    // remove leading word (total length) and trailing word (zero-length signature)
+    encoded = "0x" + encoded.slice(66, encoded.length - 64);
+  } else {
+    encoded = "0x" + encoded;
+  }
   return encoded;
 }
 
@@ -126,6 +130,13 @@ export function fillUserOpDefaults(
   }
   const filled = { ...defaults, ...partial };
   return filled;
+}
+
+export function callDataCost(data: string): number {
+  return ethers.utils
+    .arrayify(data)
+    .map((x) => (x === 0 ? 4 : 16))
+    .reduce((sum, x) => sum + x);
 }
 
 // helper to fill structure:
@@ -219,7 +230,7 @@ export async function fillUserOp(
   // eslint-disable-next-line @typescript-eslint/no-base-to-string
   if (op2.preVerificationGas.toString() === "0") {
     // TODO: we don't add overhead, which is ~21000 for a single TX, but much lower in a batch.
-    // op2.preVerificationGas = callDataCost(packUserOp(op2, false));
+    op2.preVerificationGas = callDataCost(packUserOp(op2, false));
   }
   return op2;
 }

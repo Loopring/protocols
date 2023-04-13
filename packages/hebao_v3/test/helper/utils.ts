@@ -434,6 +434,51 @@ export async function createTransaction(
   };
 }
 
+export async function createBatchTransactions(
+  transactions: Deferrable<TransactionRequest>[],
+  ethersProvider: BaseProvider,
+  wallet: SmartWallet,
+  initCode?: BytesLike
+) {
+  const txs: TransactionRequest[] = await Promise.all(
+    transactions.map((tx) => resolveProperties(tx))
+  );
+
+  let execFromEntryPoint;
+  if (txs.length == 1) {
+    const tx = txs[0];
+    execFromEntryPoint = await wallet.populateTransaction.execute(
+      tx.to!,
+      tx.value ?? 0,
+      tx.data ?? "0x"
+    );
+  } else {
+    const dest = txs.map((tx) => tx.to);
+    const datas = txs.map((tx) => tx.data ?? "0x");
+    execFromEntryPoint = await wallet.populateTransaction.executeBatch(
+      dest,
+      datas
+    );
+  }
+
+  let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = execFromEntryPoint;
+  // gasPrice is legacy, and overrides eip1559 values:
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (gasPrice) {
+    maxPriorityFeePerGas = gasPrice;
+    maxFeePerGas = gasPrice;
+  }
+  return {
+    sender: wallet.address,
+    initCode,
+    nonce: initCode == null ? execFromEntryPoint.nonce : 100, // TODO fix it
+    callData: execFromEntryPoint.data!,
+    callGasLimit: execFromEntryPoint.gasLimit,
+    maxPriorityFeePerGas,
+    maxFeePerGas,
+  };
+}
+
 export async function evInfo(
   entryPoint: EntryPoint,
   rcpt: TransactionReceipt
