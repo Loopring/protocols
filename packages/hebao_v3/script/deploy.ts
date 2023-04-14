@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract, Wallet, Signer, BigNumber } from "ethers";
+import { Contract, Wallet, Signer, BigNumber, BigNumberish } from "ethers";
 import {
   localUserOpSender,
   fillAndSign,
@@ -21,6 +21,8 @@ import {
   WalletFactory,
   WalletFactory__factory,
   WalletProxy__factory,
+  VerifyingPaymaster,
+  VerifyingPaymaster__factory,
   Create2Factory,
 } from "../typechain-types";
 import {
@@ -29,6 +31,7 @@ import {
   computeRequiredPreFund,
   createTransaction,
   createBatchTransactions,
+  getPaymasterAndData,
 } from "../test/helper/utils";
 
 async function deploySingle(
@@ -99,7 +102,6 @@ export async function deployWalletImpl(
     undefined,
     new Map([["GuardianLib", GuardianLib.address]])
   );
-  // const blankOwner = await (await ethers.getSigners())[0].getAddress();
 
   const smartWallet = await deploySingle(
     deployFactory,
@@ -174,8 +176,8 @@ async function createDemoWallet(
     }
 
     // const result = await entrypoint.callStatic
-      // .simulateValidation(newOp)
-      // .catch(simulationResultCatch);
+    // .simulateValidation(newOp)
+    // .catch(simulationResultCatch);
     // console.log(result);
     const recipt = await sendUserOp(newOp);
     console.log(
@@ -192,7 +194,10 @@ async function createDemoWallet(
 async function deployAll() {
   const signers = await ethers.getSigners();
   const deployer = signers[0];
-  const paymasterOwner = process.env.PAYMASTER_OWNER ?? deployer.address;
+  const paymasterOwner = new ethers.Wallet(
+    process.env.PAYMASTER_OWNER_PRIVATE_KEY ?? process.env.PRIVATE_KEY,
+    ethers.provider
+  );
   const blankOwner = process.env.BLANK_OWNER ?? deployer.address;
 
   // create2 factory
@@ -215,7 +220,7 @@ async function deployAll() {
 
   const paymaster = await deploySingle(create2, "VerifyingPaymaster", [
     entrypoint.address,
-    paymasterOwner,
+    paymasterOwner.address,
   ]);
 
   const smartWalletImpl = await deployWalletImpl(
@@ -258,7 +263,10 @@ async function deployAll() {
   const usdtToken = await deploySingle(create2, "USDT");
   return {
     entrypoint,
-    paymaster,
+    paymaster: VerifyingPaymaster__factory.connect(
+      paymaster.address,
+      paymasterOwner
+    ),
     forwardProxy,
     smartWallet,
     create2,
@@ -271,38 +279,95 @@ async function deployAll() {
   };
 }
 
+interface PaymasterOption {
+  paymaster: VerifyingPaymaster;
+  payToken: Contract;
+  paymasterOwner: Signer;
+  valueOfEth: BigNumberish;
+}
+
 async function sendTx(
   txs: Deferrable<TransactionRequest>[],
   smartWallet: SmartWallet,
   smartWalletOwner: Signer,
   contractFactory: Contract,
   entrypoint: Contract,
-  sendUserOp: SendUserOp
+  sendUserOp: SendUserOp,
+  paymasterOption?: PaymasterOption
 ) {
-  const userOp = await createBatchTransactions(
+  const ethSent = txs.reduce(
+    (acc, tx) => acc.add(BigNumber.from(tx.value ?? 0)),
+    BigNumber.from(0)
+  );
+  const partialUserOp = await createBatchTransactions(
     txs,
     ethers.provider,
     smartWallet
   );
-  const signedUserOp = await fillAndSign(
-    userOp,
+  // first call to fill userop
+  let signedUserOp = await fillAndSign(
+    partialUserOp,
     smartWalletOwner,
     contractFactory.address,
     entrypoint
   );
 
+  // handle paymaster
+  if (paymasterOption) {
+    const paymaster = paymasterOption.paymaster;
+    const payToken = paymasterOption.payToken;
+    const valueOfEth = paymasterOption.valueOfEth;
+
+    const hash = await paymaster.getHash(
+      signedUserOp,
+      paymaster.address,
+      payToken.address,
+      valueOfEth
+    );
+
+    const paymasterAndData = await getPaymasterAndData(
+      paymaster.address,
+      paymasterOption.paymasterOwner,
+      hash,
+      payToken.address,
+      valueOfEth
+    );
+    signedUserOp.paymasterAndData = paymasterAndData;
+    signedUserOp = await fillAndSign(
+      signedUserOp,
+      smartWalletOwner,
+      contractFactory.address,
+      entrypoint
+    );
+  }
+
   // prepare gas before send userop
-  const requiredPrefund = computeRequiredPreFund(signedUserOp);
-  const currentBalance = await getEthBalance(smartWallet);
+  const requiredPrefund = computeRequiredPreFund(
+    signedUserOp,
+    paymasterOption != undefined
+  ).add(ethSent);
+  // only consider deposited balance in entrypoint contract when using paymaster
+  const currentBalance = paymasterOption
+    ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
+    : await getEthBalance(smartWallet);
+
   if (requiredPrefund.gt(currentBalance)) {
     const missingValue = requiredPrefund.sub(currentBalance);
+    const payer = paymasterOption
+      ? paymasterOption.paymaster.address
+      : smartWallet.address;
     await (
-      await entrypoint.depositTo(smartWallet.address, {
+      await entrypoint.depositTo(payer, {
         value: missingValue,
       })
     ).wait();
     console.log("prefund missing amount ", missingValue);
   }
+
+  // get details if throw error
+  await entrypoint.callStatic
+    .simulateValidation(signedUserOp)
+    .catch(simulationResultCatch);
   const recipt = await sendUserOp(signedUserOp);
   return recipt;
 }
@@ -398,12 +463,52 @@ async function testExecuteTxWithUSDCPaymaster() {
     deployer,
     sendUserOp,
     create2,
+    paymaster,
+    paymasterOwner,
   } = await deployAll();
+  // prepare mock usdt token first
+  await (
+    await usdtToken.setBalance(
+      smartWallet.address,
+      ethers.utils.parseUnits("1000", 6)
+    )
+  ).wait();
+
+  //////////////////////////////////////////
+  // usdt token transfer test
+  const tokenAmount = ethers.utils.parseUnits("100", 6);
+  // approve paymaster before using usdt paymaster service
+  const approveToken = await usdtToken.populateTransaction.approve(
+    paymaster.address,
+    ethers.constants.MaxUint256
+  );
+  const transferToken = await usdtToken.populateTransaction.transfer(
+    deployer.address,
+    tokenAmount
+  );
+  const paymasterOption: PaymasterOption = {
+    paymaster,
+    payToken: usdtToken,
+    paymasterOwner,
+    valueOfEth: 625,
+  };
+
+  const recipt = await sendTx(
+    [approveToken, transferToken],
+    smartWallet,
+    smartWalletOwner,
+    create2,
+    entrypoint,
+    sendUserOp,
+    paymasterOption
+  );
+  console.log("gas cost of usdt token transfer: ", recipt.gasUsed);
 }
-async function main(){
-    await deployAll();
-    // await testExecuteTxWithEth();
-    // await testExecuteTxWithUSDCPaymaster();
+async function main() {
+  await deployAll();
+  // uncomment below to get gascost info on chain
+  // await testExecuteTxWithEth();
+  // await testExecuteTxWithUSDCPaymaster();
 }
 
 main()

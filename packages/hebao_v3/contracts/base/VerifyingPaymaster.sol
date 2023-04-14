@@ -45,7 +45,7 @@ contract VerifyingPaymaster is BasePaymaster {
         address paymaster,
         address token,
         uint256 valueOfEth
-    ) public pure returns (bytes32) {
+    ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
         return
             keccak256(
@@ -61,6 +61,7 @@ contract VerifyingPaymaster is BasePaymaster {
                     userOp.maxPriorityFeePerGas,
                     // data of paymaster
                     paymaster,
+                    block.chainid,
                     token,
                     valueOfEth
                 )
