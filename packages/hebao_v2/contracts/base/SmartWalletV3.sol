@@ -66,7 +66,7 @@ contract SmartWalletV3 is SmartWallet, BaseAccount{
     function _validateAndUpdateNonce(
         UserOperation calldata userOp
     ) internal override {
-        if(isDataless(userOp.callData)){
+        if(userOp.nonce==0 && isDataless(userOp.callData)){
             return;
         }
         require(wallet.nonce++ == userOp.nonce, "account: invalid nonce");
