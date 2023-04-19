@@ -2,7 +2,7 @@
 // https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/master/contracts/math/SignedSafeMath.sol
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 /**
  * @title MathInt

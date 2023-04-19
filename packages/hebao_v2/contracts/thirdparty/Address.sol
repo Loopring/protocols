@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Token from: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/90ed1af972299070f51bf4665a85da56ac4d355e/contracts/utils/Address.sol
 
-pragma solidity >=0.6.2 <0.8.0;
+pragma solidity ^0.8.17;
 
 /**
  * @dev Collection of functions related to the address type

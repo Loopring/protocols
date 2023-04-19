@@ -2,7 +2,7 @@
  *Submitted for verification at Etherscan.io on 2020-03-30
  */
 
- pragma solidity ^0.7.0;
+ pragma solidity ^0.8.17;
 
 
  /**

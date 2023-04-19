@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // This code is taken from https://eips.ethereum.org/EIPS/eip-1167
 // Modified to a library and generalized to support create/create2.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 /*
 The MIT License (MIT)

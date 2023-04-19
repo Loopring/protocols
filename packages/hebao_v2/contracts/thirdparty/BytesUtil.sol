@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 // Taken from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 library BytesUtil {
     function slice(

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
@@ -19,7 +19,6 @@ import "./libwallet/WalletData.sol";
 import "./libwallet/LockLib.sol";
 import "./libwallet/GuardianLib.sol";
 import "./libwallet/InheritanceLib.sol";
-import "./libwallet/MetaTxLib.sol";
 import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
@@ -36,7 +35,6 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     using LockLib           for Wallet;
     using GuardianLib       for Wallet;
     using InheritanceLib    for Wallet;
-    using MetaTxLib         for Wallet;
     using WhitelistLib      for Wallet;
     using QuotaLib          for Wallet;
     using RecoverLib        for Wallet;
@@ -368,53 +366,6 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
         approvedHash = wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, approval, newQuota);
     }
 
-    //
-    // MetaTx
-    //
-
-    function executeMetaTx(
-        address to,
-        uint    nonce,
-        address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
-        uint    gasOverhead,
-        address feeRecipient,
-        bool    requiresSuccess,
-        bytes   calldata data,
-        bytes   memory   signature
-        )
-        external
-        returns (bool)
-    {
-        MetaTxLib.MetaTx memory metaTx = MetaTxLib.MetaTx(
-            to,
-            nonce,
-            gasToken,
-            gasPrice,
-            gasLimit,
-            gasOverhead,
-            feeRecipient,
-            requiresSuccess,
-            data,
-            signature
-        );
-
-        return wallet.executeMetaTx(
-            DOMAIN_SEPARATOR,
-            priceOracle,
-            metaTx
-        );
-    }
-
-    function selfBatchCall(
-        bytes[] calldata data
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.selfBatchCall(data);
-    }
 
     //
     // Recover

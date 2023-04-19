@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 import './UpgradeabilityProxy.sol';
 

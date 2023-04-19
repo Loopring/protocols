@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 
@@ -20,7 +20,7 @@ library EIP712
 
     function hash(Domain memory domain)
         internal
-        pure
+        view
         returns (bytes32)
     {
         uint _chainid;

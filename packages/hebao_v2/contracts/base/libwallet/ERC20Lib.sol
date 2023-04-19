@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "../../thirdparty/SafeERC20.sol";
@@ -134,7 +134,7 @@ library ERC20Lib
             )
         );
 
-        returnData = _callContractInternal(to, value, data, PriceOracle(0));
+        returnData = _callContractInternal(to, value, data, PriceOracle(address(0)));
     }
 
     function approveToken(
@@ -235,7 +235,7 @@ library ERC20Lib
         );
 
         _approveInternal(token, to, amount);
-        returnData = _callContractInternal(to, value, data, PriceOracle(0));
+        returnData = _callContractInternal(to, value, data, PriceOracle(address(0)));
     }
 
     function transfer(
@@ -304,7 +304,7 @@ library ERC20Lib
     {
         require(to != address(this), "SELF_CALL_DISALLOWED");
 
-        if (priceOracle != PriceOracle(0)) {
+        if (priceOracle != PriceOracle(address(0))) {
             if (txData.length >= 4) {
                 bytes4 methodId = txData.toBytes4(0);
                 // bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb

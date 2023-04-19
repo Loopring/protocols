@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "./ApprovalLib.sol";
@@ -19,7 +19,7 @@ library QuotaLib
     using SafeCast      for uint;
     using ApprovalLib   for Wallet;
 
-    uint128 public constant MAX_QUOTA = uint128(-1);
+    uint128 public constant MAX_QUOTA = type(uint128).max;
     uint    public constant QUOTA_PENDING_PERIOD = 1 days;
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH = keccak256(

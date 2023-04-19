@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Taken from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/SafeCast.sol
 
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 
 /**
