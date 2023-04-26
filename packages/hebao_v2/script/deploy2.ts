@@ -1,6 +1,12 @@
 import { ethers } from "hardhat";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, Signer } from "ethers";
 import { signCreateWalletV2 } from "../test/helper/signatureUtils";
+import {
+  MetaTx,
+  signCallContractWA,
+  signRecover,
+  signMetaTx,
+} from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
 const hre = require("hardhat");
@@ -171,10 +177,73 @@ async function createSmartWallet(owner: Wallet, walletFactory: Contract) {
   return walletAddrComputed;
 }
 
+async function executeMetaTx(
+  wallet: Contract,
+  walletOwner: Wallet,
+  executor: Signer & { address: string },
+  masterCopy: string
+) {
+  const ethAmount = 1;
+
+  const transferTo = "0x" + "30".repeat(20);
+  // transfer ETH:
+  const data = wallet.interface.encodeFunctionData("transferToken", [
+    ethers.constants.AddressZero,
+    transferTo,
+    ethAmount,
+    [],
+    false,
+  ]);
+
+  wallet = wallet.connect(executor);
+  const metaTx: MetaTx = {
+    to: wallet.address,
+    nonce: new BN(new Date().getTime()),
+    gasToken: ethers.constants.AddressZero,
+    gasPrice: new BN(0),
+    gasLimit: new BN(1000000),
+    gasOverhead: new BN(0),
+    feeRecipient: executor.address,
+    requiresSuccess: true,
+    data: Buffer.from(data.slice(2), "hex"),
+    signature: Buffer.from(""),
+    approvedHash: Buffer.from(
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "hex"
+    ),
+  };
+  const ownerAddr = await wallet.getOwner();
+  const metaTxSig = signMetaTx(
+    masterCopy,
+    metaTx,
+    walletOwner.address,
+    walletOwner.privateKey.slice(2)
+  );
+
+  //prepare eth for wallet
+  await (
+    await executor.sendTransaction({ to: wallet.address, value: ethAmount })
+  ).wait();
+  await (
+    await wallet.executeMetaTx(
+      metaTx.to,
+      metaTx.nonce.toString(10),
+      metaTx.gasToken,
+      metaTx.gasPrice.toString(10),
+      metaTx.gasLimit.toString(10),
+      metaTx.gasOverhead.toString(10),
+      metaTx.feeRecipient,
+      metaTx.requiresSuccess,
+      metaTx.data,
+      Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+    )
+  ).wait();
+}
+
 async function main() {
-  const ownerAccount = (await ethers.getSigners())[0];
-  const nonce = await ethers.provider.getTransactionCount(ownerAccount.address);
-  console.log("address: ", ownerAccount.address, " nonce: ", nonce);
+  const deployer = (await ethers.getSigners())[0];
+  // const nonce = await ethers.provider.getTransactionCount(ownerAccount.address);
+  // console.log("address: ", ownerAccount.address, " nonce: ", nonce);
   // const network = await ethers.provider.getNetwork();
   // console.log('chainId: ', network.chainId);
   // deploy create2 first
@@ -184,13 +253,23 @@ async function main() {
   const secondStage = true;
   const thirdStage = true;
   // const create2 = await (
-  // await ethers.getContractFactory("Create2Factory")
+  // await ethers.getContractFactory("Loopring")
   // ).deploy();
   // console.log("create2 factory is deployed at : ", create2.address);
+  let create2;
 
-  // const create2Addr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
-  const create2Addr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
-  const create2 = await ethers.getContractAt("Create2Factory", create2Addr);
+  const create2Addr = "0x495F13956D92a364C895981851D98B8EfF4c6AD4";
+  if ((await ethers.provider.getCode(create2Addr)) != "0x") {
+    create2 = await ethers.getContractAt(
+      "LoopringCreate2Deployer",
+      create2Addr
+    );
+  } else {
+    create2 = await (
+      await ethers.getContractFactory("LoopringCreate2Deployer")
+    ).deploy();
+    console.log("create2 factory is deployed at : ", create2.address);
+  }
 
   // deploy wallet implementation
   const smartWalletImpl = await deployWalletImpl(create2);
@@ -208,6 +287,28 @@ async function main() {
   const walletFactory = await deploySingle(create2, "WalletFactory", [
     forwardProxy.address,
   ]);
+  /////////////////////////////
+  // call it once
+  // transfer wallet factory ownership to deployer
+  const factoryCurrentOwner = await walletFactory.owner();
+  if (deployer.address != factoryCurrentOwner) {
+    await create2.setTarget(walletFactory.address);
+    const transferWalletFactoryOwnership =
+      await walletFactory.populateTransaction.transferOwnership(
+        deployer.address
+      );
+    await create2.transact(transferWalletFactoryOwnership.data);
+    await walletFactory.addOperator(deployer.address);
+  }
+
+  // transfer DelayedImplementationManager ownership to deployer
+  const managerCurrentOwner = await walletFactory.owner();
+  if (deployer.address != managerCurrentOwner) {
+    await create2.setTarget(implStorage.address);
+    const transferImplStorageOwnership =
+      await implStorage.populateTransaction.transferOwnership(deployer.address);
+    await create2.transact(transferImplStorageOwnership.data);
+  }
 
   if (thirdStage) {
     const [account1, account2, account3] = await ethers.getSigners();
@@ -216,6 +317,8 @@ async function main() {
     const smartWalletAddr = await createSmartWallet(owner, walletFactory);
     const wallet = await smartWalletImpl.attach(smartWalletAddr);
     console.log("masterCopy: ", await wallet.getMasterCopy());
+    // metatx transfer eth
+    await executeMetaTx(wallet, owner, deployer, smartWalletImpl.address);
   }
 }
 

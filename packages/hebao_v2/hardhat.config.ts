@@ -96,7 +96,11 @@ export default {
       gasPrice: 20000000000,
       accounts: loadTestAccounts().map((item) => item.privateKey),
     },
-
+    arbitrum_goerli:{
+        chainId: 421613,
+        url: "https://endpoints.omniatech.io/v1/arbitrum/goerli/public",
+        accounts: [process.env.PRIVATE_KEY],
+    },
     arbitrum_test: {
       chainId: 421611,
       url: "https://rinkeby.arbitrum.io/rpc",

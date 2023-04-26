@@ -212,7 +212,7 @@ export function signRecover(
   return { txSignature, hash };
 }
 
-export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
+export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string, privateKey?: string) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
     "MetaTx(address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)";
@@ -250,7 +250,7 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
   const hash = eip712.hashPacked(domainSeprator, encodedMetaTx);
 
   if (signer) {
-    const txSignature = sign(signer, hash);
+    const txSignature = sign2(signer, privateKey, hash);
     return { txSignature, hash };
   } else {
     return { txSignature: "", hash };
