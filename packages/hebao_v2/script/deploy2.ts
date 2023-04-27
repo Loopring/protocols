@@ -200,9 +200,9 @@ async function executeMetaTx(
     to: wallet.address,
     nonce: new BN(new Date().getTime()),
     gasToken: ethers.constants.AddressZero,
-    gasPrice: new BN(0),
+    gasPrice: new BN(1).pow(new BN(9)),
     gasLimit: new BN(1000000),
-    gasOverhead: new BN(0),
+    gasOverhead: new BN(85000),
     feeRecipient: executor.address,
     requiresSuccess: true,
     data: Buffer.from(data.slice(2), "hex"),
@@ -222,7 +222,10 @@ async function executeMetaTx(
 
   //prepare eth for wallet
   await (
-    await executor.sendTransaction({ to: wallet.address, value: ethAmount })
+    await executor.sendTransaction({
+      to: wallet.address,
+      value: ethers.utils.parseEther("0.001"),
+    })
   ).wait();
   await (
     await wallet.executeMetaTx(
@@ -242,20 +245,7 @@ async function executeMetaTx(
 
 async function main() {
   const deployer = (await ethers.getSigners())[0];
-  // const nonce = await ethers.provider.getTransactionCount(ownerAccount.address);
-  // console.log("address: ", ownerAccount.address, " nonce: ", nonce);
-  // const network = await ethers.provider.getNetwork();
-  // console.log('chainId: ', network.chainId);
-  // deploy create2 first
-  // TODO check if it is deployed already
-  // await adjustNonce(11);
-  const firstStage = true;
-  const secondStage = true;
   const thirdStage = true;
-  // const create2 = await (
-  // await ethers.getContractFactory("Loopring")
-  // ).deploy();
-  // console.log("create2 factory is deployed at : ", create2.address);
   let create2;
 
   const create2Addr = "0x495F13956D92a364C895981851D98B8EfF4c6AD4";
