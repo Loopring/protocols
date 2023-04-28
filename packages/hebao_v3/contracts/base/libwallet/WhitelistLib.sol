@@ -3,7 +3,6 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "../../lib/MathUint.sol";
 
@@ -12,7 +11,6 @@ import "../../lib/MathUint.sol";
 library WhitelistLib {
     using MathUint for uint;
     using WhitelistLib for Wallet;
-    using ApprovalLib for Wallet;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
 
@@ -30,24 +28,7 @@ library WhitelistLib {
         );
     }
 
-    function addToWhitelistWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
-        address addr
-    ) external returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                ADD_TO_WHITELIST_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                addr
-            )
-        );
-
+    function addToWhitelistWA(Wallet storage wallet, address addr) external {
         wallet._addToWhitelist(addr, block.timestamp);
     }
 

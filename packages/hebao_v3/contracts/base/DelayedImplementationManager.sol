@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.17;
 
 import "../lib/Ownable.sol";
 
@@ -17,9 +17,8 @@ contract DelayedImplementationManager is Ownable {
     event UpgradeCancelled(address nextImpl);
     event ImplementationChanged(address newImpl);
 
-    constructor(address initImpl, address newOwner) {
+    constructor(address initImpl) {
         require(initImpl != address(0), "ZERO_ADDRESS");
-        transferOwnership(newOwner);
         currImpl = initImpl;
     }
 
@@ -40,7 +39,7 @@ contract DelayedImplementationManager is Ownable {
             emit UpgradeCancelled(nextImpl);
             nextImpl = address(0);
         } else {
-            require(_daysToDelay > 0, "upgrate is too soon");
+            require(_daysToDelay >= 1, "INVALID_DAYS");
             uint _nextEffectiveTime = block.timestamp + _daysToDelay * 1 days;
             nextImpl = _nextImpl;
             nextEffectiveTime = _nextEffectiveTime;

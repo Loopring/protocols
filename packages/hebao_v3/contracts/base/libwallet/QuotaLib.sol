@@ -3,7 +3,6 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "../../iface/PriceOracle.sol";
 import "../../lib/MathUint.sol";
@@ -15,7 +14,6 @@ import "../../thirdparty/SafeCast.sol";
 library QuotaLib {
     using MathUint for uint;
     using SafeCast for uint;
-    using ApprovalLib for Wallet;
 
     uint128 public constant MAX_QUOTA = type(uint128).max;
     uint public constant QUOTA_PENDING_PERIOD = 1 days;
@@ -35,23 +33,7 @@ library QuotaLib {
         setQuota(wallet, newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
     }
 
-    function changeDailyQuotaWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
-        uint newQuota
-    ) public returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                CHANGE_DAILY_QUOTE_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                newQuota
-            )
-        );
+    function changeDailyQuotaWA(Wallet storage wallet, uint newQuota) public {
         setQuota(wallet, newQuota, 0);
     }
 

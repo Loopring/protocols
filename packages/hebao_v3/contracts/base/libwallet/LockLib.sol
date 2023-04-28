@@ -3,7 +3,6 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "./GuardianLib.sol";
 
@@ -11,7 +10,6 @@ import "./GuardianLib.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library LockLib {
     using GuardianLib for Wallet;
-    using ApprovalLib for Wallet;
 
     event WalletLocked(address by, bool locked);
 
@@ -31,18 +29,7 @@ library LockLib {
         setLock(wallet, msg.sender, true);
     }
 
-    function unlock(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval
-    ) public returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(UNLOCK_TYPEHASH, approval.wallet, approval.validUntil)
-        );
-
+    function unlock(Wallet storage wallet) public {
         setLock(wallet, msg.sender, false);
     }
 

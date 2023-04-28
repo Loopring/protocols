@@ -29,7 +29,13 @@ contract UpgradeabilityProxy is Proxy {
      * @dev Tells the address of the current implementation
      * @return impl address of the current implementation
      */
-    function implementation() public view override returns (address impl) {
+    function implementation()
+        public
+        view
+        virtual
+        override
+        returns (address impl)
+    {
         bytes32 position = implementationPosition;
         assembly {
             impl := sload(position)

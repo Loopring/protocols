@@ -2,8 +2,6 @@
 // Taken from: https://github.com/gnosis/safe-contracts/blob/development/contracts/proxies/GnosisSafeProxy.sol
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-
 /// @title IProxy - Helper interface to access masterCopy of the Proxy on-chain
 /// @author Richard Meissner - <richard@gnosis.io>
 interface IProxy {
@@ -20,13 +18,12 @@ contract WalletProxy {
 
     /// @dev Constructor function sets address of master copy contract.
     /// @param _masterCopy Master copy address.
-    constructor(address _masterCopy, bytes memory data) {
+    constructor(address _masterCopy) {
         require(
             _masterCopy != address(0),
             "Invalid master copy address provided"
         );
         masterCopy = _masterCopy;
-        Address.functionDelegateCall(masterCopy, data);
     }
 
     /// @dev Fallback function forwards all transactions and returns all received return data.

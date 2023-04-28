@@ -3,9 +3,6 @@ pragma solidity >=0.7.5 <0.9.0;
 
 // solhint-disable no-inline-assembly
 
-/**
- * Utility functions helpful when making different kinds of contract calls in Solidity.
- */
 library Exec {
     function call(
         address to,
@@ -54,18 +51,12 @@ library Exec {
     }
 
     // get returned data from last call or calldelegate
-    function getReturnData(
-        uint256 maxLen
-    ) internal pure returns (bytes memory returnData) {
+    function getReturnData() internal pure returns (bytes memory returnData) {
         assembly {
-            let len := returndatasize()
-            if gt(len, maxLen) {
-                len := maxLen
-            }
             let ptr := mload(0x40)
-            mstore(0x40, add(ptr, add(len, 0x20)))
-            mstore(ptr, len)
-            returndatacopy(add(ptr, 0x20), 0, len)
+            mstore(0x40, add(ptr, add(returndatasize(), 0x20)))
+            mstore(ptr, returndatasize())
+            returndatacopy(add(ptr, 0x20), 0, returndatasize())
             returnData := ptr
         }
     }
@@ -77,14 +68,10 @@ library Exec {
         }
     }
 
-    function callAndRevert(
-        address to,
-        bytes memory data,
-        uint256 maxLen
-    ) internal {
+    function callAndRevert(address to, bytes memory data) internal {
         bool success = call(to, 0, data, gasleft());
         if (!success) {
-            revertWithData(getReturnData(maxLen));
+            revertWithData(getReturnData());
         }
     }
 }

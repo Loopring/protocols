@@ -18,7 +18,7 @@ export async function walletImplFixture() {
     await ethers.getContractFactory("TestPriceOracle")
   ).deploy();
   const smartWallet = await (
-    await ethers.getContractFactory("SmartWallet", { libraries })
+    await ethers.getContractFactory("SmartWalletV3", { libraries })
   ).deploy(
     ethers.constants.AddressZero /*price oracle*/,
     entrypoint.address,
@@ -29,13 +29,16 @@ export async function walletImplFixture() {
 
 export async function proxyFixture() {
   const signers = await ethers.getSigners();
+  const deployer = signers[0];
+  const paymasterOwner = await createAccountOwner();
+  const blankOwner = await createAccountOwner();
   const create2 = await (
-    await ethers.getContractFactory("Create2Factory")
+    await ethers.getContractFactory("LoopringCreate2Deployer")
   ).deploy();
   const smartWalletImpl = await walletImplFixture();
   const implStorage = await (
     await ethers.getContractFactory("DelayedImplementationManager")
-  ).deploy(smartWalletImpl.address, signers[0].address);
+  ).deploy(smartWalletImpl.address);
   const forwardProxy = await (
     await ethers.getContractFactory("ForwardProxy")
   ).deploy(implStorage.address);
@@ -45,17 +48,24 @@ export async function proxyFixture() {
   ).deploy();
 
   const accountOwner = await createAccountOwner();
-  const walletConfig = await createRandomWalletConfig(accountOwner.address);
+  // const walletConfig = await createRandomWalletConfig(accountOwner.address);
 
-  const { proxy: account } = await createAccountV2(
-    accountOwner,
-    walletConfig,
-    entrypoint.address,
-    forwardProxy.address,
-    create2
-  );
+  const walletFactory = await (
+    await ethers.getContractFactory("WalletFactory")
+  ).deploy(forwardProxy.address);
+  const paymaster = await (
+    await ethers.getContractFactory("VerifyingPaymaster")
+  ).deploy(entrypoint.address, paymasterOwner.address);
 
-  return { forwardProxy, implStorage, account, accountOwner, entrypoint };
+  // const { proxy: account } = await createAccountV2(
+  // accountOwner,
+  // walletConfig,
+  // entrypoint.address,
+  // forwardProxy.address,
+  // create2
+  // );
+
+  return { forwardProxy, implStorage, accountOwner, entrypoint, paymaster };
 }
 
 export async function baseFixture() {

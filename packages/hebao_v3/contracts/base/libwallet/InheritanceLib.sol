@@ -37,22 +37,38 @@ library InheritanceLib {
         address inheritor,
         uint32 waitingPeriod
     ) internal {
+        if (inheritor == address(0)) {
+            require(waitingPeriod == 0, "INVALID_WAITING_PERIOD");
+        } else {
+            require(
+                waitingPeriod >= TOUCH_GRACE_PERIOD,
+                "INVALID_WAITING_PERIOD"
+            );
+        }
+
+        require(inheritor != address(this), "INVALID_ARGS");
         wallet.inheritor = inheritor;
         wallet.inheritWaitingPeriod = waitingPeriod;
         wallet.lastActive = uint64(block.timestamp);
     }
 
-    function inherit(Wallet storage wallet, address newOwner) external {
+    function inherit(
+        Wallet storage wallet,
+        address newOwner,
+        bool removeGuardians
+    ) external {
         require(wallet.inheritor == msg.sender, "UNAUTHORIZED");
         require(wallet.owner != newOwner, "IS_WALLET_OWNER");
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
         require(
-            uint(wallet.lastActive) + uint(wallet.inheritWaitingPeriod) <=
+            uint(wallet.lastActive) + uint(wallet.inheritWaitingPeriod) <
                 block.timestamp,
             "TOO_EARLY"
         );
 
-        wallet.removeAllGuardians();
+        if (removeGuardians) {
+            wallet.removeAllGuardians();
+        }
         wallet.setInheritor(address(0), 0);
         wallet.setLock(address(this), false);
 

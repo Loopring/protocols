@@ -1,6 +1,14 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.12;
+/**
+ *Submitted for verification at Etherscan.io on 2020-03-30
+ */
 
+pragma solidity ^0.8.17;
+
+/**
+ * @title Singleton Factory (EIP-2470)
+ * @notice Exposes CREATE2 (EIP-1014) to deploy bytecode on deterministic addresses based on initialization code and salt.
+ * @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
+ */
 contract Create2Factory {
     /**
      * @notice Deploys `_initCode` using `_salt` for defining the deterministic address.
@@ -20,11 +28,8 @@ contract Create2Factory {
                 _salt
             )
         }
-
         require(createdContract != address(0), "CREATE2_FAILED");
     }
 }
-
-/**
- *Submitted for verification at Etherscan.io on 2020-03-30
- */
+// IV is a value changed to generate the vanity address.
+// IV: 6583047

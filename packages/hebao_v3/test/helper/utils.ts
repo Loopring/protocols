@@ -9,7 +9,7 @@ import {
   WalletFactory,
   WalletFactory__factory,
   WalletProxy__factory,
-  Create2Factory,
+  LoopringCreate2Deployer,
 } from "../../typechain-types";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { Deferrable, resolveProperties } from "@ethersproject/properties";
@@ -124,7 +124,7 @@ export async function createAccountV2(
   walletConfig: WalletConfig,
   entryPoint: string,
   implementation: string,
-  accountFactory: Create2Factory
+  accountFactory: LoopringCreate2Deployer
 ) {
   // const implementation = await accountFactory.accountImplementation();
   const salt = ethers.utils.randomBytes(32);
@@ -283,7 +283,7 @@ export function computeRequiredPreFund(
 
 export async function activateCreate2WalletOp(
   walletLogicAddress: string,
-  walletFactory: Create2Factory,
+  walletFactory: LoopringCreate2Deployer,
   walletConfig: WalletConfig,
   callData?: BytesLike,
   salt?: BytesLike
@@ -502,7 +502,7 @@ export async function evInfo(
 }
 
 export async function create2Deploy(
-  deployFactory: Create2Factory,
+  deployFactory: LoopringCreate2Deployer,
   contractName: string,
   args?: any[],
   libs?: Map<string, any>

@@ -3,7 +3,6 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "./GuardianLib.sol";
 import "./LockLib.sol";
@@ -14,7 +13,6 @@ import "./Utils.sol";
 library RecoverLib {
     using GuardianLib for Wallet;
     using LockLib for Wallet;
-    using ApprovalLib for Wallet;
     using Utils for address;
 
     event Recovered(address newOwner);
@@ -25,31 +23,15 @@ library RecoverLib {
         );
 
     /// @dev Recover a wallet by setting a new owner and guardians.
-    /// @param approval The approval.
     /// @param newOwner The new owner address to set.
     /// @param newGuardians The new guardians addresses to set.
     function recover(
         Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
         address newOwner,
         address[] calldata newGuardians
-    ) external returns (bytes32 approvedHash) {
+    ) external {
         require(wallet.owner != newOwner, "IS_SAME_OWNER");
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
-
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
-            approval,
-            abi.encode(
-                RECOVER_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                newOwner,
-                keccak256(abi.encodePacked(newGuardians))
-            )
-        );
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);

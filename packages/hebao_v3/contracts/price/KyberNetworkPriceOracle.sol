@@ -32,11 +32,10 @@ contract KyberNetworkPriceOracle is PriceOracle {
         if (token == address(0) || token == ethTokenInKyber) {
             return amount;
         }
-        (uint expectedRate, ) = kyber.getExpectedRate(
+        (value, ) = kyber.getExpectedRate(
             ERC20(token),
             ERC20(ethTokenInKyber),
             amount
         );
-        value = expectedRate * amount;
     }
 }

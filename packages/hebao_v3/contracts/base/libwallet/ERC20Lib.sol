@@ -8,19 +8,19 @@ import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/AddressUtil.sol";
 import "../../iface/PriceOracle.sol";
+import "../../thirdparty/BytesUtil.sol";
 import "./WhitelistLib.sol";
 import "./QuotaLib.sol";
-import "./ApprovalLib.sol";
 
 /// @title ERC20Lib
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
 library ERC20Lib {
     using AddressUtil for address;
+    using BytesUtil for bytes;
     using MathUint for uint;
     using WhitelistLib for Wallet;
     using QuotaLib for Wallet;
-    using ApprovalLib for Wallet;
     using SafeERC20 for ERC20;
 
     event Transfered(address token, address to, uint amount, bytes logdata);
@@ -60,29 +60,11 @@ library ERC20Lib {
     }
 
     function transferTokenWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
         address token,
         address to,
         uint amount,
         bytes calldata logdata
-    ) external returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                TRANSFER_TOKEN_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                token,
-                to,
-                amount,
-                keccak256(logdata)
-            )
-        );
-
+    ) external {
         _transferWithEvent(token, to, amount, logdata);
     }
 
@@ -102,27 +84,10 @@ library ERC20Lib {
     }
 
     function callContractWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
         address to,
         uint value,
         bytes calldata data
-    ) external returns (bytes32 approvedHash, bytes memory returnData) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                CALL_CONTRACT_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                to,
-                value,
-                keccak256(data)
-            )
-        );
-
+    ) external returns (bytes memory returnData) {
         returnData = _callContractInternal(
             to,
             value,
@@ -146,28 +111,7 @@ library ERC20Lib {
         }
     }
 
-    function approveTokenWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
-        address token,
-        address to,
-        uint amount
-    ) external returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                APPROVE_TOKEN_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                token,
-                to,
-                amount
-            )
-        );
-
+    function approveTokenWA(address token, address to, uint amount) external {
         _approveInternal(token, to, amount);
     }
 
@@ -192,31 +136,12 @@ library ERC20Lib {
     }
 
     function approveThenCallContractWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
         address token,
         address to,
         uint amount,
         uint value,
         bytes calldata data
-    ) external returns (bytes32 approvedHash, bytes memory returnData) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                token,
-                to,
-                amount,
-                value,
-                keccak256(data)
-            )
-        );
-
+    ) external returns (bytes memory returnData) {
         _approveInternal(token, to, amount);
         returnData = _callContractInternal(
             to,
@@ -279,9 +204,22 @@ library ERC20Lib {
         require(to != address(this), "SELF_CALL_DISALLOWED");
 
         if (priceOracle != PriceOracle(address(0))) {
-            // Disallow general calls to token contracts (for tokens that have price data
-            // so the quota is actually used).
-            require(priceOracle.tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
+            if (txData.length >= 4) {
+                bytes4 methodId = txData.toBytes4(0);
+                // bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb
+                // bytes4(keccak256("approve(address,uint256)")) = 0x095ea7b3
+                if (
+                    methodId == bytes4(0xa9059cbb) ||
+                    methodId == bytes4(0x095ea7b3)
+                ) {
+                    // Disallow general calls to token contracts (for tokens that have price data
+                    // so the quota is actually used).
+                    require(
+                        priceOracle.tokenValue(to, 1e18) == 0,
+                        "CALL_DISALLOWED"
+                    );
+                }
+            }
         }
 
         bool success;

@@ -3,6 +3,7 @@ const ethAbi = require("web3-eth-abi");
 import { sign, sign2, SignatureType } from "./Signature";
 import * as eip712 from "./eip712";
 import BN = require("bn.js");
+import { BigNumberish } from "ethers";
 
 export interface SignedRequest {
   signers: string[];
@@ -41,7 +42,8 @@ export function signCreateWallet(
   feeRecipient: string,
   feeToken: string,
   maxFeeAmount: BN,
-  salt: number
+  salt: BigNumberish,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("WalletFactory", "2.0.0", moduleAddress);
 
@@ -80,7 +82,7 @@ export function signCreateWallet(
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
   // console.log(`hash: ${hash.toString("hex")}`);
 
-  const txSignature = sign(owner, hash);
+  const txSignature = sign2(owner, privateKey, hash);
   return { txSignature, hash };
 }
 

@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
-import "./ApprovalLib.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 
@@ -15,7 +14,6 @@ library GuardianLib {
     using AddressUtil for address;
     using SafeCast for uint;
     using SignatureUtil for bytes32;
-    using ApprovalLib for Wallet;
 
     uint public constant MAX_GUARDIANS = 10;
     uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
@@ -52,24 +50,7 @@ library GuardianLib {
         _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
-    function addGuardianWA(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
-        address guardian
-    ) external returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                ADD_GUARDIAN_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                guardian
-            )
-        );
-
+    function addGuardianWA(Wallet storage wallet, address guardian) external {
         _addGuardian(wallet, guardian, 0, true);
     }
 
@@ -79,22 +60,8 @@ library GuardianLib {
 
     function removeGuardianWA(
         Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
         address guardian
-    ) external returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                REMOVE_GUARDIAN_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                guardian
-            )
-        );
-
+    ) external {
         _removeGuardian(wallet, guardian, 0, true);
     }
 
@@ -124,22 +91,8 @@ library GuardianLib {
 
     function resetGuardiansWA(
         Wallet storage wallet,
-        bytes32 domainSeparator,
-        Approval calldata approval,
         address[] calldata newGuardians
-    ) external returns (bytes32 approvedHash) {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                RESET_GUARDIANS_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                keccak256(abi.encodePacked(newGuardians))
-            )
-        );
-
+    ) external {
         removeAllGuardians(wallet);
         for (uint i = 0; i < newGuardians.length; i++) {
             _addGuardian(wallet, newGuardians[i], 0, true);
@@ -372,7 +325,7 @@ library GuardianLib {
         require(_numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
         require(guardian != wallet.owner, "GUARDIAN_CAN_NOT_BE_OWNER");
 
-        uint validSince = block.timestamp;
+        uint validSince = block.timestamp + 1;
         if (_numGuardians >= 2) {
             validSince = block.timestamp + pendingPeriod;
         }

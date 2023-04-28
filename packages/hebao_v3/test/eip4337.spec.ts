@@ -43,7 +43,7 @@ describe("eip4337", () => {
 
     // proxy implementation
     const smartWalletImpl = await (
-      await ethers.getContractFactory("SmartWallet", { libraries })
+      await ethers.getContractFactory("SmartWalletV3", { libraries })
     ).deploy(priceOracle.address, entrypoint.address, blankOwner.address);
 
     const implementationManager = await create2Deploy(

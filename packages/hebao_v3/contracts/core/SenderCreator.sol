@@ -14,14 +14,14 @@ contract SenderCreator {
     function createSender(
         bytes calldata initCode
     ) external returns (address sender) {
-        address factory = address(bytes20(initCode[0:20]));
+        address initAddress = address(bytes20(initCode[0:20]));
         bytes memory initCallData = initCode[20:];
         bool success;
         /* solhint-disable no-inline-assembly */
         assembly {
             success := call(
                 gas(),
-                factory,
+                initAddress,
                 0,
                 add(initCallData, 0x20),
                 mload(initCallData),

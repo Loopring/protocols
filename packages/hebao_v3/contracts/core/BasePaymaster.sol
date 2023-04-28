@@ -13,29 +13,26 @@ import "../iface/IEntryPoint.sol";
  * validates that the postOp is called only by the entryPoint
  */
 abstract contract BasePaymaster is IPaymaster, Ownable {
-    IEntryPoint public immutable entryPoint;
+    IEntryPoint public entryPoint;
 
     constructor(IEntryPoint _entryPoint) {
+        setEntryPoint(_entryPoint);
+    }
+
+    function setEntryPoint(IEntryPoint _entryPoint) public onlyOwner {
         entryPoint = _entryPoint;
     }
 
-    /// @inheritdoc IPaymaster
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
         uint256 maxCost
-    ) external override returns (bytes memory context, uint256 sigTimeRange) {
-        _requireFromEntryPoint();
-        return _validatePaymasterUserOp(userOp, userOpHash, maxCost);
-    }
+    )
+        external
+        virtual
+        override
+        returns (bytes memory context, uint256 sigTimeRange);
 
-    function _validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 maxCost
-    ) internal virtual returns (bytes memory context, uint256 sigTimeRange);
-
-    /// @inheritdoc IPaymaster
     function postOp(
         PostOpMode mode,
         bytes calldata context,
@@ -121,7 +118,7 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
 
     /// validate the call is made from a valid entrypoint
     function _requireFromEntryPoint() internal virtual {
-        require(msg.sender == address(entryPoint), "Sender not EntryPoint");
+        require(msg.sender == address(entryPoint));
     }
 
     /**
@@ -131,14 +128,14 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
      * @param validUntil last timestamp this UserOperation is valid (or zero for infinite)
      * @param validAfter first timestamp this UserOperation is valid
      */
-    function _packSigTimeRange(
+    function packSigTimeRange(
         bool sigFailed,
-        uint64 validUntil,
-        uint64 validAfter
+        uint256 validUntil,
+        uint256 validAfter
     ) internal pure returns (uint256) {
         return
             uint256(sigFailed ? 1 : 0) |
-            (uint256(validUntil) << 8) |
-            (uint256(validAfter) << (64 + 8));
+            uint256(validUntil << 8) |
+            uint256(validAfter << (64 + 8));
     }
 }
