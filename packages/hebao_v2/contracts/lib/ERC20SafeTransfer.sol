@@ -2,51 +2,32 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-
 /// @title ERC20 safe transfer
 /// @dev see https://github.com/sec-bit/badERC20Fix
 /// @author Brecht Devos - <brecht@loopring.org>
-library ERC20SafeTransfer
-{
+library ERC20SafeTransfer {
     function safeTransferAndVerify(
         address token,
         address to,
-        uint    value
-        )
-        internal
-    {
-        safeTransferWithGasLimitAndVerify(
-            token,
-            to,
-            value,
-            gasleft()
-        );
+        uint value
+    ) internal {
+        safeTransferWithGasLimitAndVerify(token, to, value, gasleft());
     }
 
     function safeTransfer(
         address token,
         address to,
-        uint    value
-        )
-        internal
-        returns (bool)
-    {
-        return safeTransferWithGasLimit(
-            token,
-            to,
-            value,
-            gasleft()
-        );
+        uint value
+    ) internal returns (bool) {
+        return safeTransferWithGasLimit(token, to, value, gasleft());
     }
 
     function safeTransferWithGasLimitAndVerify(
         address token,
         address to,
-        uint    value,
-        uint    gasLimit
-        )
-        internal
-    {
+        uint value,
+        uint gasLimit
+    ) internal {
         require(
             safeTransferWithGasLimit(token, to, value, gasLimit),
             "TRANSFER_FAILURE"
@@ -56,12 +37,9 @@ library ERC20SafeTransfer
     function safeTransferWithGasLimit(
         address token,
         address to,
-        uint    value,
-        uint    gasLimit
-        )
-        internal
-        returns (bool)
-    {
+        uint value,
+        uint gasLimit
+    ) internal returns (bool) {
         // A transfer is successful when 'call' is successful and depending on the token:
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)
@@ -80,10 +58,8 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint    value
-        )
-        internal
-    {
+        uint value
+    ) internal {
         safeTransferFromWithGasLimitAndVerify(
             token,
             from,
@@ -97,29 +73,18 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint    value
-        )
-        internal
-        returns (bool)
-    {
-        return safeTransferFromWithGasLimit(
-            token,
-            from,
-            to,
-            value,
-            gasleft()
-        );
+        uint value
+    ) internal returns (bool) {
+        return safeTransferFromWithGasLimit(token, from, to, value, gasleft());
     }
 
     function safeTransferFromWithGasLimitAndVerify(
         address token,
         address from,
         address to,
-        uint    value,
-        uint    gasLimit
-        )
-        internal
-    {
+        uint value,
+        uint gasLimit
+    ) internal {
         bool result = safeTransferFromWithGasLimit(
             token,
             from,
@@ -134,12 +99,9 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint    value,
-        uint    gasLimit
-        )
-        internal
-        returns (bool)
-    {
+        uint value,
+        uint gasLimit
+    ) internal returns (bool) {
         // A transferFrom is successful when 'call' is successful and depending on the token:
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)
@@ -155,13 +117,7 @@ library ERC20SafeTransfer
         return checkReturnValue(success);
     }
 
-    function checkReturnValue(
-        bool success
-        )
-        internal
-        pure
-        returns (bool)
-    {
+    function checkReturnValue(bool success) internal pure returns (bool) {
         // A transfer/transferFrom is successful when 'call' is successful and depending on the token:
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)

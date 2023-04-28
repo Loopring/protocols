@@ -5,14 +5,5 @@ pragma solidity ^0.8.17;
 import "../DummyToken.sol";
 
 contract GTO is DummyToken {
-
-    constructor() DummyToken(
-        "GTO_TEST",
-        "GTO",
-        18,
-        10 ** 27
-        )
-    {
-    }
-
+    constructor() DummyToken("GTO_TEST", "GTO", 18, 10 ** 27) {}
 }

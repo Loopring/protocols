@@ -10,119 +10,96 @@ import "./WalletDeploymentLib.sol";
 import "../lib/Ownable.sol";
 import "../lib/AddressSet.sol";
 
-
 /// @title WalletFactory
 /// @dev A factory contract to create a new wallet by deploying a proxy
 ///      in front of a real wallet.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
-{
-
+contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
     bytes32 internal constant OPERATOR = keccak256("__OPERATOR__");
     using SignatureUtil for bytes32;
 
-    event WalletCreated (address wallet, address owner);
+    event WalletCreated(address wallet, address owner);
 
-    event OperatorRemoved  (address indexed operator);
+    event OperatorRemoved(address indexed operator);
     event OperatorAdded(address indexed operator);
 
-    bytes32             public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
-    bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)");
+    bytes32 public constant CREATE_WALLET_TYPEHASH =
+        keccak256(
+            "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)"
+        );
 
     ///////////////////////////////// opeartor ///////////////////
-    modifier onlyOperator
-    {
-        require(isOperator(msg.sender), "DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
+    modifier onlyOperator() {
+        require(
+            isOperator(msg.sender),
+            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+        );
         _;
     }
 
-    function isOperator(address addr)
-        public
-        view
-        returns (bool)
-    {
+    function isOperator(address addr) public view returns (bool) {
         return isAddressInSet(OPERATOR, addr);
     }
 
     /// @dev Gets the operators.
     /// @return The list of operators.
-    function operators()
-        public
-        view
-        returns (address[] memory)
-    {
+    function operators() public view returns (address[] memory) {
         return addressesInSet(OPERATOR);
     }
 
     /// @dev Gets the number of operators.
     /// @return The numer of operators.
-    function numOperators()
-        public
-        view
-        returns (uint)
-    {
+    function numOperators() public view returns (uint) {
         return numAddressesInSet(OPERATOR);
     }
 
     /// @dev Adds a new operator.
     /// @param operator The new address to add.
-    function addOperator(address operator)
-        public
-        onlyOwner
-    {
+    function addOperator(address operator) public onlyOwner {
         addOperatorInternal(operator);
     }
 
     /// @dev Removes a operator.
     /// @param operator The operator to remove.
-    function removeOperator(address operator)
-        public
-        onlyOwner
-    {
+    function removeOperator(address operator) public onlyOwner {
         removeAddressFromSet(OPERATOR, operator);
         emit OperatorRemoved(operator);
     }
 
-    function addOperatorInternal(address operator)
-        internal
-    {
+    function addOperatorInternal(address operator) internal {
         addAddressToSet(OPERATOR, operator, true);
         emit OperatorAdded(operator);
     }
 
-    struct WalletConfig
-    {
-        address   owner;
+    struct WalletConfig {
+        address owner;
         address[] guardians;
-        uint      quota;
-        address   inheritor;
-        address   feeRecipient;
-        address   feeToken;
-        uint      maxFeeAmount;
-        uint      salt;
-        bytes     signature;
+        uint quota;
+        address inheritor;
+        address feeRecipient;
+        address feeToken;
+        uint maxFeeAmount;
+        uint salt;
+        bytes signature;
     }
 
-    struct WalletConfigV2
-    {
-        address   owner;
-        address   initOwner;
+    struct WalletConfigV2 {
+        address owner;
+        address initOwner;
         address[] guardians;
-        uint      quota;
-        address   inheritor;
-        address   feeRecipient;
-        address   feeToken;
-        uint      maxFeeAmount;
-        uint      salt;
+        uint quota;
+        address inheritor;
+        address feeRecipient;
+        address feeToken;
+        uint maxFeeAmount;
+        uint salt;
     }
 
     constructor(
-        address        _walletImplementation
-        )
-        WalletDeploymentLib(_walletImplementation)
-    {
+        address _walletImplementation
+    ) WalletDeploymentLib(_walletImplementation) {
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
         );
@@ -134,12 +111,8 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
     /// @return wallet The new wallet address
     function createWallet(
         WalletConfig calldata config,
-        uint                  feeAmount
-        )
-        onlyOperator
-        external
-        returns (address wallet)
-    {
+        uint feeAmount
+    ) external onlyOperator returns (address wallet) {
         require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
 
         _validateConfig(config);
@@ -153,12 +126,8 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
     /// @return wallet The new wallet address
     function createWalletByOperator(
         WalletConfigV2 calldata config,
-        uint                  feeAmount
-        )
-        onlyOperator
-        external
-        returns (address wallet)
-    {
+        uint feeAmount
+    ) external onlyOperator returns (address wallet) {
         require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
 
         require(config.owner != address(0), "INVALID_OWNER");
@@ -182,28 +151,18 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
     /// @return wallet The wallet address
     function computeWalletAddress(
         address owner,
-        uint    salt
-        )
-        public
-        view
-        returns (address)
-    {
-        return _computeWalletAddress(
-            owner,
-            salt,
-            address(this)
-        );
+        uint salt
+    ) public view returns (address) {
+        return _computeWalletAddress(owner, salt, address(this));
     }
 
     // --- Internal functions ---
 
     function _initializeWallet(
-        address               wallet,
+        address wallet,
         WalletConfig calldata config,
-        uint                  feeAmount
-        )
-        internal
-    {
+        uint feeAmount
+    ) internal {
         ILoopringWalletV2(wallet).initialize(
             config.owner,
             config.guardians,
@@ -217,12 +176,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
         emit WalletCreated(wallet, config.owner);
     }
 
-    function _validateConfig(
-        WalletConfig calldata config
-        )
-        private
-        view
-    {
+    function _validateConfig(WalletConfig calldata config) private view {
         require(config.owner != address(0), "INVALID_OWNER");
 
         bytes32 dataHash = keccak256(
@@ -240,6 +194,9 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
         );
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, dataHash);
-        require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
+        require(
+            signHash.verifySignature(config.owner, config.signature),
+            "INVALID_SIGNATURE"
+        );
     }
 }

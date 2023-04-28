@@ -7,11 +7,7 @@ library BytesUtil {
         bytes memory _bytes,
         uint _start,
         uint _length
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
+    ) internal pure returns (bytes memory) {
         require(_bytes.length >= (_start + _length));
 
         bytes memory tempBytes;
@@ -37,13 +33,22 @@ library BytesUtil {
                 // because when slicing multiples of 32 bytes (lengthmod == 0)
                 // the following copy loop was copying the origin's length
                 // and then ending prematurely not copying everything it should.
-                let mc := add(add(tempBytes, lengthmod), mul(0x20, iszero(lengthmod)))
+                let mc := add(
+                    add(tempBytes, lengthmod),
+                    mul(0x20, iszero(lengthmod))
+                )
                 let end := add(mc, _length)
 
                 for {
                     // The multiplication in the next line has the same exact purpose
                     // as the one above.
-                    let cc := add(add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod))), _start)
+                    let cc := add(
+                        add(
+                            add(_bytes, lengthmod),
+                            mul(0x20, iszero(lengthmod))
+                        ),
+                        _start
+                    )
                 } lt(mc, end) {
                     mc := add(mc, 0x20)
                     cc := add(cc, 0x20)
@@ -68,18 +73,27 @@ library BytesUtil {
         return tempBytes;
     }
 
-    function toAddress(bytes memory _bytes, uint _start) internal  pure returns (address) {
+    function toAddress(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (address) {
         require(_bytes.length >= (_start + 20));
         address tempAddress;
 
         assembly {
-            tempAddress := div(mload(add(add(_bytes, 0x20), _start)), 0x1000000000000000000000000)
+            tempAddress := div(
+                mload(add(add(_bytes, 0x20), _start)),
+                0x1000000000000000000000000
+            )
         }
 
         return tempAddress;
     }
 
-    function toUint8(bytes memory _bytes, uint _start) internal  pure returns (uint8) {
+    function toUint8(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint8) {
         require(_bytes.length >= (_start + 1));
         uint8 tempUint;
 
@@ -90,7 +104,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint16(bytes memory _bytes, uint _start) internal  pure returns (uint16) {
+    function toUint16(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint16) {
         require(_bytes.length >= (_start + 2));
         uint16 tempUint;
 
@@ -101,7 +118,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint24(bytes memory _bytes, uint _start) internal  pure returns (uint24) {
+    function toUint24(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint24) {
         require(_bytes.length >= (_start + 3));
         uint24 tempUint;
 
@@ -112,7 +132,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint32(bytes memory _bytes, uint _start) internal  pure returns (uint32) {
+    function toUint32(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint32) {
         require(_bytes.length >= (_start + 4));
         uint32 tempUint;
 
@@ -123,7 +146,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint64(bytes memory _bytes, uint _start) internal  pure returns (uint64) {
+    function toUint64(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint64) {
         require(_bytes.length >= (_start + 8));
         uint64 tempUint;
 
@@ -134,7 +160,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint96(bytes memory _bytes, uint _start) internal  pure returns (uint96) {
+    function toUint96(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint96) {
         require(_bytes.length >= (_start + 12));
         uint96 tempUint;
 
@@ -145,7 +174,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint128(bytes memory _bytes, uint _start) internal  pure returns (uint128) {
+    function toUint128(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint128) {
         require(_bytes.length >= (_start + 16));
         uint128 tempUint;
 
@@ -156,7 +188,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toUint(bytes memory _bytes, uint _start) internal  pure returns (uint256) {
+    function toUint(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (uint256) {
         require(_bytes.length >= (_start + 32));
         uint256 tempUint;
 
@@ -167,7 +202,10 @@ library BytesUtil {
         return tempUint;
     }
 
-    function toBytes4(bytes memory _bytes, uint _start) internal  pure returns (bytes4) {
+    function toBytes4(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (bytes4) {
         require(_bytes.length >= (_start + 4));
         bytes4 tempBytes4;
 
@@ -178,7 +216,10 @@ library BytesUtil {
         return tempBytes4;
     }
 
-    function toBytes32(bytes memory _bytes, uint _start) internal  pure returns (bytes32) {
+    function toBytes32(
+        bytes memory _bytes,
+        uint _start
+    ) internal pure returns (bytes32) {
         require(_bytes.length >= (_start + 32));
         bytes32 tempBytes32;
 
@@ -189,18 +230,19 @@ library BytesUtil {
         return tempBytes32;
     }
 
-    function fastSHA256(
-        bytes memory data
-        )
-        internal
-        view
-        returns (bytes32)
-    {
+    function fastSHA256(bytes memory data) internal view returns (bytes32) {
         bytes32[] memory result = new bytes32[](1);
         bool success;
         assembly {
-             let ptr := add(data, 32)
-             success := staticcall(sub(gas(), 2000), 2, ptr, mload(data), add(result, 32), 32)
+            let ptr := add(data, 32)
+            success := staticcall(
+                sub(gas(), 2000),
+                2,
+                ptr,
+                mload(data),
+                add(result, 32),
+                32
+            )
         }
         require(success, "SHA256_FAILED");
         return result[0];

@@ -18,7 +18,10 @@ library Create2 {
      * will be deployed can be known in advance via {computeAddress}. Note that
      * a contract cannot be deployed twice using the same salt.
      */
-    function deploy(bytes32 salt, bytes memory bytecode) internal returns (address payable) {
+    function deploy(
+        bytes32 salt,
+        bytes memory bytecode
+    ) internal returns (address payable) {
         address payable addr;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -32,7 +35,10 @@ library Create2 {
      * @dev Returns the address where a contract will be stored if deployed via {deploy}. Any change in the `bytecode`
      * or `salt` will result in a new destination address.
      */
-    function computeAddress(bytes32 salt, bytes memory bytecode) internal view returns (address) {
+    function computeAddress(
+        bytes32 salt,
+        bytes memory bytecode
+    ) internal view returns (address) {
         return computeAddress(salt, bytecode, address(this));
     }
 
@@ -40,7 +46,11 @@ library Create2 {
      * @dev Returns the address where a contract will be stored if deployed via {deploy} from a contract located at
      * `deployer`. If `deployer` is this contract's address, returns the same value as {computeAddress}.
      */
-    function computeAddress(bytes32 salt, bytes memory bytecodeHash, address deployer) internal pure returns (address) {
+    function computeAddress(
+        bytes32 salt,
+        bytes memory bytecodeHash,
+        address deployer
+    ) internal pure returns (address) {
         bytes32 bytecodeHashHash = keccak256(bytecodeHash);
         bytes32 _data = keccak256(
             abi.encodePacked(bytes1(0xff), deployer, salt, bytecodeHashHash)

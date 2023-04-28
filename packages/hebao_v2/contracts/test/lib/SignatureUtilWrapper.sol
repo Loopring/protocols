@@ -9,31 +9,22 @@ import "../../thirdparty/BytesUtil.sol";
 
 /// @title AddressSetWrapper
 /// @author Freeman Zhong - <kongliang@loopring.org>
-contract SignatureUtilWrapper
-{
-    using BytesUtil     for bytes;
-    using MathUint      for uint;
+contract SignatureUtilWrapper {
+    using BytesUtil for bytes;
+    using MathUint for uint;
 
     function verifySignature(
         bytes32 signHash,
         address signer,
-        bytes   calldata signature
-        )
-        external
-        view
-        returns (bool)
-    {
+        bytes calldata signature
+    ) external view returns (bool) {
         return SignatureUtil.verifySignature(signHash, signer, signature);
     }
 
     function recoverECDSASigner(
-        bytes32      signHash,
+        bytes32 signHash,
         bytes calldata signature
-        )
-        external
-        pure
-        returns (address)
-    {
+    ) external pure returns (address) {
         uint signatureTypeOffset = signature.length.sub(1);
         SignatureUtil.SignatureType signatureType = SignatureUtil.SignatureType(
             signature.toUint8(signatureTypeOffset)

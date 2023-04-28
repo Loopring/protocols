@@ -2,30 +2,29 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-
 /// @title AddressSet
 /// @author Daniel Wang - <daniel@loopring.org>
-contract AddressSet
-{
-    struct Set
-    {
+contract AddressSet {
+    struct Set {
         address[] addresses;
-        mapping (address => uint) positions;
+        mapping(address => uint) positions;
         uint count;
     }
-    mapping (bytes32 => Set) private sets;
+    mapping(bytes32 => Set) private sets;
 
     function addAddressToSet(
         bytes32 key,
         address addr,
-        bool    maintainList
-        ) internal
-    {
+        bool maintainList
+    ) internal {
         Set storage set = sets[key];
         require(set.positions[addr] == 0, "ALREADY_IN_SET");
 
         if (maintainList) {
-            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAILED");
+            require(
+                set.addresses.length == set.count,
+                "PREVIOUSLY_NOT_MAINTAILED"
+            );
             set.addresses.push(addr);
         } else {
             require(set.addresses.length == 0, "MUST_MAINTAIN");
@@ -35,12 +34,7 @@ contract AddressSet
         set.positions[addr] = set.count;
     }
 
-    function removeAddressFromSet(
-        bytes32 key,
-        address addr
-        )
-        internal
-    {
+    function removeAddressFromSet(bytes32 key, address addr) internal {
         Set storage set = sets[key];
         uint pos = set.positions[addr];
         require(pos != 0, "NOT_IN_SET");
@@ -58,37 +52,25 @@ contract AddressSet
         }
     }
 
-    function removeSet(bytes32 key)
-        internal
-    {
+    function removeSet(bytes32 key) internal {
         delete sets[key];
     }
 
     function isAddressInSet(
         bytes32 key,
         address addr
-        )
-        internal
-        view
-        returns (bool)
-    {
+    ) internal view returns (bool) {
         return sets[key].positions[addr] != 0;
     }
 
-    function numAddressesInSet(bytes32 key)
-        internal
-        view
-        returns (uint)
-    {
+    function numAddressesInSet(bytes32 key) internal view returns (uint) {
         Set storage set = sets[key];
         return set.count;
     }
 
-    function addressesInSet(bytes32 key)
-        internal
-        view
-        returns (address[] memory)
-    {
+    function addressesInSet(
+        bytes32 key
+    ) internal view returns (address[] memory) {
         Set storage set = sets[key];
         require(set.count == set.addresses.length, "NOT_MAINTAINED");
         return sets[key].addresses;

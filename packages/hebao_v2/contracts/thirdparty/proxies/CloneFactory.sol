@@ -31,18 +31,26 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //solhint-disable no-inline-assembly
 
 library CloneFactory {
-  function getByteCode(address target) internal pure returns (bytes memory byteCode) {
-    bytes20 targetBytes = bytes20(target);
-    assembly {
-      byteCode := mload(0x40)
-      mstore(byteCode, 0x37)
+    function getByteCode(
+        address target
+    ) internal pure returns (bytes memory byteCode) {
+        bytes20 targetBytes = bytes20(target);
+        assembly {
+            byteCode := mload(0x40)
+            mstore(byteCode, 0x37)
 
-      let clone := add(byteCode, 0x20)
-      mstore(clone, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
-      mstore(add(clone, 0x14), targetBytes)
-      mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+            let clone := add(byteCode, 0x20)
+            mstore(
+                clone,
+                0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
+            )
+            mstore(add(clone, 0x14), targetBytes)
+            mstore(
+                add(clone, 0x28),
+                0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
+            )
 
-      mstore(0x40, add(byteCode, 0x60))
+            mstore(0x40, add(byteCode, 0x60))
+        }
     }
-  }
 }

@@ -5,14 +5,5 @@ pragma solidity ^0.8.17;
 import "../DummyToken.sol";
 
 contract REP is DummyToken {
-
-    constructor() DummyToken(
-        "REP_TEST",
-        "REP",
-        18,
-        10 ** 27
-        )
-    {
-    }
-
+    constructor() DummyToken("REP_TEST", "REP", 18, 10 ** 27) {}
 }

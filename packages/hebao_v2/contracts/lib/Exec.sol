@@ -4,7 +4,6 @@ pragma solidity >=0.7.5 <0.9.0;
 // solhint-disable no-inline-assembly
 
 library Exec {
-
     function call(
         address to,
         uint256 value,
@@ -12,7 +11,15 @@ library Exec {
         uint256 txGas
     ) internal returns (bool success) {
         assembly {
-            success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
+            success := call(
+                txGas,
+                to,
+                value,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
         }
     }
 
@@ -32,7 +39,14 @@ library Exec {
         uint256 txGas
     ) internal returns (bool success) {
         assembly {
-            success := delegatecall(txGas, to, add(data, 0x20), mload(data), 0, 0)
+            success := delegatecall(
+                txGas,
+                to,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
         }
     }
 
@@ -55,7 +69,7 @@ library Exec {
     }
 
     function callAndRevert(address to, bytes memory data) internal {
-        bool success = call(to,0,data,gasleft());
+        bool success = call(to, 0, data, gasleft());
         if (!success) {
             revertWithData(getReturnData());
         }

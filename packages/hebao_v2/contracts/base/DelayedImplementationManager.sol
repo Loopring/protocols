@@ -9,10 +9,9 @@ import "../lib/Ownable.sol";
  * @author Kongliang Zhong - <kongliang@loopring.org>
  */
 contract DelayedImplementationManager is Ownable {
-
     address public currImpl;
     address public nextImpl;
-    uint    public nextEffectiveTime;
+    uint public nextEffectiveTime;
 
     event UpgradeScheduled(address nextImpl, uint effectiveTime);
     event UpgradeCancelled(address nextImpl);
@@ -28,9 +27,15 @@ contract DelayedImplementationManager is Ownable {
      * @param _nextImpl representing the address of the next implementation to be set.
      * @param _daysToDelay representing the amount of days after the next implementation take effect.
      */
-    function delayedUpgradeTo(address _nextImpl, uint _daysToDelay) public onlyOwner {
+    function delayedUpgradeTo(
+        address _nextImpl,
+        uint _daysToDelay
+    ) public onlyOwner {
         if (_nextImpl == address(0)) {
-            require(nextImpl != address(0) && _daysToDelay == 0, "INVALID_ARGS");
+            require(
+                nextImpl != address(0) && _daysToDelay == 0,
+                "INVALID_ARGS"
+            );
             emit UpgradeCancelled(nextImpl);
             nextImpl = address(0);
         } else {
@@ -46,10 +51,12 @@ contract DelayedImplementationManager is Ownable {
      * @dev Allows everyone to replace implementation after effective time.
      */
     function executeUpgrade() public {
-        require(nextImpl != address(0) && block.timestamp >= nextEffectiveTime, "NOT_IN_EFFECT");
+        require(
+            nextImpl != address(0) && block.timestamp >= nextEffectiveTime,
+            "NOT_IN_EFFECT"
+        );
         currImpl = nextImpl;
         nextImpl = address(0);
         emit ImplementationChanged(currImpl);
     }
-
 }

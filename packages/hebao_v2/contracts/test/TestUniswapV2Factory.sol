@@ -3,7 +3,6 @@
 pragma solidity ^0.8.17;
 
 /// @title PriceOracle
-contract TestUniswapV2Factory
-{
+contract TestUniswapV2Factory {
     mapping(address => mapping(address => address)) public getPair;
 }

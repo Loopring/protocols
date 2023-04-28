@@ -2,14 +2,12 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-
 /// @title Ownable
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev The Ownable contract has an owner address, and provides basic
 ///      authorization control functions, this simplifies the implementation of
 ///      "user permissions".
-contract Ownable
-{
+contract Ownable {
     address public owner;
 
     event OwnershipTransferred(
@@ -19,14 +17,12 @@ contract Ownable
 
     /// @dev The Ownable constructor sets the original `owner` of the contract
     ///      to the sender.
-    constructor()
-    {
+    constructor() {
         owner = msg.sender;
     }
 
     /// @dev Throws if called by any account other than the owner.
-    modifier onlyOwner()
-    {
+    modifier onlyOwner() {
         require(msg.sender == owner, "UNAUTHORIZED");
         _;
     }
@@ -34,22 +30,13 @@ contract Ownable
     /// @dev Allows the current owner to transfer control of the contract to a
     ///      new owner.
     /// @param newOwner The address to transfer ownership to.
-    function transferOwnership(
-        address newOwner
-        )
-        public
-        virtual
-        onlyOwner
-    {
+    function transferOwnership(address newOwner) public virtual onlyOwner {
         require(newOwner != address(0), "ZERO_ADDRESS");
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
 
-    function renounceOwnership()
-        public
-        onlyOwner
-    {
+    function renounceOwnership() public onlyOwner {
         emit OwnershipTransferred(owner, address(0));
         owner = address(0);
     }

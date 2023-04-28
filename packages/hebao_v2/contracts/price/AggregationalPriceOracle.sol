@@ -5,25 +5,20 @@ pragma solidity ^0.8.17;
 import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 
-
 /// @title AggregationalPriceOracle
-contract AggregationalPriceOracle is PriceOracle
-{
+contract AggregationalPriceOracle is PriceOracle {
     using MathUint for uint;
 
     address[] public oracles;
 
-    constructor(address[] memory _oracles)
-    {
+    constructor(address[] memory _oracles) {
         oracles = _oracles;
     }
 
-    function tokenValue(address token, uint amount)
-        public
-        view
-        override
-        returns (uint)
-    {
+    function tokenValue(
+        address token,
+        uint amount
+    ) public view override returns (uint) {
         uint total;
         uint count;
         for (uint i = 0; i < oracles.length; i++) {

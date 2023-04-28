@@ -8,15 +8,10 @@ import "../../lib/AddressUtil.sol";
 
 /// @title Utils
 /// @author Brecht Devos - <brecht@loopring.org>
-library Utils
-{
+library Utils {
     using AddressUtil for address;
 
-    function isValidWalletOwner(address addr)
-        view
-        internal
-        returns (bool)
-    {
+    function isValidWalletOwner(address addr) internal view returns (bool) {
         return addr != address(0) && !addr.isContract();
     }
 }

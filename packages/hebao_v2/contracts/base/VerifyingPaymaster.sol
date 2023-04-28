@@ -4,9 +4,9 @@ pragma solidity ^0.8.12;
 /* solhint-disable reason-string */
 
 import "../core/BasePaymaster.sol";
+import "../thirdparty/SafeERC20.sol";
+import "../lib/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
@@ -21,10 +21,11 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract VerifyingPaymaster is BasePaymaster, AccessControl {
     using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
+    using SafeERC20 for ERC20;
 
     //calculated cost of the postOp
     uint256 private COST_OF_POST = 20000;
-    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant SIGNER = keccak256("SIGNER");
 
     constructor(
         IEntryPoint _entryPoint,
@@ -32,7 +33,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     ) BasePaymaster(_entryPoint) {
         _transferOwnership(_owner);
         _grantRole(DEFAULT_ADMIN_ROLE, owner());
-        _grantRole(ADMIN, owner());
+        _grantRole(SIGNER, owner());
     }
 
     /**
@@ -77,15 +78,13 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
-        uint256 requiredPreFund
+        uint256 /*requiredPreFund*/
     )
         external
         view
         override
         returns (bytes memory context, uint256 sigTimeRange)
     {
-        (requiredPreFund);
-
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         address sender = userOp.getSender();
 
@@ -107,7 +106,9 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             valueOfEth
         );
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
-        if (!hasRole(ADMIN, hash.toEthSignedMessageHash().recover(signature))) {
+        if (
+            !hasRole(SIGNER, hash.toEthSignedMessageHash().recover(signature))
+        ) {
             return ("", 1);
         }
 
@@ -137,16 +138,39 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         (address sender, address payable token, , uint256 valueOfEth) = abi
             .decode(context, (address, address, uint256, uint256));
         if (valueOfEth > 0) {
-            uint256 missingDecimals = uint256(18) -
-                (IERC20Metadata(token).decimals());
             uint8 priceDecimal = 6;
             uint256 tokenRequiredFund = ((actualGasCost + (COST_OF_POST)) *
-                (10 ** priceDecimal)) / (valueOfEth * (10 ** missingDecimals));
-            IERC20(token).transferFrom(
+                10 ** priceDecimal) / valueOfEth;
+            ERC20(token).safeTransferFrom(
                 sender,
                 address(this),
                 tokenRequiredFund
             );
+        }
+    }
+
+    function _withdrawToken(address token, address to, uint256 amount) private {
+        ERC20(token).transfer(to, amount);
+    }
+
+    // withdraw token from this contract
+    function withdrawToken(
+        address token,
+        address to,
+        uint256 amount
+    ) external onlyOwner {
+        _withdrawToken(token, to, amount);
+    }
+
+    // withdraw token from this contract
+    function withdrawToken(
+        address[] calldata token,
+        address to,
+        uint256[] calldata amount
+    ) external onlyOwner {
+        require(token.length == amount.length, "length mismatch");
+        for (uint256 i = 0; i < token.length; i++) {
+            _withdrawToken(token[i], to, amount[i]);
         }
     }
 }

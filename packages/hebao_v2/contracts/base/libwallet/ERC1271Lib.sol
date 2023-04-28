@@ -6,12 +6,10 @@ pragma experimental ABIEncoderV2;
 import "../../lib/SignatureUtil.sol";
 import "./WalletData.sol";
 
-
 /// @title ERC1271Lib
 /// @author Brecht Devos - <brecht@loopring.org>
-library ERC1271Lib
-{
-    using SignatureUtil     for bytes32;
+library ERC1271Lib {
+    using SignatureUtil for bytes32;
 
     // Note that we allow chained wallet ownership:
     // Wallet1 owned by Wallet2, Wallet2 owned by Wallet3, ..., WaleltN owned by an EOA.
@@ -19,14 +17,10 @@ library ERC1271Lib
     // valid.
     function isValidSignature(
         Wallet storage wallet,
-        bytes4         ERC1271_MAGICVALUE,
-        bytes32        signHash,
-        bytes memory   signature
-        )
-        public
-        view
-        returns (bytes4 magicValue)
-    {
+        bytes4 ERC1271_MAGICVALUE,
+        bytes32 signHash,
+        bytes memory signature
+    ) public view returns (bytes4 magicValue) {
         if (wallet.locked) {
             return 0;
         }

@@ -3,10 +3,12 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
+import "../iface/IEntryPoint.sol";
 import "../iface/ILoopringWalletV2.sol";
 
 import "../lib/EIP712.sol";
 import "../lib/ERC20.sol";
+import "../core/BaseAccount.sol";
 import "../lib/ERC1271.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../thirdparty/erc165/IERC165.sol";
@@ -24,25 +26,30 @@ import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
 
-
 /// @title SmartWallet
 /// @dev Main smart wallet contract
 /// @author Brecht Devos - <brecht@loopring.org>
-contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC1155Holder
+abstract contract SmartWallet is
+    ILoopringWalletV2,
+    ERC1271,
+    IERC165,
+    ERC721Holder,
+    ERC1155Holder,
+    BaseAccount
 {
-    using ERC20Lib          for Wallet;
-    using ERC1271Lib        for Wallet;
-    using LockLib           for Wallet;
-    using GuardianLib       for Wallet;
-    using InheritanceLib    for Wallet;
-    using WhitelistLib      for Wallet;
-    using QuotaLib          for Wallet;
-    using RecoverLib        for Wallet;
-    using UpgradeLib        for Wallet;
+    using ERC20Lib for Wallet;
+    using ERC1271Lib for Wallet;
+    using LockLib for Wallet;
+    using GuardianLib for Wallet;
+    using InheritanceLib for Wallet;
+    using WhitelistLib for Wallet;
+    using QuotaLib for Wallet;
+    using RecoverLib for Wallet;
 
-    bytes32     public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-    address     public immutable blankOwner;
+    address public immutable blankOwner;
+    IEntryPoint private immutable _entryPoint;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -58,29 +65,65 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
-    modifier disableInImplementationContract
-    {
-        require(!isImplementationContract, "DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
+    modifier disableInImplementationContract() {
+        require(
+            !isImplementationContract,
+            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+        );
         _;
     }
 
-    modifier onlyFromWalletOrOwnerWhenUnlocked()
-    {
+    modifier onlyFromWalletOrOwnerWhenUnlocked() {
         // If the wallet's signature verfication passes, the wallet must be unlocked.
         require(
             msg.sender == address(this) ||
-            (msg.sender == wallet.owner && !wallet.locked),
-             "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
+                (msg.sender == wallet.owner && !wallet.locked),
+            "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
         );
         wallet.touchLastActiveWhenRequired();
         _;
     }
 
-    modifier canTransferOwnership()
-    {
+    modifier onlyFromEntryPointWhenUnlocked() {
         require(
-            msg.sender == blankOwner &&
-            wallet.owner == blankOwner,
+            msg.sender == address(entryPoint()) && !wallet.locked,
+            "account: not Owner or EntryPoint"
+        );
+        wallet.touchLastActiveWhenRequired();
+        _;
+    }
+
+    modifier onlyFromEntryPoint() {
+        require(
+            msg.sender == address(entryPoint()) && !wallet.locked,
+            "account: not Owner or EntryPoint"
+        );
+        wallet.touchLastActiveWhenRequired();
+        _;
+    }
+
+    // Require the function call went through EntryPoint or owner
+    function _requireFromEntryPointOrOwnerWhenUnlocked() internal view {
+        require(
+            (msg.sender == address(entryPoint()) ||
+                msg.sender == wallet.owner) && !wallet.locked,
+            "account: not Owner or EntryPoint"
+        );
+    }
+
+    /// @inheritdoc BaseAccount
+    function entryPoint() public view virtual override returns (IEntryPoint) {
+        return _entryPoint;
+    }
+
+    /// @inheritdoc BaseAccount
+    function nonce() public view virtual override returns (uint256) {
+        return wallet.nonce;
+    }
+
+    modifier canTransferOwnership() {
+        require(
+            msg.sender == blankOwner && wallet.owner == blankOwner,
             "NOT_ALLOWED_TO_SET_OWNER"
         );
         _;
@@ -88,10 +131,11 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
     constructor(
         PriceOracle _priceOracle,
-        address     _blankOwner
-        )
-    {
+        address _blankOwner,
+        IEntryPoint entryPointInput
+    ) {
         isImplementationContract = true;
+        _entryPoint = entryPointInput;
 
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("LoopringWallet", "2.0.0", address(this))
@@ -108,18 +152,14 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     /// @param owner The owner of this wallet, must not be address(0).
     /// @param guardians The guardians of this wallet.
     function initialize(
-        address             owner,
-        address[] calldata  guardians,
-        uint                quota,
-        address             inheritor,
-        address             feeRecipient,
-        address             feeToken,
-        uint                feeAmount
-        )
-        external
-        override
-        disableInImplementationContract
-    {
+        address owner,
+        address[] calldata guardians,
+        uint quota,
+        address inheritor,
+        address feeRecipient,
+        address feeToken,
+        uint feeAmount
+    ) external override disableInImplementationContract {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
         require(owner != address(0), "INVALID_OWNER");
 
@@ -141,39 +181,20 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
         }
     }
 
-    receive()
-        external
-        payable
-    {
-    }
+    receive() external payable {}
 
-    function getOwner()
-        public
-        view
-        override
-        returns (address)
-    {
+    function getOwner() public view override returns (address) {
         return wallet.owner;
     }
 
-    function getCreationTimestamp()
-        public
-        view
-        override
-        returns (uint64)
-    {
+    function getCreationTimestamp() public view override returns (uint64) {
         return wallet.creationTimestamp;
     }
 
     //
     // Owner
     //
-    function transferOwnership(
-        address _owner
-        )
-        external
-        canTransferOwnership
-    {
+    function transferOwnership(address _owner) external canTransferOwnership {
         require(_owner != address(0), "INVALID_OWNER");
         wallet.owner = _owner;
     }
@@ -182,280 +203,102 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     // ERC1271
     //
     function isValidSignature(
-        bytes32      signHash,
+        bytes32 signHash,
         bytes memory signature
-        )
-        public
-        view
-        override
-        returns (bytes4 magicValue)
-    {
-        return wallet.isValidSignature(
-            ERC1271_MAGICVALUE,
-            signHash,
-            signature
-        );
+    ) public view override returns (bytes4 magicValue) {
+        return wallet.isValidSignature(ERC1271_MAGICVALUE, signHash, signature);
     }
 
     //
     // Upgrade
     //
 
-    function changeMasterCopy(
-        Approval calldata approval,
-        address           newMasterCopy
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.changeMasterCopy(
-            DOMAIN_SEPARATOR,
-            approval,
-            newMasterCopy
-        );
-        masterCopy = newMasterCopy;
-    }
-
-    function getMasterCopy()
-        public
-        view
-        returns (address)
-    {
+    function getMasterCopy() public view returns (address) {
         return masterCopy;
     }
 
-    //
-    // Guardians
-    //
-
-    function addGuardian(
-        address guardian
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.addGuardian(guardian);
+    function isGuardian(
+        address addr,
+        bool includePendingAddition
+    ) public view returns (bool) {
+        return wallet.isGuardian(addr, includePendingAddition);
     }
 
-    function addGuardianWA(
-        Approval calldata approval,
-        address           guardian
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.addGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
+    function getGuardians(
+        bool includePendingAddition
+    ) public view returns (Guardian[] memory) {
+        return GuardianLib.guardians(wallet, includePendingAddition);
     }
 
-    function removeGuardian(
-        address guardian
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.removeGuardian(guardian);
-    }
-
-     function removeGuardianWA(
-        Approval calldata approval,
-        address           guardian
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
-    }
-
-     function resetGuardians(
-         address[] calldata newGuardians
-         )
-         external
-         onlyFromWalletOrOwnerWhenUnlocked
-     {
-         wallet.resetGuardians(newGuardians);
-     }
-
-     function resetGuardiansWA(
-         Approval  calldata approval,
-         address[] calldata newGuardians
-         )
-         external
-         returns (bytes32 approvedHash)
-     {
-         approvedHash = wallet.resetGuardiansWA(DOMAIN_SEPARATOR, approval, newGuardians);
-     }
-
-     function isGuardian(address addr, bool includePendingAddition)
-         public
-         view
-         returns (bool)
-     {
-         return wallet.isGuardian(addr, includePendingAddition);
-     }
-
-     function getGuardians(bool includePendingAddition)
-         public
-         view
-         returns (Guardian[] memory )
-     {
-         return GuardianLib.guardians(wallet, includePendingAddition);
-     }
-
-    //
-    // Inheritance
-    //
-
-    function setInheritor(
-        address inheritor,
-        uint32  waitingPeriod
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.setInheritor(inheritor, waitingPeriod);
-    }
-
-    function inherit(
-        address newOwner,
-        bool    removeGuardians
-        )
-        external
-    {
-        wallet.inherit(newOwner, removeGuardians);
-    }
-
-    //
-    // Lock
-    //
-
-    function lock()
-        external
-    {
+    function lock() external {
         wallet.lock();
-    }
-
-    function unlock(
-        Approval calldata approval
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.unlock(DOMAIN_SEPARATOR, approval);
-    }
-
-    //
-    // Quota
-    //
-
-    function changeDailyQuota(
-        uint newQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.changeDailyQuota(newQuota);
-    }
-
-    function changeDailyQuotaWA(
-        Approval calldata approval,
-        uint              newQuota
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, approval, newQuota);
-    }
-
-
-    //
-    // Recover
-    //
-
-    function recover(
-        Approval calldata  approval,
-        address            newOwner,
-        address[] calldata newGuardians
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.recover(
-            DOMAIN_SEPARATOR,
-            approval,
-            newOwner,
-            newGuardians
-        );
-    }
-
-    //
-    // Whitelist
-    //
-
-    function addToWhitelist(
-        address addr
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.addToWhitelist(addr);
-    }
-
-    function addToWhitelistWA(
-        Approval calldata approval,
-        address           addr
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.addToWhitelistWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            addr
-        );
-    }
-
-    function removeFromWhitelist(
-        address addr
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.removeFromWhitelist(addr);
     }
 
     function getWhitelistEffectiveTime(
         address addr
-        )
-        public
-        view
-        returns (uint)
-    {
+    ) public view returns (uint) {
         return wallet.whitelisted[addr];
     }
 
-    function isWhitelisted(
-        address addr
-        )
-        public
-        view
-        returns (bool) {
+    function isWhitelisted(address addr) public view returns (bool) {
         return wallet.isAddressWhitelisted(addr);
     }
 
-    //
-    // ERC20
-    //
+    // ERC165
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure override returns (bool) {
+        return
+            interfaceId == type(ERC1271).interfaceId ||
+            interfaceId == type(IERC165).interfaceId ||
+            interfaceId == type(IERC721Receiver).interfaceId ||
+            interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
+    function changeMasterCopy(address newMasterCopy) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        UpgradeLib.changeMasterCopy(newMasterCopy);
+        masterCopy = newMasterCopy;
+    }
+
+    function addGuardian(address guardian) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.addGuardian(guardian);
+    }
+
+    function removeGuardian(address guardian) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.removeGuardian(guardian);
+    }
+
+    function resetGuardians(address[] calldata newGuardians) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.resetGuardians(newGuardians);
+    }
+
+    function changeDailyQuota(uint newQuota) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.changeDailyQuota(newQuota);
+    }
+
+    function addToWhitelist(address addr) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.addToWhitelist(addr);
+    }
+
+    function removeFromWhitelist(address addr) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.removeFromWhitelist(addr);
+    }
 
     function transferToken(
-        address        token,
-        address        to,
-        uint           amount,
+        address token,
+        address to,
+        uint amount,
         bytes calldata logdata,
-        bool           forceUseQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+        bool forceUseQuota
+    ) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
         wallet.transferToken(
             priceOracle,
             token,
@@ -466,156 +309,69 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
         );
     }
 
-    function transferTokenWA(
-        Approval calldata approval,
-        address           token,
-        address           to,
-        uint              amount,
-        bytes    calldata logdata
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.transferTokenWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            token,
-            to,
-            amount,
-            logdata
-        );
-    }
-
     function callContract(
-        address          to,
-        uint             value,
-        bytes   calldata data,
-        bool             forceUseQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-        returns (bytes memory)
-    {
-        return wallet.callContract(
-            priceOracle,
-            to,
-            value,
-            data,
-            forceUseQuota
-        );
-    }
-
-    function callContractWA(
-        Approval calldata approval,
-        address           to,
-        uint              value,
-        bytes    calldata data
-        )
-        external
-        returns (bytes32 approvedHash, bytes memory returnData)
-    {
-        (approvedHash, returnData) = wallet.callContractWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            to,
-            value,
-            data
-        );
+        address to,
+        uint value,
+        bytes calldata data,
+        bool forceUseQuota
+    ) external returns (bytes memory) {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        return wallet.callContract(priceOracle, to, value, data, forceUseQuota);
     }
 
     function approveToken(
         address token,
         address to,
-        uint    amount,
-        bool    forceUseQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.approveToken(
-            priceOracle,
-            token,
-            to,
-            amount,
-            forceUseQuota
-        );
-    }
-
-    function approveTokenWA(
-        Approval calldata approval,
-        address           token,
-        address           to,
-        uint              amount
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.approveTokenWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            token,
-            to,
-            amount
-        );
+        uint amount,
+        bool forceUseQuota
+    ) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.approveToken(priceOracle, token, to, amount, forceUseQuota);
     }
 
     function approveThenCallContract(
-        address          token,
-        address          to,
-        uint             amount,
-        uint             value,
-        bytes   calldata data,
-        bool             forceUseQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-        returns (bytes memory)
-    {
-        return wallet.approveThenCallContract(
-            priceOracle,
-            token,
-            to,
-            amount,
-            value,
-            data,
-            forceUseQuota
-        );
+        address token,
+        address to,
+        uint amount,
+        uint value,
+        bytes calldata data,
+        bool forceUseQuota
+    ) external returns (bytes memory) {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        return
+            wallet.approveThenCallContract(
+                priceOracle,
+                token,
+                to,
+                amount,
+                value,
+                data,
+                forceUseQuota
+            );
     }
 
-    function approveThenCallContractWA(
-        Approval calldata approval,
-        address           token,
-        address           to,
-        uint              amount,
-        uint              value,
-        bytes    calldata data
-        )
-        external
-        returns (bytes32 approvedHash, bytes memory returnData)
-    {
-        (approvedHash, returnData) = wallet.approveThenCallContractWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            token,
-            to,
-            amount,
-            value,
-            data
-        );
+    function setInheritor(address inheritor, uint32 waitingPeriod) external {
+        _requireFromEntryPointOrOwnerWhenUnlocked();
+        wallet.setInheritor(inheritor, waitingPeriod);
     }
 
-    // ERC165
-    function supportsInterface(
-        bytes4 interfaceId
-        )
-        external
-        pure
-        override
-        returns (bool)
-    {
-        return  interfaceId == type(ERC1271).interfaceId ||
-                interfaceId == type(IERC165).interfaceId ||
-                interfaceId == type(IERC721Receiver).interfaceId ||
-                interfaceId == type(IERC1155Receiver).interfaceId;
+    ///////////////////////
+    // only from entrypoint
+    function unlock() external onlyFromEntryPoint {
+        wallet.unlock();
+    }
+
+    function inherit(
+        address newOwner,
+        bool removeGuardians
+    ) external onlyFromEntryPoint {
+        wallet.inherit(newOwner, removeGuardians);
+    }
+
+    function recover(
+        address newOwner,
+        address[] calldata newGuardians
+    ) external onlyFromEntryPoint {
+        wallet.recover(newOwner, newGuardians);
     }
 }
