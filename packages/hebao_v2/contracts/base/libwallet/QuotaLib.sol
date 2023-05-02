@@ -7,6 +7,7 @@ import "./WalletData.sol";
 import "../../iface/PriceOracle.sol";
 import "../../lib/MathUint.sol";
 import "../../thirdparty/SafeCast.sol";
+import "./ApprovalLib.sol";
 
 /// @title QuotaLib
 /// @dev This store maintains daily spending quota for each wallet.
@@ -169,5 +170,29 @@ library QuotaLib {
         Quota storage s = wallet.quota;
         s.spentAmount = _spentQuota(q).add(amount).toUint128();
         s.spentTimestamp = uint64(block.timestamp);
+    }
+
+    function verifyApproval(
+        Wallet storage wallet,
+        bytes32 domainSeparator,
+        bytes memory callData
+    ) external returns (uint256) {
+        (Approval memory approval, uint newQuota) = abi.decode(
+            callData,
+            (Approval, uint)
+        );
+        return
+            ApprovalLib.verifyApproval(
+                wallet,
+                domainSeparator,
+                SigRequirement.MAJORITY_OWNER_REQUIRED,
+                approval,
+                abi.encode(
+                    QuotaLib.CHANGE_DAILY_QUOTE_TYPEHASH,
+                    approval.wallet,
+                    approval.validUntil,
+                    newQuota
+                )
+            );
     }
 }

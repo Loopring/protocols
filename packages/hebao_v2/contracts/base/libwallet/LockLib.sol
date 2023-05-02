@@ -5,11 +5,13 @@ pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "./GuardianLib.sol";
+import "./ApprovalLib.sol";
 
 /// @title LockLib
 /// @author Brecht Devos - <brecht@loopring.org>
 library LockLib {
     using GuardianLib for Wallet;
+    using ApprovalLib for Wallet;
 
     event WalletLocked(address by, bool locked);
 
@@ -36,5 +38,24 @@ library LockLib {
     function setLock(Wallet storage wallet, address by, bool locked) internal {
         wallet.locked = locked;
         emit WalletLocked(by, locked);
+    }
+
+    function verifyApproval(
+        Wallet storage wallet,
+        bytes32 domainSeparator,
+        bytes memory callData
+    ) external returns (uint256) {
+        Approval memory approval = abi.decode(callData, (Approval));
+        return
+            wallet.verifyApproval(
+                domainSeparator,
+                SigRequirement.MAJORITY_OWNER_REQUIRED,
+                approval,
+                abi.encode(
+                    UNLOCK_TYPEHASH,
+                    approval.wallet,
+                    approval.validUntil
+                )
+            );
     }
 }

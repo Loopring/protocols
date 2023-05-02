@@ -3,11 +3,14 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
+import "./ApprovalLib.sol";
 import "./WalletData.sol";
 
 /// @title UpgradeLib
 /// @author Brecht Devos - <brecht@loopring.org>
 library UpgradeLib {
+    using ApprovalLib for Wallet;
+
     event ChangedMasterCopy(address masterCopy);
 
     bytes32 public constant CHANGE_MASTER_COPY_TYPEHASH =
@@ -19,5 +22,28 @@ library UpgradeLib {
         require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
 
         emit ChangedMasterCopy(newMasterCopy);
+    }
+
+    function verifyApproval(
+        Wallet storage wallet,
+        bytes32 domainSeparator,
+        bytes memory callData
+    ) external returns (uint256) {
+        (Approval memory approval, address newMasterCopy) = abi.decode(
+            callData,
+            (Approval, address)
+        );
+        return
+            wallet.verifyApproval(
+                domainSeparator,
+                SigRequirement.MAJORITY_OWNER_REQUIRED,
+                approval,
+                abi.encode(
+                    CHANGE_MASTER_COPY_TYPEHASH,
+                    approval.wallet,
+                    approval.validUntil,
+                    newMasterCopy
+                )
+            );
     }
 }
