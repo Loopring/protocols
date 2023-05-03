@@ -86,7 +86,10 @@ library InheritanceLib {
         Wallet storage wallet,
         bytes32 hash,
         bytes memory signature
-    ) external view returns (uint256) {
+    ) external returns (uint256) {
+        // Save hash to prevent replay attacks
+        require(!wallet.hashes[hash], "HASH_EXIST");
+        wallet.hashes[hash] = true;
         if (wallet.inheritor == hash.recover(signature)) {
             return 0;
         }

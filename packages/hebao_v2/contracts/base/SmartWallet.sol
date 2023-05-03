@@ -449,7 +449,7 @@ abstract contract SmartWallet is
         uint amount,
         uint value,
         bytes calldata data
-    ) external returns (bytes memory returnData) {
+    ) external onlyFromEntryPoint returns (bytes memory returnData) {
         returnData = ERC20Lib.approveThenCallContractWA(
             token,
             to,
