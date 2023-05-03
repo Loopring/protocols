@@ -74,31 +74,11 @@ abstract contract SmartWallet is
         _;
     }
 
-    modifier onlyFromWalletOrOwnerWhenUnlocked() {
-        // If the wallet's signature verfication passes, the wallet must be unlocked.
-        require(
-            msg.sender == address(this) ||
-                (msg.sender == wallet.owner && !wallet.locked),
-            "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
-        );
-        wallet.touchLastActiveWhenRequired();
-        _;
-    }
-
     modifier canTransferOwnership() {
         require(
             msg.sender == blankOwner && wallet.owner == blankOwner,
             "NOT_ALLOWED_TO_SET_OWNER"
         );
-        _;
-    }
-
-    modifier onlyFromEntryPointWhenUnlocked() {
-        require(
-            msg.sender == address(entryPoint()) && !wallet.locked,
-            "account: not Owner or EntryPoint"
-        );
-        wallet.touchLastActiveWhenRequired();
         _;
     }
 
@@ -111,13 +91,16 @@ abstract contract SmartWallet is
         _;
     }
 
-    // Require the function call went through EntryPoint or owner
-    function _requireFromEntryPointOrOwnerWhenUnlocked() internal view {
+    // Require the function call went through EntryPoint or wallet self or owner
+    modifier onlyFromEntryPointOrWalletOrOwnerWhenUnlocked() {
         require(
-            (msg.sender == address(entryPoint()) ||
-                msg.sender == wallet.owner) && !wallet.locked,
-            "account: not Owner or EntryPoint"
+            msg.sender == address(this) ||
+                ((msg.sender == address(entryPoint()) ||
+                    msg.sender == wallet.owner) && !wallet.locked),
+            "account: not Owner, Self or EntryPoint"
         );
+        wallet.touchLastActiveWhenRequired();
+        _;
     }
 
     /// @inheritdoc BaseAccount
@@ -231,7 +214,7 @@ abstract contract SmartWallet is
 
     function addGuardian(
         address guardian
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.addGuardian(guardian);
     }
 
@@ -241,7 +224,7 @@ abstract contract SmartWallet is
 
     function removeGuardian(
         address guardian
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.removeGuardian(guardian);
     }
 
@@ -251,7 +234,7 @@ abstract contract SmartWallet is
 
     function resetGuardians(
         address[] calldata newGuardians
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.resetGuardians(newGuardians);
     }
 
@@ -281,7 +264,7 @@ abstract contract SmartWallet is
     function setInheritor(
         address inheritor,
         uint32 waitingPeriod
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.setInheritor(inheritor, waitingPeriod);
     }
 
@@ -310,7 +293,7 @@ abstract contract SmartWallet is
 
     function changeDailyQuota(
         uint newQuota
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.changeDailyQuota(newQuota);
     }
 
@@ -335,7 +318,7 @@ abstract contract SmartWallet is
 
     function addToWhitelist(
         address addr
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.addToWhitelist(addr);
     }
 
@@ -345,7 +328,7 @@ abstract contract SmartWallet is
 
     function removeFromWhitelist(
         address addr
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.removeFromWhitelist(addr);
     }
 
@@ -369,7 +352,7 @@ abstract contract SmartWallet is
         uint amount,
         bytes calldata logdata,
         bool forceUseQuota
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.transferToken(
             priceOracle,
             token,
@@ -394,7 +377,11 @@ abstract contract SmartWallet is
         uint value,
         bytes calldata data,
         bool forceUseQuota
-    ) external onlyFromWalletOrOwnerWhenUnlocked returns (bytes memory) {
+    )
+        external
+        onlyFromEntryPointOrWalletOrOwnerWhenUnlocked
+        returns (bytes memory)
+    {
         return wallet.callContract(priceOracle, to, value, data, forceUseQuota);
     }
 
@@ -411,7 +398,7 @@ abstract contract SmartWallet is
         address to,
         uint amount,
         bool forceUseQuota
-    ) external onlyFromWalletOrOwnerWhenUnlocked {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.approveToken(priceOracle, token, to, amount, forceUseQuota);
     }
 
@@ -430,7 +417,11 @@ abstract contract SmartWallet is
         uint value,
         bytes calldata data,
         bool forceUseQuota
-    ) external onlyFromWalletOrOwnerWhenUnlocked returns (bytes memory) {
+    )
+        external
+        onlyFromEntryPointOrWalletOrOwnerWhenUnlocked
+        returns (bytes memory)
+    {
         return
             wallet.approveThenCallContract(
                 priceOracle,

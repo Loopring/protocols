@@ -40,8 +40,7 @@ contract SmartWalletV3 is SmartWallet {
         address dest,
         uint256 value,
         bytes calldata func
-    ) external {
-        _requireFromEntryPointOrOwnerWhenUnlocked();
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         _call(dest, value, func);
     }
 
@@ -51,8 +50,7 @@ contract SmartWalletV3 is SmartWallet {
     function executeBatch(
         address[] calldata dest,
         bytes[] calldata func
-    ) external {
-        _requireFromEntryPointOrOwnerWhenUnlocked();
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         require(dest.length == func.length, "wrong array lengths");
         for (uint256 i = 0; i < dest.length; i++) {
             _call(dest[i], 0, func[i]);
@@ -106,7 +104,7 @@ contract SmartWalletV3 is SmartWallet {
     function withdrawDepositTo(
         address payable withdrawAddress,
         uint256 amount
-    ) public onlyFromWalletOrOwnerWhenUnlocked {
+    ) public onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         entryPoint().withdrawTo(withdrawAddress, amount);
     }
 
@@ -190,8 +188,6 @@ contract SmartWalletV3 is SmartWallet {
                     callData
                 );
         }
-
-        // the following methods cannot be called by owner, so owner signature is invalid here
 
         if (methodId == SmartWallet.unlock.selector) {
             return LockLib.verifyApproval(wallet, DOMAIN_SEPARATOR, callData);
