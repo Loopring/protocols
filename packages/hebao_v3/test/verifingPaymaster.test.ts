@@ -73,6 +73,7 @@ describe("verifingPaymaster test", () => {
     expect(await usdtToken.balanceOf(paymaster.address)).to.eq(
       initTokenAmount.sub(afterBalance).sub(tokenAmount)
     );
+    // TODO(check eth balance for paymaster)
 
     // sendtx for free
     paymasterOption.valueOfEth = 0;

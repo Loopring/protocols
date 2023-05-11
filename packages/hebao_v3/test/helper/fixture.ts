@@ -13,6 +13,7 @@ import {
   VerifyingPaymaster,
   VerifyingPaymaster__factory,
   LoopringCreate2Deployer,
+  USDT__factory,
 } from "../../typechain-types";
 import { localUserOpSender, fillAndSign, SendUserOp } from "./AASigner";
 
@@ -91,15 +92,25 @@ export async function fixture() {
   for (let i = 0; i < 2; i++) {
     guardians.push(await ethers.Wallet.createRandom().connect(ethers.provider));
   }
-  const smartWalletAddr = await createSmartWallet(
+
+  const salt = ethers.utils.formatBytes32String("0x5");
+  await createSmartWallet(
     smartWalletOwner,
     guardians.map((g) => g.address.toLowerCase()).sort(),
-    walletFactory
+    walletFactory,
+    salt
+  );
+
+  const smartWalletAddr = await walletFactory.computeWalletAddress(
+    smartWalletOwner.address,
+    salt
   );
   const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
     smartWalletOwner
   );
+  // prepare eth for smartwallet
+  await helpers.setBalance(smartWallet.address, ethers.utils.parseEther("100"));
 
   // predeposit for smartwallet and paymaster in entrypoint
   await entrypoint.depositTo(smartWallet.address, {
@@ -110,7 +121,10 @@ export async function fixture() {
   });
 
   // deploy mock usdt token for test.
-  const usdtToken = await deploySingle(create2, "USDT");
+  const usdtToken = USDT__factory.connect(
+    (await deploySingle(create2, "USDT")).address,
+    deployer
+  );
   return {
     entrypoint,
     paymaster: VerifyingPaymaster__factory.connect(
@@ -128,5 +142,6 @@ export async function fixture() {
     sendUserOp,
     smartWalletImpl,
     guardians,
+    walletFactory,
   };
 }

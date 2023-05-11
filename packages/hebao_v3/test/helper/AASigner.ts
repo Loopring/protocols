@@ -169,7 +169,6 @@ export async function fillUserOp(
         const salt = hexDataSlice(initCallData, 0, 32);
         op1.sender = getCreate2Address(walletFactoryAddress, salt, ctr);
       } else {
-        // console.log('\t== not our deployer. our=', Create2Factory.contractAddress, 'got', initAddr)
         if (provider == null) throw new Error("no entrypoint/provider");
         op1.sender = await entryPoint!.callStatic
           .getSenderAddress(op1.initCode!)
@@ -208,10 +207,8 @@ export async function fillUserOp(
       data: op1.callData,
     });
 
-    // console.log('estim', op1.sender,'len=', op1.callData!.length, 'res=', gasEtimated)
     // estimateGas assumes direct call from entryPoint. add wrapper cost.
     op1.callGasLimit = gasEtimated.add(55000);
-    // console.log("callGasLimit: ", op1.callGasLimit);
   }
   if (op1.maxFeePerGas == null) {
     if (provider == null)
@@ -239,7 +236,7 @@ export async function fillAndSign(
   op: Partial<UserOperation>,
   signer: Wallet | Signer,
   walletFactoryAddress: string,
-  entryPoint?: Contract
+  entryPoint?: EntryPoint
 ): Promise<UserOperation> {
   const provider = entryPoint?.provider;
   const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
@@ -271,7 +268,6 @@ export function localUserOpSender(
     const gasLimit = BigNumber.from(userOp.preVerificationGas)
       .add(userOp.verificationGasLimit)
       .add(userOp.callGasLimit);
-    // console.log("calc gaslimit=", gasLimit.toString());
     const ret = await entryPoint.handleOps(
       [userOp],
       beneficiary ?? (await signer.getAddress()),
@@ -332,7 +328,6 @@ export class AASigner {
       const size = await this.signer.provider
         ?.getCode(this._account.address)
         .then((x) => x.length);
-      // console.log(`== __isPhantom. addr=${this._account.address} re-checking code size. result = `, size)
       this._isPhantom = size === 2;
       // !await this.entryPoint.isContractDeployed(await this.getAddress());
     }

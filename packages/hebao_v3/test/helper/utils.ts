@@ -649,14 +649,10 @@ export async function deployWalletImpl(
 export async function createSmartWallet(
   owner: Wallet,
   guardians: string[],
-  walletFactory: WalletFactory
+  walletFactory: WalletFactory,
+  salt: string
 ) {
   const feeRecipient = ethers.constants.AddressZero;
-  const salt = ethers.utils.formatBytes32String("0x5");
-  const walletAddrComputed = await walletFactory.computeWalletAddress(
-    owner.address,
-    salt
-  );
   // create smart wallet
   const signature = signCreateWallet(
     walletFactory.address,
@@ -685,8 +681,7 @@ export async function createSmartWallet(
   };
 
   const tx = await walletFactory.createWallet(walletConfig, 0);
-  await tx.wait();
-  return walletAddrComputed;
+  return tx.wait();
 }
 
 export interface PaymasterOption {
@@ -711,7 +706,8 @@ export async function sendTx(
   contractFactory: Contract,
   entrypoint: EntryPoint,
   sendUserOp: SendUserOp,
-  paymasterOption?: PaymasterOption
+  paymasterOption?: PaymasterOption,
+  prepareGas = true
 ) {
   const ethSent = txs.reduce(
     (acc, tx) => acc.add(BigNumber.from(tx.value ?? 0)),
@@ -760,72 +756,7 @@ export async function sendTx(
     );
   }
 
-  // prepare gas before send userop
-  // const requiredPrefund = computeRequiredPreFund(
-  // signedUserOp,
-  // paymasterOption != undefined
-  // ).add(ethSent);
-  // // only consider deposited balance in entrypoint contract when using paymaster
-  // const currentBalance = paymasterOption
-  // ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
-  // : await getEthBalance(smartWallet);
-
-  // if (requiredPrefund.gt(currentBalance)) {
-  // const missingValue = requiredPrefund.sub(currentBalance);
-  // const payer = paymasterOption
-  // ? paymasterOption.paymaster.address
-  // : smartWallet.address;
-  // await (
-  // await entrypoint.depositTo(payer, {
-  // value: missingValue,
-  // })
-  // ).wait();
-  // }
-
-  // const recipt = await sendUserOp(signedUserOp);
-  // return recipt;
-  return wrappedSendUserOp(
-    entrypoint,
-    smartWallet,
-    signedUserOp,
-    sendUserOp,
-    paymasterOption,
-    ethSent
-  );
-}
-
-export async function wrappedSendUserOp(
-  entrypoint: EntryPoint,
-  smartWallet: SmartWalletV3,
-  signedUserOp: UserOperation,
-  sendUserOp: SendUserOp,
-  paymasterOption?: PaymasterOption,
-  ethSent = BigNumber.from(0)
-) {
-  // prepare gas before send userop
-  const requiredPrefund = computeRequiredPreFund(
-    signedUserOp,
-    paymasterOption != undefined
-  ).add(ethSent);
-  // only consider deposited balance in entrypoint contract when using paymaster
-  const currentBalance = paymasterOption
-    ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
-    : await getEthBalance(smartWallet);
-
-  if (requiredPrefund.gt(currentBalance)) {
-    const missingValue = requiredPrefund.sub(currentBalance);
-    const payer = paymasterOption
-      ? paymasterOption.paymaster.address
-      : smartWallet.address;
-    await (
-      await entrypoint.depositTo(payer, {
-        value: missingValue,
-      })
-    ).wait();
-  }
-
-  const recipt = await sendUserOp(signedUserOp);
-  return recipt;
+  return await sendUserOp(signedUserOp);
 }
 
 export function sortSignersAndSignatures(
@@ -851,4 +782,36 @@ export function getErrorMessage(revertReason: string) {
     ["string"],
     "0x" + revertReason.slice(10)
   )[0];
+}
+
+export async function getBlockTimestamp(blockNumber: number) {
+  const block = await ethers.provider.getBlock(blockNumber);
+  return block.timestamp;
+}
+
+export async function getCurrentQuota(quotaInfo: any, blockNumber: number) {
+  const blockTime = await getBlockTimestamp(blockNumber);
+  const pendingUntil = quotaInfo.pendingUntil.toNumber();
+
+  return pendingUntil <= blockTime
+    ? quotaInfo.pendingQuota
+    : quotaInfo.currentQuota;
+}
+
+export async function getFirstEvent(
+  contract: Contract,
+  fromBlock: number,
+  eventName: string
+) {
+  const events = await contract.queryFilter(
+    { address: contract.address },
+    fromBlock
+  );
+  // console.log("events:", events);
+
+  for (const e of events) {
+    if (e.event === eventName) return e;
+  }
+
+  return undefined;
 }

@@ -4,12 +4,10 @@ import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { signRecover } from "./helper/signatureUtils";
 import { fixture } from "./helper/fixture";
 import {
-  sendTx,
   PaymasterOption,
   evInfo,
   evRevertInfo,
   sortSignersAndSignatures,
-  wrappedSendUserOp,
   getErrorMessage,
 } from "./helper/utils";
 import { fillUserOp, getUserOpHash } from "./helper/AASigner";
@@ -18,7 +16,6 @@ import BN = require("bn.js");
 describe("recover test", () => {
   async function recoverTxToSignedUserOp(
     smartWallet,
-    nonce,
     recover,
     create2,
     entrypoint,
@@ -28,7 +25,7 @@ describe("recover test", () => {
   ) {
     const partialUserOp = {
       sender: smartWallet.address,
-      nonce,
+      nonce: 0,
       callData: recover.data,
       callGasLimit: "126880",
     };
@@ -80,6 +77,7 @@ describe("recover test", () => {
     };
     return signedUserOp;
   }
+
   it("recover success", async () => {
     const {
       entrypoint,
@@ -92,7 +90,6 @@ describe("recover test", () => {
       guardians,
     } = await loadFixture(fixture);
 
-    const nonce = await smartWallet.nonce();
     const newOwner = await ethers.Wallet.createRandom();
     const newGuardians = [];
     const recover = await smartWallet.populateTransaction.recover(
@@ -101,7 +98,6 @@ describe("recover test", () => {
     );
     const signedUserOp = await recoverTxToSignedUserOp(
       smartWallet,
-      nonce,
       recover,
       create2,
       entrypoint,
@@ -153,7 +149,6 @@ describe("recover test", () => {
       guardians,
     } = await loadFixture(fixture);
 
-    const nonce = await smartWallet.nonce();
     const newGuardians = [];
     const recover = await smartWallet.populateTransaction.recover(
       smartWalletOwner.address,
@@ -161,7 +156,6 @@ describe("recover test", () => {
     );
     const signedUserOp = await recoverTxToSignedUserOp(
       smartWallet,
-      nonce,
       recover,
       create2,
       entrypoint,
@@ -191,7 +185,6 @@ describe("recover test", () => {
       guardians,
     } = await loadFixture(fixture);
 
-    const nonce = await smartWallet.nonce();
     const newGuardians = [];
     // all invalid new owner addresses
     const newOwnerAddrs = [create2.address, ethers.constants.AddressZero];
@@ -203,7 +196,6 @@ describe("recover test", () => {
       );
       const signedUserOp = await recoverTxToSignedUserOp(
         smartWallet,
-        nonce,
         recover,
         create2,
         entrypoint,
@@ -256,7 +248,6 @@ describe("recover test", () => {
     // lock wallet first
     await smartWallet.lock();
 
-    const nonce = await smartWallet.nonce();
     const newOwner = await ethers.Wallet.createRandom();
     const newGuardians = [];
     const recover = await smartWallet.populateTransaction.recover(
@@ -265,7 +256,6 @@ describe("recover test", () => {
     );
     const signedUserOp = await recoverTxToSignedUserOp(
       smartWallet,
-      nonce,
       recover,
       create2,
       entrypoint,

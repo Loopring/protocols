@@ -94,7 +94,7 @@ abstract contract SmartWallet is
             msg.sender == address(this) ||
                 ((msg.sender == address(entryPoint()) ||
                     msg.sender == wallet.owner) && !wallet.locked),
-            "account: not Owner, Self or EntryPoint"
+            "account: not Owner, Self or EntryPoint or it is locked"
         );
         wallet.touchLastActiveWhenRequired();
         _;
