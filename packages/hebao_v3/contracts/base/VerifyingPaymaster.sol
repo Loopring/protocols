@@ -25,6 +25,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
 
     //calculated cost of the postOp
     uint256 private COST_OF_POST = 20000;
+    uint8 constant priceDecimal = 6;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
     constructor(
@@ -36,16 +37,8 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         _grantRole(SIGNER, owner());
     }
 
-    /**
-     * return the hash we're going to sign off-chain (and validate on-chain)
-     * this method is called by the off-chain service, to sign the request.
-     * it is called on-chain from the validatePaymasterUserOp, to validate the signature.
-     * note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
-     * which will carry the signature itself.
-     */
     function getHash(
         UserOperation calldata userOp,
-        address paymaster,
         address token,
         uint256 valueOfEth
     ) public view returns (bytes32) {
@@ -63,12 +56,19 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
                     userOp.maxFeePerGas,
                     userOp.maxPriorityFeePerGas,
                     // data of paymaster
-                    paymaster,
                     block.chainid,
+                    address(this),
                     token,
                     valueOfEth
                 )
             );
+    }
+
+    struct DecodeData {
+        address token;
+        uint256 valueOfEth;
+        uint256 validUntil;
+        bytes signature;
     }
 
     /**
@@ -78,7 +78,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
-        uint256 /*requiredPreFund*/
+        uint256 requiredPreFund
     )
         external
         view
@@ -88,10 +88,18 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         address sender = userOp.getSender();
 
+        DecodeData memory decoded_data;
         // paymasterAndData: [paymaster, token, valueOfEth, signature]
-        (address token, uint256 valueOfEth, bytes memory signature) = abi
-            .decode(paymasterAndData[20:], (address, uint256, bytes));
-        uint256 sigLength = signature.length;
+        (
+            decoded_data.token,
+            decoded_data.valueOfEth,
+            decoded_data.validUntil,
+            decoded_data.signature
+        ) = abi.decode(
+            paymasterAndData[20:],
+            (address, uint256, uint256, bytes)
+        );
+        uint256 sigLength = decoded_data.signature.length;
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
@@ -99,22 +107,44 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
 
+        {
+            // uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
+            // 10 ** priceDecimal) / decoded_data.valueOfEth;
+            // require(
+            // ERC20(decoded_data.token).allowance(sender, address(this)) >=
+            // tokenRequiredPreFund,
+            // "Paymaster: not enough allowance"
+            // );
+        }
+
+        // TODO (add validUntil)
         bytes32 hash = getHash(
             userOp,
-            address(bytes20(paymasterAndData[:20])),
-            token,
-            valueOfEth
+            decoded_data.token,
+            decoded_data.valueOfEth
         );
+
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
-            !hasRole(SIGNER, hash.toEthSignedMessageHash().recover(signature))
+            !hasRole(
+                SIGNER,
+                hash.toEthSignedMessageHash().recover(decoded_data.signature)
+            )
         ) {
             return ("", 1);
         }
 
         //no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return (abi.encode(sender, token, userOp.gasPrice(), valueOfEth), 0);
+        return (
+            abi.encode(
+                sender,
+                decoded_data.token,
+                userOp.gasPrice(),
+                decoded_data.valueOfEth
+            ),
+            packSigTimeRange(false, decoded_data.validUntil, 0)
+        );
     }
 
     /**
@@ -138,7 +168,6 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         (address sender, address payable token, , uint256 valueOfEth) = abi
             .decode(context, (address, address, uint256, uint256));
         if (valueOfEth > 0) {
-            uint8 priceDecimal = 6;
             uint256 tokenRequiredFund = ((actualGasCost + (COST_OF_POST)) *
                 10 ** priceDecimal) / valueOfEth;
             ERC20(token).safeTransferFrom(
@@ -163,7 +192,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     }
 
     // withdraw token from this contract
-    function withdrawToken(
+    function withdrawTokens(
         address[] calldata token,
         address to,
         uint256[] calldata amount

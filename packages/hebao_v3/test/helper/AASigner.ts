@@ -154,7 +154,7 @@ export function callDataCost(data: string): number {
 export async function fillUserOp(
   op: Partial<UserOperation>,
   walletFactoryAddress: string,
-  entryPoint?: Contract
+  entryPoint?: EntryPoint
 ): Promise<UserOperation> {
   const op1 = { ...op };
   const provider = entryPoint?.provider;

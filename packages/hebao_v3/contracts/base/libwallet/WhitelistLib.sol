@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "../../lib/MathUint.sol";
+import "./ApprovalLib.sol";
 
 /// @title WhitelistLib
 /// @dev This store maintains a wallet's whitelisted addresses.
@@ -65,5 +66,28 @@ library WhitelistLib {
     ) internal {
         delete wallet.whitelisted[addr];
         emit Whitelisted(addr, false, 0);
+    }
+
+    function verifyApproval(
+        Wallet storage wallet,
+        bytes32 domainSeparator,
+        bytes memory callData,
+        bytes memory signature
+    ) external returns (uint256) {
+        address addr = abi.decode(callData, (address));
+        Approval memory approval = abi.decode(signature, (Approval));
+        return
+            ApprovalLib.verifyApproval(
+                wallet,
+                domainSeparator,
+                SigRequirement.MAJORITY_OWNER_REQUIRED,
+                approval,
+                abi.encode(
+                    ADD_TO_WHITELIST_TYPEHASH,
+                    approval.wallet,
+                    approval.validUntil,
+                    addr
+                )
+            );
     }
 }

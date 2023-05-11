@@ -36,7 +36,7 @@ import {
   getPaymasterAndData,
 } from "../test/helper/utils";
 
-async function deploySingle(
+export async function deploySingle(
   deployFactory: Contract,
   contractName: string,
   args?: any[],
@@ -124,7 +124,10 @@ export async function deployWalletImpl(
   return smartWallet;
 }
 
-async function createSmartWallet(owner: Wallet, walletFactory: Contract) {
+export async function createSmartWallet(
+  owner: Wallet,
+  walletFactory: Contract
+) {
   const guardians = [];
   const feeRecipient = ethers.constants.AddressZero;
   const salt = ethers.utils.formatBytes32String("0x5");
@@ -283,6 +286,7 @@ interface PaymasterOption {
   payToken: Contract;
   paymasterOwner: Signer;
   valueOfEth: BigNumberish;
+  validUntil: BigNumberish;
 }
 
 async function sendTx(
@@ -316,10 +320,10 @@ async function sendTx(
     const paymaster = paymasterOption.paymaster;
     const payToken = paymasterOption.payToken;
     const valueOfEth = paymasterOption.valueOfEth;
+    const validUntil = paymasterOption.validUntil;
 
     const hash = await paymaster.getHash(
       signedUserOp,
-      paymaster.address,
       payToken.address,
       valueOfEth
     );
@@ -329,7 +333,8 @@ async function sendTx(
       paymasterOption.paymasterOwner,
       hash,
       payToken.address,
-      valueOfEth
+      valueOfEth,
+      validUntil
     );
     signedUserOp.paymasterAndData = paymasterAndData;
     signedUserOp = await fillAndSign(
@@ -465,6 +470,7 @@ async function testExecuteTxWithUSDCPaymaster() {
     paymaster,
     paymasterOwner,
   } = await deployAll();
+  console.log("deployer: ", deployer.address);
   // prepare mock usdt token first
   await (
     await usdtToken.setBalance(
@@ -490,6 +496,7 @@ async function testExecuteTxWithUSDCPaymaster() {
     payToken: usdtToken,
     paymasterOwner,
     valueOfEth: ethers.utils.parseUnits("625", 12),
+    validUntil: 0,
   };
 
   const recipt = await sendTx(
