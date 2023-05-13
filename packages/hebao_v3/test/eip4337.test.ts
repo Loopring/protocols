@@ -2,7 +2,10 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
 import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
-import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import {
+  loadFixture,
+  setBalance,
+} from "@nomicfoundation/hardhat-network-helpers";
 import { fixture } from "./helper/fixture";
 import {
   sendTx,
@@ -10,12 +13,14 @@ import {
   evInfo,
   sortSignersAndSignatures,
   getCurrentQuota,
+  createSmartWallet,
 } from "./helper/utils";
 import { fillAndSign, UserOperation, fillUserOp } from "./helper/AASigner";
 import {
   SmartWalletV3,
   EntryPoint,
   LoopringCreate2Deployer,
+  SmartWalletV3__factory,
 } from "../typechain-types";
 import BN from "bn.js";
 
@@ -373,5 +378,83 @@ describe("eip4337 test", () => {
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
       .withArgs(0, ethers.constants.AddressZero, "HASH_EXIST");
+  });
+
+  describe("read methods", () => {
+    it("quota", async () => {
+      const { smartWallet } = await loadFixture(fixture);
+      const walletData = await smartWallet.wallet();
+      const quotaInfo = walletData["quota"];
+      // TODO(add check for quota info)
+    });
+
+    it("guardians", async () => {
+      const { smartWallet, guardians } = await loadFixture(fixture);
+      const actualGuardians = await smartWallet.getGuardians(true);
+      // TODO(add check here)
+    });
+
+    it("isWhitelisted", async () => {
+      const { smartWallet } = await loadFixture(fixture);
+      const isWhitelisted = await smartWallet.isWhitelisted(
+        "0x" + "22".repeat(20)
+      );
+      // TODO(add check here)
+    });
+
+    it("getNonce", async () => {
+      const { smartWallet } = await loadFixture(fixture);
+      const walletData = await smartWallet.wallet();
+      expect(walletData["nonce"]).to.eq(0);
+    });
+  });
+
+  describe("owner setter", () => {
+    it("should be able to set owner for a blank wallet", async () => {
+      const { entrypoint, walletFactory, blankOwner, deployer, guardians } =
+        await loadFixture(fixture);
+      const ownerSetter = blankOwner.address;
+      const other = ethers.Wallet.createRandom().connect(ethers.provider);
+      // prepare gas fee
+      await setBalance(other.address, ethers.utils.parseEther("1"));
+
+      const salt = ethers.utils.formatBytes32String("0x5");
+      await createSmartWallet(
+        blankOwner,
+        guardians.map((g) => g.address.toLowerCase()).sort(),
+        walletFactory,
+        salt
+      );
+
+      const smartWalletAddr = await walletFactory.computeWalletAddress(
+        blankOwner.address,
+        salt
+      );
+      const smartWallet = SmartWalletV3__factory.connect(
+        smartWalletAddr,
+        blankOwner
+      );
+
+      // check owner before:
+      const ownerBefore = (await smartWallet.wallet()).owner;
+      expect(ownerBefore.toLowerCase()).to.equal(ownerSetter.toLowerCase());
+
+      const newOwner = "0x" + "12".repeat(20);
+      // other accounts can not set owner:
+      await expect(
+        smartWallet.connect(other).transferOwnership(newOwner)
+      ).to.rejectedWith("NOT_ALLOWED_TO_SET_OWNER");
+
+      // ownerSetter should be able to set owner if owner is blankOwner
+      await smartWallet.connect(blankOwner).transferOwnership(newOwner);
+      const ownerAfter = (await smartWallet.wallet()).owner;
+      expect(ownerAfter.toLowerCase()).to.equal(newOwner.toLowerCase());
+
+      // ownerSetter should not be able to set owner again
+      const newOwner2 = "0x" + "34".repeat(20);
+      await expect(
+        smartWallet.connect(blankOwner).transferOwnership(newOwner2)
+      ).to.rejectedWith("NOT_ALLOWED_TO_SET_OWNER");
+    });
   });
 });

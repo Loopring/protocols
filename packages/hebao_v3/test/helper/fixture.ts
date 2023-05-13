@@ -14,6 +14,7 @@ import {
   VerifyingPaymaster__factory,
   LoopringCreate2Deployer,
   USDT__factory,
+  DelayedImplementationManager__factory,
 } from "../../typechain-types";
 import { localUserOpSender, fillAndSign, SendUserOp } from "./AASigner";
 
@@ -21,7 +22,10 @@ export async function fixture() {
   const signers = await ethers.getSigners();
   const deployer = signers[0];
   const paymasterOwner = signers[1];
-  const blankOwner = signers[2];
+  const blankOwner = await ethers.Wallet.createRandom().connect(
+    ethers.provider
+  );
+  await helpers.setBalance(blankOwner.address, ethers.utils.parseEther("100"));
 
   // create2 factory
 
@@ -48,11 +52,16 @@ export async function fixture() {
     blankOwner.address
   );
 
-  const implStorage = await deploySingle(
-    create2,
-    "DelayedImplementationManager",
-    // deployer as implementation manager
-    [smartWalletImpl.address]
+  const implStorage = DelayedImplementationManager__factory.connect(
+    (
+      await deploySingle(
+        create2,
+        "DelayedImplementationManager",
+        // deployer as implementation manager
+        [smartWalletImpl.address]
+      )
+    ).address,
+    deployer
   );
 
   const forwardProxy = await deploySingle(create2, "ForwardProxy", [
@@ -125,6 +134,12 @@ export async function fixture() {
     (await deploySingle(create2, "USDT")).address,
     deployer
   );
+
+  // used for any call contract test
+  const testTarget = await (
+    await ethers.getContractFactory("TestTargetContract")
+  ).deploy();
+
   return {
     entrypoint,
     paymaster: VerifyingPaymaster__factory.connect(
@@ -143,5 +158,7 @@ export async function fixture() {
     smartWalletImpl,
     guardians,
     walletFactory,
+    implStorage,
+    testTarget,
   };
 }

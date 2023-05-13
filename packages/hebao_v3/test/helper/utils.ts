@@ -444,6 +444,7 @@ export async function createBatchTransactions(
   transactions: Deferrable<TransactionRequest>[],
   ethersProvider: BaseProvider,
   wallet: SmartWalletV3,
+  useExecuteApi: boolean,
   initCode?: BytesLike
 ) {
   const txs: TransactionRequest[] = await Promise.all(
@@ -453,11 +454,15 @@ export async function createBatchTransactions(
   let execFromEntryPoint;
   if (txs.length == 1) {
     const tx = txs[0];
-    execFromEntryPoint = await wallet.populateTransaction.execute(
-      tx.to!,
-      tx.value ?? 0,
-      tx.data ?? "0x"
-    );
+    if (useExecuteApi) {
+      execFromEntryPoint = await wallet.populateTransaction.execute(
+        tx.to!,
+        tx.value ?? 0,
+        tx.data ?? "0x"
+      );
+    } else {
+      execFromEntryPoint = tx;
+    }
   } else {
     const dest = txs.map((tx) => tx.to);
     const datas = txs.map((tx) => tx.data ?? "0x");
@@ -575,7 +580,7 @@ export async function deploySingle(
   libs?: Map<string, any>
 ) {
   // use same salt for all deployments:
-  const salt = ethers.utils.formatBytes32String("0x5");
+  const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32));
 
   const libraries = {}; // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
   libs && libs.forEach((value, key) => (libraries[key] = value));
@@ -707,7 +712,7 @@ export async function sendTx(
   entrypoint: EntryPoint,
   sendUserOp: SendUserOp,
   paymasterOption?: PaymasterOption,
-  prepareGas = true
+  useExecuteApi = true
 ) {
   const ethSent = txs.reduce(
     (acc, tx) => acc.add(BigNumber.from(tx.value ?? 0)),
@@ -716,7 +721,8 @@ export async function sendTx(
   const partialUserOp = await createBatchTransactions(
     txs,
     ethers.provider,
-    smartWallet
+    smartWallet,
+    useExecuteApi
   );
   // first call to fill userop
   let signedUserOp = await fillAndSign(

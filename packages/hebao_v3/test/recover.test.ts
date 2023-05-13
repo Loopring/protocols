@@ -11,7 +11,7 @@ import {
   getErrorMessage,
 } from "./helper/utils";
 import { fillUserOp, getUserOpHash } from "./helper/AASigner";
-import BN = require("bn.js");
+import BN from "bn.js";
 
 describe("recover test", () => {
   async function recoverTxToSignedUserOp(
