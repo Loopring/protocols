@@ -29,6 +29,7 @@ import {
   TransactionRequest,
   TransactionReceipt,
 } from "@ethersproject/providers";
+import { ContractReceipt } from "@ethersproject/contracts";
 import { getAccountInitCode, WalletConfig } from "./utils";
 import {
   EntryPoint,
@@ -249,7 +250,7 @@ export async function fillAndSign(
   };
 }
 
-export type SendUserOp = (userOp: UserOperation) => Promise<TransactionReceipt>;
+export type SendUserOp = (userOp: UserOperation) => Promise<ContractReceipt>;
 
 /**
  * send UserOp using handleOps, but locally.

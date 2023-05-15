@@ -5,6 +5,7 @@ import {
   signChangeDailyQuotaWA,
   signApproveTokenWA,
   signCallContractWA,
+  signApproveThenCallContractWA,
 } from "./helper/signatureUtils";
 import {
   loadFixture,
@@ -73,8 +74,22 @@ describe("erc20 test", () => {
       false
     );
 
+    const callData = testTarget.interface.encodeFunctionData(
+      "functionPayable",
+      [10]
+    );
+    const approveThenCall =
+      await smartWallet.populateTransaction.approveThenCallContract(
+        usdtToken.address,
+        testTarget.address,
+        ethers.utils.parseEther("10000"),
+        ethers.utils.parseEther("0.01"),
+        callData,
+        false
+      );
+
     const recipt = await sendTx(
-      [approve, transferToken, callcontract],
+      [approve, transferToken, callcontract, approveThenCall],
       smartWallet,
       smartWalletOwner,
       create2,
@@ -316,15 +331,109 @@ describe("erc20 test", () => {
         signature,
       };
       const recipt = await sendUserOp(signedUserOp);
-      // TODO(check result)
+      const event = await getFirstEvent(
+        testTarget,
+        recipt.blockNumber,
+        "Invoked"
+      );
+      expect(event.args.sender).to.equal(smartWallet.address);
     });
 
     it("approveThenCallContract test", async () => {
-      const { testTarget } = await loadFixture(fixture);
+      const {
+        sendUserOp,
+        entrypoint,
+        create2,
+        guardians,
+        testTarget,
+        usdtToken,
+        smartWalletImpl,
+        smartWallet: wallet,
+        smartWalletOwner: owner,
+      } = await loadFixture(fixture);
       const callData = testTarget.interface.encodeFunctionData(
         "functionPayable",
         [10]
       );
+      const amount = ethers.utils.parseEther("10000");
+      const value = ethers.utils.parseEther("50");
+      const masterCopy = smartWalletImpl.address;
+      const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
+
+      const sig1 = signApproveThenCallContractWA(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        usdtToken.address,
+        testTarget.address,
+        new BN(amount.toString()),
+        new BN(value.toString()),
+        Buffer.from(callData.slice(2), "hex"),
+        owner.address,
+        owner.privateKey.slice(2)
+      );
+      const sig2 = signApproveThenCallContractWA(
+        masterCopy,
+        wallet.address,
+        new BN(validUntil),
+        usdtToken.address,
+        testTarget.address,
+        new BN(amount.toString()),
+        new BN(value.toString()),
+        Buffer.from(callData.slice(2), "hex"),
+        guardians[0].address,
+        guardians[0].privateKey.slice(2)
+      );
+
+      const sortedSigs = sortSignersAndSignatures(
+        [owner.address, guardians[0].address],
+        [
+          Buffer.from(sig1.txSignature.slice(2), "hex"),
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
+        ]
+      );
+
+      const approval = {
+        signers: sortedSigs.sortedSigners,
+        signatures: sortedSigs.sortedSignatures,
+        validUntil,
+        wallet: wallet.address,
+      };
+
+      const tx = await wallet.populateTransaction.approveThenCallContractWA(
+        usdtToken.address,
+        testTarget.address,
+        amount,
+        value,
+        callData
+      );
+      const partialUserOp = {
+        sender: wallet.address,
+        nonce: 0,
+        callData: tx.data,
+      };
+      const userOp = await fillUserOp(
+        partialUserOp,
+        create2.address,
+        entrypoint
+      );
+      const signature = ethers.utils.defaultAbiCoder.encode(
+        [
+          "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
+        ],
+        [approval]
+      );
+      const signedUserOp = {
+        ...userOp,
+        signature,
+      };
+      const recipt = await sendUserOp(signedUserOp);
+      const event = await getFirstEvent(
+        testTarget,
+        recipt.blockNumber,
+        "Invoked"
+      );
+      expect(event.args.sender).to.equal(wallet.address);
     });
   });
 });
