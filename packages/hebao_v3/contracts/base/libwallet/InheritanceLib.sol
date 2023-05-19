@@ -57,7 +57,6 @@ library InheritanceLib {
         address newOwner,
         bool removeGuardians
     ) external {
-        require(wallet.inheritor == msg.sender, "UNAUTHORIZED");
         require(wallet.owner != newOwner, "IS_WALLET_OWNER");
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
         require(
