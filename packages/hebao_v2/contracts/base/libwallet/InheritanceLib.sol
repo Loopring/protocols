@@ -7,9 +7,6 @@ import "./WalletData.sol";
 import "./GuardianLib.sol";
 import "./LockLib.sol";
 import "./Utils.sol";
-import "../../lib/SignatureUtil.sol";
-import "./ApprovalLib.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title InheritanceLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -18,8 +15,6 @@ library InheritanceLib {
     using InheritanceLib for Wallet;
     using LockLib for Wallet;
     using Utils for address;
-    using SignatureUtil for bytes;
-    using ECDSA for bytes32;
 
     // The minimal number of guardians for recovery and locking.
     uint public constant TOUCH_GRACE_PERIOD = 30 days;
@@ -62,7 +57,6 @@ library InheritanceLib {
         address newOwner,
         bool removeGuardians
     ) external {
-        require(wallet.inheritor == msg.sender, "UNAUTHORIZED");
         require(wallet.owner != newOwner, "IS_WALLET_OWNER");
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
         require(
@@ -80,19 +74,5 @@ library InheritanceLib {
         wallet.owner = newOwner;
 
         emit Inherited(wallet.inheritor, newOwner);
-    }
-
-    function verifyApproval(
-        Wallet storage wallet,
-        bytes32 hash,
-        bytes memory signature
-    ) external returns (uint256) {
-        // Save hash to prevent replay attacks
-        require(!wallet.hashes[hash], "HASH_EXIST");
-        wallet.hashes[hash] = true;
-        if (wallet.inheritor == hash.recover(signature)) {
-            return 0;
-        }
-        return ApprovalLib.SIG_VALIDATION_FAILED;
     }
 }

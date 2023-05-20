@@ -83,10 +83,7 @@ abstract contract SmartWallet is
     }
 
     modifier onlyFromEntryPoint() {
-        require(
-            msg.sender == address(entryPoint()) && !wallet.locked,
-            "account: not Owner or EntryPoint"
-        );
+        require(msg.sender == address(entryPoint()), "account: not EntryPoint");
         wallet.touchLastActiveWhenRequired();
         _;
     }
@@ -97,7 +94,7 @@ abstract contract SmartWallet is
             msg.sender == address(this) ||
                 ((msg.sender == address(entryPoint()) ||
                     msg.sender == wallet.owner) && !wallet.locked),
-            "account: not Owner, Self or EntryPoint"
+            "account: not Owner, Self or EntryPoint or it is locked"
         );
         wallet.touchLastActiveWhenRequired();
         _;
@@ -268,10 +265,14 @@ abstract contract SmartWallet is
         wallet.setInheritor(inheritor, waitingPeriod);
     }
 
-    function inherit(
-        address newOwner,
-        bool removeGuardians
-    ) external onlyFromEntryPoint {
+    // no need to record last active time here before inherit
+    function inherit(address newOwner, bool removeGuardians) external {
+        // allow inherit from inheritor or entrypoint
+        require(
+            msg.sender == address(entryPoint()) ||
+                msg.sender == wallet.inheritor,
+            "account: not EntryPoint or inheritor"
+        );
         wallet.inherit(newOwner, removeGuardians);
     }
 
@@ -280,7 +281,7 @@ abstract contract SmartWallet is
     //
 
     function lock() external {
-        wallet.lock();
+        wallet.lock(address(entryPoint()));
     }
 
     function unlock() external onlyFromEntryPoint {

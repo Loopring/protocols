@@ -18,6 +18,8 @@ library QuotaLib {
 
     uint128 public constant MAX_QUOTA = type(uint128).max;
     uint public constant QUOTA_PENDING_PERIOD = 1 days;
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
         keccak256(
@@ -170,29 +172,5 @@ library QuotaLib {
         Quota storage s = wallet.quota;
         s.spentAmount = _spentQuota(q).add(amount).toUint128();
         s.spentTimestamp = uint64(block.timestamp);
-    }
-
-    function verifyApproval(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData
-    ) external returns (uint256) {
-        (Approval memory approval, uint newQuota) = abi.decode(
-            callData,
-            (Approval, uint)
-        );
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    QuotaLib.CHANGE_DAILY_QUOTE_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    newQuota
-                )
-            );
     }
 }

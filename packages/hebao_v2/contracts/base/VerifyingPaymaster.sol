@@ -37,15 +37,9 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         _grantRole(SIGNER, owner());
     }
 
-    /**
-     * return the hash we're going to sign off-chain (and validate on-chain)
-     * this method is called by the off-chain service, to sign the request.
-     * it is called on-chain from the validatePaymasterUserOp, to validate the signature.
-     * note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
-     * which will carry the signature itself.
-     */
     function getHash(
-        UserOperation calldata userOp
+        UserOperation calldata userOp,
+        bytes memory packedData
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
         return
@@ -61,8 +55,9 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
                     userOp.maxFeePerGas,
                     userOp.maxPriorityFeePerGas,
                     // data of paymaster
-                    userOp.paymasterAndData,
-                    block.chainid
+                    block.chainid,
+                    address(this),
+                    packedData
                 )
             );
     }
@@ -102,26 +97,34 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             paymasterAndData[20:],
             (address, uint256, uint256, bytes)
         );
-        uint256 sigLength = decoded_data.signature.length;
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
-            sigLength == 64 || sigLength == 65,
+            decoded_data.signature.length == 64 ||
+                decoded_data.signature.length == 65,
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
 
         {
-            uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
-                10 ** priceDecimal) / decoded_data.valueOfEth;
-
-            require(
-                ERC20(decoded_data.token).allowance(sender, address(this)) >=
-                    tokenRequiredPreFund,
-                "Paymaster: not enough allowance"
-            );
+            // uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
+            // 10 ** priceDecimal) / decoded_data.valueOfEth;
+            // require(
+            // ERC20(decoded_data.token).allowance(sender, address(this)) >=
+            // tokenRequiredPreFund,
+            // "Paymaster: not enough allowance"
+            // );
         }
 
-        bytes32 hash = getHash(userOp);
+        // TODO (add validUntil)
+        bytes32 hash = getHash(
+            userOp,
+            abi.encodePacked(
+                decoded_data.token,
+                decoded_data.valueOfEth,
+                decoded_data.validUntil
+            )
+        );
+
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (
             !hasRole(
@@ -141,7 +144,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
                 userOp.gasPrice(),
                 decoded_data.valueOfEth
             ),
-            packSigTimeRange(true, decoded_data.validUntil, 0)
+            packSigTimeRange(false, decoded_data.validUntil, 0)
         );
     }
 
@@ -190,7 +193,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     }
 
     // withdraw token from this contract
-    function withdrawToken(
+    function withdrawTokens(
         address[] calldata token,
         address to,
         uint256[] calldata amount

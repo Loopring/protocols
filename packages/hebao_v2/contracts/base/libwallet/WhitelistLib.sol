@@ -14,6 +14,8 @@ library WhitelistLib {
     using WhitelistLib for Wallet;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant ADD_TO_WHITELIST_TYPEHASH =
         keccak256(
@@ -66,29 +68,5 @@ library WhitelistLib {
     ) internal {
         delete wallet.whitelisted[addr];
         emit Whitelisted(addr, false, 0);
-    }
-
-    function verifyApproval(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData
-    ) external returns (uint256) {
-        (Approval memory approval, address addr) = abi.decode(
-            callData,
-            (Approval, address)
-        );
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    ADD_TO_WHITELIST_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    addr
-                )
-            );
     }
 }
