@@ -269,8 +269,8 @@ abstract contract SmartWallet is
     function inherit(address newOwner, bool removeGuardians) external {
         // allow inherit from inheritor or entrypoint
         require(
-            msg.sender ==
-                address(entryPoint()) || msg.sender == wallet.inheritor,
+            msg.sender == address(entryPoint()) ||
+                msg.sender == wallet.inheritor,
             "account: not EntryPoint or inheritor"
         );
         wallet.inherit(newOwner, removeGuardians);

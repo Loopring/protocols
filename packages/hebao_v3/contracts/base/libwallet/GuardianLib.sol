@@ -18,6 +18,8 @@ library GuardianLib {
 
     uint public constant MAX_GUARDIANS = 10;
     uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH =
         keccak256(
@@ -425,74 +427,5 @@ library GuardianLib {
                 delete wallet.guardianIdx[g.addr];
             }
         }
-    }
-
-    function verifyApprovalForRemoveGuardian(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        address guardian = abi.decode(callData, (address));
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    REMOVE_GUARDIAN_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    guardian
-                )
-            );
-    }
-
-    function verifyApprovalForResetGuardians(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        address[] memory newGuardians = abi.decode(callData, (address[]));
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    GuardianLib.RESET_GUARDIANS_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    keccak256(abi.encodePacked(newGuardians))
-                )
-            );
-    }
-
-    function verifyApprovalForAddGuardian(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        address guardian = abi.decode(callData, (address));
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    GuardianLib.ADD_GUARDIAN_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    guardian
-                )
-            );
     }
 }

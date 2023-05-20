@@ -9,13 +9,8 @@ import {
   GuardianLib__factory,
   SmartWalletV3__factory,
 } from "../typechain-types";
-import {
-  getBlockTimestamp,
-  createSmartWallet,
-  sortSignersAndSignatures,
-} from "./helper/utils";
-import { signAddGuardianWA } from "./helper/signatureUtils";
-import { fillUserOp } from "./helper/AASigner";
+import { getBlockTimestamp, createSmartWallet } from "./helper/utils";
+import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("guardian test", () => {
@@ -185,73 +180,26 @@ describe("guardian test", () => {
     it("add guardian test", async () => {
       const {
         sendUserOp,
-        smartWalletImpl,
         smartWalletOwner,
         guardians,
-        walletFactory,
         smartWallet: wallet,
         create2,
         entrypoint,
       } = await loadFixture(fixture);
-      const masterCopy = await smartWalletImpl.address;
 
       const guardian3 = "0x" + "12".repeat(20);
-      const validUntil = 1999999999;
-
-      const sig1 = signAddGuardianWA(
-        masterCopy,
-        wallet.address,
-        guardian3,
-        new BN(validUntil),
-        smartWalletOwner.address,
-        smartWalletOwner.privateKey.slice(2)
-      );
-
-      const sig2 = signAddGuardianWA(
-        masterCopy,
-        wallet.address,
-        guardian3,
-        new BN(validUntil),
-        guardians[0].address,
-        guardians[0].privateKey.slice(2)
-      );
-
-      const sortedSigs = sortSignersAndSignatures(
-        [smartWalletOwner.address, guardians[0].address],
-        [
-          Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex"),
-        ]
-      );
       const tx = await wallet.populateTransaction.addGuardianWA(guardian3);
       const partialUserOp = {
         sender: wallet.address,
         nonce: 0,
         callData: tx.data,
       };
-      const userOp = await fillUserOp(
+      const signedUserOp = await fillAndMultiSign(
         partialUserOp,
+        [smartWalletOwner, guardians[0]],
         create2.address,
         entrypoint
       );
-
-      const approval = {
-        signers: sortedSigs.sortedSigners,
-        signatures: sortedSigs.sortedSignatures,
-        validUntil,
-        wallet: wallet.address,
-      };
-
-      const signature = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-        ],
-        [approval]
-      );
-      const signedUserOp = {
-        ...userOp,
-        signature,
-      };
 
       const recipt = await sendUserOp(signedUserOp);
       const eventData = recipt.events[0].data;

@@ -16,6 +16,7 @@ import "./libwallet/RecoverLib.sol";
 import "../lib/EIP712.sol";
 import "./libwallet/UpgradeLib.sol";
 import "./libwallet/WhitelistLib.sol";
+import "./libwallet/ApprovalLib.sol";
 import "./libwallet/ERC20Lib.sol";
 import "../lib/SignatureUtil.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -24,7 +25,7 @@ contract SmartWalletV3 is SmartWallet {
     using SignatureUtil for bytes32;
     using ECDSA for bytes32;
     using BytesUtil for bytes;
-    using UpgradeLib for Wallet;
+    using ApprovalLib for Wallet;
 
     constructor(
         PriceOracle _priceOracle,
@@ -115,122 +116,110 @@ contract SmartWalletV3 is SmartWallet {
     ) internal virtual override returns (uint256 sigTimeRange) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         bytes4 methodId = userOp.callData.toBytes4(0);
-        bytes memory callData = userOp.callData[4:];
         if (methodId == SmartWallet.addGuardianWA.selector) {
             return
-                GuardianLib.verifyApprovalForAddGuardian(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    GuardianLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.removeGuardianWA.selector) {
             return
-                GuardianLib.verifyApprovalForRemoveGuardian(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    GuardianLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.resetGuardiansWA.selector) {
             return
-                GuardianLib.verifyApprovalForResetGuardians(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    GuardianLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.changeDailyQuotaWA.selector) {
             return
-                QuotaLib.verifyApproval(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    QuotaLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.addToWhitelistWA.selector) {
             return
-                WhitelistLib.verifyApproval(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    WhitelistLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.transferTokenWA.selector) {
             return
-                ERC20Lib.verifyApprovalForTransferToken(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    ERC20Lib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.callContractWA.selector) {
             return
-                ERC20Lib.verifyApprovalForCallContract(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    ERC20Lib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.approveTokenWA.selector) {
             return
-                ERC20Lib.verifyApprovalForApproveToken(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    ERC20Lib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.approveThenCallContractWA.selector) {
             return
-                ERC20Lib.verifyApprovalForApproveThenCallContract(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    ERC20Lib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.unlock.selector) {
             return
-                LockLib.verifyApproval(
-                    wallet,
-                    DOMAIN_SEPARATOR,
+                wallet.verifyApproval(
+                    LockLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.changeMasterCopy.selector) {
             return
-                UpgradeLib.verifyApproval(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    UpgradeLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }
 
         if (methodId == SmartWallet.recover.selector) {
             return
-                RecoverLib.verifyApproval(
-                    wallet,
-                    DOMAIN_SEPARATOR,
-                    callData,
+                wallet.verifyApproval(
+                    RecoverLib.sigRequirement,
+                    userOpHash,
                     userOp.signature
                 );
         }

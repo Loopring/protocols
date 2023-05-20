@@ -15,7 +15,12 @@ import {
   getCurrentQuota,
   createSmartWallet,
 } from "./helper/utils";
-import { fillAndSign, UserOperation, fillUserOp } from "./helper/AASigner";
+import {
+  fillAndSign,
+  UserOperation,
+  fillUserOp,
+  fillAndMultiSign,
+} from "./helper/AASigner";
 import {
   SmartWalletV3,
   EntryPoint,
@@ -324,50 +329,12 @@ describe("eip4337 test", () => {
       callData: changeDailyQuotaWA.data,
       callGasLimit: "126880",
     };
-    const userOp = await fillUserOp(partialUserOp, create2.address, entrypoint);
-    const masterCopy = smartWalletImpl.address;
-    const validUntil = 9999999999;
-    const sig1 = signChangeDailyQuotaWA(
-      masterCopy,
-      smartWallet.address,
-      new BN(validUntil),
-      new BN(newQuota),
-      smartWalletOwner.address,
-      smartWalletOwner.privateKey.slice(2)
+    const signedUserOp = await fillAndMultiSign(
+      partialUserOp,
+      [smartWalletOwner, guardians[0]],
+      create2.address,
+      entrypoint
     );
-    const sig1Bs = Buffer.from(sig1.txSignature.slice(2), "hex");
-
-    const sig2 = signChangeDailyQuotaWA(
-      masterCopy,
-      smartWallet.address,
-      new BN(validUntil),
-      new BN(newQuota),
-      guardians[0].address,
-      guardians[0].privateKey.slice(2)
-    );
-    const sig2Bs = Buffer.from(sig2.txSignature.slice(2), "hex");
-
-    const sortedSigs = sortSignersAndSignatures(
-      [smartWalletOwner.address, guardians[0].address],
-      [sig1Bs, sig2Bs]
-    );
-
-    const approval = {
-      signers: sortedSigs.sortedSigners,
-      signatures: sortedSigs.sortedSignatures,
-      validUntil,
-      wallet: smartWallet.address,
-    };
-    const signature = ethers.utils.defaultAbiCoder.encode(
-      [
-        "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-      ],
-      [approval]
-    );
-    const signedUserOp = {
-      ...userOp,
-      signature,
-    };
     const recipt = await sendUserOp(signedUserOp);
     const quotaInfo = (await smartWallet.wallet())["quota"];
     const currentQuota = await getCurrentQuota(quotaInfo, recipt.blockNumber);

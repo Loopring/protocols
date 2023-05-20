@@ -2,7 +2,9 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { signRecover } from "./helper/signatureUtils";
+import { Wallet } from "ethers";
 import { fixture } from "./helper/fixture";
+import _ from "lodash";
 import {
   PaymasterOption,
   evInfo,
@@ -10,7 +12,7 @@ import {
   sortSignersAndSignatures,
   getErrorMessage,
 } from "./helper/utils";
-import { fillUserOp, getUserOpHash } from "./helper/AASigner";
+import { fillUserOp, getUserOpHash, fillAndMultiSign } from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("recover test", () => {
@@ -21,7 +23,7 @@ describe("recover test", () => {
     entrypoint,
     masterCopy,
     newOwnerAddr,
-    guardians
+    guardians: Wallet[]
   ) {
     const partialUserOp = {
       sender: smartWallet.address,
@@ -29,52 +31,12 @@ describe("recover test", () => {
       callData: recover.data,
       callGasLimit: "126880",
     };
-    const userOp = await fillUserOp(partialUserOp, create2.address, entrypoint);
-    // const masterCopy = smartWalletImpl.address;
-    const validUntil = 9999999999;
-    const sig1 = signRecover(
-      masterCopy,
-      smartWallet.address,
-      new BN(validUntil),
-      newOwnerAddr,
-      [],
-      guardians[0].address,
-      guardians[0].privateKey.slice(2)
+    const signedUserOp = await fillAndMultiSign(
+      partialUserOp,
+      guardians,
+      create2.address,
+      entrypoint
     );
-    const sig1Bs = Buffer.from(sig1.txSignature.slice(2), "hex");
-
-    const sig2 = signRecover(
-      masterCopy,
-      smartWallet.address,
-      new BN(validUntil),
-      newOwnerAddr,
-      [],
-      guardians[1].address,
-      guardians[1].privateKey.slice(2)
-    );
-    const sig2Bs = Buffer.from(sig2.txSignature.slice(2), "hex");
-
-    const sortedSigs = sortSignersAndSignatures(
-      [guardians[0].address, guardians[1].address],
-      [sig1Bs, sig2Bs]
-    );
-
-    const approval = {
-      signers: sortedSigs.sortedSigners,
-      signatures: sortedSigs.sortedSignatures,
-      validUntil,
-      wallet: smartWallet.address,
-    };
-    const signature = ethers.utils.defaultAbiCoder.encode(
-      [
-        "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-      ],
-      [approval]
-    );
-    const signedUserOp = {
-      ...userOp,
-      signature,
-    };
     return signedUserOp;
   }
 

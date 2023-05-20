@@ -39,8 +39,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
 
     function getHash(
         UserOperation calldata userOp,
-        address token,
-        uint256 valueOfEth
+        bytes memory packedData
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
         return
@@ -58,8 +57,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
                     // data of paymaster
                     block.chainid,
                     address(this),
-                    token,
-                    valueOfEth
+                    packedData
                 )
             );
     }
@@ -99,11 +97,11 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             paymasterAndData[20:],
             (address, uint256, uint256, bytes)
         );
-        uint256 sigLength = decoded_data.signature.length;
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
-            sigLength == 64 || sigLength == 65,
+            decoded_data.signature.length == 64 ||
+                decoded_data.signature.length == 65,
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
 
@@ -120,8 +118,11 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         // TODO (add validUntil)
         bytes32 hash = getHash(
             userOp,
-            decoded_data.token,
-            decoded_data.valueOfEth
+            abi.encodePacked(
+                decoded_data.token,
+                decoded_data.valueOfEth,
+                decoded_data.validUntil
+            )
         );
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED

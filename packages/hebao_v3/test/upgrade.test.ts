@@ -14,7 +14,7 @@ import {
 import { fixture } from "./helper/fixture";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 import { ethers } from "hardhat";
-import { fillUserOp } from "./helper/AASigner";
+import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
 
 import { Contract, Signer } from "ethers";
 import BN = require("bn.js");
@@ -36,44 +36,6 @@ describe("wallet", () => {
         entrypoint.address,
         ethers.constants.AddressZero
       );
-      const validUntil = 9999999999;
-      const currentImpl = smartWalletImpl.address;
-      const sig1 = signChangeMasterCopy(
-        wallet.address,
-        currentImpl,
-        new BN(validUntil),
-        newSmartWalletImpl.address,
-        smartWalletOwner.address,
-        smartWalletOwner.privateKey.slice(2)
-      );
-      const sig1Bs = Buffer.from(sig1.txSignature.slice(2), "hex");
-      const sig2 = signChangeMasterCopy(
-        wallet.address,
-        currentImpl,
-        new BN(validUntil),
-        newSmartWalletImpl.address,
-        guardians[0].address,
-        guardians[0].privateKey.slice(2)
-      );
-      const sig2Bs = Buffer.from(sig2.txSignature.slice(2), "hex");
-      const sortedSigs = sortSignersAndSignatures(
-        [smartWalletOwner.address, guardians[0].address],
-        [sig1Bs, sig2Bs]
-      );
-
-      const approval = {
-        signers: sortedSigs.sortedSigners,
-        signatures: sortedSigs.sortedSignatures,
-        validUntil,
-        wallet: wallet.address,
-      };
-      const signature = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-        ],
-        [approval]
-      );
-
       const changeMasterCopy =
         await wallet.populateTransaction.changeMasterCopy(
           newSmartWalletImpl.address
@@ -84,15 +46,12 @@ describe("wallet", () => {
         nonce: 0,
         callData: changeMasterCopy.data,
       };
-      const userOp = await fillUserOp(
+      const signedUserOp = await fillAndMultiSign(
         partialUserOp,
+        [smartWalletOwner, guardians[0]],
         create2.address,
         entrypoint
       );
-      const signedUserOp = {
-        ...userOp,
-        signature,
-      };
 
       const recipt = await sendUserOp(signedUserOp);
 

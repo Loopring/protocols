@@ -17,6 +17,8 @@ library RecoverLib {
     using Utils for address;
 
     event Recovered(address newOwner);
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_NOT_ALLOWED;
 
     bytes32 public constant RECOVER_TYPEHASH =
         keccak256(
@@ -54,33 +56,5 @@ library RecoverLib {
         }
 
         emit Recovered(newOwner);
-    }
-
-    function verifyApproval(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        (address newOwner, address[] memory newGuardians) = abi.decode(
-            callData,
-            (address, address[])
-        );
-        Approval memory approval = abi.decode(signature, (Approval));
-
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_NOT_ALLOWED,
-                approval,
-                abi.encode(
-                    RECOVER_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    newOwner,
-                    keccak256(abi.encodePacked(newGuardians))
-                )
-            );
     }
 }

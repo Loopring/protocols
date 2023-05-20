@@ -8,7 +8,7 @@ import {
 } from "./helper/utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
-import { fillUserOp } from "./helper/AASigner";
+import { fillAndMultiSign } from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("quota test", () => {
@@ -103,52 +103,13 @@ describe("quota test", () => {
       callData: tx.data,
       callGasLimit: "126880",
     };
-    const userOp = await fillUserOp(partialUserOp, create2.address, entrypoint);
-
-    const masterCopy = await smartWalletImpl.address;
-    const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
-    const sig1 = signChangeDailyQuotaWA(
-      masterCopy,
-      smartWallet.address,
-      new BN(validUntil),
-      new BN(newQuota),
-      smartWalletOwner.address,
-      smartWalletOwner.privateKey.slice(2)
-    );
-    const sig2 = signChangeDailyQuotaWA(
-      masterCopy,
-      smartWallet.address,
-      new BN(validUntil),
-      new BN(newQuota),
-      guardians[0].address,
-      guardians[0].privateKey.slice(2)
+    const signedUserOp = await fillAndMultiSign(
+      partialUserOp,
+      [smartWalletOwner, guardians[0]],
+      create2.address,
+      entrypoint
     );
 
-    const sortedSigs = sortSignersAndSignatures(
-      [smartWalletOwner.address, guardians[0].address],
-      [
-        Buffer.from(sig1.txSignature.slice(2), "hex"),
-        Buffer.from(sig2.txSignature.slice(2), "hex"),
-      ]
-    );
-
-    const approval = {
-      signers: sortedSigs.sortedSigners,
-      signatures: sortedSigs.sortedSignatures,
-      validUntil,
-      wallet: smartWallet.address,
-    };
-
-    const signature = ethers.utils.defaultAbiCoder.encode(
-      [
-        "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-      ],
-      [approval]
-    );
-    const signedUserOp = {
-      ...userOp,
-      signature,
-    };
     const recipt = await sendUserOp(signedUserOp);
 
     const quotaInfo = (await smartWallet.wallet())["quota"];

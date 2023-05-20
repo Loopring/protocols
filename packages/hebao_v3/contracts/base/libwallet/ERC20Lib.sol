@@ -23,6 +23,9 @@ library ERC20Lib {
     using QuotaLib for Wallet;
     using SafeERC20 for ERC20;
 
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_REQUIRED;
+
     event Transfered(address token, address to, uint amount, bytes logdata);
     event Approved(address token, address spender, uint amount);
     event ContractCalled(address to, uint value, bytes data);
@@ -227,121 +230,5 @@ library ERC20Lib {
         require(success, "CALL_FAILED");
 
         emit ContractCalled(to, value, txData);
-    }
-
-    function verifyApprovalForApproveThenCallContract(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        (
-            address token,
-            address to,
-            uint amount,
-            uint value,
-            bytes memory data
-        ) = abi.decode(callData, (address, address, uint, uint, bytes));
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    ERC20Lib.APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    token,
-                    to,
-                    amount,
-                    value,
-                    keccak256(data)
-                )
-            );
-    }
-
-    function verifyApprovalForApproveToken(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        (address token, address to, uint amount) = abi.decode(
-            callData,
-            (address, address, uint)
-        );
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    ERC20Lib.APPROVE_TOKEN_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    token,
-                    to,
-                    amount
-                )
-            );
-    }
-
-    function verifyApprovalForCallContract(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        (address to, uint value, bytes memory data) = abi.decode(
-            callData,
-            (address, uint, bytes)
-        );
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    ERC20Lib.CALL_CONTRACT_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    to,
-                    value,
-                    keccak256(data)
-                )
-            );
-    }
-
-    function verifyApprovalForTransferToken(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory callData,
-        bytes memory signature
-    ) external returns (uint256) {
-        (address token, address to, uint amount, bytes memory logdata) = abi
-            .decode(callData, (address, address, uint, bytes));
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            ApprovalLib.verifyApproval(
-                wallet,
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    ERC20Lib.TRANSFER_TOKEN_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil,
-                    token,
-                    to,
-                    amount,
-                    keccak256(logdata)
-                )
-            );
     }
 }

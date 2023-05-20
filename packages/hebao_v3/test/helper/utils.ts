@@ -738,12 +738,12 @@ export async function sendTx(
     const payToken = paymasterOption.payToken;
     const valueOfEth = paymasterOption.valueOfEth;
     const validUntil = paymasterOption.validUntil;
-
-    const hash = await paymaster.getHash(
-      signedUserOp,
-      payToken.address,
-      valueOfEth
+    const packedData = ethers.utils.solidityPack(
+      ["address", "uint256", "uint256"],
+      [payToken.address, valueOfEth, validUntil]
     );
+
+    const hash = await paymaster.getHash(signedUserOp, packedData);
 
     const paymasterAndData = await getPaymasterAndData(
       paymaster.address,

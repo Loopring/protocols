@@ -15,6 +15,9 @@ library LockLib {
 
     event WalletLocked(address by, bool locked);
 
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_REQUIRED;
+
     bytes32 public constant LOCK_TYPEHASH =
         keccak256("lock(address wallet,uint256 validUntil)");
     bytes32 public constant UNLOCK_TYPEHASH =
@@ -38,24 +41,5 @@ library LockLib {
     function setLock(Wallet storage wallet, address by, bool locked) internal {
         wallet.locked = locked;
         emit WalletLocked(by, locked);
-    }
-
-    function verifyApproval(
-        Wallet storage wallet,
-        bytes32 domainSeparator,
-        bytes memory signature
-    ) external returns (uint256) {
-        Approval memory approval = abi.decode(signature, (Approval));
-        return
-            wallet.verifyApproval(
-                domainSeparator,
-                SigRequirement.MAJORITY_OWNER_REQUIRED,
-                approval,
-                abi.encode(
-                    UNLOCK_TYPEHASH,
-                    approval.wallet,
-                    approval.validUntil
-                )
-            );
     }
 }

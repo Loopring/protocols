@@ -7,6 +7,7 @@ import {
   Contract,
   constants,
 } from "ethers";
+import _ from "lodash";
 import { ethers } from "hardhat";
 import { zeroAddress } from "ethereumjs-util";
 import {
@@ -231,6 +232,52 @@ export async function fillUserOp(
     op2.preVerificationGas = callDataCost(packUserOp(op2, false));
   }
   return op2;
+}
+
+export async function fillAndMultiSign(
+  op: Partial<UserOperation>,
+  signers: Wallet[],
+  walletFactoryAddress: string,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+): Promise<UserOperation> {
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // const approvedHash = userOpHash;
+  const approvedHash = ethers.utils.solidityKeccak256(
+    ["bytes32", "uint256"],
+    [userOpHash, validUntil]
+  );
+  const message = arrayify(approvedHash);
+
+  const signatures = await Promise.all(
+    signers.map((g) => g.signMessage(message))
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        signers.map((g) => g.address),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
 }
 
 export async function fillAndSign(

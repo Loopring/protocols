@@ -21,7 +21,7 @@ import {
   createSmartWallet,
   getFirstEvent,
 } from "./helper/utils";
-import { fillAndSign, UserOperation, fillUserOp } from "./helper/AASigner";
+import { fillAndMultiSign, UserOperation, fillUserOp } from "./helper/AASigner";
 import {
   SmartWalletV3,
   EntryPoint,
@@ -190,59 +190,13 @@ describe("erc20 test", () => {
         callData: tx.data,
         callGasLimit: "126880",
       };
-      const userOp = await fillUserOp(
+      const signedUserOp = await fillAndMultiSign(
         partialUserOp,
+        [smartWalletOwner, guardians[0]],
         create2.address,
         entrypoint
       );
-      const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
-      const masterCopy = smartWalletImpl.address;
-      const sig1 = signApproveTokenWA(
-        masterCopy,
-        smartWallet.address,
-        new BN(validUntil),
-        usdtToken.address,
-        toAddr,
-        amount,
-        smartWalletOwner.address,
-        smartWalletOwner.privateKey.slice(2)
-      );
-      const sig2 = signApproveTokenWA(
-        masterCopy,
-        smartWallet.address,
-        new BN(validUntil),
-        usdtToken.address,
-        toAddr,
-        amount,
-        guardians[0].address,
-        guardians[0].privateKey.slice(2)
-      );
 
-      const sortedSigs = sortSignersAndSignatures(
-        [smartWalletOwner.address, guardians[0].address],
-        [
-          Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex"),
-        ]
-      );
-
-      const approval = {
-        signers: sortedSigs.sortedSigners,
-        signatures: sortedSigs.sortedSignatures,
-        validUntil,
-        wallet: smartWallet.address,
-      };
-
-      const signature = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-        ],
-        [approval]
-      );
-      const signedUserOp = {
-        ...userOp,
-        signature,
-      };
       const recipt = await sendUserOp(signedUserOp);
       // check allowance
       const allowance = await usdtToken.allowance(smartWallet.address, toAddr);
@@ -282,54 +236,12 @@ describe("erc20 test", () => {
         create2.address,
         entrypoint
       );
-      const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
-      const masterCopy = smartWalletImpl.address;
-      const sig1 = signCallContractWA(
-        masterCopy,
-        smartWallet.address,
-        new BN(validUntil),
-        testTarget.address,
-        new BN(0),
-        Buffer.from(functionDefault.data.slice(2), "hex"),
-        smartWalletOwner.address,
-        smartWalletOwner.privateKey.slice(2)
+      const signedUserOp = await fillAndMultiSign(
+        partialUserOp,
+        [smartWalletOwner, guardians[0]],
+        create2.address,
+        entrypoint
       );
-      const sig2 = signCallContractWA(
-        masterCopy,
-        smartWallet.address,
-        new BN(validUntil),
-        testTarget.address,
-        new BN(0),
-        Buffer.from(functionDefault.data.slice(2), "hex"),
-        guardians[0].address,
-        guardians[0].privateKey.slice(2)
-      );
-
-      const sortedSigs = sortSignersAndSignatures(
-        [smartWalletOwner.address, guardians[0].address],
-        [
-          Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex"),
-        ]
-      );
-
-      const approval = {
-        signers: sortedSigs.sortedSigners,
-        signatures: sortedSigs.sortedSignatures,
-        validUntil,
-        wallet: smartWallet.address,
-      };
-
-      const signature = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-        ],
-        [approval]
-      );
-      const signedUserOp = {
-        ...userOp,
-        signature,
-      };
       const recipt = await sendUserOp(signedUserOp);
       const event = await getFirstEvent(
         testTarget,
@@ -347,9 +259,8 @@ describe("erc20 test", () => {
         guardians,
         testTarget,
         usdtToken,
-        smartWalletImpl,
         smartWallet: wallet,
-        smartWalletOwner: owner,
+        smartWalletOwner,
       } = await loadFixture(fixture);
       const callData = testTarget.interface.encodeFunctionData(
         "functionPayable",
@@ -357,48 +268,6 @@ describe("erc20 test", () => {
       );
       const amount = ethers.utils.parseEther("10000");
       const value = ethers.utils.parseEther("50");
-      const masterCopy = smartWalletImpl.address;
-      const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
-
-      const sig1 = signApproveThenCallContractWA(
-        masterCopy,
-        wallet.address,
-        new BN(validUntil),
-        usdtToken.address,
-        testTarget.address,
-        new BN(amount.toString()),
-        new BN(value.toString()),
-        Buffer.from(callData.slice(2), "hex"),
-        owner.address,
-        owner.privateKey.slice(2)
-      );
-      const sig2 = signApproveThenCallContractWA(
-        masterCopy,
-        wallet.address,
-        new BN(validUntil),
-        usdtToken.address,
-        testTarget.address,
-        new BN(amount.toString()),
-        new BN(value.toString()),
-        Buffer.from(callData.slice(2), "hex"),
-        guardians[0].address,
-        guardians[0].privateKey.slice(2)
-      );
-
-      const sortedSigs = sortSignersAndSignatures(
-        [owner.address, guardians[0].address],
-        [
-          Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex"),
-        ]
-      );
-
-      const approval = {
-        signers: sortedSigs.sortedSigners,
-        signatures: sortedSigs.sortedSignatures,
-        validUntil,
-        wallet: wallet.address,
-      };
 
       const tx = await wallet.populateTransaction.approveThenCallContractWA(
         usdtToken.address,
@@ -412,21 +281,12 @@ describe("erc20 test", () => {
         nonce: 0,
         callData: tx.data,
       };
-      const userOp = await fillUserOp(
+      const signedUserOp = await fillAndMultiSign(
         partialUserOp,
+        [smartWalletOwner, guardians[0]],
         create2.address,
         entrypoint
       );
-      const signature = ethers.utils.defaultAbiCoder.encode(
-        [
-          "tuple(address[] signers,bytes[] signatures,uint256 validUntil,address wallet)",
-        ],
-        [approval]
-      );
-      const signedUserOp = {
-        ...userOp,
-        signature,
-      };
       const recipt = await sendUserOp(signedUserOp);
       const event = await getFirstEvent(
         testTarget,
