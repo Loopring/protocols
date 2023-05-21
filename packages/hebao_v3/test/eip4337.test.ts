@@ -134,6 +134,53 @@ describe("eip4337 test", () => {
       .to.revertedWithCustomError(entrypoint, "FailedOp")
       .withArgs(0, ethers.constants.AddressZero, "wallet is locked");
   });
+
+  it("check valid until", async () => {
+    const {
+      entrypoint,
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      deployer,
+      sendUserOp,
+      smartWalletImpl,
+      paymaster,
+      guardians,
+      usdtToken,
+    } = await loadFixture(fixture);
+
+    const newQuota = 100;
+    const changeDailyQuotaWA =
+      await smartWallet.populateTransaction.changeDailyQuotaWA(newQuota);
+    const partialUserOp = {
+      sender: smartWallet.address,
+      nonce: 0,
+      callData: changeDailyQuotaWA.data,
+      // skip gas estimation
+      callGasLimit: "126880",
+    };
+    let validUntil = 1;
+    const signedUserOp = await fillAndMultiSign(
+      partialUserOp,
+      [smartWalletOwner, guardians[0]],
+      create2.address,
+      entrypoint,
+      validUntil
+    );
+    await expect(sendUserOp(signedUserOp))
+      .to.revertedWithCustomError(entrypoint, "FailedOp")
+      .withArgs(0, ethers.constants.AddressZero, "AA22 expired or not due");
+    const block = await ethers.provider.getBlock("latest");
+    validUntil = block.timestamp + 3600;
+    const signedUserOp2 = await fillAndMultiSign(
+      partialUserOp,
+      [smartWalletOwner, guardians[0]],
+      create2.address,
+      entrypoint,
+      validUntil
+    );
+    await expect(sendUserOp(signedUserOp2)).not.to.reverted;
+  });
   it("transfer token from wallet owner", async () => {
     const {
       smartWallet,
