@@ -225,7 +225,7 @@ contract SmartWalletV3 is SmartWallet {
         }
 
         if (methodId == SmartWallet.inherit.selector) {
-            if (wallet.inheritor == hash.recover(userOp.signature)) {
+            if (hash.verifySignature(wallet.inheritor, userOp.signature)) {
                 return 0;
             }
             return SIG_VALIDATION_FAILED;
@@ -233,7 +233,7 @@ contract SmartWalletV3 is SmartWallet {
 
         require(!wallet.locked, "wallet is locked");
 
-        if (wallet.owner != hash.recover(userOp.signature))
+        if (!hash.verifySignature(wallet.owner, userOp.signature))
             return SIG_VALIDATION_FAILED;
         return 0;
     }

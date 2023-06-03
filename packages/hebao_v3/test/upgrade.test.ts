@@ -17,7 +17,11 @@ import { ethers } from "hardhat";
 import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
 
 import { Contract, Signer } from "ethers";
-import BN = require("bn.js");
+import BN from "bn.js";
+import {
+  DummySmartWallet,
+  DummySmartWallet__factory,
+} from "../typechain-types";
 
 describe("wallet", () => {
   describe("upgrade", () => {
@@ -31,11 +35,21 @@ describe("wallet", () => {
         sendUserOp,
         smartWalletImpl,
       } = await loadFixture(fixture);
-      const newSmartWalletImpl = await deployWalletImpl(
-        create2,
-        entrypoint.address,
-        ethers.constants.AddressZero
-      );
+      const GuardianLib = await (
+        await ethers.getContractFactory("GuardianLib")
+      ).deploy();
+      // const newSmartWalletImpl = await deployWalletImpl(
+      // create2,
+      // entrypoint.address,
+      // ethers.constants.AddressZero
+      // );
+      // deploy impl of new verision
+      const newSmartWalletImpl = await (
+        await ethers.getContractFactory("DummySmartWallet", {
+          libraries: { GuardianLib: GuardianLib.address },
+        })
+      ).deploy();
+
       const changeMasterCopy =
         await wallet.populateTransaction.changeMasterCopy(
           newSmartWalletImpl.address
@@ -57,6 +71,22 @@ describe("wallet", () => {
 
       const masterCopyOfWallet = await wallet.getMasterCopy();
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
+
+      // test new impl
+
+      const dummyWallet = DummySmartWallet__factory.connect(
+        wallet.address,
+        smartWalletOwner
+      );
+      expect(await dummyWallet.emitSomething())
+        .to.emit(newSmartWalletImpl, "Invoked")
+        .withArgs("hello world");
+      const walletData = await dummyWallet.wallet();
+      const newGuardians = await dummyWallet.getGuardians(true);
+      // guardians data is the same as before
+      guardians.forEach((g, i) =>
+        expect(g.address).to.eq(newGuardians[i].addr)
+      );
     });
   });
 
@@ -122,24 +152,77 @@ describe("wallet", () => {
         smartWalletOwner,
         implStorage,
         create2,
+        guardians,
+        sendUserOp,
         entrypoint,
         blankOwner,
+        usdtToken,
+        deployer,
       } = await loadFixture(fixture);
       const currentImpl = await smartWallet.getMasterCopy();
       expect(currentImpl).to.eq(forwardProxy.address);
       expect(await smartWallet.blankOwner()).to.eq(blankOwner.address);
 
       // random blankowner
-      const ownerSetter = "0xB7101ff647ac42e776bA857907DdBE743522AA95";
+      const ownerSetter = ethers.Wallet.createRandom().connect(ethers.provider);
       const newSmartWalletImpl = await deployWalletImpl(
         create2,
         entrypoint.address,
-        ownerSetter
+        ownerSetter.address
       );
       await implStorage.delayedUpgradeTo(newSmartWalletImpl.address, 1);
       await time.increase(3600 * 24);
       await implStorage.executeUpgrade();
-      expect(await smartWallet.blankOwner()).to.eq(ownerSetter);
+      // check immutable data
+      expect(await smartWallet.blankOwner()).to.eq(ownerSetter.address);
+
+      // transfer token
+      const receiver = deployer.address;
+      const initTokenAmount = ethers.utils.parseUnits("1000", 6);
+      await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+      const tokenAmount = ethers.utils.parseUnits("100", 6);
+      {
+        const usdtTokenBalanceBefore = await usdtToken.balanceOf(receiver);
+        await smartWallet.transferToken(
+          usdtToken.address,
+          receiver,
+          tokenAmount,
+          "0x",
+          false
+        );
+        const usdtTokenBalanceAfter = await usdtToken.balanceOf(receiver);
+        expect(usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)).to.eq(
+          tokenAmount
+        );
+      }
+
+      // transfer token with approval(guardians is the same as before so that multisig is still valid)
+      {
+        const usdtTokenBalanceBefore = await usdtToken.balanceOf(receiver);
+        const transferTokenWA =
+          await smartWallet.populateTransaction.transferTokenWA(
+            usdtToken.address,
+            receiver,
+            tokenAmount,
+            "0x"
+          );
+        const partialUserOp = {
+          sender: smartWallet.address,
+          nonce: 0,
+          callData: transferTokenWA.data,
+        };
+        const signedUserOp = await fillAndMultiSign(
+          partialUserOp,
+          [smartWalletOwner, guardians[0]],
+          create2.address,
+          entrypoint
+        );
+        await sendUserOp(signedUserOp);
+        const usdtTokenBalanceAfter = await usdtToken.balanceOf(receiver);
+        expect(usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)).to.eq(
+          tokenAmount
+        );
+      }
     });
   });
 });

@@ -3,12 +3,14 @@ import { expect } from "chai";
 import {
   loadFixture,
   setBalance,
+  time,
 } from "@nomicfoundation/hardhat-network-helpers";
 import { signUnlock } from "./helper/signatureUtils";
 import {
   SmartWalletV3,
   EntryPoint,
   LoopringCreate2Deployer,
+  SmartWalletV3__factory,
 } from "../typechain-types";
 import { fixture } from "./helper/fixture";
 import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
@@ -19,6 +21,7 @@ import {
   sortSignersAndSignatures,
   getErrorMessage,
   sendTx,
+  createSmartWallet,
 } from "./helper/utils";
 import {
   fillUserOp,
@@ -151,6 +154,56 @@ describe("lock test", () => {
         undefined,
         false
       );
+      expect((await smartWallet.wallet()).locked).to.equal(true);
+    });
+
+    it("lock wallet by guardian(smart wallet)", async () => {
+      // create new smart wallet as guardian then add it
+      const {
+        entrypoint,
+        smartWallet,
+        smartWalletOwner,
+        create2,
+        deployer,
+        sendUserOp,
+        smartWalletImpl,
+        guardians,
+        walletFactory,
+      } = await loadFixture(fixture);
+      const guardianOwner = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      );
+      const salt = ethers.utils.formatBytes32String("0x5");
+      await createSmartWallet(guardianOwner, [], walletFactory, salt);
+      const smartWalletAddr = await walletFactory.computeWalletAddress(
+        guardianOwner.address,
+        salt
+      );
+      const guardian = SmartWalletV3__factory.connect(
+        smartWalletAddr,
+        guardianOwner
+      );
+      // add guardian
+      expect(await smartWallet.isGuardian(guardian.address, true)).to.be.false;
+      await smartWallet.addGuardian(guardian.address);
+      expect(await smartWallet.isGuardian(guardian.address, true)).to.be.true;
+      await time.increase(3600 * 24 * 3);
+      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.true;
+
+      expect((await smartWallet.wallet()).locked).to.equal(false);
+      const lock = await smartWallet.populateTransaction.lock();
+      await setBalance(guardian.address, ethers.utils.parseEther("100"));
+      // note that user op here is signed by guardian owner
+      // instead of guardian when it is smart wallet rather than EOA
+      const recipt = await sendTx(
+        [lock],
+        guardian,
+        guardianOwner,
+        create2,
+        entrypoint,
+        sendUserOp
+      );
+      // check if it is locked by the new guardian
       expect((await smartWallet.wallet()).locked).to.equal(true);
     });
   });

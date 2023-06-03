@@ -41,6 +41,10 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         _grantRole(SIGNER, owner());
     }
 
+    receive() external payable {
+        revert("eth rejected");
+    }
+
     function getHash(
         UserOperation calldata userOp,
         bytes memory packedData
@@ -113,14 +117,19 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
 
-        {
-            // uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
-            // 10 ** priceDecimal) / decoded_data.valueOfEth;
-            // require(
-            // ERC20(decoded_data.token).allowance(sender, address(this)) >=
-            // tokenRequiredPreFund,
-            // "Paymaster: not enough allowance"
-            // );
+        if (decoded_data.valueOfEth > 0) {
+            uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
+                10 ** priceDecimal) / decoded_data.valueOfEth;
+            require(
+                balances[ERC20(decoded_data.token)][sender] >=
+                    tokenRequiredPreFund ||
+                    ERC20(decoded_data.token).allowance(
+                        sender,
+                        address(this)
+                    ) >=
+                    tokenRequiredPreFund,
+                "Paymaster: not enough allowance"
+            );
         }
 
         bytes32 hash = getHash(

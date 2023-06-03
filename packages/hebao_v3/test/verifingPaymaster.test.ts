@@ -57,8 +57,32 @@ describe("verifingPaymaster test", () => {
     };
 
     expect(await usdtToken.balanceOf(deployer.address)).to.eq(0);
+
+    // allowance check failed
+    await expect(
+      sendTx(
+        [transferToken],
+        smartWallet,
+        smartWalletOwner,
+        create2,
+        entrypoint,
+        sendUserOp,
+        paymasterOption
+      )
+    )
+      .to.revertedWithCustomError(entrypoint, "FailedOp")
+      .withArgs(0, paymaster.address, "Paymaster: not enough allowance");
+    // approve before transfertoken
+    await sendTx(
+      [approveToken],
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      entrypoint,
+      sendUserOp
+    );
     const recipt = await sendTx(
-      [approveToken, transferToken],
+      [transferToken],
       smartWallet,
       smartWalletOwner,
       create2,
@@ -73,9 +97,9 @@ describe("verifingPaymaster test", () => {
     expect(await usdtToken.balanceOf(paymaster.address)).to.eq(
       initTokenAmount.sub(afterBalance).sub(tokenAmount)
     );
-    // TODO(check eth balance for paymaster)
+    // // TODO(check eth balance for paymaster)
 
-    // sendtx for free
+    // // sendtx for free
     paymasterOption.valueOfEth = 0;
 
     await sendTx(
@@ -87,7 +111,7 @@ describe("verifingPaymaster test", () => {
       sendUserOp,
       paymasterOption
     );
-    // no fee for sending tx
+    // // no fee for sending tx
     expect(await usdtToken.balanceOf(smartWallet.address)).to.eq(
       afterBalance.sub(tokenAmount)
     );
@@ -122,6 +146,23 @@ describe("verifingPaymaster test", () => {
       valueOfEth,
       validUntil: 1,
     };
+    // approve first
+    const approveToken = await usdtToken.populateTransaction.approve(
+      paymaster.address,
+      ethers.constants.MaxUint256
+    );
+
+    await expect(
+      sendTx(
+        [approveToken],
+        smartWallet,
+        smartWalletOwner,
+        create2,
+        entrypoint,
+        sendUserOp
+      )
+    ).not.to.reverted;
+
     await expect(
       sendTx(
         [transferEth],
@@ -136,13 +177,9 @@ describe("verifingPaymaster test", () => {
       .to.revertedWithCustomError(entrypoint, "FailedOp")
       .withArgs(0, paymaster.address, "AA32 paymaster expired or not due");
     paymasterOption.validUntil = 3600 + block.timestamp;
-    const approveToken = await usdtToken.populateTransaction.approve(
-      paymaster.address,
-      ethers.constants.MaxUint256
-    );
     await expect(
       sendTx(
-        [approveToken, transferEth],
+        [transferEth],
         smartWallet,
         smartWalletOwner,
         create2,
@@ -186,6 +223,15 @@ describe("verifingPaymaster test", () => {
     await paymaster.withdrawStake(withdrawer);
     const balanceAfter = await ethers.provider.getBalance(withdrawer);
     expect(balanceAfter.sub(balanceBefore)).eq(amount);
+  });
+
+  it("reject eth and any erc20 token directly", async () => {
+    const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
+      await loadFixture(fixture);
+    const value = ethers.utils.parseEther("1");
+    await expect(
+      deployer.sendTransaction({ to: paymaster.address, value })
+    ).to.revertedWith("eth rejected");
   });
 
   describe("gas tank", () => {

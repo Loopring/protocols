@@ -97,15 +97,18 @@ export async function fixture() {
   );
   const sendUserOp = localUserOpSender(entrypoint.address, deployer);
 
-  const guardians: Wallet[] = [];
+  let guardians: Wallet[] = [];
   for (let i = 0; i < 2; i++) {
     guardians.push(await ethers.Wallet.createRandom().connect(ethers.provider));
   }
+  guardians.sort((a, b) =>
+    a.address.toLowerCase() < b.address.toLowerCase() ? -1 : 1
+  );
 
   const salt = ethers.utils.formatBytes32String("0x5");
   await createSmartWallet(
     smartWalletOwner,
-    guardians.map((g) => g.address.toLowerCase()).sort(),
+    guardians.map((g) => g.address.toLowerCase()),
     walletFactory,
     salt
   );
