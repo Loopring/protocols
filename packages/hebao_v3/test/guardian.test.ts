@@ -1,9 +1,11 @@
-import { ethers } from "ethers";
+import { ethers } from "hardhat";
 import { expect } from "chai";
 import { fixture } from "./helper/fixture";
 import {
   loadFixture,
   setBalance,
+  time,
+  takeSnapshot,
 } from "@nomicfoundation/hardhat-network-helpers";
 import {
   GuardianLib__factory,
@@ -124,7 +126,7 @@ describe("guardian test", () => {
     const blockTime1 = await getBlockTimestamp(tx1.blockNumber);
     // third guardian will be effective in 3 days.
     expect(addEvent1.effectiveTime.toNumber()).to.equal(
-      blockTime1 + 3600 * 24 * 3
+      blockTime1 + three_days
     );
   });
   it("guardian deletion will be effective in 3 days", async () => {
@@ -145,7 +147,7 @@ describe("guardian test", () => {
     expect(removeEvent.guardian).to.equal(guardian1);
     const blockTime = await getBlockTimestamp(tx1.blockNumber);
     expect(removeEvent.effectiveTime.toNumber()).to.equal(
-      blockTime + 3 * 24 * 3600
+      blockTime + three_days
     );
   });
 
@@ -172,9 +174,110 @@ describe("guardian test", () => {
       "GUARDIAN_CAN_NOT_BE_OWNER"
     );
   });
+
+  it("guardian can be smartwallet", async () => {
+    const {
+      sendUserOp,
+      create2,
+      entrypoint,
+      smartWalletOwner,
+      smartWallet,
+      guardians,
+      walletFactory,
+      usdtToken,
+      deployer,
+    } = await loadFixture(fixture);
+    const guardianOwner = ethers.Wallet.createRandom().connect(ethers.provider);
+    const guardian = await createRandomWallet(guardianOwner, [], walletFactory);
+    // TODO(add guardian will destroy guardians ordering)
+    await smartWallet.addGuardian(guardian.address);
+    await time.increase(three_days);
+
+    // use new guardian signature to approve token
+    const receiver = deployer.address;
+    const tokenAmount = ethers.utils.parseUnits("100", 6);
+    const approveTokenWA = await smartWallet.populateTransaction.approveTokenWA(
+      usdtToken.address,
+      receiver,
+      tokenAmount
+    );
+    const partialUserOp = {
+      sender: smartWallet.address,
+      nonce: 0,
+      callData: approveTokenWA.data,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      partialUserOp,
+      [smartWalletOwner, guardians[1]],
+      create2.address,
+      entrypoint
+    );
+    // await sendUserOp(signedUserOp);
+  });
+
   describe("execute tx from entrypoint with nonce", () => {
-    it("add guardian test", async () => {});
-    it("remove guardian test", async () => {});
+    it("add and remove guardian test", async () => {
+      const { guardians, smartWallet, entrypoint } = await loadFixture(fixture);
+      const guardian = ethers.Wallet.createRandom().connect(ethers.provider);
+      await smartWallet.addGuardian(guardian.address);
+      expect(await smartWallet.isGuardian(guardian.address, true)).to.be.true;
+      // during pending period
+      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.false;
+      await time.increase(three_days);
+      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.true;
+
+      // remove
+      await smartWallet.removeGuardian(guardian.address);
+      await time.increase(three_days);
+      expect(await smartWallet.isGuardian(guardian.address, true)).to.be.false;
+
+      //TODO(add test case that remove before pending adding period)
+    });
+  });
+
+  describe("super guardian test", () => {
+    it("upgrade and downgrade test", async () => {
+      const { guardians, smartWallet, entrypoint } = await loadFixture(fixture);
+      let guardian = ethers.Wallet.createRandom().connect(ethers.provider);
+
+      await expect(
+        smartWallet.upgradeGuardian(guardian.address)
+      ).to.rejectedWith("need to be a guardian first");
+      // upgrade real guardian
+      guardian = guardians[0];
+      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.true;
+      await smartWallet.upgradeGuardian(guardian.address);
+
+      const snapshotRestorer = await takeSnapshot();
+      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
+        .true;
+      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
+        .false;
+      await time.increase(three_days);
+      // check it
+      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
+        .true;
+      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
+        .true;
+
+      // downgrade super guardian
+      await smartWallet.downgradeGuardian(guardian.address);
+      // be still active super guardian when pending removal
+      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
+        .true;
+      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
+        .true;
+      await time.increase(three_days);
+      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
+        .false;
+
+      // cancel upgrade test
+      await snapshotRestorer.restore();
+      // cancel it now
+      await smartWallet.cancelPendingActionForSuperGuardian(guardian.address);
+      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
+        .false;
+    });
   });
   describe("execute tx with approval(skip nonce)", () => {
     it("add guardian test", async () => {
