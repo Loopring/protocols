@@ -1,6 +1,8 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { fixture } from "./helper/fixture";
+import _ from "lodash";
+import { arrayify } from "ethers/lib/utils";
 import {
   loadFixture,
   setBalance,
@@ -12,7 +14,7 @@ import {
   SmartWalletV3__factory,
 } from "../typechain-types";
 import { getBlockTimestamp, createSmartWallet } from "./helper/utils";
-import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
+import { fillUserOp, fillAndMultiSign, getUserOpHash } from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("guardian test", () => {
@@ -189,7 +191,6 @@ describe("guardian test", () => {
     } = await loadFixture(fixture);
     const guardianOwner = ethers.Wallet.createRandom().connect(ethers.provider);
     const guardian = await createRandomWallet(guardianOwner, [], walletFactory);
-    // TODO(add guardian will destroy guardians ordering)
     await smartWallet.addGuardian(guardian.address);
     await time.increase(three_days);
 
@@ -205,14 +206,47 @@ describe("guardian test", () => {
       sender: smartWallet.address,
       nonce: 0,
       callData: approveTokenWA.data,
+      verificationGasLimit: "126880",
     };
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      [smartWalletOwner, guardians[1]],
-      create2.address,
-      entrypoint
+    const provider = entrypoint.provider;
+    const op2 = await fillUserOp(partialUserOp, create2.address, entrypoint);
+    const chainId = await provider.getNetwork().then((net) => net.chainId);
+    const userOpHash = getUserOpHash(op2, entrypoint.address, chainId);
+    // const approvedHash = userOpHash;
+    const validUntil = 0;
+    const approvedHash = ethers.utils.solidityKeccak256(
+      ["bytes32", "uint256"],
+      [userOpHash, validUntil]
     );
-    // await sendUserOp(signedUserOp);
+    const message = arrayify(approvedHash);
+    const signers = [smartWalletOwner, guardians[0], guardianOwner];
+
+    const signatures = await Promise.all(
+      signers.map((g) => g.signMessage(message))
+    );
+    const signersAddr = signers.map((g) => g.address);
+    // replace guardian address
+    signersAddr[signersAddr.indexOf(guardianOwner.address)] = guardian.address;
+    const [sortedSigners, sortedSignatures] = _.unzip(
+      _.sortBy(_.zip(signersAddr, signatures), (item) => item[0])
+    );
+    const approval = {
+      signers: sortedSigners,
+      signatures: sortedSignatures,
+      validUntil,
+    };
+    const signature = ethers.utils.defaultAbiCoder.encode(
+      ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+      [approval]
+    );
+    const signedUserOp = {
+      ...op2,
+      signature,
+    };
+    await sendUserOp(signedUserOp);
+    expect(await usdtToken.allowance(smartWallet.address, receiver)).to.eq(
+      tokenAmount
+    );
   });
 
   describe("execute tx from entrypoint with nonce", () => {
