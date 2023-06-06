@@ -279,6 +279,50 @@ export async function fillAndMultiSign(
     signature,
   };
 }
+export async function fillAndMultiSign2(
+  op: Partial<UserOperation>,
+  smartWalletOrEOASigners: {signer: Wallet, smartWalletAddress?: string}[],
+  walletFactoryAddress: string,
+  entryPoint?: EntryPoint,
+  validUntil = 0,
+): Promise<UserOperation> {
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from('2').mul(DefaultsForUserOp.verificationGasLimit) 
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  const approvedHash = ethers.utils.solidityKeccak256(
+    ["bytes32", "uint256"],
+    [userOpHash, validUntil]
+  );
+  const message = arrayify(approvedHash);
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) => g.signer.signMessage(message))
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) => g.smartWalletAddress ? g.smartWalletAddress : g.signer.address),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
 
 export async function fillAndSign(
   op: Partial<UserOperation>,
