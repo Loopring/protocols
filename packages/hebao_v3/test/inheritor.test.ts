@@ -257,44 +257,46 @@ describe("inheritor test", () => {
   });
 
   it("inherit with a owner in guardians group", async () => {
-    const { smartWallet, deployer, create2, entrypoint, sendUserOp } =
-      await loadFixture(fixture);
-    const inheritor = ethers.Wallet.createRandom().connect(ethers.provider);
+    const test = async (removeGuardians: boolean ) => {
+      const { smartWallet, deployer, create2, entrypoint, sendUserOp } =
+        await loadFixture(fixture);
+      const inheritor = ethers.Wallet.createRandom().connect(ethers.provider);
+      // check before
+      const walletDataBefore = await smartWallet.wallet();
+      expect(walletDataBefore["inheritor"]).to.eq(ethers.constants.AddressZero);
+      expect(walletDataBefore["inheritWaitingPeriod"]).to.eq(0);
 
-    // check before
-    const walletDataBefore = await smartWallet.wallet();
-    expect(walletDataBefore["inheritor"]).to.eq(ethers.constants.AddressZero);
-    expect(walletDataBefore["inheritWaitingPeriod"]).to.eq(0);
+      const newOwner = ethers.Wallet.createRandom().connect(ethers.provider);
+      // add newOwner to guardians group
+      await smartWallet.addGuardian(newOwner.address).then((tx) => tx.wait());
+      const guardians = await smartWallet.getGuardians(true);
+      // expect newOwner is on guardians group
+      expect(guardians.some((g) => g.addr === newOwner.address)).to.eq(true);
 
-    const newOwner = ethers.Wallet.createRandom().connect(ethers.provider);
-    // add newOwner to guardians group
-    await smartWallet.addGuardian(newOwner.address).then((tx) => tx.wait());
-    const guardians = await smartWallet.getGuardians(true);
-    // expect newOwner is on guardians group
-    expect(guardians.some((g) => g.addr === newOwner.address)).to.eq(true);
+      const waitingPeriod = 3600 * 24 * 30;
+      await smartWallet.setInheritor(inheritor.address, waitingPeriod);
+      await time.increase(waitingPeriod + 1);
 
-    const waitingPeriod = 3600 * 24 * 30;
-    await smartWallet.setInheritor(inheritor.address, waitingPeriod);
-    await time.increase(waitingPeriod + 1);
-
-    const tx = await smartWallet.populateTransaction.inherit(
-      newOwner.address,
-      false /*keep all guardians*/
-    );
-    await sendTx(
-      [tx],
-      smartWallet,
-      inheritor,
-      create2,
-      entrypoint,
-      sendUserOp,
-      undefined,
-      false
-    );
-    expect(await smartWallet.getOwner()).to.eq(newOwner.address);
-    const guardians2 = await smartWallet.getGuardians(true);
-    // expect newOwner is not on guardians group
-    // TODO(fix it)
-    // expect(guardians2.some(g => g.addr === newOwner.address)).to.eq(false)
+      const tx = await smartWallet.populateTransaction.inherit(
+        newOwner.address,
+        removeGuardians /*keep all guardians*/
+      );
+      await sendTx(
+        [tx],
+        smartWallet,
+        inheritor,
+        create2,
+        entrypoint,
+        sendUserOp,
+        undefined,
+        false
+      );
+      expect(await smartWallet.getOwner()).to.eq(newOwner.address);
+      const guardians2 = await smartWallet.getGuardians(true);
+      // expect newOwner is not on guardians group
+      expect(guardians2.some(g => g.addr === newOwner.address)).to.eq(false)
+    }
+    await test(true) // removeGuardians: true
+    await test(false) // removeGuardians: false
   });
 });

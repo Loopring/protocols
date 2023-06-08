@@ -67,6 +67,11 @@ library InheritanceLib {
 
         if (removeGuardians) {
             wallet.removeAllGuardians();
+        } else {
+            if (wallet.isGuardian(newOwner, true)) {
+                wallet.deleteGuardian(newOwner, block.timestamp, true);
+            }
+            wallet.cancelPendingGuardians();
         }
         wallet.setInheritor(address(0), 0);
         wallet.setLock(address(this), false);

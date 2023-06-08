@@ -71,7 +71,11 @@ async function newWalletFactory(owner: string) {
   console.log("GuardianLib:", GuardianLib.address);
 
   const InheritanceLib = await (
-    await ethers.getContractFactory("InheritanceLib")
+    await ethers.getContractFactory("InheritanceLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address,
+      },
+    })
   ).deploy({ gasLimit });
   console.log("InheritanceLib:", InheritanceLib.address);
 
