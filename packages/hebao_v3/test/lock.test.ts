@@ -116,29 +116,6 @@ describe("lock test", () => {
       );
     });
 
-    it("lock success from entrypoint using `execute` api ", async () => {
-      const {
-        entrypoint,
-        smartWallet,
-        smartWalletOwner,
-        create2,
-        deployer,
-        sendUserOp,
-        smartWalletImpl,
-        guardians,
-      } = await loadFixture(fixture);
-      const lock = await smartWallet.populateTransaction.lock();
-
-      const recipt = await sendTx(
-        [lock],
-        smartWallet,
-        smartWalletOwner,
-        create2,
-        entrypoint,
-        sendUserOp
-      );
-      expect((await smartWallet.wallet()).locked).to.equal(true);
-    });
     it("lock success directly from entrypoint", async () => {
       const { entrypoint, smartWallet, smartWalletOwner, create2, sendUserOp } =
         await loadFixture(fixture);
@@ -214,11 +191,13 @@ describe("lock test", () => {
         "account: not EntryPoint"
       );
     });
+
     it("cannot unlock from entrypoint using `execute` api", async () => {
       const { entrypoint, smartWallet, smartWalletOwner, create2, sendUserOp } =
         await loadFixture(fixture);
       const unlock = await smartWallet.populateTransaction.unlock();
 
+      // NOTE cannot allow unlock using callcontract api
       await expect(
         sendTx(
           [unlock],
@@ -228,7 +207,7 @@ describe("lock test", () => {
           entrypoint,
           sendUserOp
         )
-      ).to.revertedWith("account: not EntryPoint");
+      ).to.revertedWith("SELF_CALL_DISALLOWED");
     });
   });
 });

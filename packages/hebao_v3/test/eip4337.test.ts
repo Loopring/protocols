@@ -270,6 +270,13 @@ describe("eip4337 test", () => {
       const usdtTokenBalanceBefore = await usdtToken.balanceOf(
         deployer.address
       );
+      const transferToken = await smartWallet.populateTransaction.transferToken(
+        usdtToken.address,
+        deployer.address,
+        tokenAmount,
+        "0x",
+        false
+      );
       await expect(
         sendTx(
           [transferToken, transferToken],

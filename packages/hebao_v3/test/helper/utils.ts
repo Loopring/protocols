@@ -389,10 +389,11 @@ export function getCallData(
   tx: Partial<{ to: string; data?: BytesLike; value?: BigNumberish }>
 ) {
   const execFromEntryPoint =
-    SmartWallet__factory.createInterface().encodeFunctionData("execute", [
+    SmartWallet__factory.createInterface().encodeFunctionData("callContract", [
       tx.to,
       tx.value ?? 0,
       tx.data ?? "0x",
+      false,
     ]);
   return execFromEntryPoint;
 }
@@ -403,8 +404,8 @@ export function getBatchCallData(
   const dest = txs.map((tx) => tx.to);
   const datas = txs.map((tx) => tx.data ?? "0x");
   return SmartWallet__factory.createInterface().encodeFunctionData(
-    "executeBatch",
-    [dest, datas]
+    "selfBatchCall",
+    [datas]
   );
 }
 
@@ -416,10 +417,11 @@ export async function createTransaction(
 ) {
   const tx: TransactionRequest = await resolveProperties(transaction);
 
-  const execFromEntryPoint = await wallet.populateTransaction.execute(
+  const execFromEntryPoint = await wallet.populateTransaction.callContract(
     tx.to!,
     tx.value ?? 0,
-    tx.data ?? "0x"
+    tx.data ?? "0x",
+    false
   );
 
   let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = tx;
@@ -455,21 +457,20 @@ export async function createBatchTransactions(
   if (txs.length == 1) {
     const tx = txs[0];
     if (useExecuteApi) {
-      execFromEntryPoint = await wallet.populateTransaction.execute(
+      execFromEntryPoint = await wallet.populateTransaction.callContract(
         tx.to!,
         tx.value ?? 0,
-        tx.data ?? "0x"
+        tx.data ?? "0x",
+        false
       );
     } else {
       execFromEntryPoint = tx;
     }
   } else {
-    const dest = txs.map((tx) => tx.to);
     const datas = txs.map((tx) => tx.data ?? "0x");
-    execFromEntryPoint = await wallet.populateTransaction.executeBatch(
-      dest,
-      datas
-    );
+    // const wrappedTxs = await Promise.all(txs.map((tx) => wallet.populateTransaction.callContract(tx.to, tx.value??0, tx.data??'0x', false)));
+    // const datas = wrappedTxs.map(wtx=>wtx.data);
+    execFromEntryPoint = await wallet.populateTransaction.selfBatchCall(datas);
   }
 
   let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = execFromEntryPoint;

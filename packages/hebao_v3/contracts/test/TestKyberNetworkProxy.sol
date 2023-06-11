@@ -12,9 +12,9 @@ contract TestKyberNetworkProxy {
     }
 
     function getExpectedRate(
-        ERC20 src,
-        ERC20 dest,
-        uint srcQty
+        ERC20,
+        ERC20,
+        uint
     ) public view virtual returns (uint _expectedRate, uint _slippageRate) {
         _expectedRate = expectedRate;
         _slippageRate = 1;

@@ -33,27 +33,12 @@ contract SmartWalletV3 is SmartWallet {
         IEntryPoint entryPointInput
     ) SmartWallet(_priceOracle, _blankOwner, entryPointInput) {}
 
-    /**
-     * execute a transaction (called directly from owner, or by entryPoint)
-     */
-    function execute(
-        address dest,
-        uint256 value,
-        bytes calldata func
+    function selfBatchCall(
+        bytes[] calldata data
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        _call(dest, value, func);
-    }
-
-    /**
-     * execute a sequence of transactions
-     */
-    function executeBatch(
-        address[] calldata dest,
-        bytes[] calldata func
-    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        require(dest.length == func.length, "wrong array lengths");
-        for (uint256 i = 0; i < dest.length; i++) {
-            _call(dest[i], 0, func[i]);
+        for (uint i = 0; i < data.length; i++) {
+            (bool success, ) = address(this).call(data[i]);
+            require(success, "BATCHED_CALL_FAILED");
         }
     }
 
