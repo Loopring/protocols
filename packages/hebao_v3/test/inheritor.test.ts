@@ -257,7 +257,7 @@ describe("inheritor test", () => {
   });
 
   it("inherit with a owner in guardians group", async () => {
-    const test = async (removeGuardians: boolean ) => {
+    const test = async (removeGuardians: boolean) => {
       const { smartWallet, deployer, create2, entrypoint, sendUserOp } =
         await loadFixture(fixture);
       const inheritor = ethers.Wallet.createRandom().connect(ethers.provider);
@@ -294,9 +294,9 @@ describe("inheritor test", () => {
       expect(await smartWallet.getOwner()).to.eq(newOwner.address);
       const guardians2 = await smartWallet.getGuardians(true);
       // expect newOwner is not on guardians group
-      expect(guardians2.some(g => g.addr === newOwner.address)).to.eq(false)
-    }
-    await test(true) // removeGuardians: true
-    await test(false) // removeGuardians: false
+      expect(guardians2.some((g) => g.addr === newOwner.address)).to.eq(false);
+    };
+    await test(true); // removeGuardians: true
+    await test(false); // removeGuardians: false
   });
 });

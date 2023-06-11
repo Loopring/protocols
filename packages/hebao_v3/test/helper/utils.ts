@@ -616,9 +616,9 @@ export async function deployWalletImpl(
   const ERC20Lib = await deploySingle(deployFactory, "ERC20Lib");
   const GuardianLib = await deploySingle(deployFactory, "GuardianLib");
   const InheritanceLib = await deploySingle(
-    deployFactory, 
-    "InheritanceLib", 
-    undefined, 
+    deployFactory,
+    "InheritanceLib",
+    undefined,
     new Map([["GuardianLib", GuardianLib.address]])
   );
   const QuotaLib = await deploySingle(deployFactory, "QuotaLib");

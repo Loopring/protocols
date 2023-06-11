@@ -1,4 +1,3 @@
-
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { fixture } from "./helper/fixture";
@@ -15,7 +14,12 @@ import {
   SmartWalletV3__factory,
 } from "../typechain-types";
 import { getBlockTimestamp, createSmartWallet } from "./helper/utils";
-import { fillUserOp, fillAndMultiSign, getUserOpHash, fillAndMultiSign2 } from "./helper/AASigner";
+import {
+  fillUserOp,
+  fillAndMultiSign,
+  getUserOpHash,
+  fillAndMultiSign2,
+} from "./helper/AASigner";
 import BN from "bn.js";
 import { increase } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
@@ -357,12 +361,8 @@ describe("guardian test", () => {
   });
   describe("smart wallet guardians approval", () => {
     it("add guardian with smart wallet guardian approval", async () => {
-      const {
-        sendUserOp,
-        create2,
-        entrypoint,
-        walletFactory
-      } = await loadFixture(fixture);
+      const { sendUserOp, create2, entrypoint, walletFactory } =
+        await loadFixture(fixture);
       async function createRandomWalletAndFundingIt(
         guardians,
         walletFactory,
@@ -371,7 +371,11 @@ describe("guardian test", () => {
         const smartWalletOwner = await ethers.Wallet.createRandom().connect(
           ethers.provider
         );
-        const smartWallet = await createRandomWallet(smartWalletOwner, guardians, walletFactory)
+        const smartWallet = await createRandomWallet(
+          smartWalletOwner,
+          guardians,
+          walletFactory
+        );
         await setBalance(
           smartWalletOwner.address,
           ethers.utils.parseEther("100")
@@ -380,51 +384,59 @@ describe("guardian test", () => {
         await entrypoint.depositTo(smartWallet.address, {
           value: ethers.utils.parseEther("100"),
         });
-        return {smartWalletOwner, smartWallet}
+        return { smartWalletOwner, smartWallet };
       }
-      const {smartWalletOwner, smartWallet} = await createRandomWalletAndFundingIt(
-        [],
-        walletFactory,
-        entrypoint
-      )
-      const {smartWalletOwner: smartGuardianOwner0, smartWallet: smartGuardian0} = await createRandomWalletAndFundingIt(
-        [],
-        walletFactory,
-        entrypoint
-      )
-      const {smartWalletOwner: smartGuardianOwner1, smartWallet: smartGuardian1} = await createRandomWalletAndFundingIt(
-        [],
-        walletFactory,
-        entrypoint
-      )
+      const { smartWalletOwner, smartWallet } =
+        await createRandomWalletAndFundingIt([], walletFactory, entrypoint);
+      const {
+        smartWalletOwner: smartGuardianOwner0,
+        smartWallet: smartGuardian0,
+      } = await createRandomWalletAndFundingIt([], walletFactory, entrypoint);
+      const {
+        smartWalletOwner: smartGuardianOwner1,
+        smartWallet: smartGuardian1,
+      } = await createRandomWalletAndFundingIt([], walletFactory, entrypoint);
       const guardianToAdd = await ethers.Wallet.createRandom().connect(
         ethers.provider
       );
-      await ((await smartWallet.addGuardian(smartGuardian0.address)).wait())
-      await ((await smartWallet.addGuardian(smartGuardian1.address)).wait())
-      await increase(3 * 24 * 60 * 60 + 1) // wait for 3 days;
-      const guardiansBefore = await smartWallet.getGuardians(false)
-      expect(guardiansBefore.some(g => g.addr === smartGuardian0.address)).to.equal(true); // contains smartGuardian0
-      expect(guardiansBefore.some(g => g.addr === smartGuardian1.address)).to.equal(true); // contains smartGuardian1
-      expect(guardiansBefore.some(g => g.addr === guardianToAdd.address)).to.equal(false); // not contains guardianToAdd
-      const tx = await smartWallet.populateTransaction.addGuardianWA(guardianToAdd.address);
+      await (await smartWallet.addGuardian(smartGuardian0.address)).wait();
+      await (await smartWallet.addGuardian(smartGuardian1.address)).wait();
+      await increase(3 * 24 * 60 * 60 + 1); // wait for 3 days;
+      const guardiansBefore = await smartWallet.getGuardians(false);
+      expect(
+        guardiansBefore.some((g) => g.addr === smartGuardian0.address)
+      ).to.equal(true); // contains smartGuardian0
+      expect(
+        guardiansBefore.some((g) => g.addr === smartGuardian1.address)
+      ).to.equal(true); // contains smartGuardian1
+      expect(
+        guardiansBefore.some((g) => g.addr === guardianToAdd.address)
+      ).to.equal(false); // not contains guardianToAdd
+      const tx = await smartWallet.populateTransaction.addGuardianWA(
+        guardianToAdd.address
+      );
       const partialUserOp = {
         sender: smartWallet.address,
         nonce: 0,
         callData: tx.data,
       };
       const signedUserOp = await fillAndMultiSign2(
-          partialUserOp,
-          [
-            { signer: smartWalletOwner }, 
-            { signer: smartGuardianOwner1, smartWalletAddress: smartGuardian1.address },
-          ],
-          create2.address,
-          entrypoint
-        );
-      await sendUserOp(signedUserOp)
-      const guardiansAfter = await smartWallet.getGuardians(false)
-      expect(guardiansAfter.some(g => g.addr === guardianToAdd.address)).to.equal(true); // contains guardianToAdd
+        partialUserOp,
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: smartGuardianOwner1,
+            smartWalletAddress: smartGuardian1.address,
+          },
+        ],
+        create2.address,
+        entrypoint
+      );
+      await sendUserOp(signedUserOp);
+      const guardiansAfter = await smartWallet.getGuardians(false);
+      expect(
+        guardiansAfter.some((g) => g.addr === guardianToAdd.address)
+      ).to.equal(true); // contains guardianToAdd
     });
   });
 });
