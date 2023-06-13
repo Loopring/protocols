@@ -261,7 +261,7 @@ export async function fillAndMultiSign(
         signers.map((g) => g.address),
         signatures
       ),
-      (item) => item[0]
+      (item) => parseInt(item[0], 16)
     )
   );
 
