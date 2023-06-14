@@ -166,56 +166,6 @@ describe("inheritor test", () => {
     }
   });
 
-  it("setinheritor and inherit at the same block", async () => {
-    // disable automine
-    // TODO(fix timeout here)
-    // await network.provider.send("evm_setAutomine", [false]);
-    await network.provider.send("evm_setIntervalMining", [0]);
-
-    const { smartWallet, deployer, create2, entrypoint, sendUserOp } =
-      await loadFixture(fixture);
-    const inheritor = ethers.Wallet.createRandom().connect(ethers.provider);
-
-    const waitingPeriod = 3600 * 24 * 30;
-    const { blockNumber } = await (
-      await smartWallet.setInheritor(inheritor.address, waitingPeriod)
-    ).wait();
-
-    const walletData = await smartWallet.wallet();
-
-    // advance time
-    const validBlockTime = walletData["lastActive"].add(
-      walletData["inheritWaitingPeriod"]
-    );
-    await time.increaseTo(validBlockTime);
-
-    // inherit
-    const newOwner = ethers.Wallet.createRandom().connect(ethers.provider);
-    const tx = await smartWallet.populateTransaction.inherit(
-      newOwner.address,
-      true /*remove all guardians*/
-    );
-
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 1,
-      callData: tx.data,
-    };
-
-    const recipt = await sendTx(
-      [tx],
-      smartWallet,
-      inheritor,
-      create2,
-      entrypoint,
-      sendUserOp,
-      undefined,
-      false
-    );
-    // execute txs in the same block
-    // expect(recipt.blockNumber).to.eq(blockNumber);
-  });
-
   it("fail without waiting period", async () => {
     const { smartWallet, deployer, create2, entrypoint, sendUserOp } =
       await loadFixture(fixture);

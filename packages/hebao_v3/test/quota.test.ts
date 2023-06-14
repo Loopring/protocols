@@ -6,6 +6,7 @@ import {
   getCurrentQuota,
   sortSignersAndSignatures,
   deployWalletImpl,
+  sendTx,
 } from "./helper/utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
@@ -13,10 +14,39 @@ import { fillAndMultiSign } from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("quota test", () => {
-  it("change daily quota from entrypoint using `execute` api", async () => {
-    const { smartWallet: wallet } = await loadFixture(fixture);
+  const ONE_DAY = 3600 * 24;
+  it("change daily quota from entrypoint directly", async () => {
+    const { smartWallet, smartWalletOwner, create2, entrypoint, sendUserOp } =
+      await loadFixture(fixture);
+    const quotaAmount = ethers.utils.parseEther("20");
+    const tx = await smartWallet.populateTransaction.changeDailyQuota(
+      quotaAmount
+    );
+    const recipt = await sendTx(
+      [tx],
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      entrypoint,
+      sendUserOp,
+      undefined,
+      false
+    );
+    expect((await smartWallet.wallet())["quota"]["pendingQuota"]).to.eq(
+      quotaAmount
+    );
+
+    await expect(
+      sendTx(
+        [tx],
+        smartWallet,
+        smartWalletOwner,
+        create2,
+        entrypoint,
+        sendUserOp
+      )
+    ).to.revertedWith("SELF_CALL_DISALLOWED");
   });
-  it("change daily quota from entrypoint directly", async () => {});
   it("change daily quota from wallet owner", async () => {
     const { smartWallet: wallet } = await loadFixture(fixture);
     const quotaAmount = ethers.utils.parseEther("10");
