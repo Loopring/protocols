@@ -33,27 +33,12 @@ contract SmartWalletV3 is SmartWallet {
         IEntryPoint entryPointInput
     ) SmartWallet(_priceOracle, _blankOwner, entryPointInput) {}
 
-    /**
-     * execute a transaction (called directly from owner, or by entryPoint)
-     */
-    function execute(
-        address dest,
-        uint256 value,
-        bytes calldata func
+    function selfBatchCall(
+        bytes[] calldata data
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        _call(dest, value, func);
-    }
-
-    /**
-     * execute a sequence of transactions
-     */
-    function executeBatch(
-        address[] calldata dest,
-        bytes[] calldata func
-    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        require(dest.length == func.length, "wrong array lengths");
-        for (uint256 i = 0; i < dest.length; i++) {
-            _call(dest[i], 0, func[i]);
+        for (uint i = 0; i < data.length; i++) {
+            (bool success, ) = address(this).call(data[i]);
+            require(success, "BATCHED_CALL_FAILED");
         }
     }
 
@@ -225,7 +210,7 @@ contract SmartWalletV3 is SmartWallet {
         }
 
         if (methodId == SmartWallet.inherit.selector) {
-            if (wallet.inheritor == hash.recover(userOp.signature)) {
+            if (hash.verifySignature(wallet.inheritor, userOp.signature)) {
                 return 0;
             }
             return SIG_VALIDATION_FAILED;
@@ -233,7 +218,7 @@ contract SmartWalletV3 is SmartWallet {
 
         require(!wallet.locked, "wallet is locked");
 
-        if (wallet.owner != hash.recover(userOp.signature))
+        if (!hash.verifySignature(wallet.owner, userOp.signature))
             return SIG_VALIDATION_FAILED;
         return 0;
     }

@@ -28,6 +28,10 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     uint8 constant priceDecimal = 6;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
+    mapping(ERC20 => bool) public registeredToken;
+    mapping(ERC20 => mapping(address => uint256)) public balances;
+    mapping(address => uint256) public unlockBlock;
+
     constructor(
         IEntryPoint _entryPoint,
         address _owner
@@ -35,6 +39,10 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         _transferOwnership(_owner);
         _grantRole(DEFAULT_ADMIN_ROLE, owner());
         _grantRole(SIGNER, owner());
+    }
+
+    receive() external payable {
+        revert("eth rejected");
     }
 
     function getHash(
@@ -97,6 +105,10 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             paymasterAndData[20:],
             (address, uint256, uint256, bytes)
         );
+        require(
+            unlockBlock[sender] == 0,
+            "DepositPaymaster: deposit not locked"
+        );
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
@@ -105,17 +117,21 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
 
-        {
-            // uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
-            // 10 ** priceDecimal) / decoded_data.valueOfEth;
-            // require(
-            // ERC20(decoded_data.token).allowance(sender, address(this)) >=
-            // tokenRequiredPreFund,
-            // "Paymaster: not enough allowance"
-            // );
+        if (decoded_data.valueOfEth > 0) {
+            uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
+                10 ** priceDecimal) / decoded_data.valueOfEth;
+            require(
+                balances[ERC20(decoded_data.token)][sender] >=
+                    tokenRequiredPreFund ||
+                    ERC20(decoded_data.token).allowance(
+                        sender,
+                        address(this)
+                    ) >=
+                    tokenRequiredPreFund,
+                "Paymaster: not enough allowance"
+            );
         }
 
-        // TODO (add validUntil)
         bytes32 hash = getHash(
             userOp,
             abi.encodePacked(
@@ -166,41 +182,103 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         uint256 actualGasCost
     ) internal override {
         (mode);
-        (address sender, address payable token, , uint256 valueOfEth) = abi
+        (address account, address payable token, , uint256 valueOfEth) = abi
             .decode(context, (address, address, uint256, uint256));
         if (valueOfEth > 0) {
-            uint256 tokenRequiredFund = ((actualGasCost + (COST_OF_POST)) *
+            uint256 actualTokenCost = ((actualGasCost + (COST_OF_POST)) *
                 10 ** priceDecimal) / valueOfEth;
-            ERC20(token).safeTransferFrom(
-                sender,
-                address(this),
-                tokenRequiredFund
-            );
+
+            if (balances[ERC20(token)][account] >= actualTokenCost) {
+                balances[ERC20(token)][account] -= actualTokenCost;
+            } else {
+                // attempt to pay with tokens:
+                ERC20(token).safeTransferFrom(
+                    account,
+                    address(this),
+                    actualTokenCost
+                );
+            }
+            balances[ERC20(token)][owner()] += actualTokenCost;
         }
     }
 
-    function _withdrawToken(address token, address to, uint256 amount) private {
-        ERC20(token).transfer(to, amount);
+    ////////////////////////////////////
+    // gas tank
+
+    /**
+     * owner of the paymaster should add supported tokens
+     */
+    function addToken(ERC20 token) external onlyOwner {
+        require(!registeredToken[token]);
+        registeredToken[token] = true;
     }
 
-    // withdraw token from this contract
-    function withdrawToken(
-        address token,
-        address to,
+    /**
+     * deposit tokens that a specific account can use to pay for gas.
+     * The sender must first approve this paymaster to withdraw these tokens (they are only withdrawn in this method).
+     * Note depositing the tokens is equivalent to transferring them to the "account" - only the account can later
+     *  use them - either as gas, or using withdrawTo()
+     *
+     * @param token the token to deposit.
+     * @param account the account to deposit for.
+     * @param amount the amount of token to deposit.
+     */
+    function addDepositFor(
+        ERC20 token,
+        address account,
         uint256 amount
-    ) external onlyOwner {
-        _withdrawToken(token, to, amount);
+    ) external {
+        //(sender must have approval for the paymaster)
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        require(registeredToken[token], "unsupported token");
+        balances[token][account] += amount;
+        if (msg.sender == account) {
+            lockTokenDeposit();
+        }
     }
 
-    // withdraw token from this contract
-    function withdrawTokens(
-        address[] calldata token,
-        address to,
-        uint256[] calldata amount
-    ) external onlyOwner {
-        require(token.length == amount.length, "length mismatch");
-        for (uint256 i = 0; i < token.length; i++) {
-            _withdrawToken(token[i], to, amount[i]);
-        }
+    function depositInfo(
+        ERC20 token,
+        address account
+    ) public view returns (uint256 amount, uint256 _unlockBlock) {
+        amount = balances[token][account];
+        _unlockBlock = unlockBlock[account];
+    }
+
+    /**
+     * unlock deposit, so that it can be withdrawn.
+     * can't be called in the same block as withdrawTo()
+     */
+    function unlockTokenDeposit() public {
+        unlockBlock[msg.sender] = block.number;
+    }
+
+    /**
+     * lock the tokens deposited for this account so they can be used to pay for gas.
+     * after calling unlockTokenDeposit(), the account can't use this paymaster until the deposit is locked.
+     */
+    function lockTokenDeposit() public {
+        unlockBlock[msg.sender] = 0;
+    }
+
+    /**
+     * withdraw tokens.
+     * can only be called after unlock() is called in a previous block.
+     * @param token the token deposit to withdraw
+     * @param target address to send to
+     * @param amount amount to withdraw
+     */
+    function withdrawTokensTo(
+        ERC20 token,
+        address target,
+        uint256 amount
+    ) public {
+        require(
+            unlockBlock[msg.sender] != 0 &&
+                block.number > unlockBlock[msg.sender],
+            "DepositPaymaster: must unlockTokenDeposit"
+        );
+        balances[token][msg.sender] -= amount;
+        token.safeTransfer(target, amount);
     }
 }

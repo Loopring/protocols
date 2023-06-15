@@ -6,11 +6,17 @@ import "../iface/PriceOracle.sol";
 
 /// @title PriceOracle
 contract TestPriceOracle is PriceOracle {
+    uint256 immutable price;
+
+    constructor(uint256 _price) {
+        price = _price;
+    }
+
     // @dev Return's the token's value in ETH
     function tokenValue(
         address /*token*/,
         uint amount
-    ) public pure override returns (uint value) {
-        value = amount;
+    ) public view override returns (uint value) {
+        value = amount * price;
     }
 }

@@ -48,7 +48,7 @@ contract CachedPriceOracle is PriceOracle, OwnerManagable {
     function updateTokenPrice(
         address token,
         uint amount
-    ) external returns (uint value) {
+    ) external onlyManager returns (uint value) {
         value = oracle.tokenValue(token, amount);
         if (value > 0) {
             _cacheTokenPrice(token, amount, value);
