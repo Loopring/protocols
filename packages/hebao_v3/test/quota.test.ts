@@ -7,11 +7,13 @@ import {
   sortSignersAndSignatures,
   deployWalletImpl,
   sendTx,
+  createRandomAccount,
 } from "./helper/utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
 import { fillAndMultiSign } from "./helper/AASigner";
 import BN from "bn.js";
+import { Wallet } from "ethers";
 
 describe("quota test", () => {
   const ONE_DAY = 3600 * 24;
@@ -230,14 +232,186 @@ describe("quota test", () => {
           true
         )
       ).to.rejectedWith("QUOTA_EXCEEDED");
+    });
+    it("will reset quota after one day", async () => {
+      const {
+        smartWallet,
+        smartWalletOwner,
+        guardians,
+        create2,
+        entrypoint,
+        sendUserOp,
+        blankOwner,
+        usdtToken,
+      } = await loadFixture(fixture);
 
-      // add receiver address to whitelist
-      await smartWallet.addToWhitelist(receiver);
+      const oraclePrice = 1;
+      const testPriceOracle = await (
+        await ethers.getContractFactory("TestPriceOracle")
+      ).deploy(oraclePrice);
+      // create new smart wallet implementation with valid price oracle
+      const newSmartWalletImpl = await deployWalletImpl(
+        create2,
+        entrypoint.address,
+        blankOwner.address,
+        testPriceOracle.address
+      );
+      // update to new implementation
+      const changeMasterCopy =
+        await smartWallet.populateTransaction.changeMasterCopy(
+          newSmartWalletImpl.address
+        );
+
+      const partialUserOp = {
+        sender: smartWallet.address,
+        nonce: 0,
+        callData: changeMasterCopy.data,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        partialUserOp,
+        [smartWalletOwner, guardians[0]],
+        create2.address,
+        entrypoint
+      );
+      await sendUserOp(signedUserOp);
+      const masterCopyOfWallet = await smartWallet.getMasterCopy();
+      expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
+      expect(await smartWallet.priceOracle()).to.eq(testPriceOracle.address);
+
+      // spent daily quota using approving token
+      const tokenAmount = ethers.utils.parseUnits("100", 6);
+      const quotaAmount = ethers.utils.parseUnits("200", 6);
+      const initTokenAmount = ethers.utils.parseUnits("1000", 6);
+      await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+
+      await smartWallet.changeDailyQuota(quotaAmount);
+      // advance time to make it valid immediately
+      await time.increase(ONE_DAY);
+      const receiver = ethers.constants.AddressZero;
+      await smartWallet.transferToken(
+        usdtToken.address,
+        receiver,
+        tokenAmount,
+        "0x",
+        true
+      );
+      const quotaInfo = (await smartWallet.wallet())["quota"];
+      const tokenValue = await testPriceOracle.tokenValue(
+        usdtToken.address,
+        tokenAmount
+      );
+      expect(quotaInfo.spentAmount).to.equal(tokenValue);
+
+      // will fail when spent too much tokens
+      await expect(
+        smartWallet.transferToken(
+          usdtToken.address,
+          receiver,
+          tokenAmount.mul(2),
+          "0x",
+          true
+        )
+      ).to.rejectedWith("QUOTA_EXCEEDED");
+
       await time.increase(ONE_DAY);
       await expect(
         smartWallet.transferToken(
           usdtToken.address,
           receiver,
+          tokenAmount.mul(2),
+          "0x",
+          false
+        )
+      ).not.to.reverted;
+    });
+    it("whitelist address can excess daily quota", async () => {
+      const {
+        smartWallet,
+        smartWalletOwner,
+        guardians,
+        create2,
+        entrypoint,
+        sendUserOp,
+        blankOwner,
+        usdtToken,
+      } = await loadFixture(fixture);
+
+      const oraclePrice = 1;
+      const testPriceOracle = await (
+        await ethers.getContractFactory("TestPriceOracle")
+      ).deploy(oraclePrice);
+      // create new smart wallet implementation with valid price oracle
+      const newSmartWalletImpl = await deployWalletImpl(
+        create2,
+        entrypoint.address,
+        blankOwner.address,
+        testPriceOracle.address
+      );
+      // update to new implementation
+      const changeMasterCopy =
+        await smartWallet.populateTransaction.changeMasterCopy(
+          newSmartWalletImpl.address
+        );
+
+      const partialUserOp = {
+        sender: smartWallet.address,
+        nonce: 0,
+        callData: changeMasterCopy.data,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        partialUserOp,
+        [smartWalletOwner, guardians[0]],
+        create2.address,
+        entrypoint
+      );
+      await sendUserOp(signedUserOp);
+      const masterCopyOfWallet = await smartWallet.getMasterCopy();
+      expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
+      expect(await smartWallet.priceOracle()).to.eq(testPriceOracle.address);
+
+      // spent daily quota using approving token
+      const tokenAmount = ethers.utils.parseUnits("100", 6);
+      const quotaAmount = ethers.utils.parseUnits("200", 6);
+      const initTokenAmount = ethers.utils.parseUnits("1000", 6);
+      await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+
+      await smartWallet.changeDailyQuota(quotaAmount);
+      // advance time to make it valid immediately
+      await time.increase(ONE_DAY);
+      const receiver1 = Wallet.createRandom().address;
+      const receiver2 = Wallet.createRandom().address;
+      await smartWallet.addToWhitelist(receiver2);
+      await time.increase(ONE_DAY);
+      await smartWallet.transferToken(
+        usdtToken.address,
+        receiver1,
+        tokenAmount,
+        "0x",
+        false
+      );
+      const quotaInfo = (await smartWallet.wallet())["quota"];
+      const tokenValue = await testPriceOracle.tokenValue(
+        usdtToken.address,
+        tokenAmount
+      );
+      expect(quotaInfo.spentAmount).to.equal(tokenValue);
+
+      // will fail send to unwhitelisted address 
+      await expect(
+        smartWallet.transferToken(
+          usdtToken.address,
+          receiver1,
+          tokenAmount.mul(2),
+          "0x",
+          false
+        )
+      ).to.rejectedWith("QUOTA_EXCEEDED");
+
+      // will success send to whitelisted address 
+      await expect(
+        smartWallet.transferToken(
+          usdtToken.address,
+          receiver2,
           tokenAmount.mul(2),
           "0x",
           false
