@@ -396,7 +396,7 @@ describe("quota test", () => {
       );
       expect(quotaInfo.spentAmount).to.equal(tokenValue);
 
-      // will fail send to unwhitelisted address 
+      // will fail send to unwhitelisted address
       await expect(
         smartWallet.transferToken(
           usdtToken.address,
@@ -407,7 +407,7 @@ describe("quota test", () => {
         )
       ).to.rejectedWith("QUOTA_EXCEEDED");
 
-      // will success send to whitelisted address 
+      // will success send to whitelisted address
       await expect(
         smartWallet.transferToken(
           usdtToken.address,

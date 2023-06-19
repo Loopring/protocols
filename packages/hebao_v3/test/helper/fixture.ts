@@ -41,10 +41,11 @@ export async function fixture() {
   // const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
   // const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
 
-  const paymaster = await deploySingle(create2, "VerifyingPaymaster", [
-    entrypoint.address,
-    paymasterOwner.address,
-  ]);
+  const paymaster = await deploySingle(
+    create2,
+    "contracts/base/VerifyingPaymaster.sol:VerifyingPaymaster",
+    [entrypoint.address, paymasterOwner.address]
+  );
 
   const smartWalletImpl = await deployWalletImpl(
     create2,
