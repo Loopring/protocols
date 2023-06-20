@@ -55,7 +55,7 @@ library InheritanceLib {
     function inherit(
         Wallet storage wallet,
         address newOwner,
-        bool removeGuardians
+        address[] calldata newGuardians
     ) external {
         require(wallet.owner != newOwner, "IS_WALLET_OWNER");
         require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
@@ -65,8 +65,15 @@ library InheritanceLib {
             "TOO_EARLY"
         );
 
-        if (removeGuardians) {
+        if (newGuardians.length > 0) {
+            for (uint i = 0; i < newGuardians.length; i++) {
+                require(
+                    newGuardians[i] != newOwner,
+                    "INVALID_NEW_WALLET_GUARDIAN"
+                );
+            }
             wallet.removeAllGuardians();
+            wallet.addGuardiansImmediately(newGuardians);
         } else {
             if (wallet.isGuardian(newOwner, true)) {
                 wallet.deleteGuardian(newOwner, block.timestamp, true);

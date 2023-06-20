@@ -48,7 +48,7 @@ describe("inheritor test", () => {
     const newOwner = ethers.Wallet.createRandom().connect(ethers.provider);
     const tx = await smartWallet.populateTransaction.inherit(
       newOwner.address,
-      true /*remove all guardians*/
+      [] /*keep all guardians*/
     );
 
     const partialUserOp = {
@@ -78,7 +78,7 @@ describe("inheritor test", () => {
       expect(walletDataBefore["inheritor"]).to.eq(inheritor.address);
 
       await setBalance(inheritor.address, ethers.utils.parseEther("100"));
-      await smartWallet.connect(inheritor).inherit(newOwner.address, true);
+      await smartWallet.connect(inheritor).inherit(newOwner.address, []);
       expect(await smartWallet.getOwner()).to.eq(newOwner.address);
     }
   });
@@ -121,7 +121,7 @@ describe("inheritor test", () => {
     const newOwner = ethers.Wallet.createRandom().connect(ethers.provider);
     const tx = await smartWallet.populateTransaction.inherit(
       newOwner.address,
-      true /*remove all guardians*/
+      [] /*keep all guardians*/
     );
 
     const partialUserOp = {
@@ -190,7 +190,7 @@ describe("inheritor test", () => {
     const newOwner = ethers.Wallet.createRandom().connect(ethers.provider);
     const tx = await smartWallet.populateTransaction.inherit(
       newOwner.address,
-      true /*remove all guardians*/
+      [] /*keep all guardians*/
     );
     await expect(
       sendTx(
@@ -227,9 +227,28 @@ describe("inheritor test", () => {
       await smartWallet.setInheritor(inheritor.address, waitingPeriod);
       await time.increase(waitingPeriod + 1);
 
+      {
+        const tx = await smartWallet.populateTransaction.inherit(
+          newOwner.address,
+          [newOwner.address] /*keep all guardians*/
+        );
+        await expect(
+          sendTx(
+            [tx],
+            smartWallet,
+            inheritor,
+            create2,
+            entrypoint,
+            sendUserOp,
+            undefined,
+            false
+          )
+        ).to.rejectedWith("INVALID_NEW_WALLET_GUARDIAN");
+      }
+
       const tx = await smartWallet.populateTransaction.inherit(
         newOwner.address,
-        removeGuardians /*keep all guardians*/
+        [] /*keep all guardians*/
       );
       await sendTx(
         [tx],

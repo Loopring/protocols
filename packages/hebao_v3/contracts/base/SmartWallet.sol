@@ -299,14 +299,17 @@ abstract contract SmartWallet is
     }
 
     // no need to record last active time here before inherit
-    function inherit(address newOwner, bool removeGuardians) external {
+    function inherit(
+        address newOwner,
+        address[] calldata newGuardians
+    ) external {
         // allow inherit from inheritor or entrypoint
         require(
             msg.sender == address(entryPoint()) ||
                 msg.sender == wallet.inheritor,
             "account: not EntryPoint or inheritor"
         );
-        wallet.inherit(newOwner, removeGuardians);
+        wallet.inherit(newOwner, newGuardians);
     }
 
     //
