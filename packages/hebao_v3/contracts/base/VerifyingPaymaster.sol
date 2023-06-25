@@ -24,7 +24,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     using SafeERC20 for ERC20;
 
     //calculated cost of the postOp
-    uint256 private COST_OF_POST = 20000;
+    uint256 private COST_OF_POST = 20000; // 这个需要写死吗
     uint8 constant priceDecimal = 6;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
@@ -95,7 +95,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         address sender = userOp.getSender();
 
         DecodeData memory decoded_data;
-        // paymasterAndData: [paymaster, token, valueOfEth, signature]
+        // paymasterAndData: [paymaster, token, valueOfEth, validUntil, signature]
         (
             decoded_data.token,
             decoded_data.valueOfEth,
@@ -119,7 +119,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
 
         if (decoded_data.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
-                10 ** priceDecimal) / decoded_data.valueOfEth;
+                10 ** priceDecimal) / decoded_data.valueOfEth; // priceDecimal这里固定是6？如果是LRC，18decimal怎么办？需要数据实例讲解
             require(
                 balances[ERC20(decoded_data.token)][sender] >=
                     tokenRequiredPreFund ||
@@ -181,12 +181,12 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         bytes calldata context,
         uint256 actualGasCost
     ) internal override {
-        (mode);
+        (mode); // 这个应该需要对不同模式进行处理吧？比如 opReverted 需要为entrypoint之前的验证付费
         (address account, address payable token, , uint256 valueOfEth) = abi
-            .decode(context, (address, address, uint256, uint256));
+            .decode(context, (address, address, uint256, uint256)); // 应该用户签的gasPrice也要读出来，最后和erc20 token换算的时候不需要用到吗？
         if (valueOfEth > 0) {
             uint256 actualTokenCost = ((actualGasCost + (COST_OF_POST)) *
-                10 ** priceDecimal) / valueOfEth;
+                10 ** priceDecimal) / valueOfEth; // 和上面一样，priceDecimal不能写死，也需要示例说明
 
             if (balances[ERC20(token)][account] >= actualTokenCost) {
                 balances[ERC20(token)][account] -= actualTokenCost;
@@ -196,7 +196,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
                     account,
                     address(this),
                     actualTokenCost
-                );
+                ); //  这里调用失败的话应该是需要对第三种mode postOpReverted 处理吧
             }
             balances[ERC20(token)][owner()] += actualTokenCost;
         }

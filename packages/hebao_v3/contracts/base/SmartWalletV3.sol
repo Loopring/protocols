@@ -97,8 +97,8 @@ contract SmartWalletV3 is SmartWallet {
     function _validateSignature(
         UserOperation calldata userOp,
         bytes32 userOpHash,
-        address
-    ) internal virtual override returns (uint256 sigTimeRange) {
+        address  // aggregator 做签名聚合的还没实现
+    ) internal virtual override returns (uint256 sigTimeRange) { // 这里不应该是 virtual 的方法吧？
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         bytes4 methodId = userOp.callData.toBytes4(0);
         if (methodId == SmartWallet.addGuardianWA.selector) {

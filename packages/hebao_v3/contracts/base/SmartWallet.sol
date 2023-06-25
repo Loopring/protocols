@@ -206,7 +206,7 @@ abstract contract SmartWallet is
     function changeMasterCopy(
         address newMasterCopy
     ) external onlyFromEntryPoint {
-        UpgradeLib.changeMasterCopy(newMasterCopy);
+        UpgradeLib.changeMasterCopy(newMasterCopy); // 少了带有domain的校验会导致不同链的重放攻击吗？
         masterCopy = newMasterCopy;
     }
 

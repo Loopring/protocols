@@ -13,7 +13,7 @@ library UpgradeLib {
 
     event ChangedMasterCopy(address masterCopy);
     SigRequirement public constant sigRequirement =
-        SigRequirement.MAJORITY_OWNER_REQUIRED;
+        SigRequirement.MAJORITY_OWNER_REQUIRED; // 这个是不是可以移到外面去？这里已经看不到验证签名的逻辑
 
     bytes32 public constant CHANGE_MASTER_COPY_TYPEHASH =
         keccak256(
