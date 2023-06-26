@@ -58,15 +58,6 @@ contract SmartWalletV3 is SmartWallet {
         wallet.nonce = userOp.nonce;
     }
 
-    function _call(address target, uint256 value, bytes memory data) internal {
-        (bool success, bytes memory result) = target.call{value: value}(data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
-    }
-
     /**
      * check current account deposit in the entryPoint
      */

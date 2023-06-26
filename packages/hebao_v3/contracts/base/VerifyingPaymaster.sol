@@ -95,7 +95,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         address sender = userOp.getSender();
 
         DecodeData memory decoded_data;
-        // paymasterAndData: [paymaster, token, valueOfEth, signature]
+        // paymasterAndData: [paymaster, token, valueOfEth, validUntil, signature]
         (
             decoded_data.token,
             decoded_data.valueOfEth,
@@ -116,9 +116,10 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
                 decoded_data.signature.length == 65,
             "VerifyingPaymaster: invalid signature length in paymasterAndData"
         );
+        uint256 costOfPost = userOp.gasPrice() * COST_OF_POST;
 
         if (decoded_data.valueOfEth > 0) {
-            uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
+            uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
                 10 ** priceDecimal) / decoded_data.valueOfEth;
             require(
                 balances[ERC20(decoded_data.token)][sender] >=
@@ -157,7 +158,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             abi.encode(
                 sender,
                 decoded_data.token,
-                userOp.gasPrice(),
+                costOfPost,
                 decoded_data.valueOfEth
             ),
             packSigTimeRange(false, decoded_data.validUntil, 0)
@@ -182,10 +183,14 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         uint256 actualGasCost
     ) internal override {
         (mode);
-        (address account, address payable token, , uint256 valueOfEth) = abi
-            .decode(context, (address, address, uint256, uint256));
+        (
+            address account,
+            address payable token,
+            uint256 costOfPost,
+            uint256 valueOfEth
+        ) = abi.decode(context, (address, address, uint256, uint256));
         if (valueOfEth > 0) {
-            uint256 actualTokenCost = ((actualGasCost + (COST_OF_POST)) *
+            uint256 actualTokenCost = ((actualGasCost + costOfPost) *
                 10 ** priceDecimal) / valueOfEth;
 
             if (balances[ERC20(token)][account] >= actualTokenCost) {
