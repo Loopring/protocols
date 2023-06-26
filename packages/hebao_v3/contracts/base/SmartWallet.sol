@@ -128,7 +128,7 @@ abstract contract SmartWallet is
         _entryPoint = entryPointInput;
 
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("LoopringWallet", "2.0.0", address(this))
+            EIP712.Domain("LoopringWallet", "2.0.0", address(this)) // 很多地方verify approval 没了 DOMAIN_SEPARATOR， 少了会不会有问题
         );
 
         priceOracle = _priceOracle;
@@ -241,7 +241,7 @@ abstract contract SmartWallet is
         wallet.addGuardian(guardian);
     }
 
-    function addGuardianWA(address guardian) external onlyFromEntryPoint {
+    function addGuardianWA(address guardian) external onlyFromEntryPoint { // 原来是没有限制，现在是必须走entryPoint，这样是否可以接受
         wallet.addGuardianWA(guardian);
     }
 

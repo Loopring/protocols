@@ -103,7 +103,7 @@ contract SmartWalletV3 is SmartWallet {
         bytes4 methodId = userOp.callData.toBytes4(0);
         if (methodId == SmartWallet.addGuardianWA.selector) {
             return
-                wallet.verifyApproval(
+                wallet.verifyApproval( // 少了domainSeparator
                     GuardianLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -216,9 +216,9 @@ contract SmartWalletV3 is SmartWallet {
             return SIG_VALIDATION_FAILED;
         }
 
-        require(!wallet.locked, "wallet is locked");
+        require(!wallet.locked, "wallet is locked"); // 这个移到前面是不是可以减少计算成本？
 
-        if (!hash.verifySignature(wallet.owner, userOp.signature))
+        if (!hash.verifySignature(wallet.owner, userOp.signature)) // 如果是从entry point来的guardian发的lock请求，将无法进行lock
             return SIG_VALIDATION_FAILED;
         return 0;
     }
