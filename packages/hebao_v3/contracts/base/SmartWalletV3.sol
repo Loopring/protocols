@@ -58,7 +58,7 @@ contract SmartWalletV3 is SmartWallet {
         wallet.nonce = userOp.nonce;
     }
 
-    function _call(address target, uint256 value, bytes memory data) internal { // 这个 internal 在哪里有调用
+    function _call(address target, uint256 value, bytes memory data) internal { // 这个 internal 在哪里有调用(这个需要删除)
         (bool success, bytes memory result) = target.call{value: value}(data);
         if (!success) {
             assembly {
@@ -97,8 +97,8 @@ contract SmartWalletV3 is SmartWallet {
     function _validateSignature(
         UserOperation calldata userOp,
         bytes32 userOpHash,
-        address  // aggregator 做签名聚合的还没实现
-    ) internal virtual override returns (uint256 sigTimeRange) { // 这里不应该是 virtual 的方法吧？
+        address  // aggregator 做签名聚合的还没实现(需要再确定优先级)
+    ) internal override returns (uint256 sigTimeRange) { // 这里不应该是 virtual 的方法吧？(fixed)
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         bytes4 methodId = userOp.callData.toBytes4(0);
         if (methodId == SmartWallet.addGuardianWA.selector) {
@@ -216,9 +216,9 @@ contract SmartWalletV3 is SmartWallet {
             return SIG_VALIDATION_FAILED;
         }
 
-        require(!wallet.locked, "wallet is locked"); // 这个移到前面是不是可以减少计算成本？
+        require(!wallet.locked, "wallet is locked"); // 这个移到前面是不是可以减少计算成本？(won't fix)
 
-        if (!hash.verifySignature(wallet.owner, userOp.signature)) // 如果是从entry point来的guardian发的lock请求，将无法进行lock
+        if (!hash.verifySignature(wallet.owner, userOp.signature)) // 如果是从entry point来的guardian发的lock请求，将无法进行lock(won't fix)
             return SIG_VALIDATION_FAILED;
         return 0;
     }

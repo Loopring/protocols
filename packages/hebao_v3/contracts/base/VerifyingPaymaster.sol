@@ -24,7 +24,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     using SafeERC20 for ERC20;
 
     //calculated cost of the postOp
-    uint256 private COST_OF_POST = 20000; // 这个需要写死吗
+    uint256 private COST_OF_POST = 20000; // 这个需要写死吗 (改成设置的,定义应该为gas，而不是gas * price)
     uint8 constant priceDecimal = 6;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
@@ -84,7 +84,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
-        uint256 requiredPreFund
+        uint256 requiredPreFund // 改为maxCost
     )
         external
         view
@@ -119,7 +119,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
 
         if (decoded_data.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund + (COST_OF_POST)) *
-                10 ** priceDecimal) / decoded_data.valueOfEth; // priceDecimal这里固定是6？如果是LRC，18decimal怎么办？需要数据实例讲解
+                10 ** priceDecimal) / decoded_data.valueOfEth; // priceDecimal这里固定是6？如果是LRC，18decimal怎么办？需要数据实例讲解 (算法需要修改)
             require(
                 balances[ERC20(decoded_data.token)][sender] >=
                     tokenRequiredPreFund ||

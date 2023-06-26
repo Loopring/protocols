@@ -29,7 +29,7 @@ library LockLib {
                 msg.sender == wallet.owner ||
                 msg.sender == entryPoint ||
                 wallet.isGuardian(msg.sender, false),
-            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
+            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN" //  文案需要修改下
         );
         setLock(wallet, msg.sender, true);
     }
