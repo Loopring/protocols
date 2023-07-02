@@ -25,7 +25,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
 
     //calculated cost of the postOp
     uint256 private COST_OF_POST = 20000;
-    uint8 constant priceDecimal = 6;
+    uint8 constant priceDecimal = 8;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
     mapping(ERC20 => bool) public registeredToken;

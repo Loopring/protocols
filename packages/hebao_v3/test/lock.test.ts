@@ -13,7 +13,7 @@ import {
   SmartWalletV3__factory,
 } from "../typechain-types";
 import { fixture } from "./helper/fixture";
-import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
+import { BigNumberish, Wallet, PopulatedTransaction, Contract } from "ethers";
 import {
   PaymasterOption,
   evInfo,
@@ -39,7 +39,8 @@ describe("lock test", () => {
     smartWallet: SmartWalletV3,
     smartWalletOwner: Wallet,
     guardians: Wallet[],
-    entrypoint: EntryPoint
+    entrypoint: EntryPoint,
+    smartWalletImpl: Contract
   ) {
     const partialUserOp = {
       sender: smartWallet.address,
@@ -51,6 +52,7 @@ describe("lock test", () => {
       partialUserOp,
       [smartWalletOwner, guardians[0]],
       create2.address,
+      smartWalletImpl.address,
       entrypoint
     );
     return signedUserOp;
@@ -82,7 +84,8 @@ describe("lock test", () => {
       smartWallet,
       smartWalletOwner,
       guardians,
-      entrypoint
+      entrypoint,
+      smartWalletImpl
     );
     const recipt = await sendUserOp(signedUserOp);
 

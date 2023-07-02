@@ -16,6 +16,8 @@ import "./WalletData.sol";
 library ApprovalLib {
     using SignatureUtil for bytes32;
     uint256 constant SIG_VALIDATION_FAILED = 1;
+    bytes32 public constant APPROVAL_TYPEHASH =
+        keccak256("Approval(bytes32 userOpHash,uint256 validUntil)");
 
     function packSignatureHash(
         bytes32 hash,
@@ -44,13 +46,18 @@ library ApprovalLib {
 
     function verifyApproval(
         Wallet storage wallet,
+        bytes32 domainSeparator,
         SigRequirement sigRequirement,
         bytes32 userOpHash,
         bytes memory signature
     ) internal returns (uint256) {
         Approval memory approval = abi.decode(signature, (Approval));
-        // bytes32 approvedHash = userOpHash;
-        bytes32 approvedHash = packSignatureHash(userOpHash, approval);
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(APPROVAL_TYPEHASH, userOpHash, approval.validUntil)
+            )
+        );
         // Save hash to prevent replay attacks
         require(!wallet.hashes[approvedHash], "HASH_EXIST");
         wallet.hashes[approvedHash] = true;

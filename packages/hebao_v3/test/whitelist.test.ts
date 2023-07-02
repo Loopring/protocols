@@ -57,6 +57,7 @@ describe("whitelist test", () => {
       partialUserOp,
       [guardians[0], smartWalletOwner],
       create2.address,
+      smartWalletImpl.address,
       entrypoint
     );
 

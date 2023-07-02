@@ -194,6 +194,7 @@ describe("guardian test", () => {
       walletFactory,
       usdtToken,
       deployer,
+      smartWalletImpl,
     } = await loadFixture(fixture);
     const guardianOwner = ethers.Wallet.createRandom().connect(ethers.provider);
     const guardian = await createRandomWallet(guardianOwner, [], walletFactory);
@@ -214,41 +215,22 @@ describe("guardian test", () => {
       callData: approveTokenWA.data,
       verificationGasLimit: "126880",
     };
-    const provider = entrypoint.provider;
-    const op2 = await fillUserOp(partialUserOp, create2.address, entrypoint);
-    const chainId = await provider.getNetwork().then((net) => net.chainId);
-    const userOpHash = getUserOpHash(op2, entrypoint.address, chainId);
-    // const approvedHash = userOpHash;
     const validUntil = 0;
-    const approvedHash = ethers.utils.solidityKeccak256(
-      ["bytes32", "uint256"],
-      [userOpHash, validUntil]
+    const signedUserOp = await fillAndMultiSign2(
+      partialUserOp,
+      [
+        { signer: smartWalletOwner },
+        { signer: guardians[0] },
+        {
+          signer: guardianOwner,
+          smartWalletAddress: guardian.address,
+        },
+      ],
+      create2.address,
+      smartWalletImpl.address,
+      entrypoint,
+      validUntil
     );
-    const message = arrayify(approvedHash);
-    const signers = [smartWalletOwner, guardians[0], guardianOwner];
-
-    const signatures = await Promise.all(
-      signers.map((g) => g.signMessage(message))
-    );
-    const signersAddr = signers.map((g) => g.address);
-    // replace guardian address
-    signersAddr[signersAddr.indexOf(guardianOwner.address)] = guardian.address;
-    const [sortedSigners, sortedSignatures] = _.unzip(
-      _.sortBy(_.zip(signersAddr, signatures), (item) => item[0])
-    );
-    const approval = {
-      signers: sortedSigners,
-      signatures: sortedSignatures,
-      validUntil,
-    };
-    const signature = ethers.utils.defaultAbiCoder.encode(
-      ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-      [approval]
-    );
-    const signedUserOp = {
-      ...op2,
-      signature,
-    };
     await sendUserOp(signedUserOp);
     expect(await usdtToken.allowance(smartWallet.address, receiver)).to.eq(
       tokenAmount
@@ -328,6 +310,7 @@ describe("guardian test", () => {
         smartWallet: wallet,
         create2,
         entrypoint,
+        smartWalletImpl,
       } = await loadFixture(fixture);
 
       const guardian3 = "0x" + "12".repeat(20);
@@ -341,6 +324,7 @@ describe("guardian test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
 
@@ -361,8 +345,13 @@ describe("guardian test", () => {
   });
   describe("smart wallet guardians approval", () => {
     it("add guardian with smart wallet guardian approval", async () => {
-      const { sendUserOp, create2, entrypoint, walletFactory } =
-        await loadFixture(fixture);
+      const {
+        sendUserOp,
+        create2,
+        entrypoint,
+        walletFactory,
+        smartWalletImpl,
+      } = await loadFixture(fixture);
       async function createRandomWalletAndFundingIt(
         guardians,
         walletFactory,
@@ -430,6 +419,7 @@ describe("guardian test", () => {
           },
         ],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);

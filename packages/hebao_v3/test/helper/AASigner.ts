@@ -238,6 +238,7 @@ export async function fillAndMultiSign(
   op: Partial<UserOperation>,
   signers: Wallet[],
   walletFactoryAddress: string,
+  verifyingContract: string,
   entryPoint?: EntryPoint,
   validUntil = 0
 ): Promise<UserOperation> {
@@ -245,15 +246,28 @@ export async function fillAndMultiSign(
   const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
   const chainId = await provider!.getNetwork().then((net) => net.chainId);
   const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
-  // const approvedHash = userOpHash;
-  const approvedHash = ethers.utils.solidityKeccak256(
-    ["bytes32", "uint256"],
-    [userOpHash, validUntil]
-  );
-  const message = arrayify(approvedHash);
-
+  const types = {
+    Approval: [
+      { name: "userOpHash", type: "bytes32" },
+      { name: "validUntil", type: "uint256" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "Approval",
+    value: { userOpHash, validUntil },
+  };
   const signatures = await Promise.all(
-    signers.map((g) => g.signMessage(message))
+    signers.map((g) =>
+      g._signTypedData(message.domain, message.types, message.value)
+    )
   );
   const [sortedSigners, sortedSignatures] = _.unzip(
     _.sortBy(
@@ -283,6 +297,7 @@ export async function fillAndMultiSign2(
   op: Partial<UserOperation>,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
+  verifyingContract: string,
   entryPoint?: EntryPoint,
   validUntil = 0
 ): Promise<UserOperation> {
@@ -293,13 +308,29 @@ export async function fillAndMultiSign2(
   );
   const chainId = await provider!.getNetwork().then((net) => net.chainId);
   const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
-  const approvedHash = ethers.utils.solidityKeccak256(
-    ["bytes32", "uint256"],
-    [userOpHash, validUntil]
-  );
-  const message = arrayify(approvedHash);
+  // use typedData hash instead
+  const types = {
+    Approval: [
+      { name: "userOpHash", type: "bytes32" },
+      { name: "validUntil", type: "uint256" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "Approval",
+    value: { userOpHash, validUntil },
+  };
   const signatures = await Promise.all(
-    smartWalletOrEOASigners.map((g) => g.signer.signMessage(message))
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
   );
   const [sortedSigners, sortedSignatures] = _.unzip(
     _.sortBy(

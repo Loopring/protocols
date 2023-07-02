@@ -194,6 +194,7 @@ describe("erc20 test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
 
@@ -240,6 +241,7 @@ describe("erc20 test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
       const recipt = await sendUserOp(signedUserOp);
@@ -261,6 +263,7 @@ describe("erc20 test", () => {
         usdtToken,
         smartWallet: wallet,
         smartWalletOwner,
+        smartWalletImpl,
       } = await loadFixture(fixture);
       const callData = testTarget.interface.encodeFunctionData(
         "functionPayable",
@@ -285,6 +288,7 @@ describe("erc20 test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
       const recipt = await sendUserOp(signedUserOp);

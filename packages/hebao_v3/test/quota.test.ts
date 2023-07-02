@@ -140,6 +140,7 @@ describe("quota test", () => {
       partialUserOp,
       [smartWalletOwner, guardians[0]],
       create2.address,
+      smartWalletImpl.address,
       entrypoint
     );
 
@@ -163,6 +164,7 @@ describe("quota test", () => {
         sendUserOp,
         blankOwner,
         usdtToken,
+        smartWalletImpl,
       } = await loadFixture(fixture);
 
       const oraclePrice = 1;
@@ -191,6 +193,7 @@ describe("quota test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);
@@ -243,6 +246,7 @@ describe("quota test", () => {
         sendUserOp,
         blankOwner,
         usdtToken,
+        smartWalletImpl,
       } = await loadFixture(fixture);
 
       const oraclePrice = 1;
@@ -271,6 +275,7 @@ describe("quota test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);
@@ -332,6 +337,7 @@ describe("quota test", () => {
         create2,
         entrypoint,
         sendUserOp,
+        smartWalletImpl,
         blankOwner,
         usdtToken,
       } = await loadFixture(fixture);
@@ -362,6 +368,7 @@ describe("quota test", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);

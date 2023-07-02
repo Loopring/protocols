@@ -160,10 +160,12 @@ describe("eip4337 test", () => {
       callGasLimit: "126880",
     };
     let validUntil = 1;
+
     const signedUserOp = await fillAndMultiSign(
       partialUserOp,
       [smartWalletOwner, guardians[0]],
       create2.address,
+      smartWalletImpl.address,
       entrypoint,
       validUntil
     );
@@ -176,6 +178,7 @@ describe("eip4337 test", () => {
       partialUserOp,
       [smartWalletOwner, guardians[0]],
       create2.address,
+      smartWalletImpl.address,
       entrypoint,
       validUntil
     );
@@ -387,6 +390,7 @@ describe("eip4337 test", () => {
       partialUserOp,
       [smartWalletOwner, guardians[0]],
       create2.address,
+      smartWalletImpl.address,
       entrypoint
     );
     const recipt = await sendUserOp(signedUserOp);

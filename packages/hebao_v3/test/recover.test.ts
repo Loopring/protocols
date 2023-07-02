@@ -35,6 +35,7 @@ describe("recover test", () => {
       partialUserOp,
       guardians,
       create2.address,
+      masterCopy,
       entrypoint
     );
     return signedUserOp;

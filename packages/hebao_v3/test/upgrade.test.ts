@@ -64,6 +64,7 @@ describe("wallet", () => {
         partialUserOp,
         [smartWalletOwner, guardians[0]],
         create2.address,
+        smartWalletImpl.address,
         entrypoint
       );
 
@@ -156,6 +157,7 @@ describe("wallet", () => {
         sendUserOp,
         entrypoint,
         blankOwner,
+        smartWalletImpl,
         usdtToken,
         deployer,
       } = await loadFixture(fixture);
@@ -215,6 +217,7 @@ describe("wallet", () => {
           partialUserOp,
           [smartWalletOwner, guardians[0]],
           create2.address,
+          newSmartWalletImpl.address,
           entrypoint
         );
         await sendUserOp(signedUserOp);

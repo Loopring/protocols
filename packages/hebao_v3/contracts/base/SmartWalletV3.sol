@@ -95,6 +95,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.addGuardianWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     GuardianLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -104,6 +105,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.removeGuardianWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     GuardianLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -113,6 +115,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.resetGuardiansWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     GuardianLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -122,6 +125,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.changeDailyQuotaWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     QuotaLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -131,6 +135,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.addToWhitelistWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     WhitelistLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -140,6 +145,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.transferTokenWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     ERC20Lib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -149,6 +155,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.callContractWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     ERC20Lib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -158,6 +165,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.approveTokenWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     ERC20Lib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -167,6 +175,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.approveThenCallContractWA.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     ERC20Lib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -176,6 +185,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.unlock.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     LockLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -185,6 +195,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.changeMasterCopy.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     UpgradeLib.sigRequirement,
                     userOpHash,
                     userOp.signature
@@ -194,6 +205,7 @@ contract SmartWalletV3 is SmartWallet {
         if (methodId == SmartWallet.recover.selector) {
             return
                 wallet.verifyApproval(
+                    DOMAIN_SEPARATOR,
                     RecoverLib.sigRequirement,
                     userOpHash,
                     userOp.signature
