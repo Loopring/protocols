@@ -212,10 +212,11 @@ async function deployAll() {
   // const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
   // const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
 
-  const paymaster = await deploySingle(create2, "VerifyingPaymaster", [
-    entrypoint.address,
-    paymasterOwner.address,
-  ]);
+  const paymaster = await deploySingle(
+    create2,
+    "contracts/base/VerifyingPaymaster.sol:VerifyingPaymaster",
+    [entrypoint.address, paymasterOwner.address]
+  );
 
   const smartWalletImpl = await deployWalletImpl(
     create2,
@@ -269,7 +270,7 @@ async function deployAll() {
   // deploy mock usdt token for test.
   const usdtToken = await deploySingle(create2, "USDT");
   return {
-    entrypoint,
+    entrypoint: EntryPoint__factory.connect(entrypoint.address, deployer),
     paymaster: VerifyingPaymaster__factory.connect(
       paymaster.address,
       paymasterOwner
@@ -299,7 +300,7 @@ async function sendTx(
   smartWallet: SmartWalletV3,
   smartWalletOwner: Signer,
   contractFactory: Contract,
-  entrypoint: Contract,
+  entrypoint: EntryPoint,
   sendUserOp: SendUserOp,
   paymasterOption?: PaymasterOption
 ) {
@@ -310,7 +311,8 @@ async function sendTx(
   const partialUserOp = await createBatchTransactions(
     txs,
     ethers.provider,
-    smartWallet
+    smartWallet,
+    false
   );
   // first call to fill userop
   let signedUserOp = await fillAndSign(
@@ -517,10 +519,10 @@ async function testExecuteTxWithUSDCPaymaster() {
 }
 
 async function main() {
-  // await deployAll();
+  await deployAll();
   // uncomment below to get gascost info on chain
   // await testExecuteTxWithEth();
-  await testExecuteTxWithUSDCPaymaster();
+  // await testExecuteTxWithUSDCPaymaster();
 }
 
 main()
