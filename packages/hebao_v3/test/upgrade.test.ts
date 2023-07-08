@@ -14,7 +14,12 @@ import {
 import { fixture } from "./helper/fixture";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 import { ethers } from "hardhat";
-import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
+import {
+  fillUserOp,
+  fillAndMultiSign,
+  fillAndMultiSignForTransferToken,
+  fillAndMultiSignForChangeMasterCopy,
+} from "./helper/AASigner";
 
 import { Contract, Signer } from "ethers";
 import BN from "bn.js";
@@ -34,6 +39,7 @@ describe("wallet", () => {
         entrypoint,
         sendUserOp,
         smartWalletImpl,
+        smartWallet,
       } = await loadFixture(fixture);
       const GuardianLib = await (
         await ethers.getContractFactory("GuardianLib")
@@ -50,21 +56,18 @@ describe("wallet", () => {
         })
       ).deploy();
 
-      const changeMasterCopy =
-        await wallet.populateTransaction.changeMasterCopy(
-          newSmartWalletImpl.address
-        );
-
-      const partialUserOp = {
-        sender: wallet.address,
-        nonce: 0,
-        callData: changeMasterCopy.data,
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        newSmartWalletImpl.address,
         entrypoint
       );
 
@@ -201,25 +204,42 @@ describe("wallet", () => {
       // transfer token with approval(guardians is the same as before so that multisig is still valid)
       {
         const usdtTokenBalanceBefore = await usdtToken.balanceOf(receiver);
-        const transferTokenWA =
-          await smartWallet.populateTransaction.transferTokenWA(
-            usdtToken.address,
-            receiver,
-            tokenAmount,
-            "0x"
-          );
-        const partialUserOp = {
-          sender: smartWallet.address,
-          nonce: 0,
-          callData: transferTokenWA.data,
-        };
-        const signedUserOp = await fillAndMultiSign(
-          partialUserOp,
-          [smartWalletOwner, guardians[0]],
+        const signedUserOp = await fillAndMultiSignForTransferToken(
+          smartWallet,
+          0, //nonce
+          [
+            { signer: smartWalletOwner },
+            {
+              signer: guardians[0],
+            },
+          ],
           create2.address,
           newSmartWalletImpl.address,
+          usdtToken.address,
+          receiver,
+          tokenAmount,
+          "0x",
           entrypoint
         );
+        // const transferTokenWA =
+        // await smartWallet.populateTransaction.transferTokenWA(
+        // usdtToken.address,
+        // receiver,
+        // tokenAmount,
+        // "0x"
+        // );
+        // const partialUserOp = {
+        // sender: smartWallet.address,
+        // nonce: 0,
+        // callData: transferTokenWA.data,
+        // };
+        // const signedUserOp = await fillAndMultiSign(
+        // partialUserOp,
+        // [smartWalletOwner, guardians[0]],
+        // create2.address,
+        // newSmartWalletImpl.address,
+        // entrypoint
+        // );
         await sendUserOp(signedUserOp);
         const usdtTokenBalanceAfter = await usdtToken.balanceOf(receiver);
         expect(usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)).to.eq(

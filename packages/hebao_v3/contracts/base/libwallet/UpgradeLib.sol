@@ -17,12 +17,34 @@ library UpgradeLib {
 
     bytes32 public constant CHANGE_MASTER_COPY_TYPEHASH =
         keccak256(
-            "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy)"
+            "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy,bytes32 userOpHash)"
         );
 
     function changeMasterCopy(address newMasterCopy) external {
         require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
 
         emit ChangedMasterCopy(newMasterCopy);
+    }
+
+    function encodeApprovalForChangeMasterCopy(
+        bytes memory data,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) external view returns (bytes32) {
+        address masterCopy = abi.decode(data, (address));
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    CHANGE_MASTER_COPY_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    masterCopy,
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
     }
 }

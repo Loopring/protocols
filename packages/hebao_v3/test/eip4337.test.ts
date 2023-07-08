@@ -20,6 +20,7 @@ import {
   UserOperation,
   fillUserOp,
   fillAndMultiSign,
+  fillAndMultiSignForChangeDailyQuota,
 } from "./helper/AASigner";
 import {
   SmartWalletV3,
@@ -150,35 +151,41 @@ describe("eip4337 test", () => {
     } = await loadFixture(fixture);
 
     const newQuota = 100;
-    const changeDailyQuotaWA =
-      await smartWallet.populateTransaction.changeDailyQuotaWA(newQuota);
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: changeDailyQuotaWA.data,
-      // skip gas estimation
-      callGasLimit: "126880",
-    };
     let validUntil = 1;
-
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      [smartWalletOwner, guardians[0]],
+    const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
+      smartWallet,
+      0, //nonce
+      [
+        { signer: smartWalletOwner },
+        {
+          signer: guardians[0],
+        },
+      ],
       create2.address,
       smartWalletImpl.address,
+      newQuota,
       entrypoint,
       validUntil
     );
+
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
       .withArgs(0, ethers.constants.AddressZero, "AA22 expired or not due");
     const block = await ethers.provider.getBlock("latest");
     validUntil = block.timestamp + 3600;
-    const signedUserOp2 = await fillAndMultiSign(
-      partialUserOp,
-      [smartWalletOwner, guardians[0]],
+
+    const signedUserOp2 = await fillAndMultiSignForChangeDailyQuota(
+      smartWallet,
+      0, //nonce
+      [
+        { signer: smartWalletOwner },
+        {
+          signer: guardians[0],
+        },
+      ],
       create2.address,
       smartWalletImpl.address,
+      newQuota,
       entrypoint,
       validUntil
     );
@@ -378,21 +385,35 @@ describe("eip4337 test", () => {
     await smartWallet.lock();
 
     const newQuota = 100;
-    const changeDailyQuotaWA =
-      await smartWallet.populateTransaction.changeDailyQuotaWA(newQuota);
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: changeDailyQuotaWA.data,
-      callGasLimit: "126880",
-    };
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      [smartWalletOwner, guardians[0]],
+    const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
+      smartWallet,
+      0, //nonce
+      [
+        { signer: smartWalletOwner },
+        {
+          signer: guardians[0],
+        },
+      ],
       create2.address,
       smartWalletImpl.address,
+      newQuota,
       entrypoint
     );
+    // const changeDailyQuotaWA =
+    // await smartWallet.populateTransaction.changeDailyQuotaWA(newQuota);
+    // const partialUserOp = {
+    // sender: smartWallet.address,
+    // nonce: 0,
+    // callData: changeDailyQuotaWA.data,
+    // callGasLimit: "126880",
+    // };
+    // const signedUserOp = await fillAndMultiSign(
+    // partialUserOp,
+    // [smartWalletOwner, guardians[0]],
+    // create2.address,
+    // smartWalletImpl.address,
+    // entrypoint
+    // );
     const recipt = await sendUserOp(signedUserOp);
     const quotaInfo = (await smartWallet.wallet())["quota"];
     const currentQuota = await getCurrentQuota(quotaInfo, recipt.blockNumber);

@@ -12,35 +12,15 @@ import {
   sortSignersAndSignatures,
   getErrorMessage,
 } from "./helper/utils";
-import { fillUserOp, getUserOpHash, fillAndMultiSign } from "./helper/AASigner";
+import {
+  fillUserOp,
+  getUserOpHash,
+  fillAndMultiSign,
+  fillAndMultiSignForRecover,
+} from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("recover test", () => {
-  async function recoverTxToSignedUserOp(
-    smartWallet,
-    recover,
-    create2,
-    entrypoint,
-    masterCopy,
-    newOwnerAddr,
-    guardians: Wallet[]
-  ) {
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: recover.data,
-      callGasLimit: "126880",
-    };
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      guardians,
-      create2.address,
-      masterCopy,
-      entrypoint
-    );
-    return signedUserOp;
-  }
-
   it("recover success", async () => {
     const {
       entrypoint,
@@ -55,18 +35,20 @@ describe("recover test", () => {
 
     const newOwner = await ethers.Wallet.createRandom();
     const newGuardians = [];
-    const recover = await smartWallet.populateTransaction.recover(
-      newOwner.address,
-      newGuardians
-    );
-    const signedUserOp = await recoverTxToSignedUserOp(
+    const signedUserOp = await fillAndMultiSignForRecover(
       smartWallet,
-      recover,
-      create2,
-      entrypoint,
+      0, //nonce
+      [
+        { signer: guardians[0] },
+        {
+          signer: guardians[1],
+        },
+      ],
+      create2.address,
       smartWalletImpl.address,
       newOwner.address,
-      guardians
+      newGuardians,
+      entrypoint
     );
 
     expect(await smartWallet.getOwner()).to.eq(smartWalletOwner.address);
@@ -113,18 +95,20 @@ describe("recover test", () => {
     } = await loadFixture(fixture);
 
     const newGuardians = [];
-    const recover = await smartWallet.populateTransaction.recover(
-      smartWalletOwner.address,
-      newGuardians
-    );
-    const signedUserOp = await recoverTxToSignedUserOp(
+    const signedUserOp = await fillAndMultiSignForRecover(
       smartWallet,
-      recover,
-      create2,
-      entrypoint,
+      0, //nonce
+      [
+        { signer: guardians[0] },
+        {
+          signer: guardians[1],
+        },
+      ],
+      create2.address,
       smartWalletImpl.address,
       smartWalletOwner.address,
-      guardians
+      newGuardians,
+      entrypoint
     );
     const preDeposit = await smartWallet.getDeposit();
     const recipt = await sendUserOp(signedUserOp);
@@ -136,7 +120,7 @@ describe("recover test", () => {
     expect(postDeposit).to.lt(preDeposit);
   });
 
-  it("new owner shoulb not be invalid", async () => {
+  it("new owner should not be invalid", async () => {
     const {
       entrypoint,
       smartWallet,
@@ -153,18 +137,20 @@ describe("recover test", () => {
     const newOwnerAddrs = [create2.address, ethers.constants.AddressZero];
     for (let i = 0; i < newOwnerAddrs.length; ++i) {
       const newOwnerAddr = newOwnerAddrs[i];
-      const recover = await smartWallet.populateTransaction.recover(
-        newOwnerAddr,
-        newGuardians
-      );
-      const signedUserOp = await recoverTxToSignedUserOp(
+      const signedUserOp = await fillAndMultiSignForRecover(
         smartWallet,
-        recover,
-        create2,
-        entrypoint,
+        0, //nonce
+        [
+          { signer: guardians[0] },
+          {
+            signer: guardians[1],
+          },
+        ],
+        create2.address,
         smartWalletImpl.address,
         newOwnerAddr,
-        guardians
+        newGuardians,
+        entrypoint
       );
       const preDeposit = await smartWallet.getDeposit();
       const recipt = await sendUserOp(signedUserOp);
@@ -213,18 +199,20 @@ describe("recover test", () => {
 
     const newOwner = await ethers.Wallet.createRandom();
     const newGuardians = [];
-    const recover = await smartWallet.populateTransaction.recover(
-      newOwner.address,
-      newGuardians
-    );
-    const signedUserOp = await recoverTxToSignedUserOp(
+    const signedUserOp = await fillAndMultiSignForRecover(
       smartWallet,
-      recover,
-      create2,
-      entrypoint,
+      0, //nonce
+      [
+        { signer: guardians[0] },
+        {
+          signer: guardians[1],
+        },
+      ],
+      create2.address,
       smartWalletImpl.address,
       newOwner.address,
-      guardians
+      newGuardians,
+      entrypoint
     );
     await sendUserOp(signedUserOp);
     expect(await smartWallet.getOwner()).to.eq(newOwner.address);

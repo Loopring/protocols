@@ -8,6 +8,7 @@ import "../../iface/PriceOracle.sol";
 import "../../lib/MathUint.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./ApprovalLib.sol";
+import "../../lib/EIP712.sol";
 
 /// @title QuotaLib
 /// @dev This store maintains daily spending quota for each wallet.
@@ -23,7 +24,7 @@ library QuotaLib {
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
         keccak256(
-            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
+            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota,bytes32 userOpHash)"
         );
 
     event QuotaScheduled(
@@ -172,5 +173,27 @@ library QuotaLib {
         Quota storage s = wallet.quota;
         s.spentAmount = _spentQuota(q).add(amount).toUint128();
         s.spentTimestamp = uint64(block.timestamp);
+    }
+
+    function encodeApprovalForChangeDailyQuota(
+        bytes memory data,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) internal view returns (bytes32) {
+        uint256 newQuota = abi.decode(data, (uint));
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    CHANGE_DAILY_QUOTE_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    newQuota,
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
     }
 }

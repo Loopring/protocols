@@ -19,6 +19,8 @@ import {
   fillAndMultiSign,
   getUserOpHash,
   fillAndMultiSign2,
+  fillAndMultiSignForApproveToken,
+  fillAndMultiSignForAddGuardian,
 } from "./helper/AASigner";
 import BN from "bn.js";
 import { increase } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
@@ -204,20 +206,10 @@ describe("guardian test", () => {
     // use new guardian signature to approve token
     const receiver = deployer.address;
     const tokenAmount = ethers.utils.parseUnits("100", 6);
-    const approveTokenWA = await smartWallet.populateTransaction.approveTokenWA(
-      usdtToken.address,
-      receiver,
-      tokenAmount
-    );
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: approveTokenWA.data,
-      verificationGasLimit: "126880",
-    };
     const validUntil = 0;
-    const signedUserOp = await fillAndMultiSign2(
-      partialUserOp,
+    const signedUserOp = await fillAndMultiSignForApproveToken(
+      smartWallet,
+      0, //nonce
       [
         { signer: smartWalletOwner },
         { signer: guardians[0] },
@@ -228,6 +220,9 @@ describe("guardian test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
+      usdtToken.address,
+      receiver,
+      tokenAmount,
       entrypoint,
       validUntil
     );
@@ -310,21 +305,20 @@ describe("guardian test", () => {
         smartWallet: wallet,
         create2,
         entrypoint,
+        smartWallet,
         smartWalletImpl,
       } = await loadFixture(fixture);
 
+      // add new guardian
       const guardian3 = "0x" + "12".repeat(20);
-      const tx = await wallet.populateTransaction.addGuardianWA(guardian3);
-      const partialUserOp = {
-        sender: wallet.address,
-        nonce: 0,
-        callData: tx.data,
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+
+      const signedUserOp = await fillAndMultiSignForAddGuardian(
+        smartWallet,
+        0, //nonce
+        [{ signer: smartWalletOwner }, { signer: guardians[0] }],
         create2.address,
         smartWalletImpl.address,
+        guardian3,
         entrypoint
       );
 
@@ -401,16 +395,9 @@ describe("guardian test", () => {
       expect(
         guardiansBefore.some((g) => g.addr === guardianToAdd.address)
       ).to.equal(false); // not contains guardianToAdd
-      const tx = await smartWallet.populateTransaction.addGuardianWA(
-        guardianToAdd.address
-      );
-      const partialUserOp = {
-        sender: smartWallet.address,
-        nonce: 0,
-        callData: tx.data,
-      };
-      const signedUserOp = await fillAndMultiSign2(
-        partialUserOp,
+      const signedUserOp = await fillAndMultiSignForAddGuardian(
+        smartWallet,
+        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -420,6 +407,7 @@ describe("guardian test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
+        guardianToAdd.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);

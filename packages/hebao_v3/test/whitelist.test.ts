@@ -8,7 +8,11 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { getBlockTimestamp, sortSignersAndSignatures } from "./helper/utils";
 import { signAddToWhitelistWA } from "./helper/signatureUtils";
-import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
+import {
+  fillUserOp,
+  fillAndMultiSign,
+  fillAndMultiSignForAddToWhitelist,
+} from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("whitelist test", () => {
@@ -46,18 +50,18 @@ describe("whitelist test", () => {
       sendUserOp,
     } = await loadFixture(fixture);
     const addr = "0x" + "12".repeat(20);
-
-    const tx = await smartWallet.populateTransaction.addToWhitelistWA(addr);
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: tx.data,
-    };
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      [guardians[0], smartWalletOwner],
+    const signedUserOp = await fillAndMultiSignForAddToWhitelist(
+      smartWallet,
+      0, //nonce
+      [
+        {
+          signer: guardians[0],
+        },
+        { signer: smartWalletOwner },
+      ],
       create2.address,
       smartWalletImpl.address,
+      addr,
       entrypoint
     );
 

@@ -21,7 +21,14 @@ import {
   createSmartWallet,
   getFirstEvent,
 } from "./helper/utils";
-import { fillAndMultiSign, UserOperation, fillUserOp } from "./helper/AASigner";
+import {
+  fillAndMultiSign,
+  UserOperation,
+  fillUserOp,
+  fillAndMultiSignForApproveToken,
+  fillAndMultiSignForCallContract,
+  fillAndMultiSignForApproveThenCallContract,
+} from "./helper/AASigner";
 import {
   SmartWalletV3,
   EntryPoint,
@@ -179,22 +186,20 @@ describe("erc20 test", () => {
 
       const toAddr = deployer.address;
       const amount = new BN(100);
-      const tx = await smartWallet.populateTransaction.approveTokenWA(
-        usdtToken.address,
-        toAddr,
-        amount.toString()
-      );
-      const partialUserOp = {
-        sender: smartWallet.address,
-        nonce: 0,
-        callData: tx.data,
-        callGasLimit: "126880",
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      const signedUserOp = await fillAndMultiSignForApproveToken(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        usdtToken.address,
+        toAddr,
+        amount.toString(),
         entrypoint
       );
 
@@ -222,26 +227,21 @@ describe("erc20 test", () => {
       const amount = new BN(100);
       const functionDefault =
         await testTarget.populateTransaction.functionDefault(0);
-      const tx = await smartWallet.populateTransaction.callContractWA(
-        testTarget.address,
-        0,
-        functionDefault.data
-      );
-      const partialUserOp = {
-        sender: smartWallet.address,
-        nonce: 0,
-        callData: tx.data,
-      };
-      const userOp = await fillUserOp(
-        partialUserOp,
-        create2.address,
-        entrypoint
-      );
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      // fillAndMultiSignForCallContract
+      const signedUserOp = await fillAndMultiSignForCallContract(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        testTarget.address,
+        0,
+        functionDefault.data,
         entrypoint
       );
       const recipt = await sendUserOp(signedUserOp);
@@ -264,6 +264,7 @@ describe("erc20 test", () => {
         smartWallet: wallet,
         smartWalletOwner,
         smartWalletImpl,
+        smartWallet,
       } = await loadFixture(fixture);
       const callData = testTarget.interface.encodeFunctionData(
         "functionPayable",
@@ -271,26 +272,25 @@ describe("erc20 test", () => {
       );
       const amount = ethers.utils.parseEther("10000");
       const value = ethers.utils.parseEther("50");
-
-      const tx = await wallet.populateTransaction.approveThenCallContractWA(
-        usdtToken.address,
-        testTarget.address,
-        amount,
-        value,
-        callData
-      );
-      const partialUserOp = {
-        sender: wallet.address,
-        nonce: 0,
-        callData: tx.data,
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      const signedUserOp = await fillAndMultiSignForApproveThenCallContract(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        usdtToken.address,
+        testTarget.address,
+        amount.toString(),
+        value,
+        callData,
         entrypoint
       );
+
       const recipt = await sendUserOp(signedUserOp);
       const event = await getFirstEvent(
         testTarget,

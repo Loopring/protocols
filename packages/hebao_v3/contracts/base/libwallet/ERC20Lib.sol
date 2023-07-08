@@ -11,6 +11,7 @@ import "../../iface/PriceOracle.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./WhitelistLib.sol";
 import "./QuotaLib.sol";
+import "../../lib/EIP712.sol";
 
 /// @title ERC20Lib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -32,19 +33,19 @@ library ERC20Lib {
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH =
         keccak256(
-            "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
+            "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata,bytes32 userOpHash)"
         );
     bytes32 public constant APPROVE_TOKEN_TYPEHASH =
         keccak256(
-            "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
+            "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes32 userOpHash)"
         );
     bytes32 public constant CALL_CONTRACT_TYPEHASH =
         keccak256(
-            "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
+            "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes32 userOpHash)"
         );
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH =
         keccak256(
-            "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
+            "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes32 userOpHash)"
         );
 
     function transferToken(
@@ -230,5 +231,110 @@ library ERC20Lib {
         require(success, "CALL_FAILED");
 
         emit ContractCalled(to, value, txData);
+    }
+
+    function encodeApprovalForTransferToken(
+        bytes memory data,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) external view returns (bytes32) {
+        (address token, address to, uint amount, bytes memory logdata) = abi
+            .decode(data, (address, address, uint, bytes));
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    TRANSFER_TOKEN_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    token,
+                    to,
+                    amount,
+                    keccak256(logdata),
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
+    }
+
+    function encodeApprovalForApproveToken(
+        bytes memory data,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) external view returns (bytes32) {
+        (address token, address to, uint256 amount) = abi.decode(
+            data,
+            (address, address, uint)
+        );
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    APPROVE_TOKEN_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    token,
+                    to,
+                    amount,
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
+    }
+
+    function encodeApprovalForCallContract(
+        bytes memory callData,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) external view returns (bytes32) {
+        (address to, uint256 value, ) = abi.decode(
+            callData,
+            (address, uint, bytes)
+        );
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    CALL_CONTRACT_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    to,
+                    value,
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
+    }
+
+    function encodeApprovalForApproveThenCallContract(
+        bytes memory callData,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) external view returns (bytes32) {
+        (address token, address to, uint256 amount, uint256 value, ) = abi
+            .decode(callData, (address, address, uint256, uint256, bytes));
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    token,
+                    to,
+                    amount,
+                    value,
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
     }
 }

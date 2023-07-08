@@ -28,6 +28,7 @@ import {
   getUserOpHash,
   UserOperation,
   fillAndMultiSign,
+  fillAndMultiSignForUnlock,
 } from "./helper/AASigner";
 import BN from "bn.js";
 
@@ -74,18 +75,18 @@ describe("lock test", () => {
     // TODO(allow to double lock?)
     await expect(smartWallet.lock()).not.to.reverted;
 
-    // unlock wallet using guardians approval
-    const unlock = await smartWallet.populateTransaction.unlock();
-    const masterCopy = smartWalletImpl.address;
-    const signedUserOp = await getApprovalSignedUserOp(
-      unlock,
-      create2,
-      masterCopy,
+    const signedUserOp = await fillAndMultiSignForUnlock(
       smartWallet,
-      smartWalletOwner,
-      guardians,
-      entrypoint,
-      smartWalletImpl
+      0, //nonce
+      [
+        { signer: guardians[0] },
+        {
+          signer: smartWalletOwner,
+        },
+      ],
+      create2.address,
+      smartWalletImpl.address,
+      entrypoint
     );
     const recipt = await sendUserOp(signedUserOp);
 

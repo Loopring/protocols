@@ -293,6 +293,890 @@ export async function fillAndMultiSign(
     signature,
   };
 }
+
+export async function fillAndMultiSignForTransferToken(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  token: string,
+  to: string,
+  amount: BigNumberish,
+  logdata: BytesLike,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.transferTokenWA(
+    token,
+    to,
+    amount,
+    logdata
+  );
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  // "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata,bytes32 userOpHash)"
+  const types = {
+    transferToken: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "token", type: "address" },
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "logdata", type: "bytes" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "transferToken",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      amount,
+      logdata,
+      to,
+      token,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForRecover(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  newOwner: string,
+  newGuardians: string[],
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.recover(
+    newOwner,
+    newGuardians
+  );
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+    callGasLimit: "126880",
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  // "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians,bytes32 userOpHash)"
+  const types = {
+    recover: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "newOwner", type: "address" },
+      { name: "newGuardians", type: "address[]" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "recover",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      newOwner,
+      newGuardians,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForUnlock(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.unlock();
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  //addToWhitelist(address wallet,uint256 validUntil,address addr,bytes userOpHash)
+  const types = {
+    unlock: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "unlock",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+// fillAndMultiSignForAddToWhitelist
+export async function fillAndMultiSignForAddToWhitelist(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  addr: string,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.addToWhitelistWA(addr);
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  //addToWhitelist(address wallet,uint256 validUntil,address addr,bytes userOpHash)
+  const types = {
+    addToWhitelist: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "addr", type: "address" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "addToWhitelist",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      addr,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForChangeMasterCopy(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  masterCopy: string,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.changeMasterCopy(masterCopy);
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  //"changeMasterCopy(address wallet,uint256 validUntil,address masterCopy,bytes32 userOpHash)"
+  const types = {
+    changeMasterCopy: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "masterCopy", type: "address" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "changeMasterCopy",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      masterCopy,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForChangeDailyQuota(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  newQuota: BigNumberish,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.changeDailyQuotaWA(newQuota);
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  // "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
+  const types = {
+    changeDailyQuota: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "newQuota", type: "uint256" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "changeDailyQuota",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      newQuota,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForAddGuardian(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  newGuardian: string,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const tx = await smartWallet.populateTransaction.addGuardianWA(newGuardian);
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: tx.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  //addGuardian(address wallet,uint256 validUntil,address guardian,bytes32 userOpHash)
+  const types = {
+    addGuardian: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "guardian", type: "address" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "addGuardian",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      guardian: newGuardian,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForApproveThenCallContract(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  token: string,
+  to: string,
+  amount: BigNumberish,
+  value: BigNumberish,
+  data: BytesLike,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const approveTokenWA =
+    await smartWallet.populateTransaction.approveThenCallContractWA(
+      token,
+      to,
+      amount,
+      value,
+      data
+    );
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: approveTokenWA.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  //"approveThenCallContract(address wallet,uint256 validUntil,address to,uint256 value,bytes32 userOpHash)"
+  const types = {
+    approveThenCallContract: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "token", type: "address" },
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "value", type: "uint256" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "approveThenCallContract",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      token,
+      to,
+      value,
+      amount,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForCallContract(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  to: string,
+  value: BigNumberish,
+  data: BytesLike,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const approveTokenWA = await smartWallet.populateTransaction.callContractWA(
+    to,
+    value,
+    data
+  );
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: approveTokenWA.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  //"callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes32 userOpHash)"
+  const types = {
+    callContract: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "callContract",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      to,
+      value,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
+export async function fillAndMultiSignForApproveToken(
+  smartWallet: Contract,
+  nonce,
+  smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
+  walletFactoryAddress: string,
+  verifyingContract: string,
+  token: string,
+  to: string,
+  amount: BigNumberish,
+  entryPoint?: EntryPoint,
+  validUntil = 0
+) {
+  const approveTokenWA = await smartWallet.populateTransaction.approveTokenWA(
+    token,
+    to,
+    amount
+  );
+  const op = {
+    sender: smartWallet.address,
+    nonce,
+    callData: approveTokenWA.data,
+  };
+  const provider = entryPoint?.provider;
+  const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint);
+  op2.verificationGasLimit = BigNumber.from("2").mul(
+    DefaultsForUserOp.verificationGasLimit
+  );
+  const chainId = await provider!.getNetwork().then((net) => net.chainId);
+  const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  // use typedData hash instead
+  const types = {
+    approveToken: [
+      { name: "wallet", type: "address" },
+      { name: "validUntil", type: "uint256" },
+      { name: "token", type: "address" },
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "userOpHash", type: "bytes32" },
+    ],
+  };
+  const domain = {
+    name: "LoopringWallet",
+    version: "2.0.0",
+    chainId,
+    verifyingContract,
+  };
+  const message = {
+    types,
+    domain,
+    primaryType: "approveToken",
+    value: {
+      userOpHash,
+      validUntil,
+      wallet: smartWallet.address,
+      token,
+      to,
+      amount,
+    },
+  };
+
+  const signatures = await Promise.all(
+    smartWalletOrEOASigners.map((g) =>
+      g.signer._signTypedData(message.domain, message.types, message.value)
+    )
+  );
+  const [sortedSigners, sortedSignatures] = _.unzip(
+    _.sortBy(
+      _.zip(
+        smartWalletOrEOASigners.map((g) =>
+          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+        ),
+        signatures
+      ),
+      (item) => item[0]
+    )
+  );
+
+  const approval = {
+    signers: sortedSigners,
+    signatures: sortedSignatures,
+    validUntil,
+  };
+  const signature = ethers.utils.defaultAbiCoder.encode(
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
+    [approval]
+  );
+  return {
+    ...op2,
+    signature,
+  };
+}
+
 export async function fillAndMultiSign2(
   op: Partial<UserOperation>,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],

@@ -11,7 +11,11 @@ import {
 } from "./helper/utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
-import { fillAndMultiSign } from "./helper/AASigner";
+import {
+  fillAndMultiSign,
+  fillAndMultiSignForChangeDailyQuota,
+  fillAndMultiSignForChangeMasterCopy,
+} from "./helper/AASigner";
 import BN from "bn.js";
 import { Wallet } from "ethers";
 
@@ -127,20 +131,18 @@ describe("quota test", () => {
       smartWalletImpl,
     } = await loadFixture(fixture);
     const newQuota = "1" + "0".repeat(20);
-    const tx = await smartWallet.populateTransaction.changeDailyQuotaWA(
-      newQuota
-    );
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: tx.data,
-      callGasLimit: "126880",
-    };
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      [smartWalletOwner, guardians[0]],
+    const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
+      smartWallet,
+      0, //nonce
+      [
+        { signer: smartWalletOwner },
+        {
+          signer: guardians[0],
+        },
+      ],
       create2.address,
       smartWalletImpl.address,
+      newQuota,
       entrypoint
     );
 
@@ -179,23 +181,37 @@ describe("quota test", () => {
         testPriceOracle.address
       );
       // update to new implementation
-      const changeMasterCopy =
-        await smartWallet.populateTransaction.changeMasterCopy(
-          newSmartWalletImpl.address
-        );
-
-      const partialUserOp = {
-        sender: smartWallet.address,
-        nonce: 0,
-        callData: changeMasterCopy.data,
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        newSmartWalletImpl.address,
         entrypoint
       );
+      // const changeMasterCopy =
+      // await smartWallet.populateTransaction.changeMasterCopy(
+      // newSmartWalletImpl.address
+      // );
+
+      // const partialUserOp = {
+      // sender: smartWallet.address,
+      // nonce: 0,
+      // callData: changeMasterCopy.data,
+      // };
+      // const signedUserOp = await fillAndMultiSign(
+      // partialUserOp,
+      // [smartWalletOwner, guardians[0]],
+      // create2.address,
+      // smartWalletImpl.address,
+      // entrypoint
+      // );
       await sendUserOp(signedUserOp);
       const masterCopyOfWallet = await smartWallet.getMasterCopy();
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
@@ -261,21 +277,18 @@ describe("quota test", () => {
         testPriceOracle.address
       );
       // update to new implementation
-      const changeMasterCopy =
-        await smartWallet.populateTransaction.changeMasterCopy(
-          newSmartWalletImpl.address
-        );
-
-      const partialUserOp = {
-        sender: smartWallet.address,
-        nonce: 0,
-        callData: changeMasterCopy.data,
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        newSmartWalletImpl.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);
@@ -354,21 +367,18 @@ describe("quota test", () => {
         testPriceOracle.address
       );
       // update to new implementation
-      const changeMasterCopy =
-        await smartWallet.populateTransaction.changeMasterCopy(
-          newSmartWalletImpl.address
-        );
-
-      const partialUserOp = {
-        sender: smartWallet.address,
-        nonce: 0,
-        callData: changeMasterCopy.data,
-      };
-      const signedUserOp = await fillAndMultiSign(
-        partialUserOp,
-        [smartWalletOwner, guardians[0]],
+      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+        smartWallet,
+        0, //nonce
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardians[0],
+          },
+        ],
         create2.address,
         smartWalletImpl.address,
+        newSmartWalletImpl.address,
         entrypoint
       );
       await sendUserOp(signedUserOp);

@@ -19,9 +19,11 @@ library LockLib {
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant LOCK_TYPEHASH =
-        keccak256("lock(address wallet,uint256 validUntil)");
+        keccak256("lock(address wallet,uint256 validUntil,bytes32 userOpHash)");
     bytes32 public constant UNLOCK_TYPEHASH =
-        keccak256("unlock(address wallet,uint256 validUntil)");
+        keccak256(
+            "unlock(address wallet,uint256 validUntil,bytes32 userOpHash)"
+        );
 
     function lock(Wallet storage wallet, address entryPoint) public {
         require(
@@ -41,5 +43,25 @@ library LockLib {
     function setLock(Wallet storage wallet, address by, bool locked) internal {
         wallet.locked = locked;
         emit WalletLocked(by, locked);
+    }
+
+    function encodeApprovalForUnlock(
+        bytes memory,
+        bytes32 domainSeparator,
+        uint256 validUntil,
+        bytes32 userOpHash
+    ) external view returns (bytes32) {
+        bytes32 approvedHash = EIP712.hashPacked(
+            domainSeparator,
+            keccak256(
+                abi.encode(
+                    UNLOCK_TYPEHASH,
+                    address(this),
+                    validUntil,
+                    userOpHash
+                )
+            )
+        );
+        return approvedHash;
     }
 }
