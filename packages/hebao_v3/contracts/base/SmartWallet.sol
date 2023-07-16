@@ -100,15 +100,6 @@ abstract contract SmartWallet is
         _;
     }
 
-    modifier onlyFromSuperGuardianWhenUnlocked() {
-        require(
-            wallet.isSuperGuardian(msg.sender, false) && !wallet.locked,
-            "account: not superGuardian"
-        );
-        wallet.touchLastActiveWhenRequired();
-        _;
-    }
-
     /// @inheritdoc BaseAccount
     function entryPoint() public view virtual override returns (IEntryPoint) {
         return _entryPoint;
@@ -217,24 +208,6 @@ abstract contract SmartWallet is
     //
     // Guardians
     //
-    function upgradeGuardian(
-        address guardian
-    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        wallet.upgradeGuardian(guardian);
-    }
-
-    function downgradeGuardian(
-        address guardian
-    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        wallet.downgradeGuardian(guardian);
-    }
-
-    function cancelPendingActionForSuperGuardian(
-        address guardian
-    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        wallet.cancelPendingActionForSuperGuardian(guardian);
-    }
-
     function addGuardian(
         address guardian
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
@@ -272,13 +245,6 @@ abstract contract SmartWallet is
         bool includePendingAddition
     ) public view returns (bool) {
         return wallet.isGuardian(addr, includePendingAddition);
-    }
-
-    function isSuperGuardian(
-        address addr,
-        bool includePendingAddition
-    ) public view returns (bool) {
-        return wallet.isSuperGuardian(addr, includePendingAddition);
     }
 
     function getGuardians(

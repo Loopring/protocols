@@ -171,18 +171,6 @@ library GuardianLib {
         return _isActiveOrPendingAddition(g, includePendingAddition);
     }
 
-    function isSuperGuardian(
-        Wallet storage wallet,
-        address addr,
-        bool includePendingAddition
-    ) public view returns (bool) {
-        return
-            _isActiveOrPendingAddition(
-                wallet.superGuardians[addr],
-                includePendingAddition
-            );
-    }
-
     function guardians(
         Wallet storage wallet,
         bool includePendingAddition
@@ -439,88 +427,6 @@ library GuardianLib {
                 wallet.guardians.pop();
                 delete wallet.guardianIdx[g.addr];
             }
-        }
-    }
-
-    function upgradeGuardian(
-        Wallet storage wallet,
-        address guardianAddr
-    ) internal {
-        require(guardianAddr != address(0), "ZERO_ADDRESS");
-        require(guardianAddr != address(this), "INVALID_ADDRESS");
-        require(
-            isGuardian(wallet, guardianAddr, false),
-            "need to be a guardian first"
-        );
-        Guardian memory superGuardian = wallet.superGuardians[guardianAddr];
-
-        uint64 validSince = (block.timestamp + GUARDIAN_PENDING_PERIOD)
-            .toUint64();
-        if (superGuardian.addr == address(0) || _isRemoved(superGuardian)) {
-            // Add the new super guardian
-            Guardian memory g = Guardian(
-                guardianAddr,
-                uint8(GuardianStatus.ADD),
-                validSince
-            );
-            wallet.superGuardians[guardianAddr] = g;
-        } else if (_isPendingRemoval(superGuardian)) {
-            wallet.superGuardians[guardianAddr].status = uint8(
-                GuardianStatus.ADD
-            );
-            // valid immediately
-            wallet.superGuardians[guardianAddr].timestamp = 0;
-        }
-    }
-
-    // TODO(check if remove guardian directly when it is also super guardian)
-    function downgradeGuardian(
-        Wallet storage wallet,
-        address guardianAddr
-    ) internal {
-        Guardian memory superGuardian = wallet.superGuardians[guardianAddr];
-        require(
-            superGuardian.timestamp != 0 && !_isRemoved(superGuardian),
-            "not a super guardian"
-        );
-        uint64 validUntil = (block.timestamp + GUARDIAN_PENDING_PERIOD)
-            .toUint64();
-        require(guardianAddr != address(0), "ZERO_ADDRESS");
-
-        if (_isAdded(superGuardian)) {
-            wallet.superGuardians[guardianAddr].status = uint8(
-                GuardianStatus.REMOVE
-            );
-            wallet.superGuardians[guardianAddr].timestamp = validUntil;
-        } else if (_isPendingAddition(superGuardian)) {
-            wallet.superGuardians[guardianAddr].status = uint8(
-                GuardianStatus.REMOVE
-            );
-            wallet.superGuardians[guardianAddr].timestamp = 0;
-        }
-    }
-
-    function cancelPendingActionForSuperGuardian(
-        Wallet storage wallet,
-        address guardianAddr
-    ) internal {
-        Guardian memory superGuardian = wallet.superGuardians[guardianAddr];
-        if (_isPendingAddition(superGuardian)) {
-            Guardian memory g = Guardian(
-                guardianAddr,
-                uint8(GuardianStatus.REMOVE),
-                0
-            );
-            wallet.superGuardians[guardianAddr] = g;
-        }
-
-        if (_isPendingRemoval(superGuardian)) {
-            Guardian memory g = Guardian(
-                guardianAddr,
-                uint8(GuardianStatus.ADD),
-                0
-            );
-            wallet.superGuardians[guardianAddr] = g;
         }
     }
 

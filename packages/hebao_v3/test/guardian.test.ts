@@ -252,50 +252,6 @@ describe("guardian test", () => {
     });
   });
 
-  describe("super guardian test", () => {
-    it("upgrade and downgrade test", async () => {
-      const { guardians, smartWallet, entrypoint } = await loadFixture(fixture);
-      let guardian = ethers.Wallet.createRandom().connect(ethers.provider);
-
-      await expect(
-        smartWallet.upgradeGuardian(guardian.address)
-      ).to.rejectedWith("need to be a guardian first");
-      // upgrade real guardian
-      guardian = guardians[0];
-      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.true;
-      await smartWallet.upgradeGuardian(guardian.address);
-
-      const snapshotRestorer = await takeSnapshot();
-      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
-        .true;
-      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
-        .false;
-      await time.increase(three_days);
-      // check it
-      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
-        .true;
-      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
-        .true;
-
-      // downgrade super guardian
-      await smartWallet.downgradeGuardian(guardian.address);
-      // be still active super guardian when pending removal
-      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
-        .true;
-      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
-        .true;
-      await time.increase(three_days);
-      expect(await smartWallet.isSuperGuardian(guardian.address, false)).to.be
-        .false;
-
-      // cancel upgrade test
-      await snapshotRestorer.restore();
-      // cancel it now
-      await smartWallet.cancelPendingActionForSuperGuardian(guardian.address);
-      expect(await smartWallet.isSuperGuardian(guardian.address, true)).to.be
-        .false;
-    });
-  });
   describe("execute tx with approval(skip nonce)", () => {
     it("add guardian test", async () => {
       const {
