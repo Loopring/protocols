@@ -194,7 +194,8 @@ async function deployAll() {
   // create2 factory
 
   let create2: LoopringCreate2Deployer;
-  const create2Addr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
+  // NOTE(update address when create2 factory contract is modified)
+  const create2Addr = "0xd57d71A16D850038e7266E3885140A7E7d1Ba3fD";
   if ((await ethers.provider.getCode(create2Addr)) != "0x") {
     create2 = await ethers.getContractAt(
       "LoopringCreate2Deployer",
@@ -240,19 +241,30 @@ async function deployAll() {
     forwardProxy.address,
   ]);
   // transfer wallet factory ownership to deployer
-  await create2.setTarget(walletFactory.address);
-  const transferWalletFactoryOwnership =
-    await walletFactory.populateTransaction.transferOwnership(deployer.address);
-  await create2.transact(transferWalletFactoryOwnership.data);
-  await walletFactory.addOperator(deployer.address);
+  const walletFactoryOwner = await walletFactory.owner();
+  if (create2.address == walletFactoryOwner) {
+    await (await create2.setTarget(walletFactory.address)).wait();
+    const transferWalletFactoryOwnership =
+      await walletFactory.populateTransaction.transferOwnership(
+        deployer.address
+      );
+    await (await create2.transact(transferWalletFactoryOwnership.data)).wait();
+  }
+
+  if (!(await walletFactory.isOperator(deployer.address))) {
+    await (await walletFactory.addOperator(deployer.address)).wait();
+  }
 
   // transfer DelayedImplementationManager ownership to deployer
-  await create2.setTarget(implStorage.address);
-  const transferImplStorageOwnership =
-    await implStorage.populateTransaction.transferOwnership(deployer.address);
-  await create2.transact(transferImplStorageOwnership.data);
+  if (create2.address == implStorage.owner()) {
+    await (await create2.setTarget(implStorage.address)).wait();
+    const transferImplStorageOwnership =
+      await implStorage.populateTransaction.transferOwnership(deployer.address);
+    await (await create2.transact(transferImplStorageOwnership.data)).wait();
+  }
 
   // create demo wallet
+  console.log("create demo wallet...");
   const smartWalletOwner = new ethers.Wallet(
     process.env.TEST_ACCOUNT_PRIVATE_KEY ?? deployer.address,
     ethers.provider
@@ -332,7 +344,10 @@ async function sendTx(
 
     const hash = await paymaster.getHash(
       signedUserOp,
-      ethers.utils.solidityPack(['address', 'uint256', 'uint256'], [payToken.address, valueOfEth, validUntil])
+      ethers.utils.solidityPack(
+        ["address", "uint256", "uint256"],
+        [payToken.address, valueOfEth, validUntil]
+      )
     );
 
     const paymasterAndData = await getPaymasterAndData(
