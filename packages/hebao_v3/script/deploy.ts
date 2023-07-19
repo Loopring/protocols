@@ -200,6 +200,7 @@ async function deployAll() {
       "LoopringCreate2Deployer",
       create2Addr
     );
+    console.log("create2 factory is deployed already at : ", create2.address);
   } else {
     create2 = await (
       await ethers.getContractFactory("LoopringCreate2Deployer")
@@ -331,8 +332,7 @@ async function sendTx(
 
     const hash = await paymaster.getHash(
       signedUserOp,
-      payToken.address,
-      valueOfEth
+      ethers.utils.solidityPack(['address', 'uint256', 'uint256'], [payToken.address, valueOfEth, validUntil])
     );
 
     const paymasterAndData = await getPaymasterAndData(

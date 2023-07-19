@@ -2,11 +2,10 @@
 
 const hre = require("hardhat");
 const ethers = hre.ethers;
-import { newWalletImpl, newWalletFactoryContract } from "../test/commons";
 import { signCreateWallet } from "../test/helper/signatureUtils";
 import BN = require("bn.js");
 
-async function newSingleFactory() {
+export async function newSingleFactory() {
   // https://eips.ethereum.org/EIPS/eip-2470
   const singleFactoryAddress = "0xce0042B868300000d44A59004Da54A005ffdcf9f";
 

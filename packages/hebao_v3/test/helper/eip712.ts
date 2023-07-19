@@ -11,7 +11,7 @@ const EIP712_DOMAIN_TYPEHASH = id(
 
 export function hash(name: string, version: string, moduleAddress: string) {
   if (!hre.network.config.chainId) {
-    throw new Error(`${hre.network.config.chainId}`);
+    throw new Error(`chainId is not exist`);
   }
   const encoded = utils.keccak256(
     ethAbi.encodeParameters(
