@@ -75,6 +75,7 @@ export default {
       accounts: [process.env.PRIVATE_KEY],
     },
     sepolia: {
+      chainId: 11155111,
       url: "https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB",
       accounts: [process.env.PRIVATE_KEY],
     },

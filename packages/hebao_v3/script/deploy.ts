@@ -210,9 +210,10 @@ async function deployAll() {
   }
 
   // entrypoint and paymaster
-  const entrypoint = await deploySingle(create2, "EntryPoint");
-  // const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
-  // const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
+  // NOTE(uncomment when you need to deploy a new entrypoint contract)
+  // const entrypoint = await deploySingle(create2, "EntryPoint");
+  const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
+  const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
 
   const paymaster = await deploySingle(
     create2,
@@ -243,12 +244,15 @@ async function deployAll() {
   // transfer wallet factory ownership to deployer
   const walletFactoryOwner = await walletFactory.owner();
   if (create2.address == walletFactoryOwner) {
+    console.log("transfer wallet factory ownership to deployer");
     await (await create2.setTarget(walletFactory.address)).wait();
     const transferWalletFactoryOwnership =
       await walletFactory.populateTransaction.transferOwnership(
         deployer.address
       );
     await (await create2.transact(transferWalletFactoryOwnership.data)).wait();
+  } else {
+    console.log("ownership of wallet factory is transfered already");
   }
 
   if (!(await walletFactory.isOperator(deployer.address))) {
@@ -257,10 +261,15 @@ async function deployAll() {
 
   // transfer DelayedImplementationManager ownership to deployer
   if (create2.address == implStorage.owner()) {
+    console.log("transfer DelayedImplementationManager ownership to deployer");
     await (await create2.setTarget(implStorage.address)).wait();
     const transferImplStorageOwnership =
       await implStorage.populateTransaction.transferOwnership(deployer.address);
     await (await create2.transact(transferImplStorageOwnership.data)).wait();
+  } else {
+    console.log(
+      "ownership of DelayedImplementationManager is transfered already"
+    );
   }
 
   // create demo wallet
