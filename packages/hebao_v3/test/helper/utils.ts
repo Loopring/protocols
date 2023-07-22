@@ -467,9 +467,23 @@ export async function createBatchTransactions(
       execFromEntryPoint = tx;
     }
   } else {
-    const datas = txs.map((tx) => tx.data ?? "0x");
-    // const wrappedTxs = await Promise.all(txs.map((tx) => wallet.populateTransaction.callContract(tx.to, tx.value??0, tx.data??'0x', false)));
-    // const datas = wrappedTxs.map(wtx=>wtx.data);
+    let datas = txs.map((tx) => tx.data ?? "0x");
+
+    if (useExecuteApi) {
+      const wrappedTxs = await Promise.all(
+        txs.map((tx) =>
+          wallet.populateTransaction.callContract(
+            tx.to,
+            tx.value ?? 0,
+            tx.data ?? "0x",
+            false
+          )
+        )
+      );
+      datas = wrappedTxs.map((wtx) => wtx.data);
+    } else {
+      datas = txs.map((tx) => tx.data ?? "0x");
+    }
     execFromEntryPoint = await wallet.populateTransaction.selfBatchCall(datas);
   }
 
@@ -665,6 +679,7 @@ export async function createSmartWallet(
   salt: string
 ) {
   const feeRecipient = ethers.constants.AddressZero;
+  const { chainId } = await ethers.provider.getNetwork();
   // create smart wallet
   const signature = signCreateWallet(
     walletFactory.address,
@@ -676,7 +691,8 @@ export async function createSmartWallet(
     ethers.constants.AddressZero,
     new BN(0),
     salt,
-    owner.privateKey.slice(2)
+    owner.privateKey.slice(2),
+    chainId
   );
   // console.log("signature:", signature);
 

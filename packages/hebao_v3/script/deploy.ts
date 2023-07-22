@@ -131,7 +131,8 @@ export async function deployWalletImpl(
 
 export async function createSmartWallet(
   owner: Wallet,
-  walletFactory: Contract
+  walletFactory: Contract,
+  chainId: number
 ) {
   const guardians = [];
   const feeRecipient = ethers.constants.AddressZero;
@@ -159,7 +160,8 @@ export async function createSmartWallet(
       ethers.constants.AddressZero,
       new BN(0),
       salt,
-      owner.privateKey.slice(2)
+      owner.privateKey.slice(2),
+      chainId
     );
     // console.log("signature:", signature);
 
@@ -183,6 +185,7 @@ export async function createSmartWallet(
 }
 
 async function deployAll() {
+  const { chainId } = await ethers.provider.getNetwork();
   const signers = await ethers.getSigners();
   const deployer = signers[0];
   const paymasterOwner = new ethers.Wallet(
@@ -211,9 +214,13 @@ async function deployAll() {
 
   // entrypoint and paymaster
   // NOTE(uncomment when you need to deploy a new entrypoint contract)
-  // const entrypoint = await deploySingle(create2, "EntryPoint");
+  let entrypoint: Contract;
   const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
-  const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
+  if ((await ethers.provider.getCode(entrypointAddr)) != "0x") {
+    entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
+  } else {
+    entrypoint = await deploySingle(create2, "EntryPoint");
+  }
 
   const paymaster = await deploySingle(
     create2,
@@ -260,7 +267,7 @@ async function deployAll() {
   }
 
   // transfer DelayedImplementationManager ownership to deployer
-  if (create2.address == implStorage.owner()) {
+  if (create2.address == (await implStorage.owner())) {
     console.log("transfer DelayedImplementationManager ownership to deployer");
     await (await create2.setTarget(implStorage.address)).wait();
     const transferImplStorageOwnership =
@@ -282,7 +289,8 @@ async function deployAll() {
 
   const smartWalletAddr = await createSmartWallet(
     smartWalletOwner,
-    walletFactory
+    walletFactory,
+    chainId
   );
   const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
@@ -334,7 +342,7 @@ async function sendTx(
     txs,
     ethers.provider,
     smartWallet,
-    false
+    true // wrap raw calldata with callcontract api
   );
   // first call to fill userop
   let signedUserOp = await fillAndSign(
@@ -530,8 +538,19 @@ async function testExecuteTxWithUSDCPaymaster() {
     validUntil: 0,
   };
 
+  // approve token first
+  // TODO(cannot approve token using paymaster service here, maybe it is not friendly for user)
+  await sendTx(
+    [approveToken],
+    smartWallet,
+    smartWalletOwner,
+    create2,
+    entrypoint,
+    sendUserOp
+  );
+
   const recipt = await sendTx(
-    [approveToken, transferToken],
+    [transferToken],
     smartWallet,
     smartWalletOwner,
     create2,
@@ -542,9 +561,14 @@ async function testExecuteTxWithUSDCPaymaster() {
   console.log("gas cost of usdt token transfer: ", recipt.gasUsed);
 }
 
+async function init() {
+  // prepare fund for paymaster and smart wallet
+  // approve some token to paymaster by smart wallet
+}
+
 async function main() {
   await deployAll();
-  // uncomment below to get gascost info on chain
+  // uncomment below to get gascost info of some sample txs on chain
   // await testExecuteTxWithEth();
   // await testExecuteTxWithUSDCPaymaster();
 }

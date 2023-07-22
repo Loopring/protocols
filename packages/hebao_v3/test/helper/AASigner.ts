@@ -272,7 +272,7 @@ export async function fillAndMultiSign(
   const [sortedSigners, sortedSignatures] = _.unzip(
     _.sortBy(
       _.zip(
-        signers.map((g) => g.address),
+        signers.map((g) => g.address.toLowerCase()),
         signatures
       ),
       (item) => parseInt(item[0], 16)
@@ -368,7 +368,9 @@ export async function fillAndMultiSignForTransferToken(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -458,7 +460,9 @@ export async function fillAndMultiSignForRecover(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -538,7 +542,9 @@ export async function fillAndMultiSignForUnlock(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -622,7 +628,9 @@ export async function fillAndMultiSignForAddToWhitelist(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -705,7 +713,9 @@ export async function fillAndMultiSignForChangeMasterCopy(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -788,7 +798,9 @@ export async function fillAndMultiSignForChangeDailyQuota(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -871,7 +883,9 @@ export async function fillAndMultiSignForAddGuardian(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -971,7 +985,9 @@ export async function fillAndMultiSignForApproveThenCallContract(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -1062,7 +1078,9 @@ export async function fillAndMultiSignForCallContract(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -1154,7 +1172,9 @@ export async function fillAndMultiSignForApproveToken(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),
@@ -1220,7 +1240,9 @@ export async function fillAndMultiSign2(
     _.sortBy(
       _.zip(
         smartWalletOrEOASigners.map((g) =>
-          g.smartWalletAddress ? g.smartWalletAddress : g.signer.address
+          g.smartWalletAddress
+            ? g.smartWalletAddress.toLowerCase()
+            : g.signer.address.toLowerCase()
         ),
         signatures
       ),

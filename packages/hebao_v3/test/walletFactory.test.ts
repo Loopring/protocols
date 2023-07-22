@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { signCreateWallet } from "./helper/signatureUtils";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { fixture } from "./helper/fixture";
 import { ethers } from "hardhat";

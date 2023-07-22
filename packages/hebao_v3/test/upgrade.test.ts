@@ -1,8 +1,4 @@
 import { expect } from "chai";
-import {
-  signCreateWallet,
-  signChangeMasterCopy,
-} from "./helper/signatureUtils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import {
   getFirstEvent,

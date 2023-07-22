@@ -2,12 +2,6 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
 import {
-  signChangeDailyQuotaWA,
-  signApproveTokenWA,
-  signCallContractWA,
-  signApproveThenCallContractWA,
-} from "./helper/signatureUtils";
-import {
   loadFixture,
   setBalance,
 } from "@nomicfoundation/hardhat-network-helpers";
@@ -101,7 +95,9 @@ describe("erc20 test", () => {
       smartWalletOwner,
       create2,
       entrypoint,
-      sendUserOp
+      sendUserOp,
+      undefined,
+      false
     );
     expect(await usdtToken.balanceOf(receiver)).to.eq(tokenAmount);
   });

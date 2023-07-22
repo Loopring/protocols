@@ -9,10 +9,15 @@ const EIP712_DOMAIN_TYPEHASH = id(
   "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
 );
 
-export function hash(name: string, version: string, moduleAddress: string) {
-  if (!hre.network.config.chainId) {
-    throw new Error(`chainId is not exist`);
-  }
+export function hash(
+  name: string,
+  version: string,
+  moduleAddress: string,
+  chainId: number
+) {
+  // if (!hre.network.config.chainId) {
+  // throw new Error(`chainId is not exist`);
+  // }
   const encoded = utils.keccak256(
     ethAbi.encodeParameters(
       ["bytes32", "bytes32", "bytes32", "uint256", "address"],
@@ -20,7 +25,7 @@ export function hash(name: string, version: string, moduleAddress: string) {
         EIP712_DOMAIN_TYPEHASH,
         id(name),
         id(version),
-        hre.network.config.chainId, // chainId
+        chainId, // chainId
         moduleAddress,
       ]
     )
