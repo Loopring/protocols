@@ -47,6 +47,10 @@ export default {
         mnemonic: "test test test test test test test test test test test junk",
       },
     },
+    ethereum: {
+      chainId: 1,
+      url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
+    },
 
     // HttpNetworkConfig
     ganache: {
