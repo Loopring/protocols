@@ -16,6 +16,8 @@ contract WalletProxy {
     // To reduce deployment costs this variable is internal and needs to be retrieved via `getStorageAt`
     address internal masterCopy;
 
+    event Received(address indexed sender, uint value);
+
     /// @dev Constructor function sets address of master copy contract.
     /// @param _masterCopy Master copy address.
     constructor(address _masterCopy) {
@@ -57,5 +59,9 @@ contract WalletProxy {
             }
             return(0, returndatasize())
         }
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
     }
 }
