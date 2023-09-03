@@ -81,7 +81,7 @@
     "solc": "0.7.3",
     "solidity-coverage": "^0.7.5",
     "solium": "^1.2.5",
-    "truffle": "^5.3.9",
+    "truffle": "^5.7.1",
     "truffle-assertions": "^0.9.1",
     "truffle-flattener": "^1.5.0",
     "types-bn": "0.0.1",
