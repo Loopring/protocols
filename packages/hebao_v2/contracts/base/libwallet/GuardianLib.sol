@@ -1,46 +1,46 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
-import "./ApprovalLib.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
-
+import "./ApprovalLib.sol";
 
 /// @title GuardianModule
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-library GuardianLib
-{
-    using AddressUtil   for address;
-    using SafeCast      for uint;
+library GuardianLib {
+    using AddressUtil for address;
+    using SafeCast for uint;
     using SignatureUtil for bytes32;
-    using ApprovalLib   for Wallet;
 
-    uint public constant MAX_GUARDIANS           = 10;
+    uint public constant MAX_GUARDIANS = 10;
     uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
+    SigRequirement public constant sigRequirement =
+        SigRequirement.MAJORITY_OWNER_REQUIRED;
 
-    bytes32 public constant ADD_GUARDIAN_TYPEHASH = keccak256(
-        "addGuardian(address wallet,uint256 validUntil,address guardian)"
-    );
-    bytes32 public constant REMOVE_GUARDIAN_TYPEHASH = keccak256(
-        "removeGuardian(address wallet,uint256 validUntil,address guardian)"
-    );
-    bytes32 public constant RESET_GUARDIANS_TYPEHASH = keccak256(
-        "resetGuardians(address wallet,uint256 validUntil,address[] guardians)"
-    );
+    bytes32 public constant ADD_GUARDIAN_TYPEHASH =
+        keccak256(
+            "addGuardian(address wallet,uint256 validUntil,address guardian)"
+        );
+    bytes32 public constant REMOVE_GUARDIAN_TYPEHASH =
+        keccak256(
+            "removeGuardian(address wallet,uint256 validUntil,address guardian)"
+        );
+    bytes32 public constant RESET_GUARDIANS_TYPEHASH =
+        keccak256(
+            "resetGuardians(address wallet,uint256 validUntil,address[] guardians)"
+        );
 
-    event GuardianAdded   (address guardian, uint effectiveTime);
-    event GuardianRemoved (address guardian, uint effectiveTime);
+    event GuardianAdded(address guardian, uint effectiveTime);
+    event GuardianRemoved(address guardian, uint effectiveTime);
 
     function addGuardiansImmediately(
-        Wallet    storage wallet,
-        address[] memory  _guardians
-        )
-        external
-    {
+        Wallet storage wallet,
+        address[] memory _guardians
+    ) external {
         address guardian = address(0);
         for (uint i = 0; i < _guardians.length; i++) {
             require(_guardians[i] > guardian, "INVALID_ORDERING");
@@ -49,109 +49,53 @@ library GuardianLib
         }
     }
 
-    function addGuardian(
-        Wallet storage wallet,
-        address guardian
-        )
-        external
-    {
+    function addGuardian(Wallet storage wallet, address guardian) external {
         _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
-    function addGuardianWA(
-        Wallet   storage  wallet,
-        bytes32           domainSeparator,
-        Approval calldata approval,
-        address  guardian
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                ADD_GUARDIAN_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                guardian
-            )
-        );
-
+    function addGuardianWA(Wallet storage wallet, address guardian) external {
         _addGuardian(wallet, guardian, 0, true);
     }
 
-    function removeGuardian(
-        Wallet storage wallet,
-        address guardian
-        )
-        external
-    {
+    function removeGuardian(Wallet storage wallet, address guardian) external {
         _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
     }
 
     function removeGuardianWA(
-        Wallet   storage  wallet,
-        bytes32           domainSeparator,
-        Approval calldata approval,
-        address  guardian
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                REMOVE_GUARDIAN_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                guardian
-            )
-        );
-
+        Wallet storage wallet,
+        address guardian
+    ) external {
         _removeGuardian(wallet, guardian, 0, true);
     }
 
     function resetGuardians(
-        Wallet    storage  wallet,
+        Wallet storage wallet,
         address[] calldata newGuardians
-        )
-        external
-    {
+    ) external {
         Guardian[] memory allGuardians = guardians(wallet, true);
         for (uint i = 0; i < allGuardians.length; i++) {
-            _removeGuardian(wallet, allGuardians[i].addr, GUARDIAN_PENDING_PERIOD, false);
+            _removeGuardian(
+                wallet,
+                allGuardians[i].addr,
+                GUARDIAN_PENDING_PERIOD,
+                false
+            );
         }
 
         for (uint j = 0; j < newGuardians.length; j++) {
-            _addGuardian(wallet, newGuardians[j], GUARDIAN_PENDING_PERIOD, false);
+            _addGuardian(
+                wallet,
+                newGuardians[j],
+                GUARDIAN_PENDING_PERIOD,
+                false
+            );
         }
     }
 
     function resetGuardiansWA(
-        Wallet    storage  wallet,
-        bytes32            domainSeparator,
-        Approval  calldata approval,
+        Wallet storage wallet,
         address[] calldata newGuardians
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.verifyApproval(
-            domainSeparator,
-            SigRequirement.MAJORITY_OWNER_REQUIRED,
-            approval,
-            abi.encode(
-                RESET_GUARDIANS_TYPEHASH,
-                approval.wallet,
-                approval.validUntil,
-                keccak256(abi.encodePacked(newGuardians))
-            )
-        );
-
+    ) external {
         removeAllGuardians(wallet);
         for (uint i = 0; i < newGuardians.length; i++) {
             _addGuardian(wallet, newGuardians[i], 0, true);
@@ -159,14 +103,10 @@ library GuardianLib
     }
 
     function requireMajority(
-        Wallet         storage wallet,
-        address[]      memory  signers,
-        SigRequirement         requirement
-        )
-        internal
-        view
-        returns (bool)
-    {
+        Wallet storage wallet,
+        address[] memory signers,
+        SigRequirement requirement
+    ) internal view returns (bool) {
         // We always need at least one signer
         if (signers.length == 0) {
             return false;
@@ -224,24 +164,28 @@ library GuardianLib
     function isGuardian(
         Wallet storage wallet,
         address addr,
-        bool    includePendingAddition
-        )
-        public
-        view
-        returns (bool)
-    {
+        bool includePendingAddition
+    ) public view returns (bool) {
         Guardian memory g = _getGuardian(wallet, addr);
         return _isActiveOrPendingAddition(g, includePendingAddition);
     }
 
+    function isSuperGuardian(
+        Wallet storage wallet,
+        address addr,
+        bool includePendingAddition
+    ) public view returns (bool) {
+        return
+            _isActiveOrPendingAddition(
+                wallet.superGuardians[addr],
+                includePendingAddition
+            );
+    }
+
     function guardians(
         Wallet storage wallet,
-        bool    includePendingAddition
-        )
-        public
-        view
-        returns (Guardian[] memory _guardians)
-    {
+        bool includePendingAddition
+    ) public view returns (Guardian[] memory _guardians) {
         _guardians = new Guardian[](wallet.guardians.length);
         uint index = 0;
         for (uint i = 0; i < wallet.guardians.length; i++) {
@@ -251,17 +195,15 @@ library GuardianLib
                 index++;
             }
         }
-        assembly { mstore(_guardians, index) }
+        assembly {
+            mstore(_guardians, index)
+        }
     }
 
     function numGuardians(
         Wallet storage wallet,
-        bool    includePendingAddition
-        )
-        public
-        view
-        returns (uint count)
-    {
+        bool includePendingAddition
+    ) public view returns (uint count) {
         for (uint i = 0; i < wallet.guardians.length; i++) {
             Guardian memory g = wallet.guardians[i];
             if (_isActiveOrPendingAddition(g, includePendingAddition)) {
@@ -270,11 +212,7 @@ library GuardianLib
         }
     }
 
-     function removeAllGuardians(
-        Wallet storage wallet
-        )
-        internal
-    {
+    function removeAllGuardians(Wallet storage wallet) internal {
         uint size = wallet.guardians.length;
         if (size == 0) return;
 
@@ -284,9 +222,7 @@ library GuardianLib
         delete wallet.guardians;
     }
 
-    function cancelPendingGuardians(Wallet storage wallet)
-        internal
-    {
+    function cancelPendingGuardians(Wallet storage wallet) internal {
         bool cancelled = false;
         for (uint i = 0; i < wallet.guardians.length; i++) {
             Guardian memory g = wallet.guardians[i];
@@ -307,12 +243,9 @@ library GuardianLib
     function storeGuardian(
         Wallet storage wallet,
         address addr,
-        uint    validSince,
-        bool    alwaysOverride
-        )
-        internal
-        returns (uint)
-    {
+        uint validSince,
+        bool alwaysOverride
+    ) internal returns (uint) {
         require(validSince >= block.timestamp, "INVALID_VALID_SINCE");
         require(addr != address(0), "ZERO_ADDRESS");
         require(addr != address(this), "INVALID_ADDRESS");
@@ -361,12 +294,9 @@ library GuardianLib
     function deleteGuardian(
         Wallet storage wallet,
         address addr,
-        uint    validUntil,
-        bool    alwaysOverride
-        )
-        internal
-        returns (uint)
-    {
+        uint validUntil,
+        bool alwaysOverride
+    ) internal returns (uint) {
         require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");
         require(addr != address(0), "ZERO_ADDRESS");
 
@@ -403,11 +333,9 @@ library GuardianLib
     function _addGuardian(
         Wallet storage wallet,
         address guardian,
-        uint    pendingPeriod,
-        bool    alwaysOverride
-        )
-        internal
-    {
+        uint pendingPeriod,
+        bool alwaysOverride
+    ) internal {
         uint _numGuardians = numGuardians(wallet, true);
         require(_numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
         require(guardian != wallet.owner, "GUARDIAN_CAN_NOT_BE_OWNER");
@@ -416,105 +344,92 @@ library GuardianLib
         if (_numGuardians >= 2) {
             validSince = block.timestamp + pendingPeriod;
         }
-        validSince = storeGuardian(wallet, guardian, validSince, alwaysOverride);
+        validSince = storeGuardian(
+            wallet,
+            guardian,
+            validSince,
+            alwaysOverride
+        );
         emit GuardianAdded(guardian, validSince);
     }
 
     function _removeGuardian(
         Wallet storage wallet,
         address guardian,
-        uint    pendingPeriod,
-        bool    alwaysOverride
-        )
-        private
-    {
+        uint pendingPeriod,
+        bool alwaysOverride
+    ) private {
         uint validUntil = block.timestamp + pendingPeriod;
-        validUntil = deleteGuardian(wallet, guardian, validUntil, alwaysOverride);
+        validUntil = deleteGuardian(
+            wallet,
+            guardian,
+            validUntil,
+            alwaysOverride
+        );
         emit GuardianRemoved(guardian, validUntil);
     }
 
     function _getGuardian(
         Wallet storage wallet,
         address addr
-        )
-        private
-        view
-        returns (Guardian memory guardian)
-    {
+    ) private view returns (Guardian memory guardian) {
         uint pos = wallet.guardianIdx[addr];
         if (pos > 0) {
             guardian = wallet.guardians[pos - 1];
         }
     }
 
-    function _isAdded(Guardian memory guardian)
-        private
-        view
-        returns (bool)
-    {
-        return guardian.status == uint8(GuardianStatus.ADD) &&
+    function _isAdded(Guardian memory guardian) private view returns (bool) {
+        return
+            guardian.status == uint8(GuardianStatus.ADD) &&
             guardian.timestamp <= block.timestamp;
     }
 
-    function _isPendingAddition(Guardian memory guardian)
-        private
-        view
-        returns (bool)
-    {
-        return guardian.status == uint8(GuardianStatus.ADD) &&
+    function _isPendingAddition(
+        Guardian memory guardian
+    ) private view returns (bool) {
+        return
+            guardian.status == uint8(GuardianStatus.ADD) &&
             guardian.timestamp > block.timestamp;
     }
 
-    function _isRemoved(Guardian memory guardian)
-        private
-        view
-        returns (bool)
-    {
-        return guardian.status == uint8(GuardianStatus.REMOVE) &&
+    function _isRemoved(Guardian memory guardian) private view returns (bool) {
+        return
+            guardian.status == uint8(GuardianStatus.REMOVE) &&
             guardian.timestamp <= block.timestamp;
     }
 
-    function _isPendingRemoval(Guardian memory guardian)
-        private
-        view
-        returns (bool)
-    {
-         return guardian.status == uint8(GuardianStatus.REMOVE) &&
+    function _isPendingRemoval(
+        Guardian memory guardian
+    ) private view returns (bool) {
+        return
+            guardian.status == uint8(GuardianStatus.REMOVE) &&
             guardian.timestamp > block.timestamp;
     }
 
-    function _isActive(Guardian memory guardian)
-        private
-        view
-        returns (bool)
-    {
+    function _isActive(Guardian memory guardian) private view returns (bool) {
         return _isAdded(guardian) || _isPendingRemoval(guardian);
     }
 
     function _isActiveOrPendingAddition(
         Guardian memory guardian,
         bool includePendingAddition
-        )
-        private
-        view
-        returns (bool)
-    {
-        return _isActive(guardian) || includePendingAddition && _isPendingAddition(guardian);
+    ) private view returns (bool) {
+        return
+            _isActive(guardian) ||
+            (includePendingAddition && _isPendingAddition(guardian));
     }
 
-    function _cleanRemovedGuardians(
-        Wallet storage wallet,
-        bool    force
-        )
-        private
-    {
+    function _cleanRemovedGuardians(Wallet storage wallet, bool force) private {
         uint count = wallet.guardians.length;
         if (!force && count < 10) return;
 
         for (int i = int(count) - 1; i >= 0; i--) {
             Guardian memory g = wallet.guardians[uint(i)];
             if (_isRemoved(g)) {
-                Guardian memory lastGuardian = wallet.guardians[wallet.guardians.length - 1];
+                Guardian memory lastGuardian = wallet.guardians[
+                    wallet.guardians.length - 1
+                ];
 
                 if (g.addr != lastGuardian.addr) {
                     wallet.guardians[uint(i)] = lastGuardian;
@@ -523,6 +438,88 @@ library GuardianLib
                 wallet.guardians.pop();
                 delete wallet.guardianIdx[g.addr];
             }
+        }
+    }
+
+    function upgradeGuardian(
+        Wallet storage wallet,
+        address guardianAddr
+    ) internal {
+        require(guardianAddr != address(0), "ZERO_ADDRESS");
+        require(guardianAddr != address(this), "INVALID_ADDRESS");
+        require(
+            isGuardian(wallet, guardianAddr, false),
+            "need to be a guardian first"
+        );
+        Guardian memory superGuardian = wallet.superGuardians[guardianAddr];
+
+        uint64 validSince = (block.timestamp + GUARDIAN_PENDING_PERIOD)
+            .toUint64();
+        if (superGuardian.addr == address(0) || _isRemoved(superGuardian)) {
+            // Add the new super guardian
+            Guardian memory g = Guardian(
+                guardianAddr,
+                uint8(GuardianStatus.ADD),
+                validSince
+            );
+            wallet.superGuardians[guardianAddr] = g;
+        } else if (_isPendingRemoval(superGuardian)) {
+            wallet.superGuardians[guardianAddr].status = uint8(
+                GuardianStatus.ADD
+            );
+            // valid immediately
+            wallet.superGuardians[guardianAddr].timestamp = 0;
+        }
+    }
+
+    // TODO(check if remove guardian directly when it is also super guardian)
+    function downgradeGuardian(
+        Wallet storage wallet,
+        address guardianAddr
+    ) internal {
+        Guardian memory superGuardian = wallet.superGuardians[guardianAddr];
+        require(
+            superGuardian.timestamp != 0 && !_isRemoved(superGuardian),
+            "not a super guardian"
+        );
+        uint64 validUntil = (block.timestamp + GUARDIAN_PENDING_PERIOD)
+            .toUint64();
+        require(guardianAddr != address(0), "ZERO_ADDRESS");
+
+        if (_isAdded(superGuardian)) {
+            wallet.superGuardians[guardianAddr].status = uint8(
+                GuardianStatus.REMOVE
+            );
+            wallet.superGuardians[guardianAddr].timestamp = validUntil;
+        } else if (_isPendingAddition(superGuardian)) {
+            wallet.superGuardians[guardianAddr].status = uint8(
+                GuardianStatus.REMOVE
+            );
+            wallet.superGuardians[guardianAddr].timestamp = 0;
+        }
+    }
+
+    function cancelPendingActionForSuperGuardian(
+        Wallet storage wallet,
+        address guardianAddr
+    ) internal {
+        Guardian memory superGuardian = wallet.superGuardians[guardianAddr];
+        if (_isPendingAddition(superGuardian)) {
+            Guardian memory g = Guardian(
+                guardianAddr,
+                uint8(GuardianStatus.REMOVE),
+                0
+            );
+            wallet.superGuardians[guardianAddr] = g;
+        }
+
+        if (_isPendingRemoval(superGuardian)) {
+            Guardian memory g = Guardian(
+                guardianAddr,
+                uint8(GuardianStatus.ADD),
+                0
+            );
+            wallet.superGuardians[guardianAddr] = g;
         }
     }
 }

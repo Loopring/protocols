@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 import "./Proxy.sol";
-
 
 /**
  * @title UpgradeabilityProxy
@@ -18,7 +17,8 @@ contract UpgradeabilityProxy is Proxy {
     event Upgraded(address indexed implementation);
 
     // Storage position of the address of the current implementation
-    bytes32 private constant implementationPosition = keccak256("org.zeppelinos.proxy.implementation");
+    bytes32 private constant implementationPosition =
+        keccak256("org.zeppelinos.proxy.implementation");
 
     /**
      * @dev Constructor function
@@ -29,7 +29,13 @@ contract UpgradeabilityProxy is Proxy {
      * @dev Tells the address of the current implementation
      * @return impl address of the current implementation
      */
-    function implementation() public view virtual override returns (address impl) {
+    function implementation()
+        public
+        view
+        virtual
+        override
+        returns (address impl)
+    {
         bytes32 position = implementationPosition;
         assembly {
             impl := sload(position)

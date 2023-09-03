@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 // This code is taken from https://gist.github.com/holiman/069de8d056a531575d2b786df3345665
 
-pragma solidity ^0.7.0;
-
+pragma solidity ^0.8.17;
 
 library Cloneable {
-    function clone(address a)
-        external
-        returns (address)
-    {
-
-    /*
+    function clone(address a) external returns (address) {
+        /*
     Assembly of the code that we want to use as init-code in the new contract,
     along with stack values:
                     # bottom [ STACK ] top
@@ -57,9 +52,15 @@ library Cloneable {
     This is simply stored at memory position 0, and create is invoked.
     */
         address retval;
-        assembly{
-            mstore(0x0, or (0x5880730000000000000000000000000000000000000000803b80938091923cF3 ,mul(a,0x1000000000000000000)))
-            retval := create(0,0, 32)
+        assembly {
+            mstore(
+                0x0,
+                or(
+                    0x5880730000000000000000000000000000000000000000803b80938091923cF3,
+                    mul(a, 0x1000000000000000000)
+                )
+            )
+            retval := create(0, 0, 32)
         }
         return retval;
     }

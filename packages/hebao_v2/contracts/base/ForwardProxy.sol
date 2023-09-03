@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 
 import "../thirdparty/proxies/Proxy.sol";
 import "./DelayedImplementationManager.sol";
@@ -10,8 +10,7 @@ import "./DelayedImplementationManager.sol";
  * @author Kongliang Zhong - <kongliang@loopring.org>
  */
 contract ForwardProxy is Proxy {
-
-    DelayedImplementationManager immutable public implManager;
+    DelayedImplementationManager public immutable implManager;
 
     constructor(address _implManager) {
         require(_implManager != address(0), "ZERO_ADDRESS");
@@ -21,5 +20,4 @@ contract ForwardProxy is Proxy {
     function implementation() public view override returns (address) {
         return implManager.currImpl();
     }
-
 }

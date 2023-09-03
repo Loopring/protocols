@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
+import "../iface/IEntryPoint.sol";
+import "../core/BaseAccount.sol";
 
 import "../lib/EIP712.sol";
 import "../lib/ERC20.sol";
@@ -19,32 +21,36 @@ import "./libwallet/WalletData.sol";
 import "./libwallet/LockLib.sol";
 import "./libwallet/GuardianLib.sol";
 import "./libwallet/InheritanceLib.sol";
-import "./libwallet/MetaTxLib.sol";
 import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
 
-
 /// @title SmartWallet
 /// @dev Main smart wallet contract
 /// @author Brecht Devos - <brecht@loopring.org>
-contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC1155Holder
+abstract contract SmartWallet is
+    ILoopringWalletV2,
+    ERC1271,
+    IERC165,
+    ERC721Holder,
+    ERC1155Holder,
+    BaseAccount
 {
-    using ERC20Lib          for Wallet;
-    using ERC1271Lib        for Wallet;
-    using LockLib           for Wallet;
-    using GuardianLib       for Wallet;
-    using InheritanceLib    for Wallet;
-    using MetaTxLib         for Wallet;
-    using WhitelistLib      for Wallet;
-    using QuotaLib          for Wallet;
-    using RecoverLib        for Wallet;
-    using UpgradeLib        for Wallet;
+    using ERC20Lib for Wallet;
+    using ERC1271Lib for Wallet;
+    using LockLib for Wallet;
+    using GuardianLib for Wallet;
+    using InheritanceLib for Wallet;
+    using WhitelistLib for Wallet;
+    using QuotaLib for Wallet;
+    using RecoverLib for Wallet;
+    using UpgradeLib for Wallet;
 
-    bytes32     public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
-    address     public immutable blankOwner;
+    address public immutable blankOwner;
+    IEntryPoint internal immutable _entryPoint;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -60,40 +66,66 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
-    modifier disableInImplementationContract
-    {
-        require(!isImplementationContract, "DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
-        _;
-    }
-
-    modifier onlyFromWalletOrOwnerWhenUnlocked()
-    {
-        // If the wallet's signature verfication passes, the wallet must be unlocked.
+    modifier disableInImplementationContract() {
         require(
-            msg.sender == address(this) ||
-            (msg.sender == wallet.owner && !wallet.locked),
-             "NOT_FROM_WALLET_OR_OWNER_OR_WALLET_LOCKED"
+            !isImplementationContract,
+            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
         );
-        wallet.touchLastActiveWhenRequired();
         _;
     }
 
-    modifier canTransferOwnership()
-    {
+    modifier canTransferOwnership() {
         require(
-            msg.sender == blankOwner &&
-            wallet.owner == blankOwner,
+            msg.sender == blankOwner && wallet.owner == blankOwner,
             "NOT_ALLOWED_TO_SET_OWNER"
         );
         _;
     }
 
+    modifier onlyFromEntryPoint() {
+        require(msg.sender == address(entryPoint()), "account: not EntryPoint");
+        wallet.touchLastActiveWhenRequired();
+        _;
+    }
+
+    // Require the function call went through EntryPoint or wallet self or owner
+    modifier onlyFromEntryPointOrWalletOrOwnerWhenUnlocked() {
+        require(
+            msg.sender == address(this) ||
+                ((msg.sender == address(entryPoint()) ||
+                    msg.sender == wallet.owner) && !wallet.locked),
+            "account: not Owner, Self or EntryPoint or it is locked"
+        );
+        wallet.touchLastActiveWhenRequired();
+        _;
+    }
+
+    modifier onlyFromSuperGuardianWhenUnlocked() {
+        require(
+            wallet.isSuperGuardian(msg.sender, false) && !wallet.locked,
+            "account: not superGuardian"
+        );
+        wallet.touchLastActiveWhenRequired();
+        _;
+    }
+
+    /// @inheritdoc BaseAccount
+    function entryPoint() public view virtual override returns (IEntryPoint) {
+        return _entryPoint;
+    }
+
+    /// @inheritdoc BaseAccount
+    function nonce() public view virtual override returns (uint256) {
+        return wallet.nonce;
+    }
+
     constructor(
         PriceOracle _priceOracle,
-        address     _blankOwner
-        )
-    {
+        address _blankOwner,
+        IEntryPoint entryPointInput
+    ) {
         isImplementationContract = true;
+        _entryPoint = entryPointInput;
 
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("LoopringWallet", "2.0.0", address(this))
@@ -110,18 +142,14 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     /// @param owner The owner of this wallet, must not be address(0).
     /// @param guardians The guardians of this wallet.
     function initialize(
-        address             owner,
-        address[] calldata  guardians,
-        uint                quota,
-        address             inheritor,
-        address             feeRecipient,
-        address             feeToken,
-        uint                feeAmount
-        )
-        external
-        override
-        disableInImplementationContract
-    {
+        address owner,
+        address[] calldata guardians,
+        uint quota,
+        address inheritor,
+        address feeRecipient,
+        address feeToken,
+        uint feeAmount
+    ) external override disableInImplementationContract {
         require(wallet.owner == address(0), "INITIALIZED_ALREADY");
         require(owner != address(0), "INVALID_OWNER");
 
@@ -143,39 +171,20 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
         }
     }
 
-    receive()
-        external
-        payable
-    {
-    }
+    receive() external payable {}
 
-    function getOwner()
-        public
-        view
-        override
-        returns (address)
-    {
+    function getOwner() public view override returns (address) {
         return wallet.owner;
     }
 
-    function getCreationTimestamp()
-        public
-        view
-        override
-        returns (uint64)
-    {
+    function getCreationTimestamp() public view override returns (uint64) {
         return wallet.creationTimestamp;
     }
 
     //
     // Owner
     //
-    function transferOwnership(
-        address _owner
-        )
-        external
-        canTransferOwnership
-    {
+    function transferOwnership(address _owner) external canTransferOwnership {
         require(_owner != address(0), "INVALID_OWNER");
         wallet.owner = _owner;
     }
@@ -184,19 +193,10 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     // ERC1271
     //
     function isValidSignature(
-        bytes32      signHash,
+        bytes32 signHash,
         bytes memory signature
-        )
-        public
-        view
-        override
-        returns (bytes4 magicValue)
-    {
-        return wallet.isValidSignature(
-            ERC1271_MAGICVALUE,
-            signHash,
-            signature
-        );
+    ) public view override returns (bytes4 magicValue) {
+        return wallet.isValidSignature(ERC1271_MAGICVALUE, signHash, signature);
     }
 
     //
@@ -204,104 +204,88 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     //
 
     function changeMasterCopy(
-        Approval calldata approval,
-        address           newMasterCopy
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.changeMasterCopy(
-            DOMAIN_SEPARATOR,
-            approval,
-            newMasterCopy
-        );
+        address newMasterCopy
+    ) external onlyFromEntryPoint {
+        UpgradeLib.changeMasterCopy(newMasterCopy);
         masterCopy = newMasterCopy;
     }
 
-    function getMasterCopy()
-        public
-        view
-        returns (address)
-    {
+    function getMasterCopy() public view returns (address) {
         return masterCopy;
     }
 
     //
     // Guardians
     //
+    function upgradeGuardian(
+        address guardian
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        wallet.upgradeGuardian(guardian);
+    }
+
+    function downgradeGuardian(
+        address guardian
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        wallet.downgradeGuardian(guardian);
+    }
+
+    function cancelPendingActionForSuperGuardian(
+        address guardian
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        wallet.cancelPendingActionForSuperGuardian(guardian);
+    }
 
     function addGuardian(
         address guardian
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.addGuardian(guardian);
     }
 
-    function addGuardianWA(
-        Approval calldata approval,
-        address           guardian
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.addGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
+    function addGuardianWA(address guardian) external onlyFromEntryPoint {
+        wallet.addGuardianWA(guardian);
     }
 
     function removeGuardian(
         address guardian
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.removeGuardian(guardian);
     }
 
-     function removeGuardianWA(
-        Approval calldata approval,
-        address           guardian
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.removeGuardianWA(DOMAIN_SEPARATOR, approval, guardian);
+    function removeGuardianWA(address guardian) external onlyFromEntryPoint {
+        wallet.removeGuardianWA(guardian);
     }
 
-     function resetGuardians(
-         address[] calldata newGuardians
-         )
-         external
-         onlyFromWalletOrOwnerWhenUnlocked
-     {
-         wallet.resetGuardians(newGuardians);
-     }
+    function resetGuardians(
+        address[] calldata newGuardians
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        wallet.resetGuardians(newGuardians);
+    }
 
-     function resetGuardiansWA(
-         Approval  calldata approval,
-         address[] calldata newGuardians
-         )
-         external
-         returns (bytes32 approvedHash)
-     {
-         approvedHash = wallet.resetGuardiansWA(DOMAIN_SEPARATOR, approval, newGuardians);
-     }
+    function resetGuardiansWA(
+        address[] calldata newGuardians
+    ) external onlyFromEntryPoint {
+        wallet.resetGuardiansWA(newGuardians);
+    }
 
-     function isGuardian(address addr, bool includePendingAddition)
-         public
-         view
-         returns (bool)
-     {
-         return wallet.isGuardian(addr, includePendingAddition);
-     }
+    function isGuardian(
+        address addr,
+        bool includePendingAddition
+    ) public view returns (bool) {
+        return wallet.isGuardian(addr, includePendingAddition);
+    }
 
-     function getGuardians(bool includePendingAddition)
-         public
-         view
-         returns (Guardian[] memory )
-     {
-         return GuardianLib.guardians(wallet, includePendingAddition);
-     }
+    function isSuperGuardian(
+        address addr,
+        bool includePendingAddition
+    ) public view returns (bool) {
+        return wallet.isSuperGuardian(addr, includePendingAddition);
+    }
+
+    function getGuardians(
+        bool includePendingAddition
+    ) public view returns (Guardian[] memory) {
+        return GuardianLib.guardians(wallet, includePendingAddition);
+    }
 
     //
     // Inheritance
@@ -309,40 +293,35 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
     function setInheritor(
         address inheritor,
-        uint32  waitingPeriod
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+        uint32 waitingPeriod
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.setInheritor(inheritor, waitingPeriod);
     }
 
+    // no need to record last active time here before inherit
     function inherit(
         address newOwner,
-        bool    removeGuardians
-        )
-        external
-    {
-        wallet.inherit(newOwner, removeGuardians);
+        address[] calldata newGuardians
+    ) external {
+        // allow inherit from inheritor or entrypoint
+        require(
+            msg.sender == address(entryPoint()) ||
+                msg.sender == wallet.inheritor,
+            "account: not EntryPoint or inheritor"
+        );
+        wallet.inherit(newOwner, newGuardians);
     }
 
     //
     // Lock
     //
 
-    function lock()
-        external
-    {
-        wallet.lock();
+    function lock() external {
+        wallet.lock(address(entryPoint()));
     }
 
-    function unlock(
-        Approval calldata approval
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.unlock(DOMAIN_SEPARATOR, approval);
+    function unlock() external onlyFromEntryPoint {
+        wallet.unlock();
     }
 
     //
@@ -351,69 +330,12 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
     function changeDailyQuota(
         uint newQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.changeDailyQuota(newQuota);
     }
 
-    function changeDailyQuotaWA(
-        Approval calldata approval,
-        uint              newQuota
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.changeDailyQuotaWA(DOMAIN_SEPARATOR, approval, newQuota);
-    }
-
-    //
-    // MetaTx
-    //
-
-    function executeMetaTx(
-        address to,
-        uint    nonce,
-        address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
-        uint    gasOverhead,
-        address feeRecipient,
-        bool    requiresSuccess,
-        bytes   calldata data,
-        bytes   memory   signature
-        )
-        external
-        returns (bool)
-    {
-        MetaTxLib.MetaTx memory metaTx = MetaTxLib.MetaTx(
-            to,
-            nonce,
-            gasToken,
-            gasPrice,
-            gasLimit,
-            gasOverhead,
-            feeRecipient,
-            requiresSuccess,
-            data,
-            signature
-        );
-
-        return wallet.executeMetaTx(
-            DOMAIN_SEPARATOR,
-            priceOracle,
-            metaTx
-        );
-    }
-
-    function selfBatchCall(
-        bytes[] calldata data
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.selfBatchCall(data);
+    function changeDailyQuotaWA(uint newQuota) external onlyFromEntryPoint {
+        wallet.changeDailyQuotaWA(newQuota);
     }
 
     //
@@ -421,19 +343,10 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     //
 
     function recover(
-        Approval calldata  approval,
-        address            newOwner,
+        address newOwner,
         address[] calldata newGuardians
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.recover(
-            DOMAIN_SEPARATOR,
-            approval,
-            newOwner,
-            newGuardians
-        );
+    ) external onlyFromEntryPoint {
+        wallet.recover(newOwner, newGuardians);
     }
 
     //
@@ -442,52 +355,27 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
 
     function addToWhitelist(
         address addr
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.addToWhitelist(addr);
     }
 
-    function addToWhitelistWA(
-        Approval calldata approval,
-        address           addr
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.addToWhitelistWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            addr
-        );
+    function addToWhitelistWA(address addr) external onlyFromEntryPoint {
+        wallet.addToWhitelistWA(addr);
     }
 
     function removeFromWhitelist(
         address addr
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.removeFromWhitelist(addr);
     }
 
     function getWhitelistEffectiveTime(
         address addr
-        )
-        public
-        view
-        returns (uint)
-    {
+    ) public view returns (uint) {
         return wallet.whitelisted[addr];
     }
 
-    function isWhitelisted(
-        address addr
-        )
-        public
-        view
-        returns (bool) {
+    function isWhitelisted(address addr) public view returns (bool) {
         return wallet.isAddressWhitelisted(addr);
     }
 
@@ -496,15 +384,12 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     //
 
     function transferToken(
-        address        token,
-        address        to,
-        uint           amount,
+        address token,
+        address to,
+        uint amount,
         bytes calldata logdata,
-        bool           forceUseQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
+        bool forceUseQuota
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         wallet.transferToken(
             priceOracle,
             token,
@@ -516,135 +401,84 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     }
 
     function transferTokenWA(
-        Approval calldata approval,
-        address           token,
-        address           to,
-        uint              amount,
-        bytes    calldata logdata
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.transferTokenWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            token,
-            to,
-            amount,
-            logdata
-        );
+        address token,
+        address to,
+        uint amount,
+        bytes calldata logdata
+    ) external onlyFromEntryPoint {
+        ERC20Lib.transferTokenWA(token, to, amount, logdata);
     }
 
     function callContract(
-        address          to,
-        uint             value,
-        bytes   calldata data,
-        bool             forceUseQuota
-        )
+        address to,
+        uint value,
+        bytes calldata data,
+        bool forceUseQuota
+    )
         external
-        onlyFromWalletOrOwnerWhenUnlocked
+        onlyFromEntryPointOrWalletOrOwnerWhenUnlocked
         returns (bytes memory)
     {
-        return wallet.callContract(
-            priceOracle,
-            to,
-            value,
-            data,
-            forceUseQuota
-        );
+        return wallet.callContract(priceOracle, to, value, data, forceUseQuota);
     }
 
     function callContractWA(
-        Approval calldata approval,
-        address           to,
-        uint              value,
-        bytes    calldata data
-        )
-        external
-        returns (bytes32 approvedHash, bytes memory returnData)
-    {
-        (approvedHash, returnData) = wallet.callContractWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            to,
-            value,
-            data
-        );
+        address to,
+        uint value,
+        bytes calldata data
+    ) external onlyFromEntryPoint returns (bytes memory returnData) {
+        return ERC20Lib.callContractWA(to, value, data);
     }
 
     function approveToken(
         address token,
         address to,
-        uint    amount,
-        bool    forceUseQuota
-        )
-        external
-        onlyFromWalletOrOwnerWhenUnlocked
-    {
-        wallet.approveToken(
-            priceOracle,
-            token,
-            to,
-            amount,
-            forceUseQuota
-        );
+        uint amount,
+        bool forceUseQuota
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        wallet.approveToken(priceOracle, token, to, amount, forceUseQuota);
     }
 
     function approveTokenWA(
-        Approval calldata approval,
-        address           token,
-        address           to,
-        uint              amount
-        )
-        external
-        returns (bytes32 approvedHash)
-    {
-        approvedHash = wallet.approveTokenWA(
-            DOMAIN_SEPARATOR,
-            approval,
-            token,
-            to,
-            amount
-        );
+        address token,
+        address to,
+        uint amount
+    ) external onlyFromEntryPoint {
+        ERC20Lib.approveTokenWA(token, to, amount);
     }
 
     function approveThenCallContract(
-        address          token,
-        address          to,
-        uint             amount,
-        uint             value,
-        bytes   calldata data,
-        bool             forceUseQuota
-        )
+        address token,
+        address to,
+        uint amount,
+        uint value,
+        bytes calldata data,
+        bool forceUseQuota
+    )
         external
-        onlyFromWalletOrOwnerWhenUnlocked
+        onlyFromEntryPointOrWalletOrOwnerWhenUnlocked
         returns (bytes memory)
     {
-        return wallet.approveThenCallContract(
-            priceOracle,
-            token,
-            to,
-            amount,
-            value,
-            data,
-            forceUseQuota
-        );
+        return
+            wallet.approveThenCallContract(
+                priceOracle,
+                token,
+                to,
+                amount,
+                value,
+                data,
+                forceUseQuota
+            );
     }
 
     function approveThenCallContractWA(
-        Approval calldata approval,
-        address           token,
-        address           to,
-        uint              amount,
-        uint              value,
-        bytes    calldata data
-        )
-        external
-        returns (bytes32 approvedHash, bytes memory returnData)
-    {
-        (approvedHash, returnData) = wallet.approveThenCallContractWA(
-            DOMAIN_SEPARATOR,
-            approval,
+        address token,
+        address to,
+        uint amount,
+        uint value,
+        bytes calldata data
+    ) external onlyFromEntryPoint returns (bytes memory returnData) {
+        returnData = ERC20Lib.approveThenCallContractWA(
             token,
             to,
             amount,
@@ -656,15 +490,11 @@ contract SmartWallet is ILoopringWalletV2, ERC1271, IERC165, ERC721Holder, ERC11
     // ERC165
     function supportsInterface(
         bytes4 interfaceId
-        )
-        external
-        pure
-        override
-        returns (bool)
-    {
-        return  interfaceId == type(ERC1271).interfaceId ||
-                interfaceId == type(IERC165).interfaceId ||
-                interfaceId == type(IERC721Receiver).interfaceId ||
-                interfaceId == type(IERC1155Receiver).interfaceId;
+    ) external pure override returns (bool) {
+        return
+            interfaceId == type(ERC1271).interfaceId ||
+            interfaceId == type(IERC165).interfaceId ||
+            interfaceId == type(IERC721Receiver).interfaceId ||
+            interfaceId == type(IERC1155Receiver).interfaceId;
     }
 }
