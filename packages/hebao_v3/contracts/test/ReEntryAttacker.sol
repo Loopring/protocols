@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2017 Loopring Technology Limited.
 import "../base/VerifyingPaymaster.sol";
 import "../iface/IEntryPoint.sol";
 pragma solidity ^0.8.12;
