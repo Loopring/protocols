@@ -16,9 +16,7 @@ import {
 import { getBlockTimestamp, createSmartWallet } from "./helper/utils";
 import {
   fillUserOp,
-  fillAndMultiSign,
   getUserOpHash,
-  fillAndMultiSign2,
   fillAndMultiSignForApproveToken,
   fillAndMultiSignForAddGuardian,
 } from "./helper/AASigner";
@@ -209,6 +207,7 @@ describe("guardian test", () => {
     const validUntil = 0;
     const signedUserOp = await fillAndMultiSignForApproveToken(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         { signer: smartWalletOwner },
@@ -270,6 +269,7 @@ describe("guardian test", () => {
 
       const signedUserOp = await fillAndMultiSignForAddGuardian(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [{ signer: smartWalletOwner }, { signer: guardians[0] }],
         create2.address,
@@ -353,6 +353,7 @@ describe("guardian test", () => {
       ).to.equal(false); // not contains guardianToAdd
       const signedUserOp = await fillAndMultiSignForAddGuardian(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },

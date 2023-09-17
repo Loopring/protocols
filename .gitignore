@@ -8,3 +8,4 @@ ganache_account_keys.txt
 deployedAddresses.json
 .idea/
 dist/
+.env

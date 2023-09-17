@@ -27,37 +27,11 @@ import {
   fillUserOp,
   getUserOpHash,
   UserOperation,
-  fillAndMultiSign,
   fillAndMultiSignForUnlock,
 } from "./helper/AASigner";
 import BN from "bn.js";
 
 describe("lock test", () => {
-  async function getApprovalSignedUserOp(
-    tx: PopulatedTransaction,
-    create2: LoopringCreate2Deployer,
-    masterCopy: string,
-    smartWallet: SmartWalletV3,
-    smartWalletOwner: Wallet,
-    guardians: Wallet[],
-    entrypoint: EntryPoint,
-    smartWalletImpl: Contract
-  ) {
-    const partialUserOp = {
-      sender: smartWallet.address,
-      nonce: 0,
-      callData: tx.data,
-      callGasLimit: "126880",
-    };
-    const signedUserOp = await fillAndMultiSign(
-      partialUserOp,
-      [smartWalletOwner, guardians[0]],
-      create2.address,
-      smartWalletImpl.address,
-      entrypoint
-    );
-    return signedUserOp;
-  }
   it("basic success testcase", async () => {
     const {
       entrypoint,
@@ -77,6 +51,7 @@ describe("lock test", () => {
 
     const signedUserOp = await fillAndMultiSignForUnlock(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         { signer: guardians[0] },

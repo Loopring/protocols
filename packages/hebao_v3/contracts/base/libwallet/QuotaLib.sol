@@ -24,7 +24,7 @@ library QuotaLib {
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
         keccak256(
-            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota,bytes32 userOpHash)"
+            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
         );
 
     event QuotaScheduled(
@@ -178,8 +178,7 @@ library QuotaLib {
     function encodeApprovalForChangeDailyQuota(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 userOpHash
+        uint256 validUntil
     ) internal view returns (bytes32) {
         uint256 newQuota = abi.decode(data, (uint));
         bytes32 approvedHash = EIP712.hashPacked(
@@ -189,8 +188,7 @@ library QuotaLib {
                     CHANGE_DAILY_QUOTE_TYPEHASH,
                     address(this),
                     validUntil,
-                    newQuota,
-                    userOpHash
+                    newQuota
                 )
             )
         );

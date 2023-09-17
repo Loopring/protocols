@@ -12,7 +12,6 @@ import { fixture } from "./helper/fixture";
 import { ethers } from "hardhat";
 import {
   fillUserOp,
-  fillAndMultiSign,
   fillAndMultiSignForTransferToken,
   fillAndMultiSignForChangeMasterCopy,
 } from "./helper/AASigner";
@@ -54,6 +53,7 @@ describe("wallet", () => {
 
       const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },
@@ -202,6 +202,7 @@ describe("wallet", () => {
         const usdtTokenBalanceBefore = await usdtToken.balanceOf(receiver);
         const signedUserOp = await fillAndMultiSignForTransferToken(
           smartWallet,
+          smartWalletOwner,
           0, //nonce
           [
             { signer: smartWalletOwner },

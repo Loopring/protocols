@@ -33,19 +33,19 @@ library ERC20Lib {
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH =
         keccak256(
-            "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata,bytes32 userOpHash)"
+            "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
         );
     bytes32 public constant APPROVE_TOKEN_TYPEHASH =
         keccak256(
-            "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes32 userOpHash)"
+            "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
         );
     bytes32 public constant CALL_CONTRACT_TYPEHASH =
         keccak256(
-            "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes32 userOpHash)"
+            "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
         );
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH =
         keccak256(
-            "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes32 userOpHash)"
+            "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
         );
 
     function transferToken(
@@ -236,8 +236,7 @@ library ERC20Lib {
     function encodeApprovalForTransferToken(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 userOpHash
+        uint256 validUntil
     ) external view returns (bytes32) {
         (address token, address to, uint amount, bytes memory logdata) = abi
             .decode(data, (address, address, uint, bytes));
@@ -251,8 +250,7 @@ library ERC20Lib {
                     token,
                     to,
                     amount,
-                    keccak256(logdata),
-                    userOpHash
+                    keccak256(logdata)
                 )
             )
         );
@@ -262,8 +260,7 @@ library ERC20Lib {
     function encodeApprovalForApproveToken(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 userOpHash
+        uint256 validUntil
     ) external view returns (bytes32) {
         (address token, address to, uint256 amount) = abi.decode(
             data,
@@ -278,8 +275,7 @@ library ERC20Lib {
                     validUntil,
                     token,
                     to,
-                    amount,
-                    userOpHash
+                    amount
                 )
             )
         );
@@ -289,10 +285,9 @@ library ERC20Lib {
     function encodeApprovalForCallContract(
         bytes memory callData,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 userOpHash
+        uint256 validUntil
     ) external view returns (bytes32) {
-        (address to, uint256 value, ) = abi.decode(
+        (address to, uint256 value, bytes memory data) = abi.decode(
             callData,
             (address, uint, bytes)
         );
@@ -305,7 +300,7 @@ library ERC20Lib {
                     validUntil,
                     to,
                     value,
-                    userOpHash
+                    keccak256(data)
                 )
             )
         );
@@ -315,11 +310,15 @@ library ERC20Lib {
     function encodeApprovalForApproveThenCallContract(
         bytes memory callData,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 userOpHash
+        uint256 validUntil
     ) external view returns (bytes32) {
-        (address token, address to, uint256 amount, uint256 value, ) = abi
-            .decode(callData, (address, address, uint256, uint256, bytes));
+        (
+            address token,
+            address to,
+            uint256 amount,
+            uint256 value,
+            bytes memory data
+        ) = abi.decode(callData, (address, address, uint256, uint256, bytes));
         bytes32 approvedHash = EIP712.hashPacked(
             domainSeparator,
             keccak256(
@@ -331,7 +330,7 @@ library ERC20Lib {
                     to,
                     amount,
                     value,
-                    userOpHash
+                    keccak256(data)
                 )
             )
         );

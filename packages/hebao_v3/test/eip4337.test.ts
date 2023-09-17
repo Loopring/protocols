@@ -1,7 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
-import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
 import {
   loadFixture,
   setBalance,
@@ -18,8 +17,6 @@ import {
 import {
   fillAndSign,
   UserOperation,
-  fillUserOp,
-  fillAndMultiSign,
   fillAndMultiSignForChangeDailyQuota,
 } from "./helper/AASigner";
 import {
@@ -154,6 +151,7 @@ describe("eip4337 test", () => {
     let validUntil = 1;
     const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         { signer: smartWalletOwner },
@@ -176,6 +174,7 @@ describe("eip4337 test", () => {
 
     const signedUserOp2 = await fillAndMultiSignForChangeDailyQuota(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         { signer: smartWalletOwner },
@@ -389,6 +388,7 @@ describe("eip4337 test", () => {
     const newQuota = 100;
     const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         { signer: smartWalletOwner },
@@ -401,21 +401,6 @@ describe("eip4337 test", () => {
       newQuota,
       entrypoint
     );
-    // const changeDailyQuotaWA =
-    // await smartWallet.populateTransaction.changeDailyQuotaWA(newQuota);
-    // const partialUserOp = {
-    // sender: smartWallet.address,
-    // nonce: 0,
-    // callData: changeDailyQuotaWA.data,
-    // callGasLimit: "126880",
-    // };
-    // const signedUserOp = await fillAndMultiSign(
-    // partialUserOp,
-    // [smartWalletOwner, guardians[0]],
-    // create2.address,
-    // smartWalletImpl.address,
-    // entrypoint
-    // );
     const recipt = await sendUserOp(signedUserOp);
     const quotaInfo = (await smartWallet.wallet())["quota"];
     const currentQuota = await getCurrentQuota(quotaInfo, recipt.blockNumber);

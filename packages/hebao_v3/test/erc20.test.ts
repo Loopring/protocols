@@ -16,7 +16,6 @@ import {
   getFirstEvent,
 } from "./helper/utils";
 import {
-  fillAndMultiSign,
   UserOperation,
   fillUserOp,
   fillAndMultiSignForApproveToken,
@@ -184,6 +183,7 @@ describe("erc20 test", () => {
       const amount = new BN(100);
       const signedUserOp = await fillAndMultiSignForApproveToken(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },
@@ -226,6 +226,7 @@ describe("erc20 test", () => {
       // fillAndMultiSignForCallContract
       const signedUserOp = await fillAndMultiSignForCallContract(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },
@@ -270,6 +271,7 @@ describe("erc20 test", () => {
       const value = ethers.utils.parseEther("50");
       const signedUserOp = await fillAndMultiSignForApproveThenCallContract(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },

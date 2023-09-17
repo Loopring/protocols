@@ -296,6 +296,7 @@ export async function fillAndMultiSign(
 
 export async function fillAndMultiSignForTransferToken(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -335,7 +336,6 @@ export async function fillAndMultiSignForTransferToken(
       { name: "to", type: "address" },
       { name: "amount", type: "uint256" },
       { name: "logdata", type: "bytes" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -349,7 +349,6 @@ export async function fillAndMultiSignForTransferToken(
     domain,
     primaryType: "transferToken",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       amount,
@@ -383,9 +382,12 @@ export async function fillAndMultiSignForTransferToken(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -395,15 +397,16 @@ export async function fillAndMultiSignForTransferToken(
 
 export async function fillAndMultiSignForRecover(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
   verifyingContract: string,
-  newOwner: string,
   newGuardians: string[],
   entryPoint?: EntryPoint,
   validUntil = 0
 ) {
+  const newOwner = smartWalletOwner.address;
   const tx = await smartWallet.populateTransaction.recover(
     newOwner,
     newGuardians
@@ -429,7 +432,6 @@ export async function fillAndMultiSignForRecover(
       { name: "validUntil", type: "uint256" },
       { name: "newOwner", type: "address" },
       { name: "newGuardians", type: "address[]" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -443,7 +445,6 @@ export async function fillAndMultiSignForRecover(
     domain,
     primaryType: "recover",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       newOwner,
@@ -475,9 +476,12 @@ export async function fillAndMultiSignForRecover(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -487,6 +491,7 @@ export async function fillAndMultiSignForRecover(
 
 export async function fillAndMultiSignForUnlock(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -513,7 +518,6 @@ export async function fillAndMultiSignForUnlock(
     unlock: [
       { name: "wallet", type: "address" },
       { name: "validUntil", type: "uint256" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -527,7 +531,6 @@ export async function fillAndMultiSignForUnlock(
     domain,
     primaryType: "unlock",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
     },
@@ -557,9 +560,12 @@ export async function fillAndMultiSignForUnlock(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -570,6 +576,7 @@ export async function fillAndMultiSignForUnlock(
 // fillAndMultiSignForAddToWhitelist
 export async function fillAndMultiSignForAddToWhitelist(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -598,7 +605,6 @@ export async function fillAndMultiSignForAddToWhitelist(
       { name: "wallet", type: "address" },
       { name: "validUntil", type: "uint256" },
       { name: "addr", type: "address" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -612,7 +618,6 @@ export async function fillAndMultiSignForAddToWhitelist(
     domain,
     primaryType: "addToWhitelist",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       addr,
@@ -643,9 +648,12 @@ export async function fillAndMultiSignForAddToWhitelist(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -655,6 +663,7 @@ export async function fillAndMultiSignForAddToWhitelist(
 
 export async function fillAndMultiSignForChangeMasterCopy(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -683,7 +692,6 @@ export async function fillAndMultiSignForChangeMasterCopy(
       { name: "wallet", type: "address" },
       { name: "validUntil", type: "uint256" },
       { name: "masterCopy", type: "address" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -697,7 +705,6 @@ export async function fillAndMultiSignForChangeMasterCopy(
     domain,
     primaryType: "changeMasterCopy",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       masterCopy,
@@ -728,9 +735,12 @@ export async function fillAndMultiSignForChangeMasterCopy(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -740,6 +750,7 @@ export async function fillAndMultiSignForChangeMasterCopy(
 
 export async function fillAndMultiSignForChangeDailyQuota(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -768,7 +779,6 @@ export async function fillAndMultiSignForChangeDailyQuota(
       { name: "wallet", type: "address" },
       { name: "validUntil", type: "uint256" },
       { name: "newQuota", type: "uint256" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -782,7 +792,6 @@ export async function fillAndMultiSignForChangeDailyQuota(
     domain,
     primaryType: "changeDailyQuota",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       newQuota,
@@ -813,9 +822,12 @@ export async function fillAndMultiSignForChangeDailyQuota(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -825,7 +837,8 @@ export async function fillAndMultiSignForChangeDailyQuota(
 
 export async function fillAndMultiSignForAddGuardian(
   smartWallet: Contract,
-  nonce,
+  signer: Wallet,
+  nonce: BigNumberish,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
   verifyingContract: string,
@@ -846,6 +859,7 @@ export async function fillAndMultiSignForAddGuardian(
   );
   const chainId = await provider!.getNetwork().then((net) => net.chainId);
   const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId);
+  const ownerSignature = await signer.signMessage(arrayify(userOpHash));
   // use typedData hash instead
   //addGuardian(address wallet,uint256 validUntil,address guardian,bytes32 userOpHash)
   const types = {
@@ -853,7 +867,6 @@ export async function fillAndMultiSignForAddGuardian(
       { name: "wallet", type: "address" },
       { name: "validUntil", type: "uint256" },
       { name: "guardian", type: "address" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -867,7 +880,6 @@ export async function fillAndMultiSignForAddGuardian(
     domain,
     primaryType: "addGuardian",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       guardian: newGuardian,
@@ -899,8 +911,8 @@ export async function fillAndMultiSignForAddGuardian(
     validUntil,
   };
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -910,6 +922,7 @@ export async function fillAndMultiSignForAddGuardian(
 
 export async function fillAndMultiSignForApproveThenCallContract(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -952,7 +965,7 @@ export async function fillAndMultiSignForApproveThenCallContract(
       { name: "to", type: "address" },
       { name: "amount", type: "uint256" },
       { name: "value", type: "uint256" },
-      { name: "userOpHash", type: "bytes32" },
+      { name: "data", type: "bytes" },
     ],
   };
   const domain = {
@@ -966,13 +979,13 @@ export async function fillAndMultiSignForApproveThenCallContract(
     domain,
     primaryType: "approveThenCallContract",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       token,
       to,
       value,
       amount,
+      data,
     },
   };
 
@@ -1000,9 +1013,12 @@ export async function fillAndMultiSignForApproveThenCallContract(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -1012,6 +1028,7 @@ export async function fillAndMultiSignForApproveThenCallContract(
 
 export async function fillAndMultiSignForCallContract(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -1047,7 +1064,7 @@ export async function fillAndMultiSignForCallContract(
       { name: "validUntil", type: "uint256" },
       { name: "to", type: "address" },
       { name: "value", type: "uint256" },
-      { name: "userOpHash", type: "bytes32" },
+      { name: "data", type: "bytes" },
     ],
   };
   const domain = {
@@ -1061,11 +1078,11 @@ export async function fillAndMultiSignForCallContract(
     domain,
     primaryType: "callContract",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       to,
       value,
+      data,
     },
   };
 
@@ -1093,9 +1110,12 @@ export async function fillAndMultiSignForCallContract(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,
@@ -1105,6 +1125,7 @@ export async function fillAndMultiSignForCallContract(
 
 export async function fillAndMultiSignForApproveToken(
   smartWallet: Contract,
+  smartWalletOwner: Wallet,
   nonce,
   smartWalletOrEOASigners: { signer: Wallet; smartWalletAddress?: string }[],
   walletFactoryAddress: string,
@@ -1140,7 +1161,6 @@ export async function fillAndMultiSignForApproveToken(
       { name: "token", type: "address" },
       { name: "to", type: "address" },
       { name: "amount", type: "uint256" },
-      { name: "userOpHash", type: "bytes32" },
     ],
   };
   const domain = {
@@ -1154,7 +1174,6 @@ export async function fillAndMultiSignForApproveToken(
     domain,
     primaryType: "approveToken",
     value: {
-      userOpHash,
       validUntil,
       wallet: smartWallet.address,
       token,
@@ -1187,9 +1206,12 @@ export async function fillAndMultiSignForApproveToken(
     signatures: sortedSignatures,
     validUntil,
   };
+  const ownerSignature = await smartWalletOwner.signMessage(
+    arrayify(userOpHash)
+  );
   const signature = ethers.utils.defaultAbiCoder.encode(
-    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)"],
-    [approval]
+    ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
+    [approval, ownerSignature]
   );
   return {
     ...op2,

@@ -95,13 +95,23 @@ contract SmartWalletV3 is SmartWallet {
 
         if (isDataless(userOp)) {
             bytes memory data = userOp.callData[4:];
-            Approval memory approval = abi.decode(userOp.signature, (Approval));
+            (Approval memory approval, bytes memory ownerSignature) = abi
+                .decode(userOp.signature, (Approval, bytes));
+            // check owner signature first
+            // check signature of new owner when recover
+            if (
+                methodId != SmartWallet.recover.selector &&
+                !hash.verifySignature(wallet.owner, ownerSignature)
+            ) {
+                return SIG_VALIDATION_FAILED;
+            }
+
+            // then check guardians signature for actions
             if (methodId == SmartWallet.addGuardianWA.selector) {
                 bytes32 approvedHash = GuardianLib.encodeApprovalForAddGuardian(
                     data,
                     DOMAIN_SEPARATOR,
-                    approval.validUntil,
-                    userOpHash
+                    approval.validUntil
                 );
                 return
                     wallet.verifyApproval(
@@ -116,8 +126,7 @@ contract SmartWalletV3 is SmartWallet {
                     .encodeApprovalForRemoveGuardian(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        userOpHash
+                        approval.validUntil
                     );
                 return
                     wallet.verifyApproval(
@@ -132,8 +141,7 @@ contract SmartWalletV3 is SmartWallet {
                     .encodeApprovalForResetGuardians(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        userOpHash
+                        approval.validUntil
                     );
                 return
                     wallet.verifyApproval(
@@ -148,8 +156,7 @@ contract SmartWalletV3 is SmartWallet {
                     .encodeApprovalForChangeDailyQuota(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        userOpHash
+                        approval.validUntil
                     );
                 return
                     wallet.verifyApproval(
@@ -164,8 +171,7 @@ contract SmartWalletV3 is SmartWallet {
                     .encodeApprovalForAddToWhitelist(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        userOpHash
+                        approval.validUntil
                     );
                 return
                     wallet.verifyApproval(
@@ -179,8 +185,7 @@ contract SmartWalletV3 is SmartWallet {
                 bytes32 approvedHash = ERC20Lib.encodeApprovalForTransferToken(
                     data,
                     DOMAIN_SEPARATOR,
-                    approval.validUntil,
-                    userOpHash
+                    approval.validUntil
                 );
                 return
                     wallet.verifyApproval(
@@ -194,8 +199,7 @@ contract SmartWalletV3 is SmartWallet {
                 bytes32 approvedHash = ERC20Lib.encodeApprovalForCallContract(
                     data,
                     DOMAIN_SEPARATOR,
-                    approval.validUntil,
-                    userOpHash
+                    approval.validUntil
                 );
                 return
                     wallet.verifyApproval(
@@ -209,8 +213,7 @@ contract SmartWalletV3 is SmartWallet {
                 bytes32 approvedHash = ERC20Lib.encodeApprovalForApproveToken(
                     data,
                     DOMAIN_SEPARATOR,
-                    approval.validUntil,
-                    userOpHash
+                    approval.validUntil
                 );
                 return
                     wallet.verifyApproval(
@@ -225,8 +228,7 @@ contract SmartWalletV3 is SmartWallet {
                     .encodeApprovalForApproveThenCallContract(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        userOpHash
+                        approval.validUntil
                     );
                 return
                     wallet.verifyApproval(
@@ -240,8 +242,7 @@ contract SmartWalletV3 is SmartWallet {
                 bytes32 approvedHash = LockLib.encodeApprovalForUnlock(
                     data,
                     DOMAIN_SEPARATOR,
-                    approval.validUntil,
-                    userOpHash
+                    approval.validUntil
                 );
                 return
                     wallet.verifyApproval(
@@ -256,8 +257,7 @@ contract SmartWalletV3 is SmartWallet {
                     .encodeApprovalForChangeMasterCopy(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        userOpHash
+                        approval.validUntil
                     );
                 return
                     wallet.verifyApproval(
@@ -268,11 +268,17 @@ contract SmartWalletV3 is SmartWallet {
             }
 
             if (methodId == SmartWallet.recover.selector) {
-                bytes32 approvedHash = RecoverLib.encodeApprovalForRecover(
+                (address newOwner, address[] memory newGuardians) = abi.decode(
                     data,
+                    (address, address[])
+                );
+                if (!hash.verifySignature(newOwner, ownerSignature))
+                    return SIG_VALIDATION_FAILED;
+                bytes32 approvedHash = RecoverLib.encodeApprovalForRecover(
+                    newOwner,
+                    newGuardians,
                     DOMAIN_SEPARATOR,
-                    approval.validUntil,
-                    userOpHash
+                    approval.validUntil
                 );
                 return
                     wallet.verifyApproval(

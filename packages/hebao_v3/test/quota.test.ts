@@ -10,9 +10,7 @@ import {
   createRandomAccount,
 } from "./helper/utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
-import { signChangeDailyQuotaWA } from "./helper/signatureUtils";
 import {
-  fillAndMultiSign,
   fillAndMultiSignForChangeDailyQuota,
   fillAndMultiSignForChangeMasterCopy,
 } from "./helper/AASigner";
@@ -133,6 +131,7 @@ describe("quota test", () => {
     const newQuota = "1" + "0".repeat(20);
     const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         { signer: smartWalletOwner },
@@ -183,6 +182,7 @@ describe("quota test", () => {
       // update to new implementation
       const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },
@@ -195,23 +195,7 @@ describe("quota test", () => {
         newSmartWalletImpl.address,
         entrypoint
       );
-      // const changeMasterCopy =
-      // await smartWallet.populateTransaction.changeMasterCopy(
-      // newSmartWalletImpl.address
-      // );
 
-      // const partialUserOp = {
-      // sender: smartWallet.address,
-      // nonce: 0,
-      // callData: changeMasterCopy.data,
-      // };
-      // const signedUserOp = await fillAndMultiSign(
-      // partialUserOp,
-      // [smartWalletOwner, guardians[0]],
-      // create2.address,
-      // smartWalletImpl.address,
-      // entrypoint
-      // );
       await sendUserOp(signedUserOp);
       const masterCopyOfWallet = await smartWallet.getMasterCopy();
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address);
@@ -279,6 +263,7 @@ describe("quota test", () => {
       // update to new implementation
       const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },
@@ -369,6 +354,7 @@ describe("quota test", () => {
       // update to new implementation
       const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
         smartWallet,
+        smartWalletOwner,
         0, //nonce
         [
           { signer: smartWalletOwner },

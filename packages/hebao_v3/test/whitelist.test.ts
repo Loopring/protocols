@@ -7,7 +7,6 @@ import {
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { getBlockTimestamp, sortSignersAndSignatures } from "./helper/utils";
-import { signAddToWhitelistWA } from "./helper/signatureUtils";
 import {
   fillUserOp,
   fillAndMultiSign,
@@ -52,6 +51,7 @@ describe("whitelist test", () => {
     const addr = "0x" + "12".repeat(20);
     const signedUserOp = await fillAndMultiSignForAddToWhitelist(
       smartWallet,
+      smartWalletOwner,
       0, //nonce
       [
         {
