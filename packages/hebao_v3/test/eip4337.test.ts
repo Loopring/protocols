@@ -116,112 +116,6 @@ describe("eip4337 test", () => {
     
   });
   
-  it.only("WETH Connector", async () => {
-    const {
-      smartWallet,
-    } = await loadFixture(fixture);
-
-    // Wrap ETH without dsa connector
-    const WETH_ADDRESS = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-    const WETH_CONNECTOR_ADDRESS = '0x22075fa719eFb02Ca3cF298AFa9C974B7465E5D3'
-    const wETH = await getVerifiedContractAt(WETH_ADDRESS)
-    const oneForETH = utils.parseEther('1')
-    const data = (await wETH.populateTransaction.deposit()).data
-    const balance1: BigNumber = await wETH.balanceOf(smartWallet.address)
-    await (await smartWallet.callContract(wETH.address, oneForETH, data, false)).wait()
-    const balance2: BigNumber = await wETH.balanceOf(smartWallet.address)
-    expect(balance2.sub(balance1)).eq(oneForETH)
-
-    // Wrap ETH with dsa connector
-    const wETHConnector = await getVerifiedContractAt(WETH_CONNECTOR_ADDRESS)
-    const data2 = (await wETHConnector.populateTransaction.deposit(oneForETH, 0, 0)).data
-    await (await smartWallet.spell(WETH_CONNECTOR_ADDRESS, data2)).wait()
-    const balance3: BigNumber = await wETH.balanceOf(smartWallet.address)
-    expect(balance3.sub(balance2)).eq(oneForETH)
-  });
-  it("skrrr", async () => {
-
-    const {
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      deployer,
-      sendUserOp,
-      entrypoint,
-    } = await loadFixture(fixture);
-    const addGuardian = await smartWallet.populateTransaction.addGuardian(
-      ethers.constants.AddressZero
-    );
-    const nonce = (await smartWallet.nonce()).add(1);
-    const signedUserOp = await getSignedUserOp(
-      addGuardian,
-      nonce,
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      entrypoint
-    );
-    await sendUserOp(signedUserOp);
-    await expect(sendUserOp(signedUserOp))
-      .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "invalid nonce");
-
-    const RICH_ADDRESS = '0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43'
-    const ERC20_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-    const cERC20_ADDRESS = '0x39AA39c021dfbaE8faC545936693aC917d5E7563'
-    const impersonatedKraken = await ethers.getImpersonatedSigner(RICH_ADDRESS);
-    const cERC20 = await getVerifiedContractAt(cERC20_ADDRESS, impersonatedKraken);
-    // const ERC20 = await getVerifiedContractAt(ERC20_ADDRESS, impersonatedKraken);
-    const ERC20 = new Contract(ERC20_ADDRESS, ERC20__factory.abi, impersonatedKraken)
-    // debugger
-    
-    const b0 = await cERC20.balanceOf(impersonatedKraken.address)
-    const b01 = await ERC20.balanceOf(impersonatedKraken.address)
-    const r1 = await (await ERC20.approve(cERC20.address, utils.parseUnits('1', 6))).wait()
-    const r2 = await (await cERC20.mint(utils.parseUnits('1', 6))).wait()
-    const b1 = await cERC20.balanceOf(impersonatedKraken.address)
-    const b11 = await ERC20.balanceOf(impersonatedKraken.address)
-    await (await ERC20.transfer(smartWallet.address, utils.parseUnits('1', 6))).wait()
-    const a1 = await ERC20.allowance(smartWallet.address, cERC20.address)
-    const bb1 = await ERC20.balanceOf(smartWallet.address)
-    const bbb1 = await cERC20.balanceOf(smartWallet.address)
-    await (await smartWallet.approveToken(ERC20_ADDRESS, cERC20.address, utils.parseUnits('1', 6), false)).wait()
-    // const a = cERC20.mint(utils.parseUnits('1', 6))
-    const data = (await cERC20.populateTransaction.mint(utils.parseUnits('1', 6))).data
-    debugger
-    await (await smartWallet.callContract(cERC20.address, '0', data, false)).wait()
-    const a2 = await ERC20.allowance(smartWallet.address, cERC20.address)
-    const bb2 = await ERC20.balanceOf(smartWallet.address)
-    const bbb2 = await cERC20.balanceOf(smartWallet.address)
-    const oneForUSDC = utils.parseUnits('1', 6)
-
-    
-    const COMPOUND_CONNECTOR_ADDRESS = '0x1B1EACaa31abbE544117073f6F8F658a56A3aE25'
-    const compConnector = await getVerifiedContractAt(COMPOUND_CONNECTOR_ADDRESS, impersonatedKraken)
-    smartWallet.selfBatchCall
-    await (await ERC20.approve(cERC20.address, utils.parseUnits('1', 6))).wait()
-    await (await compConnector.deposit(
-      'USDC-A',
-      oneForUSDC,
-      0,
-      0
-    )).wait()
-
-
-    
-
-    // impersonatedKraken.depositRaw
-
-    // ERC20.tra
-    // smartWallet
-
-    debugger
-
-    // ethers.getv
-    // new Contract('', a)
-    // impersonatedKraken.
-    
-  });
   it("cannot execute changeDailyQuota tx when wallet is locked", async () => {
     const {
       smartWallet,
@@ -606,3 +500,5 @@ describe("eip4337 test", () => {
     });
   });
 });
+
+

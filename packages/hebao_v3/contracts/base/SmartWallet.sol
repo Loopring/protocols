@@ -464,7 +464,7 @@ abstract contract SmartWallet is
             interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
-    function spell(address _target, bytes memory _data) external returns (bytes memory response) {
+    function _spell(address _target, bytes memory _data) internal returns (bytes memory response) {
         require(_target != address(0), "target-invalid");
         assembly {
             let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
@@ -481,6 +481,24 @@ abstract contract SmartWallet is
                     returndatacopy(0x00, 0x00, size)
                     revert(0x00, size)
                 }
+        }
+    }
+
+    function spell(address _target, bytes memory _data) external returns (bytes memory response) {
+        return _spell(_target, _data);
+    }
+
+    
+    function cast(
+        address[] calldata _targets,
+        bytes[] calldata _datas
+    )
+    external
+    payable 
+    {   
+        uint256 _length = _targets.length;
+        for (uint i = 0; i < _length; i++) {
+            _spell(_targets[i], _datas[i]);
         }
     }
 }
