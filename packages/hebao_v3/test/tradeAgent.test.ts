@@ -17,7 +17,11 @@ import { getVerifiedContractAt } from "./helper/defi";
 
 const RICH_ADDRESS = "0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43";
 const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const UNI_ADDRESS = '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'
+const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+const cUSDT_ADDRESS = '0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9'
 const COMPOUND_CONNECTOR_ADDRESS = "0x1B1EACaa31abbE544117073f6F8F658a56A3aE25";
+const UniswapV2_CONNECTOR_ADDRESS = '0x1E5CE41BdB653734445FeC3553b61FebDdaFC43c'
 const oneForUSDC = utils.parseUnits('1', 6)
 const faucetToken = async (tokenAddress: string, myAddress: string, amount: string) => {
   const impersonatedRichAddr = await ethers.getImpersonatedSigner(RICH_ADDRESS);
@@ -39,6 +43,24 @@ const deposit = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNum
   ).data;
   return (await smartWallet.spell(COMPOUND_CONNECTOR_ADDRESS, data)).wait();
 }
+const withdrawData = async (tokenId: string,amount:BigNumber, getId: number, setId: number) => {
+  const compConnector = await getVerifiedContractAt(
+    COMPOUND_CONNECTOR_ADDRESS
+  );
+  return (
+    await compConnector.populateTransaction.withdraw(
+      tokenId,
+      amount,
+      getId,
+      setId
+    )
+  ).data;
+
+}
+const withdraw = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNumber, getId: number, setId: number) => {
+  const data = await withdrawData(tokenId,amount, getId, setId)
+  return (await smartWallet.spell(COMPOUND_CONNECTOR_ADDRESS, data)).wait();
+}
 const borrow = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNumber, getId: number, setId: number) => {
   const compConnector = await getVerifiedContractAt(
     COMPOUND_CONNECTOR_ADDRESS
@@ -53,11 +75,11 @@ const borrow = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNumb
   ).data;
   return (await smartWallet.spell(COMPOUND_CONNECTOR_ADDRESS, data)).wait();
 }
-const repay = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNumber, getId: number, setId: number) => {
+const repayData = async (tokenId: string,amount:BigNumber, getId: number, setId: number) => {
   const compConnector = await getVerifiedContractAt(
     COMPOUND_CONNECTOR_ADDRESS
   );
-  const data = (
+  return (
     await compConnector.populateTransaction.payback(
       tokenId,
       amount,
@@ -65,7 +87,27 @@ const repay = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNumbe
       setId
     )
   ).data;
+}
+const repay = async (smartWallet: SmartWalletV3, tokenId: string,amount:BigNumber, getId: number, setId: number) => {
+  const data = repayData(tokenId,amount, getId, setId)
   return (await smartWallet.spell(COMPOUND_CONNECTOR_ADDRESS, data)).wait();
+}
+const uniswapSellData = async (buyAddress: string, sellAddress: string,amount:BigNumber, getId: number, setId: number, unitAmount?: BigNumber) => {
+  const connector = await getVerifiedContractAt(
+    UniswapV2_CONNECTOR_ADDRESS
+  );
+  return (await connector.populateTransaction.sell(
+    buyAddress,
+    sellAddress,
+    amount,
+    unitAmount ? unitAmount : 0,
+    getId,
+    setId
+  )).data
+}
+const uniswapSell = async (smartWallet: SmartWalletV3, buyAddress: string, sellAddress: string,amount:BigNumber, getId: number, setId: number, unitAmount?: BigNumber) => {
+  const data = await uniswapSellData(buyAddress,sellAddress,amount,getId,setId,unitAmount)
+  return (await smartWallet.spell(UniswapV2_CONNECTOR_ADDRESS, data)).wait();
 }
 
 describe("trade agent test", () => {
@@ -145,6 +187,7 @@ describe("trade agent test", () => {
           0
         )
       ).data;
+
       await (await smartWallet.spell(COMPOUND_CONNECTOR_ADDRESS, data2)).wait();
       const balance3: BigNumber = await cERC20.balanceOf(smartWallet.address);
       expect(balance2.sub(balance3)).gt(0);
@@ -167,7 +210,6 @@ describe("trade agent test", () => {
     });
     it("repay", async () => {
       const {
-        compConnector,
         oneForUSDC,
         smartWallet,
       } = await depositAndPrepare();
@@ -217,26 +259,13 @@ describe("trade agent test", () => {
     const {
       smartWallet,
     } = await loadFixture(fixture);
-    const RICH_ADDRESS = '0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43'
-    const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-    const UNI_ADDRESS = '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'
     const impersonatedRichAddr = await ethers.getImpersonatedSigner(RICH_ADDRESS);
-    const UniswapV2_CONNECTOR_ADDRESS = '0x1E5CE41BdB653734445FeC3553b61FebDdaFC43c'
-    const oneForUSDC = utils.parseUnits('1', 6)
-    const connector = await getVerifiedContractAt(UniswapV2_CONNECTOR_ADDRESS)
-    const data = (await connector.populateTransaction.sell(
-      UNI_ADDRESS,
-      USDC_ADDRESS,
-      oneForUSDC,
-      0,
-      0,
-      0
-    )).data
     const USDC = new Contract(USDC_ADDRESS, ERC20__factory.abi, impersonatedRichAddr)
     const UNI = new Contract(UNI_ADDRESS, ERC20__factory.abi, impersonatedRichAddr)
     await (await USDC.transfer(smartWallet.address, oneForUSDC)).wait()
     const balance1: BigNumber = await UNI.balanceOf(smartWallet.address)
-    await (await smartWallet.spell(UniswapV2_CONNECTOR_ADDRESS, data)).wait()
+    await uniswapSell(smartWallet, UNI_ADDRESS, USDC_ADDRESS, oneForUSDC, 0, 0)
+    // await (await smartWallet.spell(UniswapV2_CONNECTOR_ADDRESS, data)).wait()
     const balance2: BigNumber = await UNI.balanceOf(smartWallet.address)
     expect(balance2.sub(balance1)).gt(0)
   });
@@ -311,115 +340,40 @@ describe("trade agent test", () => {
       await deposit(smartWallet, 'USDC-A', oneForUSDC, 0, 0)
       await borrow(smartWallet, 'USDT-A', oneForUSDC.div(2), 0, 0)
     }
-    it.only(('sell Collateral token for borrow token and repay'), async () => {
+    it(('sell Collateral token for borrow token and repay'), async () => {
       const {
         smartWallet,
       } = await loadFixture(fixture);
+      const getState = async () => {
+        const USDT = new Contract(USDT_ADDRESS, ERC20__factory.abi, smartWallet.provider)
+        const snapshot = await cUSDT.getAccountSnapshot(smartWallet.address);
+        const USDTBalance = await USDT.balanceOf(smartWallet.address);
+        return {
+          snapshot,
+          debt: snapshot[2],
+          USDTBalance: USDTBalance
+        }
+      }
+      const cUSDT = await getVerifiedContractAt(cUSDT_ADDRESS);
       await prepare(smartWallet)
-      // debugger
-
-      // const {
-      //   smartWallet,
-      // } = await loadFixture(fixture);
-  
-      // const WETH_ADDRESS = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-      // const WETH_CONNECTOR_ADDRESS = '0x22075fa719eFb02Ca3cF298AFa9C974B7465E5D3'
-      // const wETH = await getVerifiedContractAt(WETH_ADDRESS)
-      // const oneForETH = utils.parseEther('1')
-      // const balance1: BigNumber = await wETH.balanceOf(smartWallet.address)
-  
-      // // Wrap ETH with dsa connector
-      // const wETHConnector = await getVerifiedContractAt(WETH_CONNECTOR_ADDRESS)
-      // const data2 = (await wETHConnector.populateTransaction.deposit(oneForETH, 0, 0)).data
-      // await (await smartWallet.cast([WETH_CONNECTOR_ADDRESS], [data2])).wait()
-      // const balance2: BigNumber = await wETH.balanceOf(smartWallet.address)
-      // expect(balance2.sub(balance1)).eq(oneForETH)
-
+      const state2 = await getState()
+      const data1 = await withdrawData('USDC-A', oneForUSDC.div(100), 0, 1);
+      const data2 = await uniswapSellData(USDT_ADDRESS, USDC_ADDRESS, BigNumber.from('0'), 1, 2);
+      const data3 = await repayData('USDT-A', BigNumber.from('0'), 2, 0);
+      const castAddresses = [
+        COMPOUND_CONNECTOR_ADDRESS, 
+        UniswapV2_CONNECTOR_ADDRESS,
+        COMPOUND_CONNECTOR_ADDRESS
+      ]
+      const castDatas = [
+        data1, 
+        data2,
+        data3
+      ]
+      await (await smartWallet.cast(castAddresses, castDatas)).wait()
+      const state3 = await getState()
+      expect(state2.debt).gt(state3.debt)
     })
   })
 
-
-  // it("skrrr", async () => {
-
-  //   const {
-  //     smartWallet,
-  //     smartWalletOwner,
-  //     create2,
-  //     deployer,
-  //     sendUserOp,
-  //     entrypoint,
-  //   } = await loadFixture(fixture);
-  //   const addGuardian = await smartWallet.populateTransaction.addGuardian(
-  //     ethers.constants.AddressZero
-  //   );
-  //   const nonce = (await smartWallet.nonce()).add(1);
-  //   const signedUserOp = await getSignedUserOp(
-  //     addGuardian,
-  //     nonce,
-  //     smartWallet,
-  //     smartWalletOwner,
-  //     create2,
-  //     entrypoint
-  //   );
-  //   await sendUserOp(signedUserOp);
-  //   await expect(sendUserOp(signedUserOp))
-  //     .to.revertedWithCustomError(entrypoint, "FailedOp")
-  //     .withArgs(0, ethers.constants.AddressZero, "invalid nonce");
-
-  //   const RICH_ADDRESS = '0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43'
-  //   const ERC20_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-  //   const cERC20_ADDRESS = '0x39AA39c021dfbaE8faC545936693aC917d5E7563'
-  //   const impersonatedKraken = await ethers.getImpersonatedSigner(RICH_ADDRESS);
-  //   const cERC20 = await getVerifiedContractAt(cERC20_ADDRESS, impersonatedKraken);
-  //   // const ERC20 = await getVerifiedContractAt(ERC20_ADDRESS, impersonatedKraken);
-  //   const ERC20 = new Contract(ERC20_ADDRESS, ERC20__factory.abi, impersonatedKraken)
-  //   // debugger
-    
-  //   const b0 = await cERC20.balanceOf(impersonatedKraken.address)
-  //   const b01 = await ERC20.balanceOf(impersonatedKraken.address)
-  //   const r1 = await (await ERC20.approve(cERC20.address, utils.parseUnits('1', 6))).wait()
-  //   const r2 = await (await cERC20.mint(utils.parseUnits('1', 6))).wait()
-  //   const b1 = await cERC20.balanceOf(impersonatedKraken.address)
-  //   const b11 = await ERC20.balanceOf(impersonatedKraken.address)
-  //   await (await ERC20.transfer(smartWallet.address, utils.parseUnits('1', 6))).wait()
-  //   const a1 = await ERC20.allowance(smartWallet.address, cERC20.address)
-  //   const bb1 = await ERC20.balanceOf(smartWallet.address)
-  //   const bbb1 = await cERC20.balanceOf(smartWallet.address)
-  //   await (await smartWallet.approveToken(ERC20_ADDRESS, cERC20.address, utils.parseUnits('1', 6), false)).wait()
-  //   // const a = cERC20.mint(utils.parseUnits('1', 6))
-  //   const data = (await cERC20.populateTransaction.mint(utils.parseUnits('1', 6))).data
-  //   debugger
-  //   await (await smartWallet.callContract(cERC20.address, '0', data, false)).wait()
-  //   const a2 = await ERC20.allowance(smartWallet.address, cERC20.address)
-  //   const bb2 = await ERC20.balanceOf(smartWallet.address)
-  //   const bbb2 = await cERC20.balanceOf(smartWallet.address)
-  //   const oneForUSDC = utils.parseUnits('1', 6)
-
-    
-  //   const COMPOUND_CONNECTOR_ADDRESS = '0x1B1EACaa31abbE544117073f6F8F658a56A3aE25'
-  //   const compConnector = await getVerifiedContractAt(COMPOUND_CONNECTOR_ADDRESS, impersonatedKraken)
-  //   smartWallet.selfBatchCall
-  //   await (await ERC20.approve(cERC20.address, utils.parseUnits('1', 6))).wait()
-  //   await (await compConnector.deposit(
-  //     'USDC-A',
-  //     oneForUSDC,
-  //     0,
-  //     0
-  //   )).wait()
-
-
-    
-
-  //   // impersonatedKraken.depositRaw
-
-  //   // ERC20.tra
-  //   // smartWallet
-
-  //   debugger
-
-  //   // ethers.getv
-  //   // new Contract('', a)
-  //   // impersonatedKraken.
-    
-  // });
 });
