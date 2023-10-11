@@ -87,6 +87,7 @@ export function packUserOp(op: UserOperation, forSignature = true): string {
   } else {
     encoded = "0x" + encoded;
   }
+  // print encoded
   return encoded;
 }
 
@@ -95,11 +96,14 @@ export function getUserOpHash(
   entryPoint: string,
   chainId: number
 ): string {
+  // print op,chainId,entryPoint
   const userOpHash = keccak256(packUserOp(op, true));
+  // print userOpHash
   const enc = defaultAbiCoder.encode(
     ["bytes32", "address", "uint256"],
     [userOpHash, entryPoint, chainId]
   );
+  // print enc,keccak256(enc)
   return keccak256(enc);
 }
 
@@ -454,6 +458,7 @@ export async function fillAndMultiSignForRecover(
 
   const signatures = await Promise.all(
     smartWalletOrEOASigners.map((g) =>
+      // print message.domain, message.types, message.value, g.signer(私钥), _signTypedData结果
       g.signer._signTypedData(message.domain, message.types, message.value)
     )
   );
