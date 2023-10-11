@@ -20,7 +20,7 @@ import {
 import BN from "bn.js";
 
 describe("recover test", () => {
-  it("recover success", async () => {
+  it.only("recover success", async () => {
     const {
       entrypoint,
       smartWallet,

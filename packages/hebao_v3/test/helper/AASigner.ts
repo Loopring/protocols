@@ -88,6 +88,7 @@ export function packUserOp(op: UserOperation, forSignature = true): string {
     encoded = "0x" + encoded;
   }
   // print encoded
+  console.log('encoded', encoded)
   return encoded;
 }
 
@@ -97,13 +98,16 @@ export function getUserOpHash(
   chainId: number
 ): string {
   // print op,chainId,entryPoint
+  console.log('op,chainId,entryPoint',op,chainId,entryPoint)
   const userOpHash = keccak256(packUserOp(op, true));
   // print userOpHash
+  console.log('userOpHash', userOpHash)
   const enc = defaultAbiCoder.encode(
     ["bytes32", "address", "uint256"],
     [userOpHash, entryPoint, chainId]
   );
   // print enc,keccak256(enc)
+  console.log('enc,keccak256(enc)',enc,keccak256(enc))
   return keccak256(enc);
 }
 
@@ -457,10 +461,14 @@ export async function fillAndMultiSignForRecover(
   };
 
   const signatures = await Promise.all(
-    smartWalletOrEOASigners.map((g) =>
+    smartWalletOrEOASigners.map(async (g) => {
       // print message.domain, message.types, message.value, g.signer(私钥), _signTypedData结果
-      g.signer._signTypedData(message.domain, message.types, message.value)
-    )
+      const result = await g.signer._signTypedData(message.domain, message.types, message.value)
+      console.log('message.domain, message.types, message.value, message.value,g.signer.privateKey, result',
+        message.domain, message.types, message.value,g.signer.privateKey, result
+      )
+      return result
+    })
   );
   const [sortedSigners, sortedSignatures] = _.unzip(
     _.sortBy(
