@@ -7,6 +7,7 @@ dotenv.config();
 
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-etherscan-abi";
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -37,6 +38,11 @@ export default {
   networks: {
     hardhat: {
       accounts: loadTestAccounts(),
+      forking: {
+        url: 'https://mainnet.infura.io/v3/cbc2ebb75911420fa3ac63026264e70a',
+        blockNumber: 18317816,
+      },
+      chainId: 1
     },
 
     optimistic: {
@@ -51,6 +57,13 @@ export default {
       chainId: 1,
       url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
     },
+    // ethereum_fork: {
+    //   // chainId: 1,
+    //   // url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
+    //   forking: {
+    //     url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03'
+    //   } 
+    // },
 
     // HttpNetworkConfig
     ganache: {
