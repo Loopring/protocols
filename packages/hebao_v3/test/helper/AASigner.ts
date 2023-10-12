@@ -87,6 +87,8 @@ export function packUserOp(op: UserOperation, forSignature = true): string {
   } else {
     encoded = "0x" + encoded;
   }
+  // print encoded
+  console.log('encoded', encoded)
   return encoded;
 }
 
@@ -95,11 +97,17 @@ export function getUserOpHash(
   entryPoint: string,
   chainId: number
 ): string {
+  // print op,chainId,entryPoint
+  console.log('op,chainId,entryPoint',op,chainId,entryPoint)
   const userOpHash = keccak256(packUserOp(op, true));
+  // print userOpHash
+  console.log('userOpHash', userOpHash)
   const enc = defaultAbiCoder.encode(
     ["bytes32", "address", "uint256"],
     [userOpHash, entryPoint, chainId]
   );
+  // print enc,keccak256(enc)
+  console.log('enc,keccak256(enc)',enc,keccak256(enc))
   return keccak256(enc);
 }
 
@@ -453,9 +461,14 @@ export async function fillAndMultiSignForRecover(
   };
 
   const signatures = await Promise.all(
-    smartWalletOrEOASigners.map((g) =>
-      g.signer._signTypedData(message.domain, message.types, message.value)
-    )
+    smartWalletOrEOASigners.map(async (g) => {
+      // print message.domain, message.types, message.value, g.signer(私钥), _signTypedData结果
+      const result = await g.signer._signTypedData(message.domain, message.types, message.value)
+      console.log('message.domain, message.types, message.value, message.value,g.signer.privateKey, result',
+        message.domain, message.types, message.value,g.signer.privateKey, result
+      )
+      return result
+    })
   );
   const [sortedSigners, sortedSignatures] = _.unzip(
     _.sortBy(
@@ -479,10 +492,12 @@ export async function fillAndMultiSignForRecover(
   const ownerSignature = await smartWalletOwner.signMessage(
     arrayify(userOpHash)
   );
+  console.log('smartWalletOwner, userOpHash, ownerSignature', smartWalletOwner.privateKey, userOpHash, ownerSignature)
   const signature = ethers.utils.defaultAbiCoder.encode(
     ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
     [approval, ownerSignature]
   );
+  console.log('approval,ownerSignature,signature', approval, ownerSignature, signature)
   return {
     ...op2,
     signature,
@@ -1298,9 +1313,17 @@ export async function fillAndSign(
   const chainId = await provider!.getNetwork().then((net) => net.chainId);
   const message = arrayify(getUserOpHash(op2, entryPoint!.address, chainId));
 
+  console.log('op2', op2)
+  console.log('chainId, entryPoint!.address', chainId, entryPoint!.address)
+  console.log('message', message)
+
+  const signature = await signer.signMessage(message)
+  console.log('signer', signer.privateKey)
+  console.log('signature', signature)
+
   return {
     ...op2,
-    signature: await signer.signMessage(message),
+    signature: signature,
   };
 }
 

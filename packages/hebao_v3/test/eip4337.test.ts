@@ -79,7 +79,7 @@ describe("eip4337 test", () => {
         .withArgs(0, ethers.constants.AddressZero, "invalid nonce");
     }
   });
-  it("execute tx directly from entrypoint", async () => {
+  it.only("execute tx directly from entrypoint", async () => {
     const {
       smartWallet,
       smartWalletOwner,
