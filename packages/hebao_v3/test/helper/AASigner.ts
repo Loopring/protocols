@@ -492,10 +492,12 @@ export async function fillAndMultiSignForRecover(
   const ownerSignature = await smartWalletOwner.signMessage(
     arrayify(userOpHash)
   );
+  console.log('smartWalletOwner, userOpHash, ownerSignature', smartWalletOwner.privateKey, userOpHash, ownerSignature)
   const signature = ethers.utils.defaultAbiCoder.encode(
     ["tuple(address[] signers,bytes[] signatures,uint256 validUntil)", "bytes"],
     [approval, ownerSignature]
   );
+  console.log('approval,ownerSignature,signature', approval, ownerSignature, signature)
   return {
     ...op2,
     signature,
@@ -1311,9 +1313,17 @@ export async function fillAndSign(
   const chainId = await provider!.getNetwork().then((net) => net.chainId);
   const message = arrayify(getUserOpHash(op2, entryPoint!.address, chainId));
 
+  console.log('op2', op2)
+  console.log('chainId, entryPoint!.address', chainId, entryPoint!.address)
+  console.log('message', message)
+
+  const signature = await signer.signMessage(message)
+  console.log('signer', signer.privateKey)
+  console.log('signature', signature)
+
   return {
     ...op2,
-    signature: await signer.signMessage(message),
+    signature: signature,
   };
 }
 
