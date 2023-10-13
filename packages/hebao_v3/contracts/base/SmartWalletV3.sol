@@ -20,6 +20,7 @@ import "./libwallet/ApprovalLib.sol";
 import "./libwallet/ERC20Lib.sol";
 import "../lib/SignatureUtil.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./Automation.sol";
 
 contract SmartWalletV3 is SmartWallet {
     using SignatureUtil for bytes32;
@@ -30,8 +31,9 @@ contract SmartWalletV3 is SmartWallet {
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput
-    ) SmartWallet(_priceOracle, _blankOwner, entryPointInput) {}
+        IEntryPoint entryPointInput,
+        Automation automation
+    ) SmartWallet(_priceOracle, _blankOwner, entryPointInput, automation) {}
 
     function selfBatchCall(
         bytes[] calldata data
@@ -293,6 +295,10 @@ contract SmartWalletV3 is SmartWallet {
             if (hash.verifySignature(wallet.inheritor, userOp.signature)) {
                 return 0;
             }
+            return SIG_VALIDATION_FAILED;
+        }
+
+        if (methodId == SmartWallet.cast.selector) {
             return SIG_VALIDATION_FAILED;
         }
 

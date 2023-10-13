@@ -25,6 +25,7 @@ import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
+import "./Automation.sol";
 
 /// @title SmartWallet
 /// @dev Main smart wallet contract
@@ -51,6 +52,7 @@ abstract contract SmartWallet is
     PriceOracle public immutable priceOracle;
     address public immutable blankOwner;
     IEntryPoint internal immutable _entryPoint;
+    Automation internal immutable _automation;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -88,6 +90,12 @@ abstract contract SmartWallet is
         _;
     }
 
+    modifier onlyFromAutomationOrOwner() {
+        require(msg.sender == address(_automation) || msg.sender == wallet.owner, "account: not Automation");
+        wallet.touchLastActiveWhenRequired();
+        _;
+    }
+
     // Require the function call went through EntryPoint or wallet self or owner
     modifier onlyFromEntryPointOrWalletOrOwnerWhenUnlocked() {
         require(
@@ -113,10 +121,12 @@ abstract contract SmartWallet is
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput
+        IEntryPoint entryPointInput,
+        Automation automation
     ) {
         isImplementationContract = true;
         _entryPoint = entryPointInput;
+        _automation = automation;
 
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("LoopringWallet", "2.0.0", address(this))
@@ -493,6 +503,7 @@ abstract contract SmartWallet is
         address[] calldata _targets,
         bytes[] calldata _datas
     )
+    onlyFromAutomationOrOwner
     external
     payable 
     {   

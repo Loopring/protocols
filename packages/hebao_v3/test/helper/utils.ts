@@ -626,6 +626,7 @@ export async function deployWalletImpl(
   deployFactory: LoopringCreate2Deployer,
   entryPointAddr: string,
   blankOwner: string,
+  automationAddr: string,
   priceOracleAddr = ethers.constants.AddressZero
 ) {
   const ERC1271Lib = await deploySingle(deployFactory, "ERC1271Lib");
@@ -656,7 +657,7 @@ export async function deployWalletImpl(
   const smartWallet = await deploySingle(
     deployFactory,
     "SmartWalletV3",
-    [priceOracleAddr, blankOwner, entryPointAddr],
+    [priceOracleAddr, blankOwner, entryPointAddr, automationAddr],
     new Map([
       ["ERC1271Lib", ERC1271Lib.address],
       ["ERC20Lib", ERC20Lib.address],
