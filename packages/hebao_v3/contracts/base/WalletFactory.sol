@@ -32,10 +32,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
 
     ///////////////////////////////// opeartor ///////////////////
     modifier onlyOperator() {
-        require(
-            isOperator(msg.sender),
-            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
-        );
+        require(isOperator(msg.sender), "NOT A OPERATOR");
         _;
     }
 
