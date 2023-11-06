@@ -283,6 +283,26 @@ describe("trade agent test", () => {
     );
     return sendUserOp(signedUserOp);
   };
+  const unApproveExecutor = async (
+    loadedFixture: Fixture,
+    executor: string
+  ) => {
+    const { smartWallet, smartWalletOwner, create2, entrypoint, sendUserOp } =
+      loadedFixture;
+    const nonce = await smartWallet.nonce();
+    const populatedTx = await smartWallet.populateTransaction.unApproveExecutor(
+      executor
+    );
+    const signedUserOp = await getSignedUserOp(
+      populatedTx,
+      nonce.add(1),
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      entrypoint
+    );
+    return sendUserOp(signedUserOp);
+  };
 
   const getFirstUserOpErrMsg = async (
     txReceipt: TransactionReceipt,
@@ -292,6 +312,24 @@ describe("trade agent test", () => {
     return revertInfo[0]?.revertReason
       ? getErrorMessage(revertInfo[0].revertReason)
       : undefined;
+  };
+
+  const makeAnExecutor = async (
+    connectors: string[],
+    loadedFixture: Fixture
+  ) => {
+    const executor = Wallet.createRandom().connect(ethers.provider);
+    const txReceipt1 = await approveExecutor(
+      loadedFixture,
+      executor.address,
+      connectors
+    );
+    const msg = await getFirstUserOpErrMsg(
+      txReceipt1,
+      loadedFixture.entrypoint
+    );
+    expect(msg).undefined;
+    return executor;
   };
 
   it("mainnet fork test", async () => {
@@ -311,23 +349,55 @@ describe("trade agent test", () => {
     expect(b2.sub(b)).eq(ethers.utils.parseEther("1"));
   });
 
-  const makeAExecutor = async (
-    connectors: string[],
-    loadedFixture: Fixture
-  ) => {
-    const executor = Wallet.createRandom().connect(ethers.provider);
-    const txReceipt1 = await approveExecutor(
-      loadedFixture,
-      executor.address,
-      connectors
-    );
-    const msg = await getFirstUserOpErrMsg(
-      txReceipt1,
-      loadedFixture.entrypoint
-    );
-    expect(msg).undefined;
-    return executor;
-  };
+  describe.only("permission", () => {
+    
+    it("not approved executor should be rejected", async () => {
+      const loadedFixture = await loadFixture(fixture);
+      const wETHConnector = await getVerifiedContractAt(CONSTANTS.WETH_CONNECTOR_ADDRESS);
+      const data = (
+        await wETHConnector.populateTransaction.deposit(CONSTANTS.ONE_FOR_ETH, 0, 0)
+      ).data;
+      const executor = Wallet.createRandom();
+      expect(userOpCast(
+        CONSTANTS.WETH_CONNECTOR_ADDRESS,
+        data,
+        executor,
+        loadedFixture
+      )).to.revertedWithCustomError(loadedFixture.entrypoint, "SignatureValidationFailed");;
+    });
+    it("approved executor should be not rejected", async () => {
+      const loadedFixture = await loadFixture(fixture);
+      const wETHConnector = await getVerifiedContractAt(CONSTANTS.WETH_CONNECTOR_ADDRESS);
+      const data = (
+        await wETHConnector.populateTransaction.deposit(CONSTANTS.ONE_FOR_ETH, 0, 0)
+      ).data;
+      const executor = await makeAnExecutor([CONSTANTS.WETH_CONNECTOR_ADDRESS], loadedFixture);
+      const txReceipt = await userOpCast(
+        CONSTANTS.WETH_CONNECTOR_ADDRESS,
+        data,
+        executor,
+        loadedFixture
+      )
+      const msg = await getFirstUserOpErrMsg(txReceipt, loadedFixture.entrypoint) 
+      expect(msg).undefined
+    });
+    it("unapproved executor should be rejected", async () => {
+      const loadedFixture = await loadFixture(fixture);
+      const wETHConnector = await getVerifiedContractAt(CONSTANTS.WETH_CONNECTOR_ADDRESS);
+      const data = (
+        await wETHConnector.populateTransaction.deposit(CONSTANTS.ONE_FOR_ETH, 0, 0)
+      ).data;
+      const executor = await makeAnExecutor([CONSTANTS.WETH_CONNECTOR_ADDRESS], loadedFixture);
+      await unApproveExecutor(loadedFixture, executor.address)
+      expect(userOpCast(
+        CONSTANTS.WETH_CONNECTOR_ADDRESS,
+        data,
+        executor,
+        loadedFixture
+      )).to.revertedWithCustomError(loadedFixture.entrypoint, "SignatureValidationFailed");;
+    });
+
+  });
 
   describe("Compound connector", () => {
     const depositAndPrepare = async () => {
@@ -339,7 +409,7 @@ describe("trade agent test", () => {
       );
       const cERC20_ADDRESS = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
       const cERC20 = await getVerifiedContractAt(cERC20_ADDRESS);
-      const executor = await makeAExecutor(
+      const executor = await makeAnExecutor(
         [CONSTANTS.COMPOUND_CONNECTOR_ADDRESS],
         loadedFixture
       );
@@ -448,7 +518,7 @@ describe("trade agent test", () => {
     const { smartWallet, entrypoint } =
       loadedFixture;
     const wETH = await getVerifiedContractAt(CONSTANTS.WETH_ADDRESS);
-    const executor = await makeAExecutor(
+    const executor = await makeAnExecutor(
       [CONSTANTS.WETH_CONNECTOR_ADDRESS],
       loadedFixture
     );
@@ -475,7 +545,7 @@ describe("trade agent test", () => {
     const { smartWallet, entrypoint } = loadedFixture;
     const UNI = new Contract(CONSTANTS.UNI_ADDRESS, ERC20__factory.abi, ethers.provider);
     const balance1: BigNumber = await UNI.balanceOf(smartWallet.address);
-    const executor = await makeAExecutor(
+    const executor = await makeAnExecutor(
       [CONSTANTS.UniswapV2_CONNECTOR_ADDRESS],
       loadedFixture
     );
@@ -531,7 +601,7 @@ describe("trade agent test", () => {
       ).data;
       await faucetToken(CONSTANTS.UNI_ADDRESS, smartWallet.address, "1");
       // await faucetToken(UNI_ADDRESS, smartWallet.address, '1')
-      const executor = await makeAExecutor(
+      const executor = await makeAnExecutor(
         [CONSTANTS.UniswapV2_CONNECTOR_ADDRESS],
         loadedFixture
       );
@@ -576,7 +646,7 @@ describe("trade agent test", () => {
         };
       };
       const cUSDT = await getVerifiedContractAt(CONSTANTS.cUSDT_ADDRESS);
-      const executor = await makeAExecutor(
+      const executor = await makeAnExecutor(
         [CONSTANTS.COMPOUND_CONNECTOR_ADDRESS, CONSTANTS.UniswapV2_CONNECTOR_ADDRESS],
         loadedFixture
       );
@@ -619,14 +689,4 @@ describe("trade agent test", () => {
     });
   });
 
-  // it.only(('Do not add this test'), async () => {
-  //   const {
-  //     smartWallet,
-  //     automation
-  //   } = await loadFixture(fixture);
-  //   const randomAcc = ethers.Wallet.createRandom().connect(smartWallet.provider)
-  //   const impersonatedAutomationExecutor = await ethers.getImpersonatedSigner('0x735503b71b5bb1cd2ab4b9cd9f00613e9b07fb3b');
-  //   const con = await getVerifiedContractAt('0xa9abc45a98ac6f5bd44944babb425ef480abd3fe', impersonatedAutomationExecutor)
-  //   debugger
-  // })
 });
