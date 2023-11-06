@@ -201,7 +201,7 @@ function getPaymasterHash(userOp: UserOperation) {
 export async function getPaymasterData(
   userOp: UserOperation,
   payMasterAddress: string,
-  paymasterOwner: Wallet,
+  paymasterOwner: Signer,
   token: string,
   valueOfEth: BigNumberish
 ) {
@@ -218,7 +218,7 @@ export async function getPaymasterData(
 
 export async function getPaymasterAndData(
   payMasterAddress: string,
-  paymasterOwner: Wallet,
+  paymasterOwner: Signer,
   hash: string,
   usdcToken: string,
   valueOfEth: BigNumberish,
@@ -729,7 +729,7 @@ export async function createSmartWallet(
 export interface PaymasterOption {
   paymaster: VerifyingPaymaster;
   payToken: Contract;
-  paymasterOwner: Wallet;
+  paymasterOwner: Signer;
   valueOfEth: BigNumberish;
   validUntil: BigNumberish;
 }

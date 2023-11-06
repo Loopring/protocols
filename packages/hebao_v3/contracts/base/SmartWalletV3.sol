@@ -48,7 +48,7 @@ contract SmartWalletV3 is SmartWallet {
     function _validateAndUpdateNonce(
         UserOperation calldata userOp
     ) internal override {
-        if (userOp.nonce == 0 && isDataless(userOp)) {
+        if (userOp.nonce == 0 && ApprovalLib.isDataless(userOp)) {
             return;
         }
         require(
@@ -95,25 +95,4 @@ contract SmartWalletV3 is SmartWallet {
         return ApprovalLib._validateSignature(wallet, userOp, userOpHash,DOMAIN_SEPARATOR);
     }
 
-    function isDataless(
-        UserOperation calldata userOp
-    ) internal pure returns (bool) {
-        // We don't require any data in the meta tx when
-        // - the meta-tx has no nonce
-        // - the meta-tx needs to be successful
-        // - a function is called that requires a majority of guardians and fails when replayed
-        bytes4 methodId = userOp.callData.toBytes4(0);
-        return (methodId == SmartWallet.changeMasterCopy.selector ||
-            methodId == SmartWallet.addGuardianWA.selector ||
-            methodId == SmartWallet.removeGuardianWA.selector ||
-            methodId == SmartWallet.resetGuardiansWA.selector ||
-            methodId == SmartWallet.unlock.selector ||
-            methodId == SmartWallet.changeDailyQuotaWA.selector ||
-            methodId == SmartWallet.recover.selector ||
-            methodId == SmartWallet.addToWhitelistWA.selector ||
-            methodId == SmartWallet.transferTokenWA.selector ||
-            methodId == SmartWallet.callContractWA.selector ||
-            methodId == SmartWallet.approveTokenWA.selector ||
-            methodId == SmartWallet.approveThenCallContractWA.selector);
-    }
 }

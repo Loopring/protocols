@@ -9,6 +9,8 @@ import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-etherscan-abi";
 import "hardhat-contract-sizer";
+import "hardhat-change-network";
+
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -58,13 +60,6 @@ export default {
       chainId: 1,
       url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
     },
-    // ethereum_fork: {
-    //   // chainId: 1,
-    //   // url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
-    //   forking: {
-    //     url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03'
-    //   } 
-    // },
 
     // HttpNetworkConfig
     ganache: {

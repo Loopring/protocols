@@ -78,7 +78,6 @@ library ApprovalLib {
         return SIG_VALIDATION_FAILED;
     }
 
-
     function _validateSignature(
         Wallet storage wallet,
         UserOperation calldata userOp,
@@ -92,8 +91,6 @@ library ApprovalLib {
             bytes memory data = userOp.callData[4:];
             (Approval memory approval, bytes memory ownerSignature) = abi
                 .decode(userOp.signature, (Approval, bytes));
-            // check owner signature first
-            // check signature of new owner when recover
             if (
                 methodId != SmartWallet.recover.selector &&
                 !hash.verifySignature(wallet.owner, ownerSignature)

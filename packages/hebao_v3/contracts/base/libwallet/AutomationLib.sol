@@ -30,7 +30,6 @@ library AutomationLib {
         }
     }
     
-    // todo: optimize this function
     function _arrayInArray(address[] memory array1, address[] memory array2) pure private returns (bool) {
       for (uint i = 0; i < array1.length; i++){
         bool found = false;
@@ -47,27 +46,39 @@ library AutomationLib {
       return true;
     }
 
-    function _verifyPermission(Wallet storage wallet, address executor, address[] memory _targets) internal view returns (bool) {
+    function _verifyPermission(Wallet storage wallet, address executor, address[] memory targets) internal view returns (bool) {
       AutomationPermission memory permissionInfo = wallet.automationPermission[executor];
       if (permissionInfo.permitted) {
-        return _arrayInArray(_targets, permissionInfo.connectorWhitelist);
+        for (uint i = 0; i < targets.length; i++){
+          bool found = false;
+          for (uint j = 0; j < permissionInfo.connectorWhitelist.length; j++) {
+            if (permissionInfo.connectorWhitelist[j] == targets[i]){
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            return false;
+          }
+        }
+        return true;
       } else {
         return false;
       }
     }
 
-    function spell(address _target, bytes memory _data) internal returns (bytes memory response) {
-      return _spell(_target, _data);
+    function spell(address target, bytes memory data) internal returns (bytes memory response) {
+      return _spell(target, data);
     }
 
     function cast(
-      address[] calldata _targets,
-      bytes[] calldata _datas)
+      address[] calldata targets,
+      bytes[] calldata datas)
       internal
     {
-      uint256 _length = _targets.length;
+      uint256 _length = targets.length;
       for (uint i = 0; i < _length; i++) {
-          _spell(_targets[i], _datas[i]);
+          _spell(targets[i], datas[i]);
       }
     }
     

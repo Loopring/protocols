@@ -46,6 +46,7 @@
     "@chainlink/contracts": "^0.6.1",
     "@openzeppelin/contracts": "^4.8.1",
     "glob": "^7.1.6",
+    "hardhat-change-network": "^0.0.7",
     "hardhat-etherscan-abi": "^0.3.0",
     "lodash": "^4.17.21",
     "truffle-contract-size": "^2.0.1",
