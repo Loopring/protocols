@@ -37,6 +37,12 @@ struct Guardian {
     uint8 status;
     uint64 timestamp; // validSince if status = ADD; validUntil if adding = REMOVE;
 }
+struct AutomationPermission {
+    // address[] tokens;
+    address[] connectorWhitelist;
+    bool permitted;
+    // bool permitted;
+}
 
 struct Wallet {
     address owner;
@@ -54,4 +60,9 @@ struct Wallet {
     Quota quota;
     // whitelisted address => effective timestamp
     mapping(address => uint) whitelisted;
+    mapping(address => AutomationPermission) automationPermission;
 }
+
+// tokens: address[];
+  // exexcutor: address;
+  // dappWhitelist: address[];

@@ -8,6 +8,7 @@
   "scripts": {
     "clean": "rimraf ./cache && rimraf ./artifacts",
     "compile": "yarn clean && hardhat compile",
+    "size": "hardhat size-contracts",
     "compile2": "hardhat compile",
     "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
     "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
@@ -32,6 +33,7 @@
     "dotenv": "^8.0.0",
     "ethers": "^5.0.24",
     "hardhat": "^2.0.7",
+    "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.4",
     "mocha": "^8.2.1",
     "prettier": "^2.4.1",
@@ -48,6 +50,7 @@
     "glob": "^7.1.6",
     "hardhat-etherscan-abi": "^0.3.0",
     "lodash": "^4.17.21",
+    "truffle-contract-size": "^2.0.1",
     "web3-eth-abi": "^1.3.4"
   },
   "workspaces": [

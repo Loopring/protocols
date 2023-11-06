@@ -8,24 +8,24 @@ import "./DelayedImplementationManager.sol";
 import "./SmartWallet.sol";
 
 contract Automation {
-  address internal immutable executor = 0x1111111111111111111111111111111111111111;
+//   address internal immutable executor = 0x1111111111111111111111111111111111111111;
   
-  modifier onlyExecutor() {
-    require(msg.sender == executor, "automation: not executor");
-    _;
-  }
+//   modifier onlyExecutor() {
+//     require(msg.sender == executor, "automation: not executor");
+//     _;
+//   }
 
   constructor() {}
 
-  function cast(
-    SmartWallet smartWallet,
-    address[] calldata _targets,
-    bytes[] calldata _datas)
-    onlyExecutor
-    external
-    payable 
-    {
-      return smartWallet.cast(_targets, _datas);
-    }
+//   function cast(
+//     SmartWallet smartWallet,
+//     address[] calldata _targets,
+//     bytes[] calldata _datas)
+//     onlyExecutor
+//     external
+//     payable 
+//     {
+//       return smartWallet.cast(_targets, _datas);
+//     }
     
 }

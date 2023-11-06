@@ -25,7 +25,10 @@ import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
+import "./libwallet/AutomationLib.sol";
 import "./Automation.sol";
+import "hardhat/console.sol";
+
 
 /// @title SmartWallet
 /// @dev Main smart wallet contract
@@ -47,6 +50,7 @@ abstract contract SmartWallet is
     using QuotaLib for Wallet;
     using RecoverLib for Wallet;
     using UpgradeLib for Wallet;
+    using AutomationLib for Wallet;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
@@ -474,7 +478,7 @@ abstract contract SmartWallet is
             interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
-    function _spell(address _target, bytes memory _data) internal returns (bytes memory response) {
+    function _spell(address _target, bytes memory _data) public returns (bytes memory response) {
         require(_target != address(0), "target-invalid");
         assembly {
             let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
@@ -494,18 +498,31 @@ abstract contract SmartWallet is
         }
     }
 
-    function spell(address _target, bytes memory _data) external returns (bytes memory response) {
+    function executorPermission(address executor) public view returns (AutomationPermission memory) {
+        return AutomationLib.executorPermission(wallet, executor);
+    }
+
+    function approveExecutor(address executor, address[] calldata connectors) onlyFromEntryPoint external {
+        return AutomationLib.approveExecutor(wallet, executor, connectors);
+    }
+
+    function unApproveExecutor(address executor) onlyFromEntryPoint external {
+        return AutomationLib.unApproveExecutor(wallet, executor);
+    }
+
+
+    function spell(address, address _target, bytes calldata _data) onlyFromEntryPoint public returns (bytes memory response) {
         return _spell(_target, _data);
     }
 
     
     function cast(
+        address,
         address[] calldata _targets,
         bytes[] calldata _datas
     )
-    onlyFromAutomationOrOwner
-    external
-    payable 
+    onlyFromEntryPoint
+    public
     {   
         uint256 _length = _targets.length;
         for (uint i = 0; i < _length; i++) {

@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./ApprovalLib.sol";
 import "./WalletData.sol";
+import "../../lib/EIP712.sol";
 
 /// @title UpgradeLib
 /// @author Brecht Devos - <brecht@loopring.org>

@@ -201,7 +201,7 @@ function getPaymasterHash(userOp: UserOperation) {
 export async function getPaymasterData(
   userOp: UserOperation,
   payMasterAddress: string,
-  paymasterOwner: Signer,
+  paymasterOwner: Wallet,
   token: string,
   valueOfEth: BigNumberish
 ) {
@@ -218,13 +218,15 @@ export async function getPaymasterData(
 
 export async function getPaymasterAndData(
   payMasterAddress: string,
-  paymasterOwner: Signer,
+  paymasterOwner: Wallet,
   hash: string,
   usdcToken: string,
   valueOfEth: BigNumberish,
   validUntil: BigNumberish
 ) {
+  // paymasterOwner.
   const sig = await paymasterOwner.signMessage(arrayify(hash));
+  
   const paymasterCalldata = ethers.utils.defaultAbiCoder.encode(
     ["address", "uint256", "uint256", "bytes"],
     [usdcToken, valueOfEth, validUntil, sig]
@@ -653,6 +655,26 @@ export async function deployWalletImpl(
     undefined,
     new Map([["GuardianLib", GuardianLib.address]])
   );
+  const AutomationLib = await deploySingle(
+    deployFactory,
+    "AutomationLib"
+  );
+  const ApprovalLib = await deploySingle(
+    deployFactory,
+    "ApprovalLib",
+    undefined,
+    new Map([
+      ["ERC20Lib", ERC20Lib.address],
+      ["GuardianLib", GuardianLib.address],
+      ["LockLib", LockLib.address],
+      ["RecoverLib", RecoverLib.address],
+      ["UpgradeLib", UpgradeLib.address],
+      ["WhitelistLib", WhitelistLib.address],
+      ["AutomationLib", AutomationLib.address],
+    ])
+  );
+
+  // AutomationLib.attach
 
   const smartWallet = await deploySingle(
     deployFactory,
@@ -668,8 +690,10 @@ export async function deployWalletImpl(
       ["RecoverLib", RecoverLib.address],
       ["UpgradeLib", UpgradeLib.address],
       ["WhitelistLib", WhitelistLib.address],
+      ["AutomationLib", AutomationLib.address],
+      ["ApprovalLib", ApprovalLib.address],
     ])
-  );
+  )
   return smartWallet;
 }
 
@@ -716,7 +740,7 @@ export async function createSmartWallet(
 export interface PaymasterOption {
   paymaster: VerifyingPaymaster;
   payToken: Contract;
-  paymasterOwner: Signer;
+  paymasterOwner: Wallet;
   valueOfEth: BigNumberish;
   validUntil: BigNumberish;
 }

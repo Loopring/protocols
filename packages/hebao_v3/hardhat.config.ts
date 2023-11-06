@@ -1,5 +1,7 @@
 import { HardhatUserConfig } from "hardhat/types";
 import { task } from "hardhat/config";
+("hardhat-contract-sizer");
+
 
 import * as dotenv from "dotenv";
 
@@ -8,6 +10,7 @@ dotenv.config();
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-etherscan-abi";
+import "hardhat-contract-sizer";
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -40,7 +43,7 @@ export default {
       accounts: loadTestAccounts(),
       forking: {
         url: 'https://mainnet.infura.io/v3/cbc2ebb75911420fa3ac63026264e70a',
-        blockNumber: 18317816,
+        blockNumber: 18482580,
       },
       chainId: 1
     },
@@ -136,7 +139,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1,
           },
         },
       },
@@ -161,4 +164,11 @@ export default {
     // Your API key for Etherscan
     apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI",
   },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+    only: [':SmartWalletV3$'],
+  }
 };
