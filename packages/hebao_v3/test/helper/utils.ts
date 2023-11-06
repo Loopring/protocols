@@ -224,9 +224,7 @@ export async function getPaymasterAndData(
   valueOfEth: BigNumberish,
   validUntil: BigNumberish
 ) {
-  // paymasterOwner.
   const sig = await paymasterOwner.signMessage(arrayify(hash));
-  
   const paymasterCalldata = ethers.utils.defaultAbiCoder.encode(
     ["address", "uint256", "uint256", "bytes"],
     [usdcToken, valueOfEth, validUntil, sig]
@@ -628,7 +626,6 @@ export async function deployWalletImpl(
   deployFactory: LoopringCreate2Deployer,
   entryPointAddr: string,
   blankOwner: string,
-  automationAddr: string,
   priceOracleAddr = ethers.constants.AddressZero
 ) {
   const ERC1271Lib = await deploySingle(deployFactory, "ERC1271Lib");
@@ -655,10 +652,6 @@ export async function deployWalletImpl(
     undefined,
     new Map([["GuardianLib", GuardianLib.address]])
   );
-  const AutomationLib = await deploySingle(
-    deployFactory,
-    "AutomationLib"
-  );
   const ApprovalLib = await deploySingle(
     deployFactory,
     "ApprovalLib",
@@ -669,17 +662,14 @@ export async function deployWalletImpl(
       ["LockLib", LockLib.address],
       ["RecoverLib", RecoverLib.address],
       ["UpgradeLib", UpgradeLib.address],
-      ["WhitelistLib", WhitelistLib.address],
-      ["AutomationLib", AutomationLib.address],
+      ["WhitelistLib", WhitelistLib.address]
     ])
   );
-
-  // AutomationLib.attach
 
   const smartWallet = await deploySingle(
     deployFactory,
     "SmartWalletV3",
-    [priceOracleAddr, blankOwner, entryPointAddr, automationAddr],
+    [priceOracleAddr, blankOwner, entryPointAddr],
     new Map([
       ["ERC1271Lib", ERC1271Lib.address],
       ["ERC20Lib", ERC20Lib.address],
@@ -690,7 +680,6 @@ export async function deployWalletImpl(
       ["RecoverLib", RecoverLib.address],
       ["UpgradeLib", UpgradeLib.address],
       ["WhitelistLib", WhitelistLib.address],
-      ["AutomationLib", AutomationLib.address],
       ["ApprovalLib", ApprovalLib.address],
     ])
   )

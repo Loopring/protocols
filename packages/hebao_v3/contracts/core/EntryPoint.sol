@@ -15,7 +15,6 @@ import "../iface/IAggregatedAccount.sol";
 import "../iface/IEntryPoint.sol";
 import "./StakeManager.sol";
 import "./SenderCreator.sol";
-import "hardhat/console.sol";
 
 contract EntryPoint is IEntryPoint, StakeManager {
     using UserOperationLib for UserOperation;
@@ -269,24 +268,10 @@ contract EntryPoint is IEntryPoint, StakeManager {
 
         IPaymaster.PostOpMode mode = IPaymaster.PostOpMode.opSucceeded;
         if (callData.length > 0) {
-            
-
             (bool success, bytes memory result) = address(mUserOp.sender).call{
                 gas: callGasLimit
             }(callData);
-        //     (string memory tokenId,
-        // uint256 amt,
-        // uint256 getId,
-        // uint256 setId) = abi.decode(callData[4:], (string,
-        // uint256,
-        // uint256,
-        // uint256));
-
-        // console.log("start");
-        // console.log(tokenId, amt, getId, setId);
-            
             if (!success) {
-                console.log("!success");
                 if (result.length > 0) {
                     emit UserOperationRevertReason(
                         opInfo.userOpHash,

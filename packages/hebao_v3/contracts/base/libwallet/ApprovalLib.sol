@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-// import "../../lib/QuotaLib.sol";
 import "./GuardianLib.sol";
 import "./WalletData.sol";
 import "../../iface/UserOperation.sol";
@@ -18,7 +17,6 @@ import "../../base/libwallet/LockLib.sol";
 import "../../base/libwallet/UpgradeLib.sol";
 import "../../base/libwallet/RecoverLib.sol";
 import "../../base/libwallet/AutomationLib.sol";
-import "hardhat/console.sol";
 
 /// @title ApprovalLib
 /// @dev Utility library for better handling of signed wallet requests.
@@ -321,10 +319,6 @@ library ApprovalLib {
         if (methodId == SmartWallet.cast.selector) {
             (address executor, address[] memory connectors, bytes[] memory datas) = abi
                 .decode(userOp.callData[4:], (address, address[], bytes[]));
-            console.log("executor", executor);
-            console.log("connectors", connectors.length);
-            console.log("connectors", connectors[0]);
-            console.log("connectors", connectors[1]);
             if (hash.verifySignature(executor, userOp.signature) && AutomationLib._verifyPermission(wallet, executor, connectors)
             ) {
                 return 0;

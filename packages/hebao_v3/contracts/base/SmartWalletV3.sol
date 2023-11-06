@@ -21,7 +21,6 @@ import "./libwallet/ERC20Lib.sol";
 import "./libwallet/AutomationLib.sol";
 import "../lib/SignatureUtil.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./Automation.sol";
 
 contract SmartWalletV3 is SmartWallet {
     using SignatureUtil for bytes32;
@@ -33,9 +32,8 @@ contract SmartWalletV3 is SmartWallet {
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput,
-        Automation automation
-    ) SmartWallet(_priceOracle, _blankOwner, entryPointInput, automation) {}
+        IEntryPoint entryPointInput
+    ) SmartWallet(_priceOracle, _blankOwner, entryPointInput) {}
 
     function selfBatchCall(
         bytes[] calldata data

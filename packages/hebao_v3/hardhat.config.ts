@@ -1,7 +1,5 @@
 import { HardhatUserConfig } from "hardhat/types";
 import { task } from "hardhat/config";
-("hardhat-contract-sizer");
-
 
 import * as dotenv from "dotenv";
 
@@ -139,7 +137,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1,
+            runs: 200,
           },
         },
       },

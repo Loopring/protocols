@@ -26,8 +26,6 @@ import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
 import "./libwallet/AutomationLib.sol";
-import "./Automation.sol";
-import "hardhat/console.sol";
 
 
 /// @title SmartWallet
@@ -56,7 +54,6 @@ abstract contract SmartWallet is
     PriceOracle public immutable priceOracle;
     address public immutable blankOwner;
     IEntryPoint internal immutable _entryPoint;
-    Automation internal immutable _automation;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -94,12 +91,6 @@ abstract contract SmartWallet is
         _;
     }
 
-    modifier onlyFromAutomationOrOwner() {
-        require(msg.sender == address(_automation) || msg.sender == wallet.owner, "account: not Automation");
-        wallet.touchLastActiveWhenRequired();
-        _;
-    }
-
     // Require the function call went through EntryPoint or wallet self or owner
     modifier onlyFromEntryPointOrWalletOrOwnerWhenUnlocked() {
         require(
@@ -125,12 +116,10 @@ abstract contract SmartWallet is
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput,
-        Automation automation
+        IEntryPoint entryPointInput
     ) {
         isImplementationContract = true;
         _entryPoint = entryPointInput;
-        _automation = automation;
 
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("LoopringWallet", "2.0.0", address(this))
@@ -478,26 +467,6 @@ abstract contract SmartWallet is
             interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
-    function _spell(address _target, bytes memory _data) public returns (bytes memory response) {
-        require(_target != address(0), "target-invalid");
-        assembly {
-            let succeeded := delegatecall(gas(), _target, add(_data, 0x20), mload(_data), 0, 0)
-            let size := returndatasize()
-            
-            response := mload(0x40)
-            mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-            mstore(response, size)
-            returndatacopy(add(response, 0x20), 0, size)
-
-            switch iszero(succeeded)
-                case 1 {
-                    // throw if delegatecall failed
-                    returndatacopy(0x00, 0x00, size)
-                    revert(0x00, size)
-                }
-        }
-    }
-
     function executorPermission(address executor) public view returns (AutomationPermission memory) {
         return AutomationLib.executorPermission(wallet, executor);
     }
@@ -510,9 +479,8 @@ abstract contract SmartWallet is
         return AutomationLib.unApproveExecutor(wallet, executor);
     }
 
-
     function spell(address, address _target, bytes calldata _data) onlyFromEntryPoint public returns (bytes memory response) {
-        return _spell(_target, _data);
+        return AutomationLib.spell(_target, _data);
     }
 
     
@@ -524,9 +492,6 @@ abstract contract SmartWallet is
     onlyFromEntryPoint
     public
     {   
-        uint256 _length = _targets.length;
-        for (uint i = 0; i < _length; i++) {
-            _spell(_targets[i], _datas[i]);
-        }
+        AutomationLib.cast(_targets, _datas);
     }
 }

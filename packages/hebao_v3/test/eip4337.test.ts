@@ -1,6 +1,6 @@
-import { ethers, network } from "hardhat";
-import { assert, expect, util } from "chai";
-import { BigNumberish, Wallet, PopulatedTransaction, getDefaultProvider, Contract, utils, BigNumber } from "ethers";
+import { ethers } from "hardhat";
+import { expect } from "chai";
+import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
 import {
   loadFixture,
   setBalance,
@@ -24,13 +24,8 @@ import {
   EntryPoint,
   LoopringCreate2Deployer,
   SmartWalletV3__factory,
-  ERC20Basic__factory,
-  ERC20__factory,
 } from "../typechain-types";
 import BN from "bn.js";
-import { AddressZero } from "./core/testutils";
-import { getVerifiedContractAt } from "./helper/defi";
-import { erc20 } from "../typechain-types/@openzeppelin/contracts/token";
 
 describe("eip4337 test", () => {
   // execute tx from entrypoint instead of `execute` or `executebatch`
@@ -107,15 +102,11 @@ describe("eip4337 test", () => {
     );
     await sendUserOp(signedUserOp);
 
-    // debugger
-
     // replay it using the same nonce
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
       .withArgs(0, ethers.constants.AddressZero, "invalid nonce");
-    
   });
-  
   it("cannot execute changeDailyQuota tx when wallet is locked", async () => {
     const {
       smartWallet,
@@ -500,5 +491,3 @@ describe("eip4337 test", () => {
     });
   });
 });
-
-

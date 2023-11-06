@@ -9,15 +9,6 @@ import "../../iface/UserOperation.sol";
 
 library AutomationLib {
   using InheritanceLib for Wallet;
-
-    function approveExecutor(Wallet storage wallet, address executor, address[] calldata connectors) public {
-      wallet.automationPermission[executor] = AutomationPermission(connectors, true);
-    }
-
-    function unApproveExecutor(Wallet storage wallet, address executor) public {
-      address[] memory empty;
-      wallet.automationPermission[executor] = AutomationPermission(empty, false);
-    }
     
     function _spell(address _target, bytes memory _data) private returns (bytes memory response) {
         require(_target != address(0), "target-invalid");
@@ -38,8 +29,6 @@ library AutomationLib {
                 }
         }
     }
-
-    
     
     // todo: optimize this function
     function _arrayInArray(address[] memory array1, address[] memory array2) pure private returns (bool) {
@@ -57,8 +46,8 @@ library AutomationLib {
       }
       return true;
     }
-    function _verifyPermission(Wallet storage wallet, address executor, address[] memory _targets) public view returns (bool) {
-      // return true;
+
+    function _verifyPermission(Wallet storage wallet, address executor, address[] memory _targets) internal view returns (bool) {
       AutomationPermission memory permissionInfo = wallet.automationPermission[executor];
       if (permissionInfo.permitted) {
         return _arrayInArray(_targets, permissionInfo.connectorWhitelist);
@@ -66,34 +55,32 @@ library AutomationLib {
         return false;
       }
     }
-    
-    modifier onlyFromEntryPoint(Wallet storage wallet) {
-        require(msg.sender == wallet.owner, "account: not EntryPoint");
-        wallet.touchLastActiveWhenRequired();
-        _;
-    }
 
-    function spell(Wallet storage wallet, address _target, bytes memory _data) internal returns (bytes memory response) {
-      // address[] memory targets = new address[](1);
-      // targets[0] = _target;
-      // require(_verifyPermission(wallet, msg.sender, targets), "todo: permission denied"); 
+    function spell(address _target, bytes memory _data) internal returns (bytes memory response) {
       return _spell(_target, _data);
     }
 
     function cast(
       address[] calldata _targets,
       bytes[] calldata _datas)
-      public
+      internal
     {
-      // wallet.
-      // require(_verifyPermission(wallet, msg.sender, _targets), "todo: permission denied"); 
       uint256 _length = _targets.length;
       for (uint i = 0; i < _length; i++) {
           _spell(_targets[i], _datas[i]);
       }
     }
-    function executorPermission(Wallet storage wallet, address executor) public view returns (AutomationPermission memory) {
+    
+    function executorPermission(Wallet storage wallet, address executor) internal view returns (AutomationPermission memory) {
         return wallet.automationPermission[executor];
     }
-    
+
+    function approveExecutor(Wallet storage wallet, address executor, address[] calldata connectors) internal {
+      wallet.automationPermission[executor] = AutomationPermission(connectors, true);
+    }
+
+    function unApproveExecutor(Wallet storage wallet, address executor) internal {
+      address[] memory empty;
+      wallet.automationPermission[executor] = AutomationPermission(empty, false);
+    }
 }

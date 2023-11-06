@@ -15,7 +15,6 @@ import {
   LoopringCreate2Deployer,
   USDT__factory,
   DelayedImplementationManager__factory,
-  Automation__factory,
 } from "../../typechain-types";
 import { localUserOpSender, fillAndSign, SendUserOp } from "./AASigner";
 
@@ -39,11 +38,6 @@ export async function fixture() {
     (await deploySingle(create2, "EntryPoint")).address,
     deployer
   );
-  
-  const automation = Automation__factory.connect(
-    (await deploySingle(create2, "Automation")).address,
-    deployer
-  );
   // const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
   // const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
 
@@ -56,8 +50,7 @@ export async function fixture() {
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
-    blankOwner.address,
-    automation.address
+    blankOwner.address
   );
 
   const implStorage = DelayedImplementationManager__factory.connect(
@@ -171,6 +164,5 @@ export async function fixture() {
     walletFactory,
     implStorage,
     testTarget,
-    automation
   };
 }
