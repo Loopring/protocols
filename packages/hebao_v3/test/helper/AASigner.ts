@@ -44,6 +44,12 @@ import {
 
 export const HashZero = ethers.constants.HashZero;
 
+export interface Approval {
+  signers: string[];
+  signatures: string[];
+  validUntil: number;
+}
+
 export interface UserOperation {
   sender: typ.address;
   nonce: typ.uint256;

@@ -97,14 +97,6 @@ contract SmartWalletV3 is SmartWallet {
             bytes memory data = userOp.callData[4:];
             (Approval memory approval, bytes memory ownerSignature) = abi
                 .decode(userOp.signature, (Approval, bytes));
-            // check owner signature first
-            // check signature of new owner when recover
-            if (
-                methodId != SmartWallet.recover.selector &&
-                !hash.verifySignature(wallet.owner, ownerSignature)
-            ) {
-                return SIG_VALIDATION_FAILED;
-            }
 
             // then check guardians signature for actions
             if (methodId == SmartWallet.addGuardianWA.selector) {
@@ -113,12 +105,11 @@ contract SmartWalletV3 is SmartWallet {
                     DOMAIN_SEPARATOR,
                     approval.validUntil
                 );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        GuardianLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    GuardianLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.removeGuardianWA.selector) {
@@ -128,12 +119,11 @@ contract SmartWalletV3 is SmartWallet {
                         DOMAIN_SEPARATOR,
                         approval.validUntil
                     );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        GuardianLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    GuardianLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.resetGuardiansWA.selector) {
@@ -143,12 +133,11 @@ contract SmartWalletV3 is SmartWallet {
                         DOMAIN_SEPARATOR,
                         approval.validUntil
                     );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        GuardianLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    GuardianLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.changeDailyQuotaWA.selector) {
@@ -158,12 +147,11 @@ contract SmartWalletV3 is SmartWallet {
                         DOMAIN_SEPARATOR,
                         approval.validUntil
                     );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        QuotaLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    QuotaLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.addToWhitelistWA.selector) {
@@ -173,12 +161,11 @@ contract SmartWalletV3 is SmartWallet {
                         DOMAIN_SEPARATOR,
                         approval.validUntil
                     );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        WhitelistLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    WhitelistLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.transferTokenWA.selector) {
@@ -187,12 +174,11 @@ contract SmartWalletV3 is SmartWallet {
                     DOMAIN_SEPARATOR,
                     approval.validUntil
                 );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        ERC20Lib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    ERC20Lib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.callContractWA.selector) {
@@ -201,12 +187,11 @@ contract SmartWalletV3 is SmartWallet {
                     DOMAIN_SEPARATOR,
                     approval.validUntil
                 );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        ERC20Lib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    ERC20Lib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.approveTokenWA.selector) {
@@ -215,12 +200,11 @@ contract SmartWalletV3 is SmartWallet {
                     DOMAIN_SEPARATOR,
                     approval.validUntil
                 );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        ERC20Lib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    ERC20Lib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.approveThenCallContractWA.selector) {
@@ -230,12 +214,11 @@ contract SmartWalletV3 is SmartWallet {
                         DOMAIN_SEPARATOR,
                         approval.validUntil
                     );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        ERC20Lib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    ERC20Lib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.unlock.selector) {
@@ -244,12 +227,11 @@ contract SmartWalletV3 is SmartWallet {
                     DOMAIN_SEPARATOR,
                     approval.validUntil
                 );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        LockLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    LockLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.changeMasterCopy.selector) {
@@ -259,12 +241,11 @@ contract SmartWalletV3 is SmartWallet {
                         DOMAIN_SEPARATOR,
                         approval.validUntil
                     );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        UpgradeLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    UpgradeLib.sigRequirement,
+                    approval
+                );
             }
 
             if (methodId == SmartWallet.recover.selector) {
@@ -272,21 +253,31 @@ contract SmartWalletV3 is SmartWallet {
                     data,
                     (address, address[])
                 );
-                if (!hash.verifySignature(newOwner, ownerSignature))
-                    return SIG_VALIDATION_FAILED;
                 bytes32 approvedHash = RecoverLib.encodeApprovalForRecover(
                     newOwner,
                     newGuardians,
                     DOMAIN_SEPARATOR,
                     approval.validUntil
                 );
-                return
-                    wallet.verifyApproval(
-                        approvedHash,
-                        RecoverLib.sigRequirement,
-                        approval
-                    );
+                sigTimeRange = wallet.verifyApproval(
+                    approvedHash,
+                    RecoverLib.sigRequirement,
+                    approval
+                );
+                if (!hash.verifySignature(newOwner, ownerSignature))
+                    return SIG_VALIDATION_FAILED;
             }
+
+            // check owner signature first
+            // check signature of new owner when recover
+            if (
+                methodId != SmartWallet.recover.selector &&
+                !hash.verifySignature(wallet.owner, ownerSignature)
+            ) {
+                return SIG_VALIDATION_FAILED;
+            }
+
+            return sigTimeRange;
         }
 
         if (methodId == SmartWallet.inherit.selector) {
