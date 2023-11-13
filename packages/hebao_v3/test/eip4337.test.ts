@@ -13,6 +13,7 @@ import {
   sortSignersAndSignatures,
   getCurrentQuota,
   createSmartWallet,
+  simulationResultCatch,
 } from "./helper/utils";
 import {
   fillAndSign,
@@ -71,6 +72,9 @@ describe("eip4337 test", () => {
       create2,
       entrypoint
     );
+    await entrypoint.callStatic
+      .simulateValidation(signedUserOp)
+      .catch(simulationResultCatch);
     await sendUserOp(signedUserOp);
   });
 
