@@ -54,4 +54,5 @@ struct Wallet {
     Quota quota;
     // whitelisted address => effective timestamp
     mapping(address => uint) whitelisted;
+    address entryPoint;
 }
