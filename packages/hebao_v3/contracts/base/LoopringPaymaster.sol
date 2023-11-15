@@ -46,10 +46,15 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
 
     constructor(
         IEntryPoint _entryPoint,
-        address _verifyingSigner
+        address paymasterOwner
     ) BasePaymaster(_entryPoint) {
+        _transferOwnership(paymasterOwner);
         _grantRole(DEFAULT_ADMIN_ROLE, owner());
-        _grantRole(SIGNER, _verifyingSigner);
+        _grantRole(SIGNER, paymasterOwner);
+    }
+
+    receive() external payable {
+        revert("eth rejected");
     }
 
     mapping(address => uint256) public senderNonce;
@@ -59,24 +64,6 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         uint48 validUntil;
         // uint48 validAfter;
         uint256 valueOfEth;
-    }
-
-    function pack(
-        UserOperation calldata userOp
-    ) internal pure returns (bytes memory ret) {
-        // lighter signature scheme. must match UserOp.ts#packUserOp
-        bytes calldata pnd = userOp.paymasterAndData;
-        // copy directly the userOp from calldata up to (but not including) the paymasterAndData.
-        // this encoding depends on the ABI encoding of calldata, but is much lighter to copy
-        // than referencing each field separately.
-        assembly {
-            let ofs := userOp
-            let len := sub(sub(pnd.offset, ofs), 32)
-            ret := mload(0x40)
-            mstore(0x40, add(ret, add(len, 32)))
-            mstore(ret, len)
-            calldatacopy(add(ret, 32), ofs, len)
-        }
     }
 
     /**
@@ -91,14 +78,21 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         bytes32 dataHash
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-
         return
             keccak256(
                 abi.encode(
-                    pack(userOp),
+                    userOp.getSender(),
+                    userOp.nonce,
+                    keccak256(userOp.initCode),
+                    keccak256(userOp.callData),
+                    userOp.callGasLimit,
+                    userOp.verificationGasLimit,
+                    userOp.preVerificationGas,
+                    userOp.maxFeePerGas,
+                    userOp.maxPriorityFeePerGas,
+                    // data of paymaster
                     block.chainid,
                     address(this),
-                    senderNonce[userOp.getSender()],
                     dataHash
                 )
             );
@@ -119,7 +113,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         address sender = userOp.getSender();
         (
             DecodedData memory decoded_data,
-            bytes calldata signature
+            bytes memory signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         require(
             unlockBlock[sender] == 0,
@@ -198,13 +192,17 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     )
         public
         pure
-        returns (DecodedData memory decodedData, bytes calldata signature)
+        returns (DecodedData memory decodedData, bytes memory signature)
     {
-        decodedData = abi.decode(
-            paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],
-            (DecodedData)
+        (
+            decodedData.token,
+            decodedData.validUntil,
+            decodedData.valueOfEth,
+            signature
+        ) = abi.decode(
+            paymasterAndData[VALID_TIMESTAMP_OFFSET:],
+            (address, uint48, uint256, bytes)
         );
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 
     /**

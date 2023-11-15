@@ -279,8 +279,9 @@ describe("guardian test", () => {
       );
 
       const recipt = await sendUserOp(signedUserOp);
-      const eventData = recipt.events[0].data;
-      const eventTopics = recipt.events[0].topics;
+      // skip BeforeExecutionEvent
+      const eventData = recipt.events[1].data;
+      const eventTopics = recipt.events[1].topics;
       const addEvent = guardianInterfact.decodeEventLog(
         "GuardianAdded(address,uint256)",
         eventData,

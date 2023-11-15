@@ -71,7 +71,7 @@ describe("DepositPaymaster", () => {
 
       await expect(
         account.execute(paymaster.address, 0, paymasterWithdraw)
-      ).to.revertedWith("DepositPaymaster: must unlockTokenDeposit");
+      ).to.rejectedWith("DepositPaymaster: must unlockTokenDeposit");
     });
     it("should fail to withdraw within the same block ", async () => {
       const paymasterUnlock = await paymaster.populateTransaction
@@ -86,7 +86,7 @@ describe("DepositPaymaster", () => {
           [paymaster.address, paymaster.address],
           [paymasterUnlock, paymasterWithdraw]
         )
-      ).to.be.revertedWith("DepositPaymaster: must unlockTokenDeposit");
+      ).to.be.rejectedWith("DepositPaymaster: must unlockTokenDeposit");
     });
     it("should succeed to withdraw after unlock", async () => {
       const paymasterUnlock = await paymaster.populateTransaction
@@ -125,7 +125,7 @@ describe("DepositPaymaster", () => {
       );
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
-      ).to.be.revertedWith("paymasterAndData must specify token");
+      ).to.be.rejectedWith("paymasterAndData must specify token");
     });
 
     it("should fail with wrong token", async () => {
@@ -142,7 +142,7 @@ describe("DepositPaymaster", () => {
       );
       await expect(
         entryPoint.callStatic.simulateValidation(userOp, { gasPrice })
-      ).to.be.revertedWith("DepositPaymaster: unsupported token");
+      ).to.be.rejectedWith("DepositPaymaster: unsupported token");
     });
 
     it("should reject if no deposit", async () => {
@@ -159,7 +159,7 @@ describe("DepositPaymaster", () => {
       );
       await expect(
         entryPoint.callStatic.simulateValidation(userOp, { gasPrice })
-      ).to.be.revertedWith("DepositPaymaster: deposit too low");
+      ).to.be.rejectedWith("DepositPaymaster: deposit too low");
     });
 
     it("should reject if deposit is not locked", async () => {
@@ -183,7 +183,7 @@ describe("DepositPaymaster", () => {
       );
       await expect(
         entryPoint.callStatic.simulateValidation(userOp, { gasPrice })
-      ).to.be.revertedWith("not locked");
+      ).to.be.rejectedWith("not locked");
     });
 
     it("succeed with valid deposit", async () => {

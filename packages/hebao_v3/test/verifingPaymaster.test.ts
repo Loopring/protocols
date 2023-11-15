@@ -71,7 +71,7 @@ describe("verifingPaymaster test", () => {
       )
     )
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, paymaster.address, "Paymaster: not enough allowance");
+      .withArgs(0, "AA33 reverted: Paymaster: not enough allowance");
     // approve before transfertoken
     await sendTx(
       [approveToken],
@@ -175,7 +175,7 @@ describe("verifingPaymaster test", () => {
       )
     )
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, paymaster.address, "AA32 paymaster expired or not due");
+      .withArgs(0, "AA32 paymaster expired or not due");
     paymasterOption.validUntil = 3600 + block.timestamp;
     await expect(
       sendTx(
@@ -331,7 +331,7 @@ describe("verifingPaymaster test", () => {
         )
       )
         .to.revertedWithCustomError(entrypoint, "FailedOp")
-        .withArgs(0, paymaster.address, "DepositPaymaster: deposit not locked");
+        .withArgs(0, "AA33 reverted: DepositPaymaster: deposit not locked");
 
       // only locked fund can be used for gas fee. so lock it again here.
       // note that cannot lock fund using paymaster service

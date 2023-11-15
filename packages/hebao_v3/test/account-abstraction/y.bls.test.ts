@@ -60,7 +60,8 @@ describe("bls account", function () {
     ).deploy();
     blsAgg = await new BLSSignatureAggregator__factory(
       {
-        "contracts/samples/bls/lib/BLSOpen.sol:BLSOpen": BLSOpenLib.address,
+        "contracts/account-abstraction/samples/bls/lib/BLSOpen.sol:BLSOpen":
+          BLSOpenLib.address,
       },
       ethers.provider.getSigner()
     ).deploy();

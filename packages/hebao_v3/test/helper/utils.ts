@@ -14,7 +14,7 @@ import {
   WalletFactory__factory,
   WalletProxy__factory,
   LoopringCreate2Deployer,
-  VerifyingPaymaster,
+  LoopringPaymaster,
 } from "../../typechain-types";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { Deferrable, resolveProperties } from "@ethersproject/properties";
@@ -713,7 +713,7 @@ export async function createSmartWallet(
 }
 
 export interface PaymasterOption {
-  paymaster: VerifyingPaymaster;
+  paymaster: LoopringPaymaster;
   payToken: Contract;
   paymasterOwner: Signer;
   valueOfEth: BigNumberish;
@@ -761,9 +761,9 @@ export async function sendTx(
     const payToken = paymasterOption.payToken;
     const valueOfEth = paymasterOption.valueOfEth;
     const validUntil = paymasterOption.validUntil;
-    const packedData = ethers.utils.solidityPack(
-      ["address", "uint256", "uint256"],
-      [payToken.address, valueOfEth, validUntil]
+    const packedData = ethers.utils.solidityKeccak256(
+      ["address", "uint48", "uint256"],
+      [payToken.address, validUntil, valueOfEth]
     );
 
     const hash = await paymaster.getHash(signedUserOp, packedData);

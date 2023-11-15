@@ -138,7 +138,7 @@ describe("Gnosis Proxy", function () {
 
     await expect(
       anotherEntryPoint.handleOps([op], beneficiary)
-    ).to.revertedWith("account: not from entrypoint");
+    ).to.rejectedWith("account: not from entrypoint");
   });
 
   it("should fail on invalid userop", async function () {
@@ -153,7 +153,7 @@ describe("Gnosis Proxy", function () {
       entryPoint,
       "getNonce"
     );
-    await expect(entryPoint.handleOps([op], beneficiary)).to.revertedWith(
+    await expect(entryPoint.handleOps([op], beneficiary)).to.rejectedWith(
       "AA25 invalid account nonce"
     );
 
@@ -169,9 +169,9 @@ describe("Gnosis Proxy", function () {
     );
     // invalidate the signature
     op.callGasLimit = 1;
-    await expect(entryPoint.handleOps([op], beneficiary)).to.revertedWith(
-      'FailedOp(0, "AA24 signature error")'
-    );
+    await expect(entryPoint.handleOps([op], beneficiary))
+      .to.revertedWithCustomError(entryPoint, "FailedOp")
+      .withArgs(0, "AA24 signature error");
   });
 
   it("should exec", async function () {
@@ -271,7 +271,7 @@ describe("Gnosis Proxy", function () {
     expect(await isDeployed(counterfactualAddress));
 
     const newCode = await ethers.provider.getCode(counterfactualAddress);
-    expect(newCode.length).eq(324);
+    expect(newCode.length).eq(248);
   });
 
   it("another op after creation", async function () {

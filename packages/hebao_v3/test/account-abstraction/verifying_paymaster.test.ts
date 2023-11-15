@@ -96,7 +96,7 @@ describe("EntryPoint with VerifyingPaymaster", function () {
       );
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
-      ).to.be.revertedWith("invalid signature length in paymasterAndData");
+      ).to.be.rejectedWith("invalid signature length in paymasterAndData");
     });
 
     it("should reject on invalid signature", async () => {
@@ -117,7 +117,7 @@ describe("EntryPoint with VerifyingPaymaster", function () {
       );
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
-      ).to.be.revertedWith("ECDSA: invalid signature");
+      ).to.be.rejectedWith("ECDSA: invalid signature");
     });
 
     describe("with wrong signature", () => {
@@ -152,7 +152,7 @@ describe("EntryPoint with VerifyingPaymaster", function () {
       it("handleOp revert on signature failure in handleOps", async () => {
         await expect(
           entryPoint.estimateGas.handleOps([wrongSigUserOp], beneficiaryAddress)
-        ).to.revertedWith("AA34 signature error");
+        ).to.rejectedWith("AA34 signature error");
       });
     });
 

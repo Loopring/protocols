@@ -142,12 +142,12 @@ describe("EntryPoint with paymaster", function () {
           entryPoint.callStatic.handleOps([op], beneficiaryAddress, {
             gasLimit: 1e7,
           })
-        ).to.revertedWith("AA33 reverted: TokenPaymaster: no balance");
+        ).to.rejectedWith("AA33 reverted: TokenPaymaster: no balance");
         await expect(
           entryPoint.handleOps([op], beneficiaryAddress, {
             gasLimit: 1e7,
           })
-        ).to.revertedWith("AA33 reverted: TokenPaymaster: no balance");
+        ).to.rejectedWith("AA33 reverted: TokenPaymaster: no balance");
       });
     });
 
@@ -176,7 +176,7 @@ describe("EntryPoint with paymaster", function () {
               gasLimit: 1e7,
             })
             .catch(rethrow())
-        ).to.revertedWith("TokenPaymaster: no balance");
+        ).to.rejectedWith("TokenPaymaster: no balance");
       });
 
       it("should succeed to create account with tokens", async () => {
@@ -240,7 +240,7 @@ describe("EntryPoint with paymaster", function () {
               gasLimit: 1e7,
             })
             .catch(rethrow())
-        ).to.revertedWith("sender already constructed");
+        ).to.rejectedWith("sender already constructed");
       });
 
       it("batched request should each pay for its share", async function () {
@@ -381,7 +381,7 @@ describe("EntryPoint with paymaster", function () {
 
           await expect(
             entryPoint.handleOps([userOp1, userOp2], beneficiaryAddress)
-          ).to.be.revertedWith("transfer amount exceeds balance");
+          ).to.be.rejectedWith("transfer amount exceeds balance");
         });
       });
     });
@@ -389,7 +389,7 @@ describe("EntryPoint with paymaster", function () {
       const withdrawAddress = createAddress();
       it("should fail to withdraw before unstake", async function () {
         this.timeout(20000);
-        await expect(paymaster.withdrawStake(withdrawAddress)).to.revertedWith(
+        await expect(paymaster.withdrawStake(withdrawAddress)).to.rejectedWith(
           "must call unlockStake"
         );
       });

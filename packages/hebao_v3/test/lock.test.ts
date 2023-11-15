@@ -71,7 +71,7 @@ describe("lock test", () => {
     // replay test
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "HASH_EXIST");
+      .withArgs(0, "AA23 reverted: HASH_EXIST");
   });
   describe("lock test", () => {
     it("lock success from guardian", async () => {

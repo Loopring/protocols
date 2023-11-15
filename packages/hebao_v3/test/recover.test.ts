@@ -72,12 +72,12 @@ describe("recover test", () => {
     // no fee charged if validation failed
     await expect(sendUserOp({ ...signedUserOp, signature: "0x" }))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "AA23 reverted (or OOG)");
+      .withArgs(0, "AA23 reverted (or OOG)");
 
     // replay test
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "HASH_EXIST");
+      .withArgs(0, "AA23 reverted: HASH_EXIST");
     expect(await smartWallet.getDeposit()).to.eq(postDeposit);
   });
 
