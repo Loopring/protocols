@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
-import "../iface/IEntryPoint.sol";
-import "../core/BaseAccount.sol";
+import "../account-abstraction/interfaces/IEntryPoint.sol";
+import "../account-abstraction/core/BaseAccount.sol";
 
 import "../lib/EIP712.sol";
 import "../lib/ERC20.sol";
@@ -106,11 +106,6 @@ abstract contract SmartWallet is
             return IEntryPoint(wallet.entryPoint);
         }
         return _entryPoint;
-    }
-
-    /// @inheritdoc BaseAccount
-    function nonce() public view virtual override returns (uint256) {
-        return wallet.nonce;
     }
 
     constructor(

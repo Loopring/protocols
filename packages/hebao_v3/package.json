@@ -16,6 +16,8 @@
     "test": "yarn clean && hardhat test"
   },
   "devDependencies": {
+    "@gnosis.pm/safe-contracts": "^1.3.0",
+    "@thehubbleproject/bls": "^0.5.1",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^1.0.1",

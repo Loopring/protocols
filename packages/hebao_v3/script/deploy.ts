@@ -24,8 +24,8 @@ import {
   WalletFactory,
   WalletFactory__factory,
   WalletProxy__factory,
-  VerifyingPaymaster,
-  VerifyingPaymaster__factory,
+  LoopringPaymaster,
+  LoopringPaymaster__factory,
   LoopringCreate2Deployer,
 } from "../typechain-types";
 import {
@@ -235,11 +235,10 @@ async function deployAll() {
     entrypoint = await deploySingle(create2, "EntryPoint");
   }
 
-  const paymaster = await deploySingle(
-    create2,
-    "contracts/base/VerifyingPaymaster.sol:VerifyingPaymaster",
-    [entrypoint.address, paymasterOwner.address]
-  );
+  const paymaster = await deploySingle(create2, "LoopringPaymaster", [
+    entrypoint.address,
+    paymasterOwner.address,
+  ]);
 
   const smartWalletImpl = await deployWalletImpl(
     create2,
@@ -314,7 +313,7 @@ async function deployAll() {
   const usdtToken = await deploySingle(create2, "USDT");
   return {
     entrypoint: EntryPoint__factory.connect(entrypoint.address, deployer),
-    paymaster: VerifyingPaymaster__factory.connect(
+    paymaster: LoopringPaymaster__factory.connect(
       paymaster.address,
       paymasterOwner
     ),
@@ -331,7 +330,7 @@ async function deployAll() {
 }
 
 interface PaymasterOption {
-  paymaster: VerifyingPaymaster;
+  paymaster: LoopringPaymaster;
   payToken: Contract;
   paymasterOwner: Signer;
   valueOfEth: BigNumberish;
@@ -374,9 +373,9 @@ async function generateSignedUserOp(
 
     const hash = await paymaster.getHash(
       signedUserOp,
-      ethers.utils.solidityPack(
-        ["address", "uint256", "uint256"],
-        [payToken.address, valueOfEth, validUntil]
+      ethers.utils.solidityKeccak256(
+        ["address", "uint48", "uint256"],
+        [payToken.address, validUntil, valueOfEth]
       )
     );
 
@@ -611,7 +610,7 @@ async function testExecuteTx() {
   } = await deployAll();
   //////////////////////////////////////////
   // usdt token transfer test
-  const nonce = await smartWallet.populateTransaction.nonce();
+  const nonce = await smartWallet.populateTransaction.getNonce();
   const signedUserOp = await generateSignedUserOp(
     [nonce],
     smartWallet,
@@ -631,10 +630,10 @@ async function testExecuteTx() {
 
 async function main() {
   // await testExecuteTx();
-  await deployAll();
+  // await deployAll();
   // uncomment below to get gascost info of some sample txs on chain
   // await testExecuteTxWithEth();
-  // await testExecuteTxWithUSDCPaymaster();
+  await testExecuteTxWithUSDCPaymaster();
 }
 
 main()

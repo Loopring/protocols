@@ -229,10 +229,10 @@ export async function fillUserOp(
       throw new Error("must have entryPoint to autofill nonce");
     const c = new Contract(
       op.sender!,
-      ["function nonce() view returns(address)"],
+      ["function getNonce() view returns(uint256)"],
       provider
     );
-    op1.nonce = await c.nonce();
+    op1.nonce = await c.getNonce();
   }
   if (op1.callGasLimit == null && op.callData != null) {
     if (provider == null)

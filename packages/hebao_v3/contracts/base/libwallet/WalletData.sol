@@ -14,7 +14,7 @@ enum SigRequirement {
 struct Approval {
     address[] signers;
     bytes[] signatures;
-    uint256 validUntil;
+    uint48 validUntil;
 }
 
 // Optimized to fit into 64 bytes (2 slots)

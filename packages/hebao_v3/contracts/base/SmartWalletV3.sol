@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "../thirdparty/BytesUtil.sol";
 import {SmartWallet} from "./SmartWallet.sol";
-import "../core/BaseAccount.sol";
-import "../iface/IEntryPoint.sol";
+import "../account-abstraction/core/BaseAccount.sol";
+import "../account-abstraction/interfaces/IEntryPoint.sol";
 import "../iface/PriceOracle.sol";
 import "./libwallet/WalletData.sol";
 import "./libwallet/GuardianLib.sol";
@@ -42,22 +42,6 @@ contract SmartWalletV3 is SmartWallet {
         }
     }
 
-    /// implement template method of BaseAccount
-    function _validateAndUpdateNonce(
-        UserOperation calldata userOp
-    ) internal override {
-        if (userOp.nonce == 0 && isDataless(userOp)) {
-            return;
-        }
-        require(
-            userOp.nonce > wallet.nonce &&
-                (userOp.nonce >> 128) <= block.number,
-            "invalid nonce"
-        );
-        // update nonce
-        wallet.nonce = userOp.nonce;
-    }
-
     /**
      * check current account deposit in the entryPoint
      */
@@ -87,8 +71,7 @@ contract SmartWalletV3 is SmartWallet {
     /// implement template method of BaseAccount
     function _validateSignature(
         UserOperation calldata userOp,
-        bytes32 userOpHash,
-        address
+        bytes32 userOpHash
     ) internal virtual override returns (uint256 sigTimeRange) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         if (userOp.callData.length >= 4) {

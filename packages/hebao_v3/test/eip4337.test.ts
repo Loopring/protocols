@@ -63,7 +63,7 @@ describe("eip4337 test", () => {
       entrypoint,
     } = await loadFixture(fixture);
     const tx = { to: smartWallet.address, data: "0x" };
-    const nonce = (await smartWallet.nonce()).add(1);
+    const nonce = await smartWallet.getNonce();
     const signedUserOp = await getSignedUserOp(
       tx,
       nonce,
@@ -90,7 +90,7 @@ describe("eip4337 test", () => {
     const changeDailyQuota =
       await smartWallet.populateTransaction.changeDailyQuota(100);
     // too small or too larger, neither of them is valid
-    const invalidNonces = [0, ethers.constants.MaxUint256];
+    const invalidNonces = [ethers.constants.MaxUint256];
     for (let i = 0; i < invalidNonces.length; ++i) {
       const signedUserOp = await getSignedUserOp(
         changeDailyQuota,
@@ -100,9 +100,9 @@ describe("eip4337 test", () => {
         create2,
         entrypoint
       );
-      await expect(sendUserOp(signedUserOp))
+      await expect(entrypoint.callStatic.simulateValidation(signedUserOp))
         .to.revertedWithCustomError(entrypoint, "FailedOp")
-        .withArgs(0, ethers.constants.AddressZero, "invalid nonce");
+        .withArgs(0, "AA25 invalid account nonce");
     }
   });
   it("execute tx directly from entrypoint", async () => {
@@ -117,7 +117,7 @@ describe("eip4337 test", () => {
     const addGuardian = await smartWallet.populateTransaction.addGuardian(
       ethers.constants.AddressZero
     );
-    const nonce = (await smartWallet.nonce()).add(1);
+    const nonce = await smartWallet.getNonce();
     const signedUserOp = await getSignedUserOp(
       addGuardian,
       nonce,
@@ -131,7 +131,7 @@ describe("eip4337 test", () => {
     // replay it using the same nonce
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "invalid nonce");
+      .withArgs(0, "AA25 invalid account nonce");
   });
   it("cannot execute changeDailyQuota tx when wallet is locked", async () => {
     const {
@@ -145,10 +145,10 @@ describe("eip4337 test", () => {
     await smartWallet.lock();
     const changeDailyQuota =
       await smartWallet.populateTransaction.changeDailyQuota(100);
-    const nonce = await smartWallet.nonce();
+    const nonce = await smartWallet.getNonce();
     const signedUserOp = await getSignedUserOp(
       changeDailyQuota,
-      nonce.add(1),
+      nonce,
       smartWallet,
       smartWalletOwner,
       create2,
@@ -156,7 +156,7 @@ describe("eip4337 test", () => {
     );
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "wallet is locked");
+      .withArgs(0, "AA23 reverted: wallet is locked");
   });
 
   it("check valid until", async () => {
@@ -194,7 +194,7 @@ describe("eip4337 test", () => {
 
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "AA22 expired or not due");
+      .withArgs(0, "AA22 expired or not due");
     const block = await ethers.provider.getBlock("latest");
     validUntil = block.timestamp + 3600;
 
@@ -214,7 +214,9 @@ describe("eip4337 test", () => {
       entrypoint,
       validUntil
     );
-    await expect(sendUserOp(signedUserOp2)).not.to.reverted;
+    await entrypoint.callStatic
+      .simulateValidation(signedUserOp2)
+      .catch(simulationResultCatch);
   });
   it("transfer token from wallet owner", async () => {
     const {
@@ -436,7 +438,7 @@ describe("eip4337 test", () => {
     // replay it when using the same aproval hash
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, ethers.constants.AddressZero, "HASH_EXIST");
+      .withArgs(0, "AA23 reverted: HASH_EXIST");
   });
 
   describe("read methods", () => {

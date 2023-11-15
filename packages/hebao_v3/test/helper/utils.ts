@@ -226,8 +226,8 @@ export async function getPaymasterAndData(
 ) {
   const sig = await paymasterOwner.signMessage(arrayify(hash));
   const paymasterCalldata = ethers.utils.defaultAbiCoder.encode(
-    ["address", "uint256", "uint256", "bytes"],
-    [usdcToken, valueOfEth, validUntil, sig]
+    ["address", "uint48", "uint256", "bytes"],
+    [usdcToken, validUntil, valueOfEth, sig]
   );
   return hexConcat([payMasterAddress, paymasterCalldata]);
 }
@@ -494,12 +494,12 @@ export async function createBatchTransactions(
     maxPriorityFeePerGas = gasPrice;
     maxFeePerGas = gasPrice;
   }
-  const nonce = await wallet.nonce();
+  const nonce = await wallet.getNonce();
   return {
     sender: wallet.address,
     initCode,
     // increase nonce
-    nonce: nonce.add(1),
+    nonce,
     callData: execFromEntryPoint.data!,
     callGasLimit: execFromEntryPoint.gasLimit,
     maxPriorityFeePerGas,
