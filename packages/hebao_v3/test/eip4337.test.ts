@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
+import { BigNumber, BigNumberish, Wallet, PopulatedTransaction } from "ethers";
 import {
   loadFixture,
   setBalance,
@@ -414,10 +414,13 @@ describe("eip4337 test", () => {
     await smartWallet.lock();
 
     const newQuota = 100;
+    // skip nonce by using new key
+    const key = 1;
+    const keyShifted = BigNumber.from(key).shl(64);
     const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
       smartWallet,
       smartWalletOwner,
-      0, //nonce
+      keyShifted, //nonce
       [
         { signer: smartWalletOwner },
         {
