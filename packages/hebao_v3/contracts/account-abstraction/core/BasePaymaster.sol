@@ -14,7 +14,7 @@ import "./Helpers.sol";
  * validates that the postOp is called only by the entryPoint
  */
 abstract contract BasePaymaster is IPaymaster, Ownable {
-    IEntryPoint public immutable entryPoint;
+    IEntryPoint public entryPoint;
 
     constructor(IEntryPoint _entryPoint) {
         entryPoint = _entryPoint;

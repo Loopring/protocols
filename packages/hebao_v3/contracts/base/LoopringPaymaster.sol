@@ -44,6 +44,8 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         uint256 actualTokenCost
     );
 
+    event EntryPointChanged(address indexed newEntrypoint);
+
     constructor(
         IEntryPoint _entryPoint,
         address paymasterOwner
@@ -330,5 +332,13 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         );
         balances[token][msg.sender] -= amount;
         token.safeTransfer(target, amount);
+    }
+
+    function changeEntryPoint(IEntryPoint newEntryPoint) external onlyOwner {
+        require(address(newEntryPoint) != address(0), "INVALID ENTRYPOINT");
+        require(entryPoint != newEntryPoint, "SAME ENTRYPOINT");
+        entryPoint = newEntryPoint;
+
+        emit EntryPointChanged(address(newEntryPoint));
     }
 }

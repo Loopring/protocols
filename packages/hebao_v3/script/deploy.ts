@@ -78,16 +78,16 @@ export async function deploySingle(
     console.log(contractName, "deployed address: ", deployedAddress);
   }
 
-  if (
-    hre.network.name == "goerli" ||
-    hre.network.name == "sepolia" ||
-    hre.network.name == "ethereum"
-  ) {
-    await hre.run("verify:verify", {
-      address: deployedAddress,
-      constructorArguments: args,
-    });
-  }
+  // if (
+  // hre.network.name == "goerli" ||
+  // hre.network.name == "sepolia" ||
+  // hre.network.name == "ethereum"
+  // ) {
+  // await hre.run("verify:verify", {
+  // address: deployedAddress,
+  // constructorArguments: args,
+  // });
+  // }
 
   return contract.attach(deployedAddress);
 }
@@ -227,8 +227,8 @@ async function deployAll() {
   // entrypoint and paymaster
   // NOTE(uncomment when you need to deploy a new entrypoint contract)
   let entrypoint: Contract;
-  const entrypointAddr = ethers.constants.AddressZero;
-  // const entrypointAddr = '0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d';
+  // const entrypointAddr = ethers.constants.AddressZero;
+  const entrypointAddr = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
   if ((await ethers.provider.getCode(entrypointAddr)) != "0x") {
     entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
   } else {
@@ -630,10 +630,10 @@ async function testExecuteTx() {
 
 async function main() {
   // await testExecuteTx();
-  // await deployAll();
+  await deployAll();
   // uncomment below to get gascost info of some sample txs on chain
   // await testExecuteTxWithEth();
-  await testExecuteTxWithUSDCPaymaster();
+  // await testExecuteTxWithUSDCPaymaster();
 }
 
 main()
