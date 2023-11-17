@@ -22,6 +22,7 @@ export async function fixture() {
   const signers = await ethers.getSigners();
   const deployer = signers[0];
   const paymasterOwner = signers[1];
+  const somebody = signers[2];
   const blankOwner = await ethers.Wallet.createRandom().connect(
     ethers.provider
   );
@@ -163,5 +164,6 @@ export async function fixture() {
     walletFactory,
     implStorage,
     testTarget,
+    somebody,
   };
 }

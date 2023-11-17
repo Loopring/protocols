@@ -136,12 +136,14 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             require(
                 balances[ERC20(decoded_data.token)][sender] >=
                     tokenRequiredPreFund ||
-                    ERC20(decoded_data.token).allowance(
+                    (ERC20(decoded_data.token).allowance(
                         sender,
                         address(this)
                     ) >=
-                    tokenRequiredPreFund,
-                "Paymaster: not enough allowance"
+                        tokenRequiredPreFund &&
+                        ERC20(decoded_data.token).balanceOf(sender) >=
+                        tokenRequiredPreFund),
+                "Paymaster: no enough allowance or token balances"
             );
         }
         bytes32 hash = ECDSA.toEthSignedMessageHash(
@@ -261,8 +263,21 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      * owner of the paymaster should add supported tokens
      */
     function addToken(ERC20 token) external onlyOwner {
-        require(!registeredToken[token]);
+        require(!registeredToken[token], "registered already");
         registeredToken[token] = true;
+    }
+
+    function removeToken(ERC20 token) external onlyOwner {
+        require(registeredToken[token], "unregistered already");
+        registeredToken[token] = false;
+    }
+
+    function changeEntryPoint(IEntryPoint newEntryPoint) external onlyOwner {
+        require(address(newEntryPoint) != address(0), "INVALID ENTRYPOINT");
+        require(entryPoint != newEntryPoint, "SAME ENTRYPOINT");
+        entryPoint = newEntryPoint;
+
+        emit EntryPointChanged(address(newEntryPoint));
     }
 
     /**
@@ -332,13 +347,5 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         );
         balances[token][msg.sender] -= amount;
         token.safeTransfer(target, amount);
-    }
-
-    function changeEntryPoint(IEntryPoint newEntryPoint) external onlyOwner {
-        require(address(newEntryPoint) != address(0), "INVALID ENTRYPOINT");
-        require(entryPoint != newEntryPoint, "SAME ENTRYPOINT");
-        entryPoint = newEntryPoint;
-
-        emit EntryPointChanged(address(newEntryPoint));
     }
 }

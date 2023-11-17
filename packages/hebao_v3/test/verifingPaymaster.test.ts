@@ -5,62 +5,113 @@ import { fixture } from "./helper/fixture";
 import { sendTx, PaymasterOption, evInfo } from "./helper/utils";
 
 describe("verifingPaymaster test", () => {
-  it("admin operation success", async () => {
-    const { paymaster, paymasterOwner: owner } = await loadFixture(fixture);
-    // expect owner to be admin
-    expect(await paymaster.hasRole(paymaster.SIGNER(), owner.address)).to.be
-      .true;
-    // add other to be admin
-    const other = await ethers.Wallet.createRandom();
-    expect(await paymaster.hasRole(paymaster.SIGNER(), other.address)).to.be
-      .false;
-    await paymaster.grantRole(paymaster.SIGNER(), other.address);
-    expect(await paymaster.hasRole(paymaster.SIGNER(), other.address)).to.be
-      .true;
+  describe("admin operation success", () => {
+    it("adjust paramster params by owner", async () => {
+      const {
+        usdtToken,
+        deployer,
+        paymaster,
+        paymasterOwner,
+        entrypoint,
+        somebody,
+      } = await loadFixture(fixture);
+      await expect(
+        paymaster.connect(somebody).addToken(usdtToken.address)
+      ).to.revertedWith("Ownable: caller is not the owner");
+      await paymaster.addToken(usdtToken.address);
+      await expect(paymaster.addToken(usdtToken.address)).to.revertedWith(
+        "registered already"
+      );
+      expect(await paymaster.registeredToken(usdtToken.address)).to.be.true;
+      await paymaster.removeToken(usdtToken.address);
+      await expect(paymaster.removeToken(usdtToken.address)).to.revertedWith(
+        "unregistered already"
+      );
+      expect(await paymaster.registeredToken(usdtToken.address)).to.be.false;
+    });
+
+    it("roles management", async () => {
+      const { paymaster, paymasterOwner: owner } = await loadFixture(fixture);
+      // expect owner to be admin
+      expect(await paymaster.hasRole(paymaster.SIGNER(), owner.address)).to.be
+        .true;
+      // add other to be admin
+      const other = await ethers.Wallet.createRandom();
+      expect(await paymaster.hasRole(paymaster.SIGNER(), other.address)).to.be
+        .false;
+      await paymaster.grantRole(paymaster.SIGNER(), other.address);
+      expect(await paymaster.hasRole(paymaster.SIGNER(), other.address)).to.be
+        .true;
+    });
   });
 
-  it("transfer usdtToken with paymaster", async () => {
-    const {
-      entrypoint,
-      smartWallet,
-      smartWalletOwner,
-      usdtToken,
-      deployer,
-      sendUserOp,
-      create2,
-      paymaster,
-      paymasterOwner,
-    } = await loadFixture(fixture);
-    // prepare mock usdt token first
-    const initTokenAmount = ethers.utils.parseUnits("1000", 6);
-    await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+  describe("send userOp with paymaster", () => {
+    it("transfer usdtToken with paymaster", async () => {
+      const {
+        entrypoint,
+        smartWallet,
+        smartWalletOwner,
+        usdtToken,
+        deployer,
+        sendUserOp,
+        create2,
+        paymaster,
+        paymasterOwner,
+      } = await loadFixture(fixture);
+      // prepare mock usdt token first
+      const initTokenAmount = ethers.utils.parseUnits("1000", 6);
+      await usdtToken.setBalance(smartWallet.address, initTokenAmount);
 
-    //////////////////////////////////////////
-    // usdt token transfer test
-    const tokenAmount = ethers.utils.parseUnits("100", 6);
-    // approve paymaster before using usdt paymaster service
-    const approveToken = await usdtToken.populateTransaction.approve(
-      paymaster.address,
-      ethers.constants.MaxUint256
-    );
-    const transferToken = await usdtToken.populateTransaction.transfer(
-      deployer.address,
-      tokenAmount
-    );
-    const valueOfEth = ethers.utils.parseUnits("625", 12);
-    const paymasterOption: PaymasterOption = {
-      paymaster,
-      payToken: usdtToken,
-      paymasterOwner,
-      valueOfEth,
-      validUntil: 0,
-    };
+      //////////////////////////////////////////
+      // usdt token transfer test
+      const tokenAmount = ethers.utils.parseUnits("100", 6);
+      // approve paymaster before using usdt paymaster service
+      const approveToken = await usdtToken.populateTransaction.approve(
+        paymaster.address,
+        ethers.constants.MaxUint256
+      );
+      const transferToken = await usdtToken.populateTransaction.transfer(
+        deployer.address,
+        tokenAmount
+      );
+      const valueOfEth = ethers.utils.parseUnits("625", 12);
+      const paymasterOption: PaymasterOption = {
+        paymaster,
+        payToken: usdtToken,
+        paymasterOwner,
+        valueOfEth,
+        validUntil: 0,
+      };
 
-    expect(await usdtToken.balanceOf(deployer.address)).to.eq(0);
+      expect(await usdtToken.balanceOf(deployer.address)).to.eq(0);
 
-    // allowance check failed
-    await expect(
-      sendTx(
+      // allowance check failed
+      await expect(
+        sendTx(
+          [transferToken],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp,
+          paymasterOption
+        )
+      )
+        .to.revertedWithCustomError(entrypoint, "FailedOp")
+        .withArgs(
+          0,
+          "AA33 reverted: Paymaster: no enough allowance or token balances"
+        );
+      // approve before transfertoken
+      await sendTx(
+        [approveToken],
+        smartWallet,
+        smartWalletOwner,
+        create2,
+        entrypoint,
+        sendUserOp
+      );
+      const recipt = await sendTx(
         [transferToken],
         smartWallet,
         smartWalletOwner,
@@ -68,170 +119,150 @@ describe("verifingPaymaster test", () => {
         entrypoint,
         sendUserOp,
         paymasterOption
-      )
-    )
-      .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, "AA33 reverted: Paymaster: not enough allowance");
-    // approve before transfertoken
-    await sendTx(
-      [approveToken],
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      entrypoint,
-      sendUserOp
-    );
-    const recipt = await sendTx(
-      [transferToken],
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      entrypoint,
-      sendUserOp,
-      paymasterOption
-    );
+      );
 
-    expect(await usdtToken.balanceOf(deployer.address)).to.eq(tokenAmount);
-    const afterBalance = await usdtToken.balanceOf(smartWallet.address);
-    // fee is transfered to paymaster contract
-    expect(await usdtToken.balanceOf(paymaster.address)).to.eq(
-      initTokenAmount.sub(afterBalance).sub(tokenAmount)
-    );
-    // // TODO(check eth balance for paymaster)
+      expect(await usdtToken.balanceOf(deployer.address)).to.eq(tokenAmount);
+      const afterBalance = await usdtToken.balanceOf(smartWallet.address);
+      // fee is transfered to paymaster contract
+      expect(await usdtToken.balanceOf(paymaster.address)).to.eq(
+        initTokenAmount.sub(afterBalance).sub(tokenAmount)
+      );
+      // // TODO(check eth balance for paymaster)
 
-    // // sendtx for free
-    paymasterOption.valueOfEth = 0;
+      // // sendtx for free
+      paymasterOption.valueOfEth = 0;
 
-    await sendTx(
-      [transferToken],
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      entrypoint,
-      sendUserOp,
-      paymasterOption
-    );
-    // // no fee for sending tx
-    expect(await usdtToken.balanceOf(smartWallet.address)).to.eq(
-      afterBalance.sub(tokenAmount)
-    );
-  });
-
-  it("replay the same paymasterAndData should fail", async () => {});
-
-  it("check valid until", async () => {
-    const {
-      entrypoint,
-      smartWallet,
-      smartWalletOwner,
-      usdtToken,
-      deployer,
-      sendUserOp,
-      create2,
-      paymaster,
-      paymasterOwner,
-    } = await loadFixture(fixture);
-    // prepare mock usdt token first
-    const initTokenAmount = ethers.utils.parseUnits("1000", 6);
-    await usdtToken.setBalance(smartWallet.address, initTokenAmount);
-    const value = ethers.utils.parseEther("10");
-    const to = ethers.constants.AddressZero;
-    const transferEth = { value, to };
-    const valueOfEth = ethers.utils.parseUnits("625", 12);
-    const block = await ethers.provider.getBlock("latest");
-    const paymasterOption: PaymasterOption = {
-      paymaster,
-      payToken: usdtToken,
-      paymasterOwner,
-      valueOfEth,
-      validUntil: 1,
-    };
-    // approve first
-    const approveToken = await usdtToken.populateTransaction.approve(
-      paymaster.address,
-      ethers.constants.MaxUint256
-    );
-
-    await expect(
-      sendTx(
-        [approveToken],
-        smartWallet,
-        smartWalletOwner,
-        create2,
-        entrypoint,
-        sendUserOp
-      )
-    ).not.to.reverted;
-
-    await expect(
-      sendTx(
-        [transferEth],
+      await sendTx(
+        [transferToken],
         smartWallet,
         smartWalletOwner,
         create2,
         entrypoint,
         sendUserOp,
         paymasterOption
-      )
-    )
-      .to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, "AA32 paymaster expired or not due");
-    paymasterOption.validUntil = 3600 + block.timestamp;
-    await expect(
-      sendTx(
-        [transferEth],
+      );
+      // // no fee for sending tx
+      expect(await usdtToken.balanceOf(smartWallet.address)).to.eq(
+        afterBalance.sub(tokenAmount)
+      );
+    });
+
+    it("replay the same paymasterAndData should fail", async () => {});
+
+    it("check valid until", async () => {
+      const {
+        entrypoint,
         smartWallet,
         smartWalletOwner,
-        create2,
-        entrypoint,
+        usdtToken,
+        deployer,
         sendUserOp,
-        paymasterOption
+        create2,
+        paymaster,
+        paymasterOwner,
+      } = await loadFixture(fixture);
+      // prepare mock usdt token first
+      const initTokenAmount = ethers.utils.parseUnits("1000", 6);
+      await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+      const value = ethers.utils.parseEther("10");
+      const to = ethers.constants.AddressZero;
+      const transferEth = { value, to };
+      const valueOfEth = ethers.utils.parseUnits("625", 12);
+      const block = await ethers.provider.getBlock("latest");
+      const paymasterOption: PaymasterOption = {
+        paymaster,
+        payToken: usdtToken,
+        paymasterOwner,
+        valueOfEth,
+        validUntil: 1,
+      };
+      // approve first
+      const approveToken = await usdtToken.populateTransaction.approve(
+        paymaster.address,
+        ethers.constants.MaxUint256
+      );
+
+      await expect(
+        sendTx(
+          [approveToken],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp
+        )
+      ).not.to.reverted;
+
+      await expect(
+        sendTx(
+          [transferEth],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp,
+          paymasterOption
+        )
       )
-    ).not.to.reverted;
-  });
+        .to.revertedWithCustomError(entrypoint, "FailedOp")
+        .withArgs(0, "AA32 paymaster expired or not due");
+      paymasterOption.validUntil = 3600 + block.timestamp;
+      await expect(
+        sendTx(
+          [transferEth],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp,
+          paymasterOption
+        )
+      ).not.to.reverted;
+    });
 
-  it("deposit and withdraw eth for paymaster in entrypoint", async () => {
-    const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
-      await loadFixture(fixture);
-    const amount = ethers.utils.parseEther("1");
-    const depositAmountBefore = await paymaster.getDeposit();
-    await paymaster.deposit({ value: amount });
-    const depositAmountAfter = await paymaster.getDeposit();
-    expect(depositAmountAfter.sub(depositAmountBefore)).to.eq(amount);
+    it("deposit and withdraw eth for paymaster in entrypoint", async () => {
+      const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
+        await loadFixture(fixture);
+      const amount = ethers.utils.parseEther("1");
+      const depositAmountBefore = await paymaster.getDeposit();
+      await paymaster.deposit({ value: amount });
+      const depositAmountAfter = await paymaster.getDeposit();
+      expect(depositAmountAfter.sub(depositAmountBefore)).to.eq(amount);
 
-    // withdraw eth to deployer
-    const withdrawer = deployer.address;
-    const balanceBefore = await ethers.provider.getBalance(withdrawer);
-    await paymaster.withdrawTo(withdrawer, depositAmountAfter);
-    const balanceAfter = await ethers.provider.getBalance(withdrawer);
-    expect(balanceAfter.sub(balanceBefore)).eq(depositAmountAfter);
-  });
+      // withdraw eth to deployer
+      const withdrawer = deployer.address;
+      const balanceBefore = await ethers.provider.getBalance(withdrawer);
+      await paymaster.withdrawTo(withdrawer, depositAmountAfter);
+      const balanceAfter = await ethers.provider.getBalance(withdrawer);
+      expect(balanceAfter.sub(balanceBefore)).eq(depositAmountAfter);
+    });
 
-  it("stake and unstake eth for paymaster in entrypoint", async () => {
-    const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
-      await loadFixture(fixture);
-    const amount = ethers.utils.parseEther("1");
-    const unstakeDelaySec = 10;
-    await paymaster.addStake(unstakeDelaySec, { value: amount });
+    it("stake and unstake eth for paymaster in entrypoint", async () => {
+      const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
+        await loadFixture(fixture);
+      const amount = ethers.utils.parseEther("1");
+      const unstakeDelaySec = 10;
+      await paymaster.addStake(unstakeDelaySec, { value: amount });
 
-    // withdraw eth to deployer
-    await paymaster.unlockStake();
-    // advance time after unlock
-    await time.increase(unstakeDelaySec);
-    const withdrawer = deployer.address;
-    const balanceBefore = await ethers.provider.getBalance(withdrawer);
-    await paymaster.withdrawStake(withdrawer);
-    const balanceAfter = await ethers.provider.getBalance(withdrawer);
-    expect(balanceAfter.sub(balanceBefore)).eq(amount);
-  });
+      // withdraw eth to deployer
+      await paymaster.unlockStake();
+      // advance time after unlock
+      await time.increase(unstakeDelaySec);
+      const withdrawer = deployer.address;
+      const balanceBefore = await ethers.provider.getBalance(withdrawer);
+      await paymaster.withdrawStake(withdrawer);
+      const balanceAfter = await ethers.provider.getBalance(withdrawer);
+      expect(balanceAfter.sub(balanceBefore)).eq(amount);
+    });
 
-  it("reject eth and any erc20 token directly", async () => {
-    const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
-      await loadFixture(fixture);
-    const value = ethers.utils.parseEther("1");
-    await expect(
-      deployer.sendTransaction({ to: paymaster.address, value })
-    ).to.revertedWith("eth rejected");
+    it("reject eth and any erc20 token directly", async () => {
+      const { usdtToken, deployer, paymaster, paymasterOwner, entrypoint } =
+        await loadFixture(fixture);
+      const value = ethers.utils.parseEther("1");
+      await expect(
+        deployer.sendTransaction({ to: paymaster.address, value })
+      ).to.revertedWith("eth rejected");
+    });
   });
 
   describe("gas tank", () => {
