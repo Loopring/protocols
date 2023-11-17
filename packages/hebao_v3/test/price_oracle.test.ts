@@ -15,7 +15,6 @@ import {
 } from "../typechain-types";
 import { getBlockTimestamp, createSmartWallet } from "./helper/utils";
 import { fillUserOp, fillAndMultiSign, getUserOpHash } from "./helper/AASigner";
-import BN from "bn.js";
 
 describe("price oracle test", () => {
   // describe('', ()=>{

@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import {
   loadFixture,
   setBalance,
@@ -15,20 +16,13 @@ import {
   createSmartWallet,
   getFirstEvent,
 } from "./helper/utils";
-import {
-  UserOperation,
-  fillUserOp,
-  fillAndMultiSignForApproveToken,
-  fillAndMultiSignForCallContract,
-  fillAndMultiSignForApproveThenCallContract,
-} from "./helper/AASigner";
+import { UserOperation, fillUserOp, fillAndMultiSign } from "./helper/AASigner";
 import {
   SmartWalletV3,
   EntryPoint,
   LoopringCreate2Deployer,
   SmartWalletV3__factory,
 } from "../typechain-types";
-import BN from "bn.js";
 
 describe("erc20 test", () => {
   it("basic success test", async () => {
@@ -180,11 +174,20 @@ describe("erc20 test", () => {
       } = await loadFixture(fixture);
 
       const toAddr = deployer.address;
-      const amount = new BN(100);
-      const signedUserOp = await fillAndMultiSignForApproveToken(
+      const amount = 100;
+      const callData = smartWallet.interface.encodeFunctionData(
+        "approveTokenWA",
+        [usdtToken.address, toAddr, amount]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ApproveToken,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -193,16 +196,14 @@ describe("erc20 test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        usdtToken.address,
-        toAddr,
-        amount.toString(),
+        approvalOption,
         entrypoint
       );
 
       const recipt = await sendUserOp(signedUserOp);
       // check allowance
       const allowance = await usdtToken.allowance(smartWallet.address, toAddr);
-      expect(allowance).to.eq(amount.toString());
+      expect(allowance).to.eq(amount);
     });
 
     it("callcontract test", async () => {
@@ -220,14 +221,21 @@ describe("erc20 test", () => {
       } = await loadFixture(fixture);
 
       const toAddr = deployer.address;
-      const amount = new BN(100);
       const functionDefault =
         await testTarget.populateTransaction.functionDefault(0);
-      // fillAndMultiSignForCallContract
-      const signedUserOp = await fillAndMultiSignForCallContract(
+      const callData = smartWallet.interface.encodeFunctionData(
+        "callContractWA",
+        [testTarget.address, 0, functionDefault.data]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.CallContract,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -236,9 +244,7 @@ describe("erc20 test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        testTarget.address,
-        0,
-        functionDefault.data,
+        approvalOption,
         entrypoint
       );
       const recipt = await sendUserOp(signedUserOp);
@@ -263,16 +269,31 @@ describe("erc20 test", () => {
         smartWalletImpl,
         smartWallet,
       } = await loadFixture(fixture);
-      const callData = testTarget.interface.encodeFunctionData(
+      const innerCallData = testTarget.interface.encodeFunctionData(
         "functionPayable",
         [10]
       );
       const amount = ethers.utils.parseEther("10000");
       const value = ethers.utils.parseEther("50");
-      const signedUserOp = await fillAndMultiSignForApproveThenCallContract(
+      const callData = smartWallet.interface.encodeFunctionData(
+        "approveThenCallContractWA",
+        [
+          usdtToken.address,
+          testTarget.address,
+          amount.toString(),
+          value,
+          innerCallData,
+        ]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ApproveThenCallContract,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -281,11 +302,7 @@ describe("erc20 test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        usdtToken.address,
-        testTarget.address,
-        amount.toString(),
-        value,
-        callData,
+        approvalOption,
         entrypoint
       );
 

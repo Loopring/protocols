@@ -10,11 +10,8 @@ import {
   createRandomAccount,
 } from "./helper/utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
-import {
-  fillAndMultiSignForChangeDailyQuota,
-  fillAndMultiSignForChangeMasterCopy,
-} from "./helper/AASigner";
-import BN from "bn.js";
+import { fillAndMultiSign } from "./helper/AASigner";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import { Wallet } from "ethers";
 
 describe("quota test", () => {
@@ -128,11 +125,20 @@ describe("quota test", () => {
       sendUserOp,
       smartWalletImpl,
     } = await loadFixture(fixture);
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.ChangeDailyQuota,
+    };
     const newQuota = "1" + "0".repeat(20);
-    const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
+    const callData = smartWallet.interface.encodeFunctionData(
+      "changeDailyQuotaWA",
+      [newQuota]
+    );
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         { signer: smartWalletOwner },
         {
@@ -141,7 +147,7 @@ describe("quota test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newQuota,
+      approvalOption,
       entrypoint
     );
 
@@ -179,11 +185,20 @@ describe("quota test", () => {
         blankOwner.address,
         testPriceOracle.address
       );
+      const callData = smartWallet.interface.encodeFunctionData(
+        "changeMasterCopy",
+        [newSmartWalletImpl.address]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ChangeMasterCopy,
+      };
       // update to new implementation
-      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -192,7 +207,7 @@ describe("quota test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        newSmartWalletImpl.address,
+        approvalOption,
         entrypoint
       );
 
@@ -260,11 +275,20 @@ describe("quota test", () => {
         blankOwner.address,
         testPriceOracle.address
       );
+      const callData = smartWallet.interface.encodeFunctionData(
+        "changeMasterCopy",
+        [newSmartWalletImpl.address]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ChangeMasterCopy,
+      };
       // update to new implementation
-      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -273,7 +297,7 @@ describe("quota test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        newSmartWalletImpl.address,
+        approvalOption,
         entrypoint
       );
       await sendUserOp(signedUserOp);
@@ -345,6 +369,11 @@ describe("quota test", () => {
         await ethers.getContractFactory("TestPriceOracle")
       ).deploy(oraclePrice);
       // create new smart wallet implementation with valid price oracle
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ChangeMasterCopy,
+      };
       const newSmartWalletImpl = await deployWalletImpl(
         create2,
         entrypoint.address,
@@ -352,10 +381,14 @@ describe("quota test", () => {
         testPriceOracle.address
       );
       // update to new implementation
-      const signedUserOp = await fillAndMultiSignForChangeMasterCopy(
+      const callData = smartWallet.interface.encodeFunctionData(
+        "changeMasterCopy",
+        [newSmartWalletImpl.address]
+      );
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -364,7 +397,7 @@ describe("quota test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        newSmartWalletImpl.address,
+        approvalOption,
         entrypoint
       );
       await sendUserOp(signedUserOp);

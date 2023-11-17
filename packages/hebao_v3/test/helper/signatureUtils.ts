@@ -1,8 +1,6 @@
-import ethUtil = require("ethereumjs-util");
-const ethAbi = require("web3-eth-abi");
-import { sign, sign2, SignatureType } from "./Signature";
+import { ethers } from "ethers";
+import { sign2 } from "./Signature";
 import * as eip712 from "./eip712";
-import BN = require("bn.js");
 import { BigNumberish } from "ethers";
 
 function encodeAddressesPacked(addrs: string[]) {
@@ -16,11 +14,11 @@ export function signCreateWallet(
   moduleAddress: string,
   owner: string,
   guardians: string[],
-  quota: BN,
+  quota: BigNumberish,
   inheritor: string,
   feeRecipient: string,
   feeToken: string,
-  maxFeeAmount: BN,
+  maxFeeAmount: BigNumberish,
   salt: BigNumberish,
   privateKey: string,
   chainId: number
@@ -34,12 +32,17 @@ export function signCreateWallet(
 
   const TYPE_STR =
     "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)";
-  const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
+  const CREATE_WALLET_TYPEHASH = ethers.utils.solidityKeccak256(
+    ["string"],
+    [TYPE_STR]
+  );
 
-  const guardiansBs = encodeAddressesPacked(guardians);
-  const guardiansHash = ethUtil.keccak(guardiansBs);
+  const guardiansHash = ethers.utils.solidityKeccak256(
+    ["address[]"],
+    [guardians]
+  );
 
-  const encodedRequest = ethAbi.encodeParameters(
+  const encodedRequest = ethers.utils.defaultAbiCoder.encode(
     [
       "bytes32",
       "address",
@@ -65,8 +68,6 @@ export function signCreateWallet(
   );
 
   const hash = eip712.hashPacked(domainSeprator, encodedRequest);
-  // console.log(`hash: ${hash.toString("hex")}`);
-
   const txSignature = sign2(owner, privateKey, hash);
   return { txSignature, hash };
 }

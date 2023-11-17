@@ -5,7 +5,7 @@ import {
   setBalance,
   time,
 } from "@nomicfoundation/hardhat-network-helpers";
-import { signUnlock } from "./helper/signatureUtils";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import {
   SmartWalletV3,
   EntryPoint,
@@ -27,9 +27,8 @@ import {
   fillUserOp,
   getUserOpHash,
   UserOperation,
-  fillAndMultiSignForUnlock,
+  fillAndMultiSign,
 } from "./helper/AASigner";
-import BN from "bn.js";
 
 describe("lock test", () => {
   it("basic success testcase", async () => {
@@ -48,11 +47,16 @@ describe("lock test", () => {
     expect((await smartWallet.wallet()).locked).to.equal(true);
     // TODO(allow to double lock?)
     await expect(smartWallet.lock()).not.to.reverted;
-
-    const signedUserOp = await fillAndMultiSignForUnlock(
+    const callData = smartWallet.interface.encodeFunctionData("unlock");
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.Unlock,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         { signer: guardians[0] },
         {
@@ -61,6 +65,7 @@ describe("lock test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
+      approvalOption,
       entrypoint
     );
     const recipt = await sendUserOp(signedUserOp);

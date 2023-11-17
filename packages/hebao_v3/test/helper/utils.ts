@@ -1,7 +1,6 @@
 import { ethers } from "hardhat";
 import * as typ from "./solidityTypes";
 import { Wallet, Signer, BigNumber, BigNumberish } from "ethers";
-import BN from "bn.js";
 import { signCreateWallet } from "./signatureUtils";
 import { Contract } from "ethers";
 import {
@@ -685,11 +684,11 @@ export async function createSmartWallet(
     walletFactory.address,
     owner.address,
     guardians,
-    new BN(0),
+    BigNumber.from(0),
     ethers.constants.AddressZero,
     feeRecipient,
     ethers.constants.AddressZero,
-    new BN(0),
+    BigNumber.from(0),
     salt,
     owner.privateKey.slice(2),
     chainId

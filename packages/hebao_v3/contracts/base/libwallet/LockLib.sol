@@ -19,7 +19,7 @@ library LockLib {
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant UNLOCK_TYPEHASH =
-        keccak256("unlock(address wallet,uint256 validUntil)");
+        keccak256("unlock(address wallet,uint256 validUntil,bytes32 salt)");
 
     function lock(Wallet storage wallet, address entryPoint) public {
         require(
@@ -44,11 +44,14 @@ library LockLib {
     function encodeApprovalForUnlock(
         bytes memory,
         bytes32 domainSeparator,
-        uint256 validUntil
+        uint256 validUntil,
+        bytes32 salt
     ) external view returns (bytes32) {
         bytes32 approvedHash = EIP712.hashPacked(
             domainSeparator,
-            keccak256(abi.encode(UNLOCK_TYPEHASH, address(this), validUntil))
+            keccak256(
+                abi.encode(UNLOCK_TYPEHASH, address(this), validUntil, salt)
+            )
         );
         return approvedHash;
     }

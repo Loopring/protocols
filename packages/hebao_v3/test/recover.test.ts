@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { Wallet } from "ethers";
 import { fixture } from "./helper/fixture";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import _ from "lodash";
 import {
   PaymasterOption,
@@ -11,13 +12,7 @@ import {
   sortSignersAndSignatures,
   getErrorMessage,
 } from "./helper/utils";
-import {
-  fillUserOp,
-  getUserOpHash,
-  fillAndMultiSign,
-  fillAndMultiSignForRecover,
-} from "./helper/AASigner";
-import BN from "bn.js";
+import { fillUserOp, getUserOpHash, fillAndMultiSign } from "./helper/AASigner";
 
 describe("recover test", () => {
   it("recover success", async () => {
@@ -34,10 +29,19 @@ describe("recover test", () => {
 
     const newOwner = await ethers.Wallet.createRandom();
     const newGuardians = [];
-    const signedUserOp = await fillAndMultiSignForRecover(
+    const callData = smartWallet.interface.encodeFunctionData("recover", [
+      newOwner.address,
+      newGuardians,
+    ]);
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.Recover,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       newOwner,
-      0, //nonce
       [
         { signer: guardians[0] },
         {
@@ -46,7 +50,7 @@ describe("recover test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newGuardians,
+      approvalOption,
       entrypoint
     );
 
@@ -94,10 +98,19 @@ describe("recover test", () => {
     } = await loadFixture(fixture);
 
     const newGuardians = [];
-    const signedUserOp = await fillAndMultiSignForRecover(
+    const callData = smartWallet.interface.encodeFunctionData("recover", [
+      smartWalletOwner.address,
+      newGuardians,
+    ]);
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.Recover,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         { signer: guardians[0] },
         {
@@ -106,8 +119,9 @@ describe("recover test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newGuardians,
-      entrypoint
+      approvalOption,
+      entrypoint,
+      { callGasLimit: "1000000" }
     );
     const preDeposit = await smartWallet.getDeposit();
     const recipt = await sendUserOp(signedUserOp);
@@ -117,52 +131,6 @@ describe("recover test", () => {
     expect(getErrorMessage(revertInfo[0].revertReason)).to.eq("IS_SAME_OWNER");
     // fee charged even if userop execution failed
     expect(postDeposit).to.lt(preDeposit);
-  });
-
-  // invalid test case
-  it("new owner should not be invalid", async () => {
-    const {
-      entrypoint,
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      deployer,
-      sendUserOp,
-      smartWalletImpl,
-      guardians,
-    } = await loadFixture(fixture);
-
-    const newGuardians = [];
-    // all invalid new owner addresses
-    const newOwnerAddrs = [ethers.constants.AddressZero];
-    for (let i = 0; i < newOwnerAddrs.length; ++i) {
-      const newOwnerAddr = newOwnerAddrs[i];
-      const signedUserOp = await fillAndMultiSignForRecover(
-        smartWallet,
-        smartWalletOwner,
-        0, //nonce
-        [
-          { signer: guardians[0] },
-          {
-            signer: guardians[1],
-          },
-        ],
-        create2.address,
-        smartWalletImpl.address,
-        newGuardians,
-        entrypoint
-      );
-      const preDeposit = await smartWallet.getDeposit();
-      const recipt = await sendUserOp(signedUserOp);
-      const postDeposit = await smartWallet.getDeposit();
-      const revertInfo = await evRevertInfo(entrypoint, recipt);
-      // is same owner
-      expect(getErrorMessage(revertInfo[0].revertReason)).to.eq(
-        "IS_SAME_OWNER"
-      );
-      // fee charged even if userop execution failed
-      expect(postDeposit).to.lt(preDeposit);
-    }
   });
 
   it("will fail when recover from owner", async () => {
@@ -199,10 +167,19 @@ describe("recover test", () => {
 
     const newOwner = await ethers.Wallet.createRandom();
     const newGuardians = [];
-    const signedUserOp = await fillAndMultiSignForRecover(
+    const callData = smartWallet.interface.encodeFunctionData("recover", [
+      newOwner.address,
+      newGuardians,
+    ]);
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.Recover,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       newOwner,
-      0, //nonce
       [
         { signer: guardians[0] },
         {
@@ -211,9 +188,10 @@ describe("recover test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newGuardians,
+      approvalOption,
       entrypoint
     );
+
     await sendUserOp(signedUserOp);
     expect(await smartWallet.getOwner()).to.eq(newOwner.address);
   });

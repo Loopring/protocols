@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { fixture } from "./helper/fixture";
 import _ from "lodash";
 import { arrayify } from "ethers/lib/utils";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import {
   loadFixture,
   setBalance,
@@ -14,13 +15,7 @@ import {
   SmartWalletV3__factory,
 } from "../typechain-types";
 import { getBlockTimestamp, createSmartWallet } from "./helper/utils";
-import {
-  fillUserOp,
-  getUserOpHash,
-  fillAndMultiSignForApproveToken,
-  fillAndMultiSignForAddGuardian,
-} from "./helper/AASigner";
-import BN from "bn.js";
+import { fillUserOp, getUserOpHash, fillAndMultiSign } from "./helper/AASigner";
 import { increase } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 describe("guardian test", () => {
@@ -204,11 +199,19 @@ describe("guardian test", () => {
     // use new guardian signature to approve token
     const receiver = deployer.address;
     const tokenAmount = ethers.utils.parseUnits("100", 6);
-    const validUntil = 0;
-    const signedUserOp = await fillAndMultiSignForApproveToken(
+    const callData = smartWallet.interface.encodeFunctionData(
+      "approveTokenWA",
+      [usdtToken.address, receiver, tokenAmount]
+    );
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.ApproveToken,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         { signer: smartWalletOwner },
         { signer: guardians[0] },
@@ -219,11 +222,8 @@ describe("guardian test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      usdtToken.address,
-      receiver,
-      tokenAmount,
-      entrypoint,
-      validUntil
+      approvalOption,
+      entrypoint
     );
     await sendUserOp(signedUserOp);
     expect(await usdtToken.allowance(smartWallet.address, receiver)).to.eq(
@@ -266,15 +266,23 @@ describe("guardian test", () => {
 
       // add new guardian
       const guardian3 = "0x" + "12".repeat(20);
-
-      const signedUserOp = await fillAndMultiSignForAddGuardian(
+      const callData = smartWallet.interface.encodeFunctionData(
+        "addGuardianWA",
+        [guardian3]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.AddGuardian,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [{ signer: smartWalletOwner }, { signer: guardians[0] }],
         create2.address,
         smartWalletImpl.address,
-        guardian3,
+        approvalOption,
         entrypoint
       );
 
@@ -352,10 +360,19 @@ describe("guardian test", () => {
       expect(
         guardiansBefore.some((g) => g.addr === guardianToAdd.address)
       ).to.equal(false); // not contains guardianToAdd
-      const signedUserOp = await fillAndMultiSignForAddGuardian(
+      const callData = smartWallet.interface.encodeFunctionData(
+        "addGuardianWA",
+        [guardianToAdd.address]
+      );
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.AddGuardian,
+      };
+      const signedUserOp = await fillAndMultiSign(
+        callData,
         smartWallet,
         smartWalletOwner,
-        0, //nonce
         [
           { signer: smartWalletOwner },
           {
@@ -365,7 +382,7 @@ describe("guardian test", () => {
         ],
         create2.address,
         smartWalletImpl.address,
-        guardianToAdd.address,
+        approvalOption,
         entrypoint
       );
       await sendUserOp(signedUserOp);

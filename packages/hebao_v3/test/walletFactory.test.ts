@@ -3,7 +3,6 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { fixture } from "./helper/fixture";
 import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
-import BN from "bn.js";
 import {
   createSmartWallet,
   getFirstEvent,

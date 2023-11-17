@@ -6,6 +6,7 @@ import {
   setBalance,
 } from "@nomicfoundation/hardhat-network-helpers";
 import { fixture } from "./helper/fixture";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import {
   sendTx,
   PaymasterOption,
@@ -18,7 +19,7 @@ import {
 import {
   fillAndSign,
   UserOperation,
-  fillAndMultiSignForChangeDailyQuota,
+  fillAndMultiSign,
 } from "./helper/AASigner";
 import {
   SmartWalletV3,
@@ -26,7 +27,6 @@ import {
   LoopringCreate2Deployer,
   SmartWalletV3__factory,
 } from "../typechain-types";
-import BN from "bn.js";
 
 describe("eip4337 test", () => {
   // execute tx from entrypoint instead of `execute` or `executebatch`
@@ -175,10 +175,19 @@ describe("eip4337 test", () => {
 
     const newQuota = 100;
     let validUntil = 1;
-    const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
+    const approvalOption = {
+      validUntil,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.ChangeDailyQuota,
+    };
+    const callData = smartWallet.interface.encodeFunctionData(
+      "changeDailyQuotaWA",
+      [newQuota]
+    );
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         { signer: smartWalletOwner },
         {
@@ -187,21 +196,22 @@ describe("eip4337 test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newQuota,
-      entrypoint,
-      validUntil
+      approvalOption,
+      entrypoint
     );
 
+    // new salt
+    approvalOption.salt = ethers.utils.randomBytes(32);
     await expect(sendUserOp(signedUserOp))
       .to.revertedWithCustomError(entrypoint, "FailedOp")
       .withArgs(0, "AA22 expired or not due");
     const block = await ethers.provider.getBlock("latest");
     validUntil = block.timestamp + 3600;
 
-    const signedUserOp2 = await fillAndMultiSignForChangeDailyQuota(
+    const signedUserOp2 = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         { signer: smartWalletOwner },
         {
@@ -210,9 +220,8 @@ describe("eip4337 test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newQuota,
-      entrypoint,
-      validUntil
+      approvalOption,
+      entrypoint
     );
     await entrypoint.callStatic
       .simulateValidation(signedUserOp2)
@@ -417,10 +426,19 @@ describe("eip4337 test", () => {
     // skip nonce by using new key
     const key = 1;
     const keyShifted = BigNumber.from(key).shl(64);
-    const signedUserOp = await fillAndMultiSignForChangeDailyQuota(
+    const callData = smartWallet.interface.encodeFunctionData(
+      "changeDailyQuotaWA",
+      [newQuota]
+    );
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.ChangeDailyQuota,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      keyShifted, //nonce
       [
         { signer: smartWalletOwner },
         {
@@ -429,8 +447,9 @@ describe("eip4337 test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      newQuota,
-      entrypoint
+      approvalOption,
+      entrypoint,
+      { nonce: keyShifted }
     );
     const recipt = await sendUserOp(signedUserOp);
     const quotaInfo = (await smartWallet.wallet())["quota"];

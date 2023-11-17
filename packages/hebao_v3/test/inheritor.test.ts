@@ -15,7 +15,6 @@ import {
   setBalance,
   takeSnapshot,
 } from "@nomicfoundation/hardhat-network-helpers";
-import BN from "bn.js";
 import { increase } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 describe("inheritor test", () => {

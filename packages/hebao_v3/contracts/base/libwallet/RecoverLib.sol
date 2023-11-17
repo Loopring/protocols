@@ -22,7 +22,7 @@ library RecoverLib {
 
     bytes32 public constant RECOVER_TYPEHASH =
         keccak256(
-            "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians)"
+            "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians,bytes32 salt)"
         );
 
     /// @dev Recover a wallet by setting a new owner and guardians.
@@ -62,7 +62,8 @@ library RecoverLib {
         address newOwner,
         address[] memory newGuardians,
         bytes32 domainSeparator,
-        uint256 validUntil
+        uint256 validUntil,
+        bytes32 salt
     ) external view returns (bytes32) {
         bytes32 approvedHash = EIP712.hashPacked(
             domainSeparator,
@@ -72,7 +73,8 @@ library RecoverLib {
                     address(this),
                     validUntil,
                     newOwner,
-                    keccak256(abi.encodePacked(newGuardians))
+                    keccak256(abi.encodePacked(newGuardians)),
+                    salt
                 )
             )
         );

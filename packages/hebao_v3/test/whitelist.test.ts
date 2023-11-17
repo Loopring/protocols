@@ -4,15 +4,11 @@ import {
   setBalance,
   time,
 } from "@nomicfoundation/hardhat-network-helpers";
+import { ActionType } from "./helper/LoopringGuardianAPI";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { getBlockTimestamp, sortSignersAndSignatures } from "./helper/utils";
-import {
-  fillUserOp,
-  fillAndMultiSign,
-  fillAndMultiSignForAddToWhitelist,
-} from "./helper/AASigner";
-import BN from "bn.js";
+import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
 
 describe("whitelist test", () => {
   const ONE_DAY = 3600 * 24;
@@ -49,10 +45,19 @@ describe("whitelist test", () => {
       sendUserOp,
     } = await loadFixture(fixture);
     const addr = "0x" + "12".repeat(20);
-    const signedUserOp = await fillAndMultiSignForAddToWhitelist(
+    const callData = smartWallet.interface.encodeFunctionData(
+      "addToWhitelistWA",
+      [addr]
+    );
+    const approvalOption = {
+      validUntil: 0,
+      salt: ethers.utils.randomBytes(32),
+      action_type: ActionType.AddToWhitelist,
+    };
+    const signedUserOp = await fillAndMultiSign(
+      callData,
       smartWallet,
       smartWalletOwner,
-      0, //nonce
       [
         {
           signer: guardians[0],
@@ -61,7 +66,7 @@ describe("whitelist test", () => {
       ],
       create2.address,
       smartWalletImpl.address,
-      addr,
+      approvalOption,
       entrypoint
     );
 

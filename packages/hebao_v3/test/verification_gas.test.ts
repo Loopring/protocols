@@ -4,6 +4,7 @@ import { Wallet, BigNumberish, BigNumber } from "ethers";
 import { fixture } from "./helper/fixture";
 import _ from "lodash";
 import { arrayify } from "ethers/lib/utils";
+import { BytesLike, hexValue } from "@ethersproject/bytes";
 import {
   loadFixture,
   setBalance,
@@ -11,6 +12,7 @@ import {
   takeSnapshot,
 } from "@nomicfoundation/hardhat-network-helpers";
 import { EntryPoint } from "../typechain-types";
+import { Approval } from "./helper/LoopringGuardianAPI";
 import {
   GuardianLib__factory,
   SmartWalletV3__factory,
@@ -24,13 +26,9 @@ import {
   fillUserOp,
   getUserOpHash,
   UserOperation,
-  fillAndMultiSignForApproveToken,
-  fillAndMultiSignForAddGuardian,
   callDataCost,
   packUserOp,
-  Approval,
 } from "./helper/AASigner";
-import BN from "bn.js";
 
 describe("verification gaslimit test", () => {
   async function generateApprovals(
@@ -41,7 +39,8 @@ describe("verification gaslimit test", () => {
     to: string,
     amount: BigNumberish,
     validUntil: number,
-    chainId: number
+    chainId: number,
+    salt: BytesLike
   ) {
     // use typedData hash instead
     const types = {
@@ -51,6 +50,7 @@ describe("verification gaslimit test", () => {
         { name: "token", type: "address" },
         { name: "to", type: "address" },
         { name: "amount", type: "uint256" },
+        { name: "salt", type: "bytes32" },
       ],
     };
 
@@ -70,6 +70,7 @@ describe("verification gaslimit test", () => {
         token,
         to,
         amount,
+        salt,
       },
     };
 
@@ -96,6 +97,7 @@ describe("verification gaslimit test", () => {
       signers: sortedSigners,
       signatures: sortedSignatures,
       validUntil,
+      salt,
     };
     return approval;
   }
@@ -150,7 +152,7 @@ describe("verification gaslimit test", () => {
   function encodeSignature(approval: Approval, ownerSignature: string) {
     const signature = ethers.utils.defaultAbiCoder.encode(
       [
-        "tuple(address[] signers,bytes[] signatures,uint256 validUntil)",
+        "tuple(address[] signers,bytes[] signatures,uint256 validUntil,bytes32 salt)",
         "bytes",
       ],
       [approval, ownerSignature]
@@ -199,7 +201,8 @@ describe("verification gaslimit test", () => {
       receiver,
       tokenAmount,
       validUntil,
-      chainId
+      chainId,
+      ethers.utils.randomBytes(32)
     );
     const gasPriceData = await getEIP1559GasPrice();
 

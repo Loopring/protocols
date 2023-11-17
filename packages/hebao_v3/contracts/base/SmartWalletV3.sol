@@ -87,7 +87,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForAddGuardian(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -101,7 +102,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForRemoveGuardian(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -115,7 +117,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForResetGuardians(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -129,7 +132,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForChangeDailyQuota(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -143,7 +147,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForAddToWhitelist(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -157,7 +162,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForTransferToken(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -171,7 +177,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForCallContract(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -185,7 +192,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForApproveToken(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -201,7 +209,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForApproveThenCallContract(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -214,7 +223,8 @@ contract SmartWalletV3 is SmartWallet {
                     bytes32 approvedHash = LockLib.encodeApprovalForUnlock(
                         data,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil
+                        approval.validUntil,
+                        approval.salt
                     );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -228,7 +238,8 @@ contract SmartWalletV3 is SmartWallet {
                         .encodeApprovalForChangeMasterCopy(
                             data,
                             DOMAIN_SEPARATOR,
-                            approval.validUntil
+                            approval.validUntil,
+                            approval.salt
                         );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -244,7 +255,8 @@ contract SmartWalletV3 is SmartWallet {
                         newOwner,
                         newGuardians,
                         DOMAIN_SEPARATOR,
-                        approval.validUntil
+                        approval.validUntil,
+                        approval.salt
                     );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,

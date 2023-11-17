@@ -24,15 +24,15 @@ library GuardianLib {
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH =
         keccak256(
-            "addGuardian(address wallet,uint256 validUntil,address guardian)"
+            "addGuardian(address wallet,uint256 validUntil,address guardian,bytes32 salt)"
         );
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH =
         keccak256(
-            "removeGuardian(address wallet,uint256 validUntil,address guardian)"
+            "removeGuardian(address wallet,uint256 validUntil,address guardian,bytes32 salt)"
         );
     bytes32 public constant RESET_GUARDIANS_TYPEHASH =
         keccak256(
-            "resetGuardians(address wallet,uint256 validUntil,address[] guardians)"
+            "resetGuardians(address wallet,uint256 validUntil,address[] guardians,bytes32 salt)"
         );
 
     event GuardianAdded(address guardian, uint effectiveTime);
@@ -433,7 +433,8 @@ library GuardianLib {
     function encodeApprovalForAddGuardian(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil
+        uint256 validUntil,
+        bytes32 salt
     ) external view returns (bytes32) {
         address guardian = abi.decode(data, (address));
         bytes32 approvedHash = EIP712.hashPacked(
@@ -443,7 +444,8 @@ library GuardianLib {
                     ADD_GUARDIAN_TYPEHASH,
                     address(this),
                     validUntil,
-                    guardian
+                    guardian,
+                    salt
                 )
             )
         );
@@ -453,7 +455,8 @@ library GuardianLib {
     function encodeApprovalForRemoveGuardian(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil
+        uint256 validUntil,
+        bytes32 salt
     ) external view returns (bytes32) {
         address guardian = abi.decode(data, (address));
         bytes32 approvedHash = EIP712.hashPacked(
@@ -463,7 +466,8 @@ library GuardianLib {
                     REMOVE_GUARDIAN_TYPEHASH,
                     address(this),
                     validUntil,
-                    guardian
+                    guardian,
+                    salt
                 )
             )
         );
@@ -473,7 +477,8 @@ library GuardianLib {
     function encodeApprovalForResetGuardians(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil
+        uint256 validUntil,
+        bytes32 salt
     ) external view returns (bytes32) {
         address[] memory newGuardians = abi.decode(data, (address[]));
         bytes32 approvedHash = EIP712.hashPacked(
@@ -483,7 +488,8 @@ library GuardianLib {
                     RESET_GUARDIANS_TYPEHASH,
                     address(this),
                     validUntil,
-                    newGuardians
+                    newGuardians,
+                    salt
                 )
             )
         );
