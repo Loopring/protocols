@@ -1,4 +1,4 @@
-import { Contract, Wallet } from 'ethers'
+import { Contract } from 'ethers'
 import { ethers } from 'hardhat'
 
 import { deployWalletImpl } from './deploy'

@@ -237,7 +237,7 @@ export function decodeRevertReason (
       dataParams
     )
 
-    return `Error(${err})`
+    return `Error(${err as string})`
   } else if (methodSig === '0x00fa072b') {
     const [opindex, paymaster, msg] =
       ethers.utils.defaultAbiCoder.decode(
@@ -245,9 +245,12 @@ export function decodeRevertReason (
         dataParams
       )
 
+    // eslint-disable-next-line
     return `FailedOp(${opindex}, ${
-      paymaster !== AddressZero ? paymaster : 'none'
-    }, ${msg})`
+      (paymaster as string) !== AddressZero
+        ? (paymaster as string)
+        : 'none'
+    }, ${msg as string})`
   } else if (methodSig === '0x4e487b71') {
     const [code] = ethers.utils.defaultAbiCoder.decode(
       ['uint256'],

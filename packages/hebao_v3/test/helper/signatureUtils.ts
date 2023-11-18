@@ -1,18 +1,8 @@
-import { ethers, BigNumberish } from 'ethers'
+import { BigNumberish, Wallet } from 'ethers'
 
-import { sign2 } from './Signature'
-import * as eip712 from './eip712'
-
-function encodeAddressesPacked (addrs: string[]) {
-  const addrsBs = Buffer.concat(
-    addrs.map((a) => Buffer.from('00'.repeat(12) + a.slice(2), 'hex'))
-  )
-  return addrsBs
-}
-
-export function signCreateWallet (
+export async function signCreateWallet (
   moduleAddress: string,
-  owner: string,
+  owner: Wallet,
   guardians: string[],
   quota: BigNumberish,
   inheritor: string,
@@ -20,54 +10,46 @@ export function signCreateWallet (
   feeToken: string,
   maxFeeAmount: BigNumberish,
   salt: BigNumberish,
-  privateKey: string,
   chainId: number
-) {
-  const domainSeprator = eip712.hash(
-    'WalletFactory',
-    '2.0.0',
-    moduleAddress,
-    chainId
-  )
+): Promise<string> {
+  const domain = {
+    name: 'WalletFactory',
+    version: '2.0.0',
+    chainId,
+    verifyingContract: moduleAddress
+  }
 
-  const TYPE_STR =
-    'createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)'
-  const CREATE_WALLET_TYPEHASH = ethers.utils.solidityKeccak256(
-    ['string'],
-    [TYPE_STR]
-  )
-
-  const guardiansHash = ethers.utils.solidityKeccak256(
-    ['address[]'],
-    [guardians]
-  )
-
-  const encodedRequest = ethers.utils.defaultAbiCoder.encode(
-    [
-      'bytes32',
-      'address',
-      'bytes32',
-      'uint256',
-      'address',
-      'address',
-      'address',
-      'uint256',
-      'uint256'
-    ],
-    [
-      CREATE_WALLET_TYPEHASH,
-      owner,
-      guardiansHash,
+  const types = {
+    createWallet: [
+      { name: 'owner', type: 'address' },
+      { name: 'guardians', type: 'address[]' },
+      { name: 'quota', type: 'uint256' },
+      { name: 'inheritor', type: 'address' },
+      { name: 'feeRecipient', type: 'address' },
+      { name: 'feeToken', type: 'address' },
+      { name: 'maxFeeAmount', type: 'uint256' },
+      { name: 'salt', type: 'uint256' }
+    ]
+  }
+  const message = {
+    types,
+    domain,
+    primaryType: 'createWallet',
+    value: {
+      owner: owner.address,
+      guardians,
       quota,
       inheritor,
       feeRecipient,
       feeToken,
       maxFeeAmount,
       salt
-    ]
-  )
+    }
+  }
 
-  const hash = eip712.hashPacked(domainSeprator, encodedRequest)
-  const txSignature = sign2(owner, privateKey, hash)
-  return { txSignature, hash }
+  return await owner._signTypedData(
+    message.domain,
+    message.types,
+    message.value
+  )
 }

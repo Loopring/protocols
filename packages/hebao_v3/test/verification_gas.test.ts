@@ -100,7 +100,11 @@ describe('verification gaslimit test', () => {
   async function estimateUserOpGas (
     entryPoint: EntryPoint,
     userOp1: UserOperation
-  ) {
+  ): Promise<{
+      preVerificationGas: BigNumber
+      callGasLimit: BigNumber
+      verificationGasLimit: BigNumber
+    }> {
     const userOp = {
       ...userOp1,
       // default values for missing fields.
@@ -134,10 +138,18 @@ describe('verification gaslimit test', () => {
     }
   }
 
-  async function getEIP1559GasPrice (maxPriorityFeePerGas1?: number) {
+  async function getEIP1559GasPrice (
+    maxPriorityFeePerGas1?: BigNumber
+  ): Promise<{
+      maxPriorityFeePerGas: BigNumber
+      maxFeePerGas: BigNumber
+    }> {
     const block = await ethers.provider.getBlock('latest')
-    const maxPriorityFeePerGas = maxPriorityFeePerGas1 ?? 1e9 // default
-    const maxFeePerGas = block.baseFeePerGas.add(maxPriorityFeePerGas)
+    const maxPriorityFeePerGas =
+      maxPriorityFeePerGas1 ?? BigNumber.from(1e9) // default
+    const maxFeePerGas = block.baseFeePerGas!.add(
+      maxPriorityFeePerGas
+    )
     return {
       maxPriorityFeePerGas,
       maxFeePerGas
@@ -147,7 +159,7 @@ describe('verification gaslimit test', () => {
   function encodeSignature (
     approval: Approval,
     ownerSignature: string
-  ) {
+  ): string {
     const signature = ethers.utils.defaultAbiCoder.encode(
       [
         'tuple(address[] signers,bytes[] signatures,uint256 validUntil,bytes32 salt)',
@@ -208,10 +220,10 @@ describe('verification gaslimit test', () => {
       approval,
       '0x' + '0'.repeat(130)
     )
-    const userOp = {
+    const userOp: UserOperation = {
       sender: smartWallet.address,
       nonce,
-      callData: approveTokenWA.data,
+      callData: approveTokenWA.data!,
       paymasterAndData: '0x',
       initCode: '0x',
       callGasLimit: 0,

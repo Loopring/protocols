@@ -18,7 +18,8 @@ import {
   deployWalletImpl
 } from './utils'
 
-export async function fixture () {
+// eslint-disable-next-line
+export async function fixture() {
   const signers = await ethers.getSigners()
   const deployer = signers[0]
   const paymasterOwner = signers[1]

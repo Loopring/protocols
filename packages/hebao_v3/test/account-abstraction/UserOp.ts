@@ -171,6 +171,7 @@ export function fillUserOpDefaults (
   // remove those so "merge" will succeed.
   for (const key in partial) {
     if (partial[key] == null) {
+      // eslint-disable-next-line
       delete partial[key]
     }
   }
@@ -277,7 +278,7 @@ export async function fillUserOp (
   }
   const op2 = fillUserOpDefaults(op1)
 
-  if (op2.preVerificationGas.toString() === '0') {
+  if (BigNumber.from(op2.preVerificationGas).eq(0)) {
     // TODO: we don't add overhead, which is ~21000 for a single TX, but much lower in a batch.
     op2.preVerificationGas = callDataCost(packUserOp(op2, false))
   }

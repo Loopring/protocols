@@ -1,210 +1,26 @@
-import { Deferrable } from '@ethersproject/properties'
-import { ContractReceipt } from '@ethersproject/contracts'
-import { TransactionRequest } from '@ethersproject/providers'
-import {
-  BigNumber,
-  BigNumberish,
-  Contract,
-  Signer,
-  Wallet
-} from 'ethers'
+import { Contract } from 'ethers'
 import { ethers } from 'hardhat'
 
+import { localUserOpSender } from '../test/helper/AASigner'
 import {
-  fillAndSign,
-  localUserOpSender,
-  SendUserOp,
-  UserOperation
-} from '../test/helper/AASigner'
-import { signCreateWallet } from '../test/helper/signatureUtils'
-import {
-  computeRequiredPreFund,
-  createBatchTransactions,
-  getPaymasterAndData,
-  simulationResultCatch
+  deploySingle,
+  deployWalletImpl,
+  createSmartWallet,
+  simulationResultCatch,
+  sendTx,
+  PaymasterOption,
+  generateSignedUserOp
 } from '../test/helper/utils'
 import {
-  EntryPoint,
   EntryPoint__factory,
   LoopringCreate2Deployer,
-  LoopringPaymaster,
   LoopringPaymaster__factory,
-  SmartWalletV3,
-  SmartWalletV3__factory
+  SmartWalletV3__factory,
+  WalletFactory__factory
 } from '../typechain-types'
 
-export async function deploySingle (
-  deployFactory: Contract,
-  contractName: string,
-  args?: any[],
-  libs?: Map<string, any>
-): Promise<Contract> {
-  // use same salt for all deployments:
-  const salt = ethers.utils.formatBytes32String('0x5')
-
-  const libraries = {} // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
-  libs != null &&
-    libs.forEach((value, key) => (libraries[key] = value))
-
-  const contract = await ethers.getContractFactory(contractName, {
-    libraries
-  })
-
-  let deployableCode = contract.bytecode
-  if (args != null && args.length > 0) {
-    deployableCode = ethers.utils.hexConcat([
-      deployableCode,
-      contract.interface.encodeDeploy(args)
-    ])
-  }
-
-  const deployedAddress = ethers.utils.getCreate2Address(
-    deployFactory.address,
-    salt,
-    ethers.utils.keccak256(deployableCode)
-  )
-  // check if it is deployed already
-  if ((await ethers.provider.getCode(deployedAddress)) !== '0x') {
-    console.log(
-      contractName,
-      ' is deployed already at: ',
-      deployedAddress
-    )
-  } else {
-    const gasLimit = await deployFactory.estimateGas.deploy(
-      deployableCode,
-      salt
-    )
-    const tx = await deployFactory.deploy(deployableCode, salt, {
-      gasLimit
-    })
-    await tx.wait()
-    console.log(contractName, 'deployed address: ', deployedAddress)
-  }
-
-  // if (
-  // hre.network.name == "goerli" ||
-  // hre.network.name == "sepolia" ||
-  // hre.network.name == "ethereum"
-  // ) {
-  // await hre.run("verify:verify", {
-  // address: deployedAddress,
-  // constructorArguments: args,
-  // });
-  // }
-
-  return contract.attach(deployedAddress)
-}
-
-export async function deployWalletImpl (
-  deployFactory: Contract,
-  entryPointAddr: string,
-  blankOwner: string
-): Promise<Contract> {
-  const ERC1271Lib = await deploySingle(deployFactory, 'ERC1271Lib')
-  const ERC20Lib = await deploySingle(deployFactory, 'ERC20Lib')
-  const GuardianLib = await deploySingle(deployFactory, 'GuardianLib')
-  const InheritanceLib = await deploySingle(
-    deployFactory,
-    'InheritanceLib',
-    undefined,
-    new Map([['GuardianLib', GuardianLib.address]])
-  )
-  const QuotaLib = await deploySingle(deployFactory, 'QuotaLib')
-  const UpgradeLib = await deploySingle(deployFactory, 'UpgradeLib')
-  const WhitelistLib = await deploySingle(
-    deployFactory,
-    'WhitelistLib'
-  )
-  const LockLib = await deploySingle(
-    deployFactory,
-    'LockLib',
-    undefined,
-    new Map([['GuardianLib', GuardianLib.address]])
-  )
-  const RecoverLib = await deploySingle(
-    deployFactory,
-    'RecoverLib',
-    undefined,
-    new Map([['GuardianLib', GuardianLib.address]])
-  )
-
-  const smartWallet = await deploySingle(
-    deployFactory,
-    'SmartWalletV3',
-    [ethers.constants.AddressZero, blankOwner, entryPointAddr],
-    new Map([
-      ['ERC1271Lib', ERC1271Lib.address],
-      ['ERC20Lib', ERC20Lib.address],
-      ['GuardianLib', GuardianLib.address],
-      ['InheritanceLib', InheritanceLib.address],
-      ['LockLib', LockLib.address],
-      ['QuotaLib', QuotaLib.address],
-      ['RecoverLib', RecoverLib.address],
-      ['UpgradeLib', UpgradeLib.address],
-      ['WhitelistLib', WhitelistLib.address]
-    ])
-  )
-  return smartWallet
-}
-
-export async function createSmartWallet (
-  owner: Wallet,
-  walletFactory: Contract,
-  chainId: number
-): Promise<string> {
-  const guardians: string[] = []
-  const feeRecipient = ethers.constants.AddressZero
-  const salt = ethers.utils.formatBytes32String('0x5')
-  const walletAddrComputed = await walletFactory.computeWalletAddress(
-    owner.address,
-    salt
-  )
-  if ((await ethers.provider.getCode(walletAddrComputed)) !== '0x') {
-    console.log(
-      'smart wallet of the owner',
-      owner.address,
-      ' is deployed already at: ',
-      walletAddrComputed
-    )
-  } else {
-    // create smart wallet
-    const signature = signCreateWallet(
-      walletFactory.address,
-      owner.address,
-      guardians,
-      BigNumber.from(0),
-      ethers.constants.AddressZero,
-      feeRecipient,
-      ethers.constants.AddressZero,
-      BigNumber.from(0),
-      salt,
-      owner.privateKey.slice(2),
-      chainId
-    )
-    // console.log("signature:", signature);
-
-    const walletConfig: any = {
-      owner: owner.address,
-      guardians,
-      quota: 0,
-      inheritor: ethers.constants.AddressZero,
-      feeRecipient,
-      feeToken: ethers.constants.AddressZero,
-      maxFeeAmount: 0,
-      salt,
-      signature: Buffer.from(signature.txSignature.slice(2), 'hex')
-    }
-
-    const tx = await walletFactory.createWallet(walletConfig, 0)
-    await tx.wait()
-    console.log('wallet created at: ', walletAddrComputed)
-  }
-  return walletAddrComputed
-}
-
-async function deployAll () {
-  const { chainId } = await ethers.provider.getNetwork()
+// eslint-disable-next-line
+async function deployAll() {
   const signers = await ethers.getSigners()
   const deployer = signers[0]
   const paymasterOwner = new ethers.Wallet(
@@ -323,10 +139,23 @@ async function deployAll () {
   )
   const sendUserOp = localUserOpSender(entrypoint.address, deployer)
 
-  const smartWalletAddr = await createSmartWallet(
+  // owner cannot be guardians
+  const guardians: string[] = [
+    '0x456ecAca6A1Bc3a71fC1955562d1d9BF662974D8'
+  ]
+  const salt = ethers.utils.formatBytes32String('0x5')
+  await createSmartWallet(
     smartWalletOwner,
-    walletFactory,
-    chainId
+    guardians,
+    await WalletFactory__factory.connect(
+      walletFactory.address,
+      deployer
+    ),
+    salt
+  )
+  const smartWalletAddr = await walletFactory.computeWalletAddress(
+    smartWalletOwner.address,
+    salt
   )
   const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
@@ -354,137 +183,6 @@ async function deployAll () {
     usdtToken,
     sendUserOp
   }
-}
-
-interface PaymasterOption {
-  paymaster: LoopringPaymaster
-  payToken: Contract
-  paymasterOwner: Signer
-  valueOfEth: BigNumberish
-  validUntil: BigNumberish
-}
-
-async function generateSignedUserOp (
-  txs: Array<Deferrable<TransactionRequest>>,
-  smartWallet: SmartWalletV3,
-  smartWalletOwner: Signer,
-  contractFactory: Contract,
-  entrypoint: EntryPoint,
-  paymasterOption?: PaymasterOption,
-  useExecuteApi = true
-): Promise<UserOperation> {
-  const ethSent = txs.reduce(
-    (acc, tx) => acc.add(BigNumber.from(tx.value ?? 0)),
-    BigNumber.from(0)
-  )
-  const partialUserOp = await createBatchTransactions(
-    txs,
-    ethers.provider,
-    smartWallet,
-    useExecuteApi // wrap raw calldata with callcontract api
-  )
-  // first call to fill userop
-  let signedUserOp = await fillAndSign(
-    partialUserOp,
-    smartWalletOwner,
-    contractFactory.address,
-    entrypoint
-  )
-
-  // handle paymaster
-  if (paymasterOption != null) {
-    const paymaster = paymasterOption.paymaster
-    const payToken = paymasterOption.payToken
-    const valueOfEth = paymasterOption.valueOfEth
-    const validUntil = paymasterOption.validUntil
-
-    const hash = await paymaster.getHash(
-      signedUserOp,
-      ethers.utils.solidityKeccak256(
-        ['address', 'uint48', 'uint256'],
-        [payToken.address, validUntil, valueOfEth]
-      )
-    )
-
-    const paymasterAndData = await getPaymasterAndData(
-      paymaster.address,
-      paymasterOption.paymasterOwner,
-      hash,
-      payToken.address,
-      valueOfEth,
-      validUntil
-    )
-    signedUserOp.paymasterAndData = paymasterAndData
-    signedUserOp = await fillAndSign(
-      signedUserOp,
-      smartWalletOwner,
-      contractFactory.address,
-      entrypoint
-    )
-  }
-
-  // prepare gas before send userop
-  const requiredPrefund = computeRequiredPreFund(
-    signedUserOp,
-    paymasterOption !== undefined
-  ).add(ethSent)
-  // only consider deposited balance in entrypoint contract when using paymaster
-  const currentBalance =
-    paymasterOption != null
-      ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
-      : await getEthBalance(smartWallet)
-
-  if (requiredPrefund.gt(currentBalance)) {
-    const missingValue = requiredPrefund.sub(currentBalance)
-    const payer =
-      paymasterOption != null
-        ? paymasterOption.paymaster.address
-        : smartWallet.address
-    await (
-      await entrypoint.depositTo(payer, {
-        value: missingValue
-      })
-    ).wait()
-    console.log('prefund missing amount ', missingValue)
-  }
-  return signedUserOp
-}
-
-async function sendTx (
-  txs: Array<Deferrable<TransactionRequest>>,
-  smartWallet: SmartWalletV3,
-  smartWalletOwner: Signer,
-  contractFactory: Contract,
-  entrypoint: EntryPoint,
-  sendUserOp: SendUserOp,
-  paymasterOption?: PaymasterOption
-): Promise<ContractReceipt> {
-  const signedUserOp = await generateSignedUserOp(
-    txs,
-    smartWallet,
-    smartWalletOwner,
-    contractFactory,
-    entrypoint,
-    paymasterOption
-  )
-
-  // get details if throw error
-  await entrypoint.callStatic
-    .simulateValidation(signedUserOp)
-    .catch(simulationResultCatch)
-  const recipt = await sendUserOp(signedUserOp)
-  return recipt
-}
-
-async function getEthBalance (
-  smartWallet: SmartWalletV3
-): Promise<BigNumber> {
-  const ethBalance = await ethers.provider.getBalance(
-    smartWallet.address
-  )
-  const depositBalance = await smartWallet.getDeposit()
-  const totalBalance = ethBalance.add(depositBalance)
-  return totalBalance
 }
 
 async function testExecuteTxWithEth (): Promise<void> {
@@ -650,16 +348,15 @@ async function testExecuteTx (): Promise<void> {
   await entrypoint.callStatic
     .simulateValidation(signedUserOp)
     .catch(simulationResultCatch)
-  const recipt = await sendUserOp(signedUserOp)
-  console.log(recipt)
+  await sendUserOp(signedUserOp)
 }
 
 async function main (): Promise<void> {
-  // await testExecuteTx();
-  await deployAll()
+  await testExecuteTx()
+  // await deployAll()
   // uncomment below to get gascost info of some sample txs on chain
-  // await testExecuteTxWithEth();
-  // await testExecuteTxWithUSDCPaymaster();
+  await testExecuteTxWithEth()
+  await testExecuteTxWithUSDCPaymaster()
 }
 
 main()

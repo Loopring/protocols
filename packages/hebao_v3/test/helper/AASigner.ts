@@ -141,6 +141,7 @@ export function fillUserOpDefaults (
   // remove those so "merge" will succeed.
   for (const key in partial) {
     if (partial[key] == null) {
+      // eslint-disable-next-line
       delete partial[key]
     }
   }
