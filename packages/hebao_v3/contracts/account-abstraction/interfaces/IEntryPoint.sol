@@ -9,10 +9,10 @@ pragma solidity ^0.8.12;
 /* solhint-disable no-inline-assembly */
 /* solhint-disable reason-string */
 
-import "./UserOperation.sol";
-import "./IStakeManager.sol";
-import "./IAggregator.sol";
-import "./INonceManager.sol";
+import './UserOperation.sol';
+import './IStakeManager.sol';
+import './IAggregator.sol';
+import './INonceManager.sol';
 
 interface IEntryPoint is IStakeManager, INonceManager {
     /***
@@ -185,7 +185,9 @@ interface IEntryPoint is IStakeManager, INonceManager {
      * @dev The node must also verify it doesn't use banned opcodes, and that it doesn't reference storage outside the account's data.
      * @param userOp the user operation to validate.
      */
-    function simulateValidation(UserOperation calldata userOp) external;
+    function simulateValidation(
+        UserOperation calldata userOp
+    ) external;
 
     /**
      * gas and return values during simulation

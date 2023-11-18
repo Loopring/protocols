@@ -5,12 +5,12 @@ pragma solidity ^0.8.12;
 /* solhint-disable no-inline-assembly */
 /* solhint-disable reason-string */
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol';
 
-import "../core/BaseAccount.sol";
-import "./callback/TokenCallbackHandler.sol";
+import '../core/BaseAccount.sol';
+import './callback/TokenCallbackHandler.sol';
 
 /**
  * minimal account.
@@ -41,7 +41,13 @@ contract SimpleAccount is
     }
 
     /// @inheritdoc BaseAccount
-    function entryPoint() public view virtual override returns (IEntryPoint) {
+    function entryPoint()
+        public
+        view
+        virtual
+        override
+        returns (IEntryPoint)
+    {
         return _entryPoint;
     }
 
@@ -57,7 +63,7 @@ contract SimpleAccount is
         //directly from EOA owner, or through the account itself (which gets redirected through execute())
         require(
             msg.sender == owner || msg.sender == address(this),
-            "only owner"
+            'only owner'
         );
     }
 
@@ -81,7 +87,7 @@ contract SimpleAccount is
         bytes[] calldata func
     ) external {
         _requireFromEntryPointOrOwner();
-        require(dest.length == func.length, "wrong array lengths");
+        require(dest.length == func.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
             _call(dest[i], 0, func[i]);
         }
@@ -104,8 +110,9 @@ contract SimpleAccount is
     // Require the function call went through EntryPoint or owner
     function _requireFromEntryPointOrOwner() internal view {
         require(
-            msg.sender == address(entryPoint()) || msg.sender == owner,
-            "account: not Owner or EntryPoint"
+            msg.sender == address(entryPoint()) ||
+                msg.sender == owner,
+            'account: not Owner or EntryPoint'
         );
     }
 
@@ -120,8 +127,14 @@ contract SimpleAccount is
         return 0;
     }
 
-    function _call(address target, uint256 value, bytes memory data) internal {
-        (bool success, bytes memory result) = target.call{value: value}(data);
+    function _call(
+        address target,
+        uint256 value,
+        bytes memory data
+    ) internal {
+        (bool success, bytes memory result) = target.call{
+            value: value
+        }(data);
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))

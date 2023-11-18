@@ -35,7 +35,10 @@ describe('change entrypoint', () => {
       ethers.constants.MaxUint256
     )
 
-    const sendUserOp = localUserOpSender(newEntryPoint.address, deployer)
+    const sendUserOp = localUserOpSender(
+      newEntryPoint.address,
+      deployer
+    )
     await expect(
       sendTx(
         [approveToken],
@@ -61,9 +64,7 @@ describe('change entrypoint', () => {
   })
 
   it('failure cases', async () => {
-    const { smartWallet } = await loadFixture(
-      fixture
-    )
+    const { smartWallet } = await loadFixture(fixture)
     await expect(
       smartWallet.changeEntryPoint(ethers.constants.AddressZero)
     ).to.rejectedWith('INVALID ENTRYPOINT')
@@ -71,7 +72,9 @@ describe('change entrypoint', () => {
       smartWallet.changeEntryPoint(await smartWallet.entryPoint())
     ).to.rejectedWith('SAME ENTRYPOINT')
 
-    const other = ethers.Wallet.createRandom().connect(ethers.provider)
+    const other = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
     const newEntryPoint = '0x' + '11'.repeat(20)
     await expect(
       smartWallet.connect(other).changeEntryPoint(newEntryPoint)

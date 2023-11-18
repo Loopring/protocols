@@ -97,11 +97,13 @@ describe('SimpleAccount', function () {
       const implementation = await new SimpleAccount__factory(
         ethersSigner
       ).deploy(entryPointEoa)
-      const proxy = await new ERC1967Proxy__factory(ethersSigner).deploy(
-        implementation.address,
-        '0x'
+      const proxy = await new ERC1967Proxy__factory(
+        ethersSigner
+      ).deploy(implementation.address, '0x')
+      account = SimpleAccount__factory.connect(
+        proxy.address,
+        epAsSigner
       )
-      account = SimpleAccount__factory.connect(proxy.address, epAsSigner)
 
       await ethersSigner.sendTransaction({
         from: accounts[0],
@@ -129,7 +131,8 @@ describe('SimpleAccount', function () {
 
       userOpHash = await getUserOpHash(userOp, entryPointEoa, chainId)
 
-      expectedPay = actualGasPrice * (callGasLimit + verificationGasLimit)
+      expectedPay =
+        actualGasPrice * (callGasLimit + verificationGasLimit)
 
       preBalance = await getBalance(account.address)
       const ret = await account.validateUserOp(
@@ -163,7 +166,10 @@ describe('SimpleAccount', function () {
       const deployer = await new SimpleAccountFactory__factory(
         ethersSigner
       ).deploy(entryPoint)
-      const target = await deployer.callStatic.createAccount(ownerAddr, 1234)
+      const target = await deployer.callStatic.createAccount(
+        ownerAddr,
+        1234
+      )
       expect(await isDeployed(target)).to.eq(false)
       await deployer.createAccount(ownerAddr, 1234)
       expect(await isDeployed(target)).to.eq(true)

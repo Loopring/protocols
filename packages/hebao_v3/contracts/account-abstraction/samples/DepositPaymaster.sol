@@ -3,11 +3,11 @@ pragma solidity ^0.8.12;
 
 /* solhint-disable reason-string */
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import "../core/BasePaymaster.sol";
-import "./IOracle.sol";
+import '../core/BasePaymaster.sol';
+import './IOracle.sol';
 
 /**
  * A token-based paymaster that accepts token deposits
@@ -47,7 +47,7 @@ contract DepositPaymaster is BasePaymaster {
         IERC20 token,
         IOracle tokenPriceOracle
     ) external onlyOwner {
-        require(oracles[token] == NULL_ORACLE, "Token already set");
+        require(oracles[token] == NULL_ORACLE, 'Token already set');
         oracles[token] = tokenPriceOracle;
     }
 
@@ -68,7 +68,7 @@ contract DepositPaymaster is BasePaymaster {
     ) external {
         //(sender must have approval for the paymaster)
         token.safeTransferFrom(msg.sender, address(this), amount);
-        require(oracles[token] != NULL_ORACLE, "unsupported token");
+        require(oracles[token] != NULL_ORACLE, 'unsupported token');
         balances[token][account] += amount;
         if (msg.sender == account) {
             lockTokenDeposit();
@@ -118,7 +118,7 @@ contract DepositPaymaster is BasePaymaster {
         require(
             unlockBlock[msg.sender] != 0 &&
                 block.number > unlockBlock[msg.sender],
-            "DepositPaymaster: must unlockTokenDeposit"
+            'DepositPaymaster: must unlockTokenDeposit'
         );
         balances[token][msg.sender] -= amount;
         token.safeTransfer(target, amount);
@@ -135,7 +135,10 @@ contract DepositPaymaster is BasePaymaster {
         uint256 ethBought
     ) internal view virtual returns (uint256 requiredTokens) {
         IOracle oracle = oracles[token];
-        require(oracle != NULL_ORACLE, "DepositPaymaster: unsupported token");
+        require(
+            oracle != NULL_ORACLE,
+            'DepositPaymaster: unsupported token'
+        );
         return oracle.getTokenValueOfEth(ethBought);
     }
 
@@ -159,28 +162,36 @@ contract DepositPaymaster is BasePaymaster {
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         require(
             userOp.verificationGasLimit > COST_OF_POST,
-            "DepositPaymaster: gas too low for postOp"
+            'DepositPaymaster: gas too low for postOp'
         );
 
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(
             paymasterAndData.length == 20 + 20,
-            "DepositPaymaster: paymasterAndData must specify token"
+            'DepositPaymaster: paymasterAndData must specify token'
         );
-        IERC20 token = IERC20(address(bytes20(paymasterAndData[20:])));
+        IERC20 token = IERC20(
+            address(bytes20(paymasterAndData[20:]))
+        );
         address account = userOp.getSender();
         uint256 maxTokenCost = getTokenValueOfEth(token, maxCost);
         uint256 gasPriceUserOp = userOp.gasPrice();
         require(
             unlockBlock[account] == 0,
-            "DepositPaymaster: deposit not locked"
+            'DepositPaymaster: deposit not locked'
         );
         require(
             balances[token][account] >= maxTokenCost,
-            "DepositPaymaster: deposit too low"
+            'DepositPaymaster: deposit too low'
         );
         return (
-            abi.encode(account, token, gasPriceUserOp, maxTokenCost, maxCost),
+            abi.encode(
+                account,
+                token,
+                gasPriceUserOp,
+                maxTokenCost,
+                maxCost
+            ),
             0
         );
     }
@@ -203,14 +214,21 @@ contract DepositPaymaster is BasePaymaster {
             uint256 gasPricePostOp,
             uint256 maxTokenCost,
             uint256 maxCost
-        ) = abi.decode(context, (address, IERC20, uint256, uint256, uint256));
+        ) = abi.decode(
+                context,
+                (address, IERC20, uint256, uint256, uint256)
+            );
         //use same conversion rate as used for validation.
         uint256 actualTokenCost = ((actualGasCost +
             COST_OF_POST *
             gasPricePostOp) * maxTokenCost) / maxCost;
         if (mode != PostOpMode.postOpReverted) {
             // attempt to pay with tokens:
-            token.safeTransferFrom(account, address(this), actualTokenCost);
+            token.safeTransferFrom(
+                account,
+                address(this),
+                actualTokenCost
+            );
         } else {
             //in case above transferFrom failed, pay with deposit:
             balances[token][account] -= actualTokenCost;

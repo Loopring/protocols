@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import "../core/BasePaymaster.sol";
+import '../core/BasePaymaster.sol';
 
 /**
  * test paymaster, that pays for everything, without any check.
@@ -27,6 +27,6 @@ contract TestPaymasterAcceptAll is BasePaymaster {
         returns (bytes memory context, uint256 validationData)
     {
         (userOp, userOpHash, maxCost);
-        return ("", maxCost == 12345 ? 1 : 0);
+        return ('', maxCost == 12345 ? 1 : 0);
     }
 }

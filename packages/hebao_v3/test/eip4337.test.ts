@@ -3,7 +3,12 @@ import {
   setBalance
 } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
-import { BigNumber, BigNumberish, PopulatedTransaction, Wallet } from 'ethers'
+import {
+  BigNumber,
+  BigNumberish,
+  PopulatedTransaction,
+  Wallet
+} from 'ethers'
 import { ethers } from 'hardhat'
 
 import {
@@ -77,12 +82,8 @@ describe('eip4337 test', () => {
   })
 
   it('invalid nonce', async () => {
-    const {
-      smartWallet,
-      smartWalletOwner,
-      create2,
-      entrypoint
-    } = await loadFixture(fixture)
+    const { smartWallet, smartWalletOwner, create2, entrypoint } =
+      await loadFixture(fixture)
     const changeDailyQuota =
       await smartWallet.populateTransaction.changeDailyQuota(100)
     // too small or too larger, neither of them is valid
@@ -96,7 +97,9 @@ describe('eip4337 test', () => {
         create2,
         entrypoint
       )
-      await expect(entrypoint.callStatic.simulateValidation(signedUserOp))
+      await expect(
+        entrypoint.callStatic.simulateValidation(signedUserOp)
+      )
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
         .withArgs(0, 'AA25 invalid account nonce')
     }
@@ -109,9 +112,10 @@ describe('eip4337 test', () => {
       sendUserOp,
       entrypoint
     } = await loadFixture(fixture)
-    const addGuardian = await smartWallet.populateTransaction.addGuardian(
-      ethers.constants.AddressZero
-    )
+    const addGuardian =
+      await smartWallet.populateTransaction.addGuardian(
+        ethers.constants.AddressZero
+      )
     const nonce = await smartWallet.getNonce()
     const signedUserOp = await getSignedUserOp(
       addGuardian,
@@ -219,11 +223,9 @@ describe('eip4337 test', () => {
       .catch(simulationResultCatch)
   })
   it('transfer token from wallet owner', async () => {
-    const {
-      smartWallet,
-      deployer,
-      usdtToken
-    } = await loadFixture(fixture)
+    const { smartWallet, deployer, usdtToken } = await loadFixture(
+      fixture
+    )
     const initTokenAmount = ethers.utils.parseUnits('1000', 6)
     await usdtToken.setBalance(smartWallet.address, initTokenAmount)
     const receiver = deployer.address
@@ -254,10 +256,11 @@ describe('eip4337 test', () => {
     const initTokenAmount = ethers.utils.parseUnits('1000', 6)
     await usdtToken.setBalance(smartWallet.address, initTokenAmount)
     const tokenAmount = ethers.utils.parseUnits('100', 6)
-    const transferToken = await usdtToken.populateTransaction.transfer(
-      deployer.address,
-      tokenAmount
-    )
+    const transferToken =
+      await usdtToken.populateTransaction.transfer(
+        deployer.address,
+        tokenAmount
+      )
 
     {
       const preDeposit = await smartWallet.getDeposit()
@@ -280,7 +283,9 @@ describe('eip4337 test', () => {
       const ethBalanceAfter = await ethers.provider.getBalance(
         deployer.address
       )
-      const usdtTokenBalanceAfter = await usdtToken.balanceOf(deployer.address)
+      const usdtTokenBalanceAfter = await usdtToken.balanceOf(
+        deployer.address
+      )
       const gasCost = recipt.effectiveGasPrice.mul(recipt.gasUsed)
       // relayer balance after = relayer balance before + ethReceived - gasCost
       expect(preDeposit.sub(postDeposit)).eq(
@@ -298,13 +303,14 @@ describe('eip4337 test', () => {
       const usdtTokenBalanceBefore = await usdtToken.balanceOf(
         deployer.address
       )
-      const transferToken = await smartWallet.populateTransaction.transferToken(
-        usdtToken.address,
-        deployer.address,
-        tokenAmount,
-        '0x',
-        false
-      )
+      const transferToken =
+        await smartWallet.populateTransaction.transferToken(
+          usdtToken.address,
+          deployer.address,
+          tokenAmount,
+          '0x',
+          false
+        )
       await expect(
         sendTx(
           [transferToken, transferToken],
@@ -317,7 +323,9 @@ describe('eip4337 test', () => {
           false
         )
       ).not.to.reverted
-      const usdtTokenBalanceAfter = await usdtToken.balanceOf(deployer.address)
+      const usdtTokenBalanceAfter = await usdtToken.balanceOf(
+        deployer.address
+      )
       // transfer tokens for two times
       expect(usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)).to.eq(
         tokenAmount.mul(2)
@@ -334,9 +342,8 @@ describe('eip4337 test', () => {
       const walletEthBalanceBefore = await ethers.provider.getBalance(
         smartWallet.address
       )
-      const relayerEthBalanceBefore = await ethers.provider.getBalance(
-        deployer.address
-      )
+      const relayerEthBalanceBefore =
+        await ethers.provider.getBalance(deployer.address)
       const recipt = await sendTx(
         [transferToken],
         smartWallet,
@@ -355,17 +362,18 @@ describe('eip4337 test', () => {
       const gasCost = recipt.effectiveGasPrice.mul(recipt.gasUsed)
       // left gas will remain in entrypoint for the next usage
       const prefund = await smartWallet.getDeposit()
-      expect(walletEthBalanceBefore.sub(walletEthBalanceAfter).sub(prefund)).eq(
-        relayerEthBalanceAfter.sub(relayerEthBalanceBefore).add(gasCost)
+      expect(
+        walletEthBalanceBefore.sub(walletEthBalanceAfter).sub(prefund)
+      ).eq(
+        relayerEthBalanceAfter
+          .sub(relayerEthBalanceBefore)
+          .add(gasCost)
       )
     }
   })
 
   it('deposit and withdraw eth in entrypoint', async () => {
-    const {
-      smartWallet,
-      deployer
-    } = await loadFixture(fixture)
+    const { smartWallet, deployer } = await loadFixture(fixture)
     const preDeposit = await smartWallet.getDeposit()
     const amount = ethers.utils.parseEther('1')
     await smartWallet.addDeposit({ value: amount })
@@ -424,7 +432,10 @@ describe('eip4337 test', () => {
     )
     const recipt = await sendUserOp(signedUserOp)
     const quotaInfo = (await smartWallet.wallet()).quota
-    const currentQuota = await getCurrentQuota(quotaInfo, recipt.blockNumber)
+    const currentQuota = await getCurrentQuota(
+      quotaInfo,
+      recipt.blockNumber
+    )
     expect(currentQuota).to.equal(newQuota)
     expect(quotaInfo.pendingUntil.toString()).to.equal('0')
 
@@ -471,7 +482,9 @@ describe('eip4337 test', () => {
       const { walletFactory, blankOwner, guardians } =
         await loadFixture(fixture)
       const ownerSetter = blankOwner.address
-      const other = ethers.Wallet.createRandom().connect(ethers.provider)
+      const other = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
       // prepare gas fee
       await setBalance(other.address, ethers.utils.parseEther('1'))
 
@@ -483,10 +496,11 @@ describe('eip4337 test', () => {
         salt
       )
 
-      const smartWalletAddr = await walletFactory.computeWalletAddress(
-        blankOwner.address,
-        salt
-      )
+      const smartWalletAddr =
+        await walletFactory.computeWalletAddress(
+          blankOwner.address,
+          salt
+        )
       const smartWallet = SmartWalletV3__factory.connect(
         smartWalletAddr,
         blankOwner
@@ -494,7 +508,9 @@ describe('eip4337 test', () => {
 
       // check owner before:
       const ownerBefore = (await smartWallet.wallet()).owner
-      expect(ownerBefore.toLowerCase()).to.equal(ownerSetter.toLowerCase())
+      expect(ownerBefore.toLowerCase()).to.equal(
+        ownerSetter.toLowerCase()
+      )
 
       const newOwner = '0x' + '12'.repeat(20)
       // other accounts can not set owner:
@@ -503,9 +519,13 @@ describe('eip4337 test', () => {
       ).to.rejectedWith('NOT_ALLOWED_TO_SET_OWNER')
 
       // ownerSetter should be able to set owner if owner is blankOwner
-      await smartWallet.connect(blankOwner).transferOwnership(newOwner)
+      await smartWallet
+        .connect(blankOwner)
+        .transferOwnership(newOwner)
       const ownerAfter = (await smartWallet.wallet()).owner
-      expect(ownerAfter.toLowerCase()).to.equal(newOwner.toLowerCase())
+      expect(ownerAfter.toLowerCase()).to.equal(
+        newOwner.toLowerCase()
+      )
 
       // ownerSetter should not be able to set owner again
       const newOwner2 = '0x' + '34'.repeat(20)

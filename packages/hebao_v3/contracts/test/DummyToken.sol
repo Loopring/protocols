@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../lib/MathUint.sol";
-import "./LRCToken.sol";
+import '../lib/MathUint.sol';
+import './LRCToken.sol';
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyToken is LRCToken {
@@ -28,7 +28,7 @@ contract DummyToken is LRCToken {
 
     function addBalance(address _target, uint _value) public {
         uint currBalance = balanceOf(_target);
-        require(_value + currBalance >= currBalance, "INVALID_VALUE");
+        require(_value + currBalance >= currBalance, 'INVALID_VALUE');
         totalSupply_ = totalSupply_.add(_value);
         balances[_target] = currBalance.add(_value);
     }

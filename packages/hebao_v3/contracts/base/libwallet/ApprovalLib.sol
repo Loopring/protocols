@@ -3,11 +3,11 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/EIP712.sol";
-import "../../lib/SignatureUtil.sol";
-import "./GuardianLib.sol";
-import "./WalletData.sol";
-import "../../account-abstraction/core/Helpers.sol";
+import '../../lib/EIP712.sol';
+import '../../lib/SignatureUtil.sol';
+import './GuardianLib.sol';
+import './WalletData.sol';
+import '../../account-abstraction/core/Helpers.sol';
 
 /// @title ApprovalLib
 /// @dev Utility library for better handling of signed wallet requests.
@@ -25,7 +25,7 @@ library ApprovalLib {
         Approval memory approval
     ) internal returns (uint256) {
         // Save hash to prevent replay attacks
-        require(!wallet.hashes[approvedHash], "HASH_EXIST");
+        require(!wallet.hashes[approvedHash], 'HASH_EXIST');
         wallet.hashes[approvedHash] = true;
 
         if (

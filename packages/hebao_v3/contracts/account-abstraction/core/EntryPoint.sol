@@ -8,16 +8,16 @@ pragma solidity ^0.8.12;
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
 
-import "../interfaces/IAccount.sol";
-import "../interfaces/IPaymaster.sol";
-import "../interfaces/IEntryPoint.sol";
+import '../interfaces/IAccount.sol';
+import '../interfaces/IPaymaster.sol';
+import '../interfaces/IEntryPoint.sol';
 
-import "../utils/Exec.sol";
-import "./StakeManager.sol";
-import "./SenderCreator.sol";
-import "./Helpers.sol";
-import "./NonceManager.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import '../utils/Exec.sol';
+import './StakeManager.sol';
+import './SenderCreator.sol';
+import './Helpers.sol';
+import './NonceManager.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 contract EntryPoint is
     IEntryPoint,
@@ -27,13 +27,14 @@ contract EntryPoint is
 {
     using UserOperationLib for UserOperation;
 
-    SenderCreator private immutable senderCreator = new SenderCreator();
+    SenderCreator private immutable senderCreator =
+        new SenderCreator();
 
     // internal value used during simulation: need to query aggregator.
     address private constant SIMULATE_FIND_AGGREGATOR = address(1);
 
     // marker for inner call revert on out of gas
-    bytes32 private constant INNER_OUT_OF_GAS = hex"deaddead";
+    bytes32 private constant INNER_OUT_OF_GAS = hex'deaddead';
 
     uint256 private constant REVERT_REASON_MAX_LEN = 2048;
 
@@ -48,10 +49,16 @@ contract EntryPoint is
      * @param beneficiary the address to receive the fees
      * @param amount amount to transfer.
      */
-    function _compensate(address payable beneficiary, uint256 amount) internal {
-        require(beneficiary != address(0), "AA90 invalid beneficiary");
-        (bool success, ) = beneficiary.call{value: amount}("");
-        require(success, "AA91 failed send to beneficiary");
+    function _compensate(
+        address payable beneficiary,
+        uint256 amount
+    ) internal {
+        require(
+            beneficiary != address(0),
+            'AA90 invalid beneficiary'
+        );
+        (bool success, ) = beneficiary.call{value: amount}('');
+        require(success, 'AA91 failed send to beneficiary');
     }
 
     /**
@@ -67,11 +74,13 @@ contract EntryPoint is
         UserOpInfo memory opInfo
     ) private returns (uint256 collected) {
         uint256 preGas = gasleft();
-        bytes memory context = getMemoryBytesFromOffset(opInfo.contextOffset);
+        bytes memory context = getMemoryBytesFromOffset(
+            opInfo.contextOffset
+        );
 
-        try this.innerHandleOp(userOp.callData, opInfo, context) returns (
-            uint256 _actualGasCost
-        ) {
+        try
+            this.innerHandleOp(userOp.callData, opInfo, context)
+        returns (uint256 _actualGasCost) {
             collected = _actualGasCost;
         } catch {
             bytes32 innerRevertCode;
@@ -83,7 +92,7 @@ contract EntryPoint is
             if (innerRevertCode == INNER_OUT_OF_GAS) {
                 //report paymaster, since if it is not deliberately caused by the bundler,
                 // it must be a revert caused by paymaster.
-                revert FailedOp(opIndex, "AA95 out of gas");
+                revert FailedOp(opIndex, 'AA95 out of gas');
             }
 
             uint256 actualGas = preGas - gasleft() + opInfo.preOpGas;
@@ -157,13 +166,17 @@ contract EntryPoint is
             //address(1) is special marker of "signature error"
             require(
                 address(aggregator) != address(1),
-                "AA96 invalid aggregator"
+                'AA96 invalid aggregator'
             );
 
             if (address(aggregator) != address(0)) {
                 // solhint-disable-next-line no-empty-blocks
-                try aggregator.validateSignatures(ops, opa.signature) {} catch {
-                    revert SignatureValidationFailed(address(aggregator));
+                try
+                    aggregator.validateSignatures(ops, opa.signature)
+                {} catch {
+                    revert SignatureValidationFailed(
+                        address(aggregator)
+                    );
                 }
             }
 
@@ -206,7 +219,11 @@ contract EntryPoint is
             uint256 opslen = ops.length;
 
             for (uint256 i = 0; i < opslen; i++) {
-                collected += _executeUserOp(opIndex, ops[i], opInfos[opIndex]);
+                collected += _executeUserOp(
+                    opIndex,
+                    ops[i],
+                    opInfos[opIndex]
+                );
                 opIndex++;
             }
         }
@@ -238,7 +255,9 @@ contract EntryPoint is
         bool targetSuccess;
         bytes memory targetResult;
         if (target != address(0)) {
-            (targetSuccess, targetResult) = target.call(targetCallData);
+            (targetSuccess, targetResult) = target.call(
+                targetCallData
+            );
         }
         revert ExecutionResult(
             opInfo.preOpGas,
@@ -281,14 +300,18 @@ contract EntryPoint is
         bytes calldata context
     ) external returns (uint256 actualGasCost) {
         uint256 preGas = gasleft();
-        require(msg.sender == address(this), "AA92 internal call only");
+        require(
+            msg.sender == address(this),
+            'AA92 internal call only'
+        );
         MemoryUserOp memory mUserOp = opInfo.mUserOp;
 
         uint callGasLimit = mUserOp.callGasLimit;
         unchecked {
             // handleOps was called with gas limit too low. abort entire bundle.
             if (
-                gasleft() < callGasLimit + mUserOp.verificationGasLimit + 5000
+                gasleft() <
+                callGasLimit + mUserOp.verificationGasLimit + 5000
             ) {
                 assembly {
                     mstore(0, INNER_OUT_OF_GAS)
@@ -297,11 +320,20 @@ contract EntryPoint is
             }
         }
 
-        IPaymaster.PostOpMode mode = IPaymaster.PostOpMode.opSucceeded;
+        IPaymaster.PostOpMode mode = IPaymaster
+            .PostOpMode
+            .opSucceeded;
         if (callData.length > 0) {
-            bool success = Exec.call(mUserOp.sender, 0, callData, callGasLimit);
+            bool success = Exec.call(
+                mUserOp.sender,
+                0,
+                callData,
+                callGasLimit
+            );
             if (!success) {
-                bytes memory result = Exec.getReturnData(REVERT_REASON_MAX_LEN);
+                bytes memory result = Exec.getReturnData(
+                    REVERT_REASON_MAX_LEN
+                );
                 if (result.length > 0) {
                     emit UserOperationRevertReason(
                         opInfo.userOpHash,
@@ -329,7 +361,13 @@ contract EntryPoint is
         UserOperation calldata userOp
     ) public view returns (bytes32) {
         return
-            keccak256(abi.encode(userOp.hash(), address(this), block.chainid));
+            keccak256(
+                abi.encode(
+                    userOp.hash(),
+                    address(this),
+                    block.chainid
+                )
+            );
     }
 
     /**
@@ -350,9 +388,11 @@ contract EntryPoint is
         if (paymasterAndData.length > 0) {
             require(
                 paymasterAndData.length >= 20,
-                "AA93 invalid paymasterAndData"
+                'AA93 invalid paymasterAndData'
             );
-            mUserOp.paymaster = address(bytes20(paymasterAndData[:20]));
+            mUserOp.paymaster = address(
+                bytes20(paymasterAndData[:20])
+            );
         } else {
             mUserOp.paymaster = address(0);
         }
@@ -364,7 +404,9 @@ contract EntryPoint is
      * @dev The node must also verify it doesn't use banned opcodes, and that it doesn't reference storage outside the account's data.
      * @param userOp the user operation to validate.
      */
-    function simulateValidation(UserOperation calldata userOp) external {
+    function simulateValidation(
+        UserOperation calldata userOp
+    ) external {
         UserOpInfo memory outOpInfo;
 
         _simulationOnlyValidations(userOp);
@@ -375,7 +417,9 @@ contract EntryPoint is
         StakeInfo memory paymasterInfo = _getStakeInfo(
             outOpInfo.mUserOp.paymaster
         );
-        StakeInfo memory senderInfo = _getStakeInfo(outOpInfo.mUserOp.sender);
+        StakeInfo memory senderInfo = _getStakeInfo(
+            outOpInfo.mUserOp.sender
+        );
         StakeInfo memory factoryInfo;
         {
             bytes calldata initCode = userOp.initCode;
@@ -401,10 +445,11 @@ contract EntryPoint is
         );
 
         if (aggregator != address(0) && aggregator != address(1)) {
-            AggregatorStakeInfo memory aggregatorInfo = AggregatorStakeInfo(
-                aggregator,
-                _getStakeInfo(aggregator)
-            );
+            AggregatorStakeInfo
+                memory aggregatorInfo = AggregatorStakeInfo(
+                    aggregator,
+                    _getStakeInfo(aggregator)
+                );
             revert ValidationResultWithAggregation(
                 returnInfo,
                 senderInfo,
@@ -446,16 +491,28 @@ contract EntryPoint is
         if (initCode.length != 0) {
             address sender = opInfo.mUserOp.sender;
             if (sender.code.length != 0)
-                revert FailedOp(opIndex, "AA10 sender already constructed");
+                revert FailedOp(
+                    opIndex,
+                    'AA10 sender already constructed'
+                );
             address sender1 = senderCreator.createSender{
                 gas: opInfo.mUserOp.verificationGasLimit
             }(initCode);
             if (sender1 == address(0))
-                revert FailedOp(opIndex, "AA13 initCode failed or OOG");
+                revert FailedOp(
+                    opIndex,
+                    'AA13 initCode failed or OOG'
+                );
             if (sender1 != sender)
-                revert FailedOp(opIndex, "AA14 initCode must return sender");
+                revert FailedOp(
+                    opIndex,
+                    'AA14 initCode must return sender'
+                );
             if (sender1.code.length == 0)
-                revert FailedOp(opIndex, "AA15 initCode must create sender");
+                revert FailedOp(
+                    opIndex,
+                    'AA15 initCode must create sender'
+                );
             address factory = address(bytes20(initCode[0:20]));
             emit AccountDeployed(
                 opInfo.userOpHash,
@@ -505,17 +562,19 @@ contract EntryPoint is
     ) external view {
         if (initCode.length == 0 && sender.code.length == 0) {
             // it would revert anyway. but give a meaningful message
-            revert("AA20 account not deployed");
+            revert('AA20 account not deployed');
         }
         if (paymasterAndData.length >= 20) {
-            address paymaster = address(bytes20(paymasterAndData[0:20]));
+            address paymaster = address(
+                bytes20(paymasterAndData[0:20])
+            );
             if (paymaster.code.length == 0) {
                 // it would revert anyway. but give a meaningful message
-                revert("AA30 paymaster not deployed");
+                revert('AA30 paymaster not deployed');
             }
         }
         // always revert
-        revert("");
+        revert('');
     }
 
     /**
@@ -558,18 +617,23 @@ contract EntryPoint is
             } catch Error(string memory revertReason) {
                 revert FailedOp(
                     opIndex,
-                    string.concat("AA23 reverted: ", revertReason)
+                    string.concat('AA23 reverted: ', revertReason)
                 );
             } catch {
-                revert FailedOp(opIndex, "AA23 reverted (or OOG)");
+                revert FailedOp(opIndex, 'AA23 reverted (or OOG)');
             }
             if (paymaster == address(0)) {
                 DepositInfo storage senderInfo = deposits[sender];
                 uint256 deposit = senderInfo.deposit;
                 if (requiredPrefund > deposit) {
-                    revert FailedOp(opIndex, "AA21 didn't pay prefund");
+                    revert FailedOp(
+                        opIndex,
+                        "AA21 didn't pay prefund"
+                    );
                 }
-                senderInfo.deposit = uint112(deposit - requiredPrefund);
+                senderInfo.deposit = uint112(
+                    deposit - requiredPrefund
+                );
             }
             gasUsedByValidateAccountPrepayment = preGas - gasleft();
         }
@@ -588,13 +652,18 @@ contract EntryPoint is
         UserOpInfo memory opInfo,
         uint256 requiredPreFund,
         uint256 gasUsedByValidateAccountPrepayment
-    ) internal returns (bytes memory context, uint256 validationData) {
+    )
+        internal
+        returns (bytes memory context, uint256 validationData)
+    {
         unchecked {
             MemoryUserOp memory mUserOp = opInfo.mUserOp;
-            uint256 verificationGasLimit = mUserOp.verificationGasLimit;
+            uint256 verificationGasLimit = mUserOp
+                .verificationGasLimit;
             require(
-                verificationGasLimit > gasUsedByValidateAccountPrepayment,
-                "AA41 too little verificationGas"
+                verificationGasLimit >
+                    gasUsedByValidateAccountPrepayment,
+                'AA41 too little verificationGas'
             );
             uint256 gas = verificationGasLimit -
                 gasUsedByValidateAccountPrepayment;
@@ -603,25 +672,28 @@ contract EntryPoint is
             DepositInfo storage paymasterInfo = deposits[paymaster];
             uint256 deposit = paymasterInfo.deposit;
             if (deposit < requiredPreFund) {
-                revert FailedOp(opIndex, "AA31 paymaster deposit too low");
+                revert FailedOp(
+                    opIndex,
+                    'AA31 paymaster deposit too low'
+                );
             }
-            paymasterInfo.deposit = uint112(deposit - requiredPreFund);
+            paymasterInfo.deposit = uint112(
+                deposit - requiredPreFund
+            );
             try
-                IPaymaster(paymaster).validatePaymasterUserOp{gas: gas}(
-                    op,
-                    opInfo.userOpHash,
-                    requiredPreFund
-                )
+                IPaymaster(paymaster).validatePaymasterUserOp{
+                    gas: gas
+                }(op, opInfo.userOpHash, requiredPreFund)
             returns (bytes memory _context, uint256 _validationData) {
                 context = _context;
                 validationData = _validationData;
             } catch Error(string memory revertReason) {
                 revert FailedOp(
                     opIndex,
-                    string.concat("AA33 reverted: ", revertReason)
+                    string.concat('AA33 reverted: ', revertReason)
                 );
             } catch {
-                revert FailedOp(opIndex, "AA33 reverted (or OOG)");
+                revert FailedOp(opIndex, 'AA33 reverted (or OOG)');
             }
         }
     }
@@ -635,14 +707,15 @@ contract EntryPoint is
         uint256 paymasterValidationData,
         address expectedAggregator
     ) internal view {
-        (address aggregator, bool outOfTimeRange) = _getValidationData(
-            validationData
-        );
+        (
+            address aggregator,
+            bool outOfTimeRange
+        ) = _getValidationData(validationData);
         if (expectedAggregator != aggregator) {
-            revert FailedOp(opIndex, "AA24 signature error");
+            revert FailedOp(opIndex, 'AA24 signature error');
         }
         if (outOfTimeRange) {
-            revert FailedOp(opIndex, "AA22 expired or not due");
+            revert FailedOp(opIndex, 'AA22 expired or not due');
         }
         //pmAggregator is not a real signature aggregator: we don't have logic to handle it as address.
         // non-zero address means that the paymaster fails due to some signature check (which is ok only during estimation)
@@ -651,20 +724,29 @@ contract EntryPoint is
             paymasterValidationData
         );
         if (pmAggregator != address(0)) {
-            revert FailedOp(opIndex, "AA34 signature error");
+            revert FailedOp(opIndex, 'AA34 signature error');
         }
         if (outOfTimeRange) {
-            revert FailedOp(opIndex, "AA32 paymaster expired or not due");
+            revert FailedOp(
+                opIndex,
+                'AA32 paymaster expired or not due'
+            );
         }
     }
 
     function _getValidationData(
         uint256 validationData
-    ) internal view returns (address aggregator, bool outOfTimeRange) {
+    )
+        internal
+        view
+        returns (address aggregator, bool outOfTimeRange)
+    {
         if (validationData == 0) {
             return (address(0), false);
         }
-        ValidationData memory data = _parseValidationData(validationData);
+        ValidationData memory data = _parseValidationData(
+            validationData
+        );
         // solhint-disable-next-line not-rely-on-time
         outOfTimeRange =
             block.timestamp > data.validUntil ||
@@ -685,7 +767,10 @@ contract EntryPoint is
         UserOpInfo memory outOpInfo
     )
         private
-        returns (uint256 validationData, uint256 paymasterValidationData)
+        returns (
+            uint256 validationData,
+            uint256 paymasterValidationData
+        )
     {
         uint256 preGas = gasleft();
         MemoryUserOp memory mUserOp = outOpInfo.mUserOp;
@@ -699,7 +784,10 @@ contract EntryPoint is
             mUserOp.callGasLimit |
             userOp.maxFeePerGas |
             userOp.maxPriorityFeePerGas;
-        require(maxGasValues <= type(uint120).max, "AA94 gas values overflow");
+        require(
+            maxGasValues <= type(uint120).max,
+            'AA94 gas values overflow'
+        );
 
         uint256 gasUsedByValidateAccountPrepayment;
         uint256 requiredPreFund = _getRequiredPrefund(mUserOp);
@@ -714,7 +802,7 @@ contract EntryPoint is
         );
 
         if (!_validateAndUpdateNonce(mUserOp.sender, mUserOp.nonce)) {
-            revert FailedOp(opIndex, "AA25 invalid account nonce");
+            revert FailedOp(opIndex, 'AA25 invalid account nonce');
         }
 
         //a "marker" where account opcode validation is done and paymaster opcode validation is about to start
@@ -723,7 +811,10 @@ contract EntryPoint is
 
         bytes memory context;
         if (mUserOp.paymaster != address(0)) {
-            (context, paymasterValidationData) = _validatePaymasterPrepayment(
+            (
+                context,
+                paymasterValidationData
+            ) = _validatePaymasterPrepayment(
                 opIndex,
                 userOp,
                 outOpInfo,
@@ -735,11 +826,17 @@ contract EntryPoint is
             uint256 gasUsed = preGas - gasleft();
 
             if (userOp.verificationGasLimit < gasUsed) {
-                revert FailedOp(opIndex, "AA40 over verificationGasLimit");
+                revert FailedOp(
+                    opIndex,
+                    'AA40 over verificationGasLimit'
+                );
             }
             outOpInfo.prefund = requiredPreFund;
             outOpInfo.contextOffset = getOffsetOfMemoryBytes(context);
-            outOpInfo.preOpGas = preGas - gasleft() + userOp.preVerificationGas;
+            outOpInfo.preOpGas =
+                preGas -
+                gasleft() +
+                userOp.preVerificationGas;
         }
     }
 
@@ -774,7 +871,9 @@ contract EntryPoint is
                 refundAddress = paymaster;
                 if (context.length > 0) {
                     actualGasCost = actualGas * gasPrice;
-                    if (mode != IPaymaster.PostOpMode.postOpReverted) {
+                    if (
+                        mode != IPaymaster.PostOpMode.postOpReverted
+                    ) {
                         IPaymaster(paymaster).postOp{
                             gas: mUserOp.verificationGasLimit
                         }(mode, context, actualGasCost);
@@ -787,10 +886,16 @@ contract EntryPoint is
                         {} catch Error(string memory reason) {
                             revert FailedOp(
                                 opIndex,
-                                string.concat("AA50 postOp reverted: ", reason)
+                                string.concat(
+                                    'AA50 postOp reverted: ',
+                                    reason
+                                )
                             );
                         } catch {
-                            revert FailedOp(opIndex, "AA50 postOp revert");
+                            revert FailedOp(
+                                opIndex,
+                                'AA50 postOp revert'
+                            );
                         }
                     }
                 }
@@ -798,7 +903,10 @@ contract EntryPoint is
             actualGas += preGas - gasleft();
             actualGasCost = actualGas * gasPrice;
             if (opInfo.prefund < actualGasCost) {
-                revert FailedOp(opIndex, "AA51 prefund below actualGasCost");
+                revert FailedOp(
+                    opIndex,
+                    'AA51 prefund below actualGasCost'
+                );
             }
             uint256 refund = opInfo.prefund - actualGasCost;
             _incrementDeposit(refundAddress, refund);
@@ -824,16 +932,24 @@ contract EntryPoint is
     ) internal view returns (uint256) {
         unchecked {
             uint256 maxFeePerGas = mUserOp.maxFeePerGas;
-            uint256 maxPriorityFeePerGas = mUserOp.maxPriorityFeePerGas;
+            uint256 maxPriorityFeePerGas = mUserOp
+                .maxPriorityFeePerGas;
             if (maxFeePerGas == maxPriorityFeePerGas) {
                 //legacy mode (for networks that don't support basefee opcode)
                 return maxFeePerGas;
             }
-            return min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+            return
+                min(
+                    maxFeePerGas,
+                    maxPriorityFeePerGas + block.basefee
+                );
         }
     }
 
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+    function min(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256) {
         return a < b ? a : b;
     }
 

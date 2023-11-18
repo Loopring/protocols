@@ -1,4 +1,7 @@
-import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers'
+import {
+  loadFixture,
+  time
+} from '@nomicfoundation/hardhat-network-helpers'
 import { expect, assert } from 'chai'
 
 import { ethers } from 'hardhat'
@@ -11,10 +14,7 @@ import {
 import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
-import {
-  deployWalletImpl,
-  getBlockTimestamp
-} from './helper/utils'
+import { deployWalletImpl, getBlockTimestamp } from './helper/utils'
 
 describe('wallet', () => {
   describe('upgrade', () => {
@@ -88,10 +88,7 @@ describe('wallet', () => {
 
   describe('DelayedImplementationManager', () => {
     it('only owner is able to set nextImpl & effectiveTime', async () => {
-      const {
-        deployer,
-        implStorage
-      } = await loadFixture(fixture)
+      const { deployer, implStorage } = await loadFixture(fixture)
       const otherSigner = (await ethers.getSigners())[1]
       const owner = await implStorage.owner()
       expect(owner).to.equal(deployer.address)
@@ -105,7 +102,9 @@ describe('wallet', () => {
       const blockTime = await getBlockTimestamp(tx.blockNumber!)
       const receipt = await tx.wait()
 
-      assert(receipt.events !== undefined && receipt.events.length > 0)
+      assert(
+        receipt.events !== undefined && receipt.events.length > 0
+      )
 
       const upgradeScheduledEvent = receipt.events[0].args!
       expect(upgradeScheduledEvent.nextImpl).to.equal(newImpl)
@@ -113,8 +112,11 @@ describe('wallet', () => {
         blockTime + 3600 * 24
       )
 
-      const storageWithAnotherSigner = await implStorage.connect(otherSigner)
-      const signer2 = await storageWithAnotherSigner.signer.getAddress()
+      const storageWithAnotherSigner = await implStorage.connect(
+        otherSigner
+      )
+      const signer2 =
+        await storageWithAnotherSigner.signer.getAddress()
       expect(owner).not.to.equal(signer2)
       const newImpl2 = '0x' + '22'.repeat(20)
       await expect(
@@ -122,15 +124,20 @@ describe('wallet', () => {
       ).to.revertedWith('UNAUTHORIZED')
 
       // execute upgrade before nexeEffectiveTime:
-      await expect(storageWithAnotherSigner.executeUpgrade()).to.revertedWith(
-        'NOT_IN_EFFECT'
-      )
+      await expect(
+        storageWithAnotherSigner.executeUpgrade()
+      ).to.revertedWith('NOT_IN_EFFECT')
 
       await time.increase(3600 * 24)
-      const executeTx = await storageWithAnotherSigner.executeUpgrade()
+      const executeTx =
+        await storageWithAnotherSigner.executeUpgrade()
       const executeReceipt = await executeTx.wait()
-      assert(executeReceipt.events !== undefined && executeReceipt.events.length > 0)
-      const implementationChangedEvent = executeReceipt.events[0].args!
+      assert(
+        executeReceipt.events !== undefined &&
+          executeReceipt.events.length > 0
+      )
+      const implementationChangedEvent =
+        executeReceipt.events[0].args!
       expect(implementationChangedEvent.newImpl).to.equal(newImpl)
 
       // // upgrade can not be executed agin:
@@ -158,17 +165,24 @@ describe('wallet', () => {
       expect(await smartWallet.blankOwner()).to.eq(blankOwner.address)
 
       // random blankowner
-      const ownerSetter = ethers.Wallet.createRandom().connect(ethers.provider)
+      const ownerSetter = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
       const newSmartWalletImpl = await deployWalletImpl(
         create2,
         entrypoint.address,
         ownerSetter.address
       )
-      await implStorage.delayedUpgradeTo(newSmartWalletImpl.address, 1)
+      await implStorage.delayedUpgradeTo(
+        newSmartWalletImpl.address,
+        1
+      )
       await time.increase(3600 * 24)
       await implStorage.executeUpgrade()
       // check immutable data
-      expect(await smartWallet.blankOwner()).to.eq(ownerSetter.address)
+      expect(await smartWallet.blankOwner()).to.eq(
+        ownerSetter.address
+      )
 
       // transfer token
       const receiver = deployer.address
@@ -176,7 +190,9 @@ describe('wallet', () => {
       await usdtToken.setBalance(smartWallet.address, initTokenAmount)
       const tokenAmount = ethers.utils.parseUnits('100', 6)
       {
-        const usdtTokenBalanceBefore = await usdtToken.balanceOf(receiver)
+        const usdtTokenBalanceBefore = await usdtToken.balanceOf(
+          receiver
+        )
         await smartWallet.transferToken(
           usdtToken.address,
           receiver,
@@ -184,15 +200,19 @@ describe('wallet', () => {
           '0x',
           false
         )
-        const usdtTokenBalanceAfter = await usdtToken.balanceOf(receiver)
-        expect(usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)).to.eq(
-          tokenAmount
+        const usdtTokenBalanceAfter = await usdtToken.balanceOf(
+          receiver
         )
+        expect(
+          usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)
+        ).to.eq(tokenAmount)
       }
 
       // transfer token with approval(guardians is the same as before so that multisig is still valid)
       {
-        const usdtTokenBalanceBefore = await usdtToken.balanceOf(receiver)
+        const usdtTokenBalanceBefore = await usdtToken.balanceOf(
+          receiver
+        )
         const callData = smartWallet.interface.encodeFunctionData(
           'transferTokenWA',
           [usdtToken.address, receiver, tokenAmount, '0x']
@@ -218,10 +238,12 @@ describe('wallet', () => {
           entrypoint
         )
         await sendUserOp(signedUserOp)
-        const usdtTokenBalanceAfter = await usdtToken.balanceOf(receiver)
-        expect(usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)).to.eq(
-          tokenAmount
+        const usdtTokenBalanceAfter = await usdtToken.balanceOf(
+          receiver
         )
+        expect(
+          usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)
+        ).to.eq(tokenAmount)
       }
     })
   })

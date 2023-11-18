@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import '@openzeppelin/contracts/utils/Create2.sol';
+import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
-import "../../interfaces/IEntryPoint.sol";
-import "./BLSAccount.sol";
+import '../../interfaces/IEntryPoint.sol';
+import './BLSAccount.sol';
 
 /* solhint-disable no-inline-assembly */
 
@@ -18,7 +18,10 @@ contract BLSAccountFactory {
     BLSAccount public immutable accountImplementation;
 
     constructor(IEntryPoint entryPoint, address aggregator) {
-        accountImplementation = new BLSAccount(entryPoint, aggregator);
+        accountImplementation = new BLSAccount(
+            entryPoint,
+            aggregator
+        );
     }
 
     /**
@@ -37,7 +40,7 @@ contract BLSAccountFactory {
         assembly {
             slot := aPublicKey
         }
-        require(slot == msg.data.length - 128, "wrong pubkey offset");
+        require(slot == msg.data.length - 128, 'wrong pubkey offset');
 
         address addr = getAddress(salt, aPublicKey);
         uint codeSize = addr.code.length;
@@ -49,7 +52,10 @@ contract BLSAccountFactory {
                 payable(
                     new ERC1967Proxy{salt: bytes32(salt)}(
                         address(accountImplementation),
-                        abi.encodeCall(BLSAccount.initialize, aPublicKey)
+                        abi.encodeCall(
+                            BLSAccount.initialize,
+                            aPublicKey
+                        )
                     )
                 )
             );
@@ -70,7 +76,10 @@ contract BLSAccountFactory {
                         type(ERC1967Proxy).creationCode,
                         abi.encode(
                             address(accountImplementation),
-                            abi.encodeCall(BLSAccount.initialize, (aPublicKey))
+                            abi.encodeCall(
+                                BLSAccount.initialize,
+                                (aPublicKey)
+                            )
                         )
                     )
                 )

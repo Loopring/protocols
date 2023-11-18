@@ -36,32 +36,43 @@ describe('DepositPaymaster', () => {
   before(async function () {
     entryPoint = await deployEntryPoint()
 
-    paymaster = await new DepositPaymaster__factory(ethersSigner).deploy(
-      entryPoint.address
-    )
+    paymaster = await new DepositPaymaster__factory(
+      ethersSigner
+    ).deploy(entryPoint.address)
     await paymaster.addStake(1, { value: parseEther('2') })
-    await entryPoint.depositTo(paymaster.address, { value: parseEther('1') })
+    await entryPoint.depositTo(paymaster.address, {
+      value: parseEther('1')
+    })
 
     token = await new TestToken__factory(ethersSigner).deploy()
-    const testOracle = await new TestOracle__factory(ethersSigner).deploy()
+    const testOracle = await new TestOracle__factory(
+      ethersSigner
+    ).deploy()
     await paymaster.addToken(token.address, testOracle.address)
 
     await token.mint(await ethersSigner.getAddress(), FIVE_ETH)
-    await token.approve(paymaster.address, ethers.constants.MaxUint256)
+    await token.approve(
+      paymaster.address,
+      ethers.constants.MaxUint256
+    )
   })
 
   describe('deposit', () => {
     let account: SimpleAccount
 
     before(async () => {
-      ({ proxy: account } = await createAccount(
+      ;({ proxy: account } = await createAccount(
         ethersSigner,
         await ethersSigner.getAddress(),
         entryPoint.address
       ))
     })
     it('should deposit and read balance', async () => {
-      await paymaster.addDepositFor(token.address, account.address, 100)
+      await paymaster.addDepositFor(
+        token.address,
+        account.address,
+        100
+      )
       expect(
         await paymaster.depositInfo(token.address, account.address)
       ).to.eql({ amount: 100 })
@@ -88,7 +99,9 @@ describe('DepositPaymaster', () => {
           [paymaster.address, paymaster.address],
           [paymasterUnlock, paymasterWithdraw]
         )
-      ).to.be.rejectedWith('DepositPaymaster: must unlockTokenDeposit')
+      ).to.be.rejectedWith(
+        'DepositPaymaster: must unlockTokenDeposit'
+      )
     })
     it('should succeed to withdraw after unlock', async () => {
       const paymasterUnlock = await paymaster.populateTransaction
@@ -109,7 +122,7 @@ describe('DepositPaymaster', () => {
     const gasPrice = 1e9
 
     before(async () => {
-      ({ proxy: account } = await createAccount(
+      ;({ proxy: account } = await createAccount(
         ethersSigner,
         await ethersSigner.getAddress(),
         entryPoint.address
@@ -165,7 +178,11 @@ describe('DepositPaymaster', () => {
     })
 
     it('should reject if deposit is not locked', async () => {
-      await paymaster.addDepositFor(token.address, account.address, ONE_ETH)
+      await paymaster.addDepositFor(
+        token.address,
+        account.address,
+        ONE_ETH
+      )
 
       const paymasterUnlock = await paymaster.populateTransaction
         .unlockTokenDeposit()
@@ -190,10 +207,15 @@ describe('DepositPaymaster', () => {
 
     it('succeed with valid deposit', async () => {
       // needed only if previous test did unlock.
-      const paymasterLockTokenDeposit = await paymaster.populateTransaction
-        .lockTokenDeposit()
-        .then((tx) => tx.data!)
-      await account.execute(paymaster.address, 0, paymasterLockTokenDeposit)
+      const paymasterLockTokenDeposit =
+        await paymaster.populateTransaction
+          .lockTokenDeposit()
+          .then((tx) => tx.data!)
+      await account.execute(
+        paymaster.address,
+        0,
+        paymasterLockTokenDeposit
+      )
 
       const userOp = await fillAndSign(
         {
@@ -217,7 +239,7 @@ describe('DepositPaymaster', () => {
     let counter: TestCounter
     let callData: string
     before(async () => {
-      ({ proxy: account } = await createAccount(
+      ;({ proxy: account } = await createAccount(
         ethersSigner,
         await accountOwner.getAddress(),
         entryPoint.address
@@ -230,7 +252,11 @@ describe('DepositPaymaster', () => {
         .execute(counter.address, 0, counterJustEmit)
         .then((tx) => tx.data!)
 
-      await paymaster.addDepositFor(token.address, account.address, ONE_ETH)
+      await paymaster.addDepositFor(
+        token.address,
+        account.address,
+        ONE_ETH
+      )
     })
     it("should pay with deposit (and revert user's call) if user can't pay with tokens", async () => {
       const beneficiary = createAddress()
@@ -256,10 +282,12 @@ describe('DepositPaymaster', () => {
         entryPoint.filters.UserOperationEvent()
       )
       expect(log.args.success).to.eq(false)
-      expect(await counter.queryFilter(counter.filters.CalledFrom())).to.eql(
-        []
+      expect(
+        await counter.queryFilter(counter.filters.CalledFrom())
+      ).to.eql([])
+      expect(await ethers.provider.getBalance(beneficiary)).to.be.gt(
+        0
       )
-      expect(await ethers.provider.getBalance(beneficiary)).to.be.gt(0)
     })
 
     it('should pay with tokens if available', async () => {
@@ -315,7 +343,9 @@ describe('DepositPaymaster', () => {
       )
       expect(log.args.success).to.eq(true)
       const charge = log.args.actualGasCost
-      expect(await ethers.provider.getBalance(beneficiary)).to.eq(charge)
+      expect(await ethers.provider.getBalance(beneficiary)).to.eq(
+        charge
+      )
 
       const targetLogs = await counter.queryFilter(
         counter.filters.CalledFrom()

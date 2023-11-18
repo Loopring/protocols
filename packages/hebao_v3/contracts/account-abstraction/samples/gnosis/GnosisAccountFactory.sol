@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "@gnosis.pm/safe-contracts/contracts/proxies/GnosisSafeProxyFactory.sol";
-import "./EIP4337Manager.sol";
+import '@openzeppelin/contracts/utils/Create2.sol';
+import '@gnosis.pm/safe-contracts/contracts/proxies/GnosisSafeProxyFactory.sol';
+import './EIP4337Manager.sol';
 
 /**
  * A wrapper factory contract to deploy GnosisSafe as an ERC-4337 account contract.

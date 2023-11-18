@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../lib/ERC20.sol";
+import '../lib/ERC20.sol';
 
 contract TestKyberNetworkProxy {
     uint public expectedRate;
@@ -15,7 +15,12 @@ contract TestKyberNetworkProxy {
         ERC20,
         ERC20,
         uint
-    ) public view virtual returns (uint _expectedRate, uint _slippageRate) {
+    )
+        public
+        view
+        virtual
+        returns (uint _expectedRate, uint _slippageRate)
+    {
         _expectedRate = expectedRate;
         _slippageRate = 1;
     }

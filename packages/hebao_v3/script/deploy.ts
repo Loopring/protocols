@@ -1,9 +1,13 @@
 import { Deferrable } from '@ethersproject/properties'
 import { ContractReceipt } from '@ethersproject/contracts'
+import { TransactionRequest } from '@ethersproject/providers'
 import {
-  TransactionRequest
-} from '@ethersproject/providers'
-import { BigNumber, BigNumberish, Contract, Signer, Wallet } from 'ethers'
+  BigNumber,
+  BigNumberish,
+  Contract,
+  Signer,
+  Wallet
+} from 'ethers'
 import { ethers } from 'hardhat'
 
 import {
@@ -39,12 +43,15 @@ export async function deploySingle (
   const salt = ethers.utils.formatBytes32String('0x5')
 
   const libraries = {} // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
-  ;(libs != null) && libs.forEach((value, key) => (libraries[key] = value))
+  libs != null &&
+    libs.forEach((value, key) => (libraries[key] = value))
 
-  const contract = await ethers.getContractFactory(contractName, { libraries })
+  const contract = await ethers.getContractFactory(contractName, {
+    libraries
+  })
 
   let deployableCode = contract.bytecode
-  if ((args != null) && args.length > 0) {
+  if (args != null && args.length > 0) {
     deployableCode = ethers.utils.hexConcat([
       deployableCode,
       contract.interface.encodeDeploy(args)
@@ -58,13 +65,19 @@ export async function deploySingle (
   )
   // check if it is deployed already
   if ((await ethers.provider.getCode(deployedAddress)) !== '0x') {
-    console.log(contractName, ' is deployed already at: ', deployedAddress)
+    console.log(
+      contractName,
+      ' is deployed already at: ',
+      deployedAddress
+    )
   } else {
     const gasLimit = await deployFactory.estimateGas.deploy(
       deployableCode,
       salt
     )
-    const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit })
+    const tx = await deployFactory.deploy(deployableCode, salt, {
+      gasLimit
+    })
     await tx.wait()
     console.log(contractName, 'deployed address: ', deployedAddress)
   }
@@ -99,7 +112,10 @@ export async function deployWalletImpl (
   )
   const QuotaLib = await deploySingle(deployFactory, 'QuotaLib')
   const UpgradeLib = await deploySingle(deployFactory, 'UpgradeLib')
-  const WhitelistLib = await deploySingle(deployFactory, 'WhitelistLib')
+  const WhitelistLib = await deploySingle(
+    deployFactory,
+    'WhitelistLib'
+  )
   const LockLib = await deploySingle(
     deployFactory,
     'LockLib',
@@ -192,7 +208,8 @@ async function deployAll () {
   const signers = await ethers.getSigners()
   const deployer = signers[0]
   const paymasterOwner = new ethers.Wallet(
-    process.env.PAYMASTER_OWNER_PRIVATE_KEY ?? process.env.PRIVATE_KEY as string,
+    process.env.PAYMASTER_OWNER_PRIVATE_KEY ??
+      (process.env.PRIVATE_KEY as string),
     ethers.provider
   )
   const blankOwner = process.env.BLANK_OWNER ?? deployer.address
@@ -207,7 +224,10 @@ async function deployAll () {
       'LoopringCreate2Deployer',
       create2Addr
     )
-    console.log('create2 factory is deployed already at : ', create2.address)
+    console.log(
+      'create2 factory is deployed already at : ',
+      create2.address
+    )
   } else {
     create2 = await (
       await ethers.getContractFactory('LoopringCreate2Deployer')
@@ -221,7 +241,10 @@ async function deployAll () {
   // const entrypointAddr = ethers.constants.AddressZero;
   const entrypointAddr = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
   if ((await ethers.provider.getCode(entrypointAddr)) !== '0x') {
-    entrypoint = await ethers.getContractAt('EntryPoint', entrypointAddr)
+    entrypoint = await ethers.getContractAt(
+      'EntryPoint',
+      entrypointAddr
+    )
   } else {
     entrypoint = await deploySingle(create2, 'EntryPoint')
   }
@@ -260,22 +283,32 @@ async function deployAll () {
       await walletFactory.populateTransaction.transferOwnership(
         deployer.address
       )
-    await (await create2.transact(transferWalletFactoryOwnership.data!)).wait()
+    await (
+      await create2.transact(transferWalletFactoryOwnership.data!)
+    ).wait()
   } else {
     console.log('ownership of wallet factory is transfered already')
   }
 
-  if (!(await walletFactory.isOperator(deployer.address) as boolean)) {
+  if (
+    !((await walletFactory.isOperator(deployer.address)) as boolean)
+  ) {
     await (await walletFactory.addOperator(deployer.address)).wait()
   }
 
   // transfer DelayedImplementationManager ownership to deployer
   if (create2.address === (await implStorage.owner())) {
-    console.log('transfer DelayedImplementationManager ownership to deployer')
+    console.log(
+      'transfer DelayedImplementationManager ownership to deployer'
+    )
     await (await create2.setTarget(implStorage.address)).wait()
     const transferImplStorageOwnership =
-      await implStorage.populateTransaction.transferOwnership(deployer.address)
-    await (await create2.transact(transferImplStorageOwnership.data!)).wait()
+      await implStorage.populateTransaction.transferOwnership(
+        deployer.address
+      )
+    await (
+      await create2.transact(transferImplStorageOwnership.data!)
+    ).wait()
   } else {
     console.log(
       'ownership of DelayedImplementationManager is transfered already'
@@ -303,7 +336,10 @@ async function deployAll () {
   // deploy mock usdt token for test.
   const usdtToken = await deploySingle(create2, 'USDT')
   return {
-    entrypoint: EntryPoint__factory.connect(entrypoint.address, deployer),
+    entrypoint: EntryPoint__factory.connect(
+      entrypoint.address,
+      deployer
+    ),
     paymaster: LoopringPaymaster__factory.connect(
       paymaster.address,
       paymasterOwner
@@ -393,15 +429,17 @@ async function generateSignedUserOp (
     paymasterOption !== undefined
   ).add(ethSent)
   // only consider deposited balance in entrypoint contract when using paymaster
-  const currentBalance = (paymasterOption != null)
-    ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
-    : await getEthBalance(smartWallet)
+  const currentBalance =
+    paymasterOption != null
+      ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
+      : await getEthBalance(smartWallet)
 
   if (requiredPrefund.gt(currentBalance)) {
     const missingValue = requiredPrefund.sub(currentBalance)
-    const payer = (paymasterOption != null)
-      ? paymasterOption.paymaster.address
-      : smartWallet.address
+    const payer =
+      paymasterOption != null
+        ? paymasterOption.paymaster.address
+        : smartWallet.address
     await (
       await entrypoint.depositTo(payer, {
         value: missingValue
@@ -438,8 +476,12 @@ async function sendTx (
   return recipt
 }
 
-async function getEthBalance (smartWallet: SmartWalletV3): Promise<BigNumber> {
-  const ethBalance = await ethers.provider.getBalance(smartWallet.address)
+async function getEthBalance (
+  smartWallet: SmartWalletV3
+): Promise<BigNumber> {
+  const ethBalance = await ethers.provider.getBalance(
+    smartWallet.address
+  )
   const depositBalance = await smartWallet.getDeposit()
   const totalBalance = ethBalance.add(depositBalance)
   return totalBalance

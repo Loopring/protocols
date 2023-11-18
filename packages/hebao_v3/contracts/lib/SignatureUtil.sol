@@ -3,10 +3,10 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../thirdparty/BytesUtil.sol";
-import "./AddressUtil.sol";
-import "./ERC1271.sol";
-import "./MathUint.sol";
+import '../thirdparty/BytesUtil.sol';
+import './AddressUtil.sol';
+import './ERC1271.sol';
+import './MathUint.sol';
 
 /// @title SignatureUtil
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -32,12 +32,17 @@ library SignatureUtil {
         address[] memory signers,
         bytes[] memory signatures
     ) internal view returns (bool) {
-        require(signers.length == signatures.length, "BAD_SIGNATURE_DATA");
+        require(
+            signers.length == signatures.length,
+            'BAD_SIGNATURE_DATA'
+        );
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
-            require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
+            require(signers[i] > lastSigner, 'INVALID_SIGNERS_ORDER');
             lastSigner = signers[i];
-            if (!verifySignature(signHash, signers[i], signatures[i])) {
+            if (
+                !verifySignature(signHash, signers[i], signatures[i])
+            ) {
                 return false;
             }
         }
@@ -103,7 +108,7 @@ library SignatureUtil {
 
         require(
             signature.length == 65 || signature.length == 66,
-            "INVALID_SIGNATURE_LENGTH"
+            'INVALID_SIGNATURE_LENGTH'
         );
 
         bool trimmed = false;
@@ -119,7 +124,10 @@ library SignatureUtil {
         success = (signer == recoverECDSASigner(signHash, signature));
         if (!success) {
             bytes32 hash = keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
+                abi.encodePacked(
+                    '\x19Ethereum Signed Message:\n32',
+                    signHash
+                )
             );
             success = (signer == recoverECDSASigner(hash, signature));
         }
@@ -142,7 +150,9 @@ library SignatureUtil {
             signHash,
             signature
         );
-        (bool success, bytes memory result) = signer.staticcall(callData);
+        (bool success, bytes memory result) = signer.staticcall(
+            callData
+        );
         return (success &&
             result.length == 32 &&
             result.toBytes4(0) == ERC1271_MAGICVALUE);

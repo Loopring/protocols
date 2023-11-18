@@ -12,7 +12,11 @@ import {
 } from '../../typechain-types'
 
 import { localUserOpSender } from './AASigner'
-import { createSmartWallet, deploySingle, deployWalletImpl } from './utils'
+import {
+  createSmartWallet,
+  deploySingle,
+  deployWalletImpl
+} from './utils'
 
 export async function fixture () {
   const signers = await ethers.getSigners()
@@ -22,7 +26,10 @@ export async function fixture () {
   const blankOwner = await ethers.Wallet.createRandom().connect(
     ethers.provider
   )
-  await helpers.setBalance(blankOwner.address, ethers.utils.parseEther('100'))
+  await helpers.setBalance(
+    blankOwner.address,
+    ethers.utils.parseEther('100')
+  )
 
   // create2 factory
 
@@ -66,21 +73,28 @@ export async function fixture () {
   ])
 
   const walletFactory = WalletFactory__factory.connect(
-    (await deploySingle(create2, 'WalletFactory', [forwardProxy.address]))
-      .address,
+    (
+      await deploySingle(create2, 'WalletFactory', [
+        forwardProxy.address
+      ])
+    ).address,
     deployer
   )
   // transfer wallet factory ownership to deployer
   await create2.setTarget(walletFactory.address)
   const transferWalletFactoryOwnership =
-    await walletFactory.populateTransaction.transferOwnership(deployer.address)
+    await walletFactory.populateTransaction.transferOwnership(
+      deployer.address
+    )
   await create2.transact(transferWalletFactoryOwnership.data!)
   await walletFactory.addOperator(deployer.address)
 
   // transfer DelayedImplementationManager ownership to deployer
   await create2.setTarget(implStorage.address)
   const transferImplStorageOwnership =
-    await implStorage.populateTransaction.transferOwnership(deployer.address)
+    await implStorage.populateTransaction.transferOwnership(
+      deployer.address
+    )
   await create2.transact(transferImplStorageOwnership.data!)
 
   // create demo wallet
@@ -96,7 +110,9 @@ export async function fixture () {
 
   const guardians: Wallet[] = []
   for (let i = 0; i < 2; i++) {
-    guardians.push(await ethers.Wallet.createRandom().connect(ethers.provider))
+    guardians.push(
+      await ethers.Wallet.createRandom().connect(ethers.provider)
+    )
   }
   guardians.sort((a, b) =>
     a.address.toLowerCase() < b.address.toLowerCase() ? -1 : 1
@@ -119,7 +135,10 @@ export async function fixture () {
     smartWalletOwner
   )
   // prepare eth for smartwallet
-  await helpers.setBalance(smartWallet.address, ethers.utils.parseEther('100'))
+  await helpers.setBalance(
+    smartWallet.address,
+    ethers.utils.parseEther('100')
+  )
 
   // predeposit for smartwallet and paymaster in entrypoint
   await entrypoint.depositTo(smartWallet.address, {

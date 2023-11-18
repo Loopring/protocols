@@ -1,12 +1,21 @@
 import { Event } from '@ethersproject/contracts'
 import { BytesLike } from '@ethersproject/bytes'
-import { Deferrable, resolveProperties } from '@ethersproject/properties'
+import {
+  Deferrable,
+  resolveProperties
+} from '@ethersproject/properties'
 import {
   BaseProvider,
   TransactionReceipt,
   TransactionRequest
 } from '@ethersproject/providers'
-import { Contract, BigNumber, BigNumberish, Signer, Wallet } from 'ethers'
+import {
+  Contract,
+  BigNumber,
+  BigNumberish,
+  Signer,
+  Wallet
+} from 'ethers'
 import {
   arrayify,
   defaultAbiCoder,
@@ -113,7 +122,10 @@ export async function createAccount (
     walletConfig.inheritor,
     salt
   )
-  const proxy = SmartWallet__factory.connect(accountAddress, ethersSigner)
+  const proxy = SmartWallet__factory.connect(
+    accountAddress,
+    ethersSigner
+  )
   return {
     implementation,
     accountFactory,
@@ -140,7 +152,10 @@ export async function createAccountV2 (
     salt,
     accountFactory.address
   )
-  const proxy = SmartWallet__factory.connect(accountAddress, ethersSigner)
+  const proxy = SmartWallet__factory.connect(
+    accountAddress,
+    ethersSigner
+  )
   return {
     implementation,
     accountFactory,
@@ -208,7 +223,10 @@ export async function getPaymasterData (
   const enc =
     payMasterAddress.toLowerCase() +
     defaultAbiCoder
-      .encode(['address', 'uint256', 'bytes'], [token, valueOfEth, signature])
+      .encode(
+        ['address', 'uint256', 'bytes'],
+        [token, valueOfEth, signature]
+      )
       .substring(2)
   return enc
 }
@@ -260,7 +278,10 @@ export function calculateWalletAddress (
   salt: BigNumberish,
   create2Factory: string
 ) {
-  const initCodeWithArgs = getWalletCode(walletLogicAddress, walletConfig)
+  const initCodeWithArgs = getWalletCode(
+    walletLogicAddress,
+    walletConfig
+  )
   const initCodeHash = keccak256(initCodeWithArgs)
   const walletAddress = getCreate2Address(
     create2Factory,
@@ -303,11 +324,15 @@ export async function activateCreate2WalletOp (
     .getCode(walletAddress)
     .then((x) => x.length)
   if (size == 2) {
-    const walletInitCodeWithArgs = walletFactory.interface.encodeFunctionData(
-      'deploy',
-      [getWalletCode(walletLogicAddress, walletConfig), salt]
-    )
-    initCode = hexConcat([walletFactory.address, walletInitCodeWithArgs])
+    const walletInitCodeWithArgs =
+      walletFactory.interface.encodeFunctionData('deploy', [
+        getWalletCode(walletLogicAddress, walletConfig),
+        salt
+      ])
+    initCode = hexConcat([
+      walletFactory.address,
+      walletInitCodeWithArgs
+    ])
   }
   return {
     sender: walletAddress,
@@ -328,7 +353,8 @@ export async function activateWalletOp (
   // userOperation.maxPriorityFeePerGas = maxPriorityFeePerGas;
 
   const salt = _salt ?? ethers.utils.randomBytes(32)
-  const walletLogicAddress = await walletFactory.accountImplementation()
+  const walletLogicAddress =
+    await walletFactory.accountImplementation()
   const walletAddress = calculateWalletAddress(
     walletLogicAddress,
     walletConfig,
@@ -363,7 +389,8 @@ export async function createRandomWalletConfig (
     }
   }
   const walletConfig = {
-    accountOwner: owner ?? (await ethers.Wallet.createRandom().address),
+    accountOwner:
+      owner ?? (await ethers.Wallet.createRandom().address),
     guardians: guardians.map((g) => g.address.toLowerCase()).sort(),
     quota: quota ?? 0,
     inheritor: await ethers.Wallet.createRandom().address
@@ -386,12 +413,10 @@ export function getCallData (
   tx: Partial<{ to: string, data?: BytesLike, value?: BigNumberish }>
 ) {
   const execFromEntryPoint =
-    SmartWallet__factory.createInterface().encodeFunctionData('callContract', [
-      tx.to,
-      tx.value ?? 0,
-      tx.data ?? '0x',
-      false
-    ])
+    SmartWallet__factory.createInterface().encodeFunctionData(
+      'callContract',
+      [tx.to, tx.value ?? 0, tx.data ?? '0x', false]
+    )
   return execFromEntryPoint
 }
 
@@ -414,12 +439,13 @@ export async function createTransaction (
 ) {
   const tx: TransactionRequest = await resolveProperties(transaction)
 
-  const execFromEntryPoint = await wallet.populateTransaction.callContract(
-    tx.to!,
-    tx.value ?? 0,
-    tx.data ?? '0x',
-    false
-  )
+  const execFromEntryPoint =
+    await wallet.populateTransaction.callContract(
+      tx.to!,
+      tx.value ?? 0,
+      tx.data ?? '0x',
+      false
+    )
 
   let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = tx
   // gasPrice is legacy, and overrides eip1559 values:
@@ -454,12 +480,13 @@ export async function createBatchTransactions (
   if (txs.length == 1) {
     const tx = txs[0]
     if (useExecuteApi) {
-      execFromEntryPoint = await wallet.populateTransaction.callContract(
-        tx.to!,
-        tx.value ?? 0,
-        tx.data ?? '0x',
-        false
-      )
+      execFromEntryPoint =
+        await wallet.populateTransaction.callContract(
+          tx.to!,
+          tx.value ?? 0,
+          tx.data ?? '0x',
+          false
+        )
     } else {
       execFromEntryPoint = tx
     }
@@ -481,10 +508,12 @@ export async function createBatchTransactions (
     } else {
       datas = txs.map((tx) => tx.data ?? '0x')
     }
-    execFromEntryPoint = await wallet.populateTransaction.selfBatchCall(datas)
+    execFromEntryPoint =
+      await wallet.populateTransaction.selfBatchCall(datas)
   }
 
-  let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = execFromEntryPoint
+  let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } =
+    execFromEntryPoint
   // gasPrice is legacy, and overrides eip1559 values:
 
   if (gasPrice) {
@@ -504,7 +533,10 @@ export async function createBatchTransactions (
   }
 }
 
-export async function evInfo (entryPoint: EntryPoint, rcpt: TransactionReceipt) {
+export async function evInfo (
+  entryPoint: EntryPoint,
+  rcpt: TransactionReceipt
+) {
   // TODO: checking only latest block...
   const block = rcpt.blockNumber
   const ev = await entryPoint.queryFilter(
@@ -554,12 +586,15 @@ export async function create2Deploy (
   const salt = ethers.utils.formatBytes32String('0x5')
 
   const libraries = {} // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
-  ;(libs != null) && libs.forEach((value, key) => (libraries[key] = value))
+  libs != null &&
+    libs.forEach((value, key) => (libraries[key] = value))
 
-  const contract = await ethers.getContractFactory(contractName, { libraries })
+  const contract = await ethers.getContractFactory(contractName, {
+    libraries
+  })
 
   let deployableCode = contract.bytecode
-  if ((args != null) && args.length > 0) {
+  if (args != null && args.length > 0) {
     deployableCode = ethers.utils.hexConcat([
       deployableCode,
       contract.interface.encodeDeploy(args)
@@ -578,7 +613,9 @@ export async function create2Deploy (
       deployableCode,
       salt
     )
-    const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit })
+    const tx = await deployFactory.deploy(deployableCode, salt, {
+      gasLimit
+    })
     await tx.wait()
   }
 
@@ -595,12 +632,15 @@ export async function deploySingle (
   const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32))
 
   const libraries = {} // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
-  ;(libs != null) && libs.forEach((value, key) => (libraries[key] = value))
+  libs != null &&
+    libs.forEach((value, key) => (libraries[key] = value))
 
-  const contract = await ethers.getContractFactory(contractName, { libraries })
+  const contract = await ethers.getContractFactory(contractName, {
+    libraries
+  })
 
   let deployableCode = contract.bytecode
-  if ((args != null) && args.length > 0) {
+  if (args != null && args.length > 0) {
     deployableCode = ethers.utils.hexConcat([
       deployableCode,
       contract.interface.encodeDeploy(args)
@@ -612,8 +652,13 @@ export async function deploySingle (
     salt,
     ethers.utils.keccak256(deployableCode)
   )
-  const gasLimit = await deployFactory.estimateGas.deploy(deployableCode, salt)
-  const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit })
+  const gasLimit = await deployFactory.estimateGas.deploy(
+    deployableCode,
+    salt
+  )
+  const tx = await deployFactory.deploy(deployableCode, salt, {
+    gasLimit
+  })
   await tx.wait()
 
   return contract.attach(deployedAddress)
@@ -636,7 +681,10 @@ export async function deployWalletImpl (
   )
   const QuotaLib = await deploySingle(deployFactory, 'QuotaLib')
   const UpgradeLib = await deploySingle(deployFactory, 'UpgradeLib')
-  const WhitelistLib = await deploySingle(deployFactory, 'WhitelistLib')
+  const WhitelistLib = await deploySingle(
+    deployFactory,
+    'WhitelistLib'
+  )
   const LockLib = await deploySingle(
     deployFactory,
     'LockLib',
@@ -718,7 +766,9 @@ export interface PaymasterOption {
 }
 
 async function getEthBalance (smartWallet: SmartWalletV3) {
-  const ethBalance = await ethers.provider.getBalance(smartWallet.address)
+  const ethBalance = await ethers.provider.getBalance(
+    smartWallet.address
+  )
   const depositBalance = await smartWallet.getDeposit()
   const totalBalance = ethBalance.add(depositBalance)
   return totalBalance
@@ -815,7 +865,10 @@ export async function getBlockTimestamp (blockNumber: number) {
   return block.timestamp
 }
 
-export async function getCurrentQuota (quotaInfo: any, blockNumber: number) {
+export async function getCurrentQuota (
+  quotaInfo: any,
+  blockNumber: number
+) {
   const blockTime = await getBlockTimestamp(blockNumber)
   const pendingUntil = quotaInfo.pendingUntil.toNumber()
 

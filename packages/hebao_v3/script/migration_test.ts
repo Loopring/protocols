@@ -12,9 +12,15 @@ async function main (): Promise<void> {
 
   // deploy new implementation
   const create2Addr = '0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d'
-  const create2 = await ethers.getContractAt('Create2Factory', create2Addr)
+  const create2 = await ethers.getContractAt(
+    'Create2Factory',
+    create2Addr
+  )
   const entrypointAddr = '0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d'
-  const entrypoint = await ethers.getContractAt('EntryPoint', entrypointAddr)
+  const entrypoint = await ethers.getContractAt(
+    'EntryPoint',
+    entrypointAddr
+  )
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,

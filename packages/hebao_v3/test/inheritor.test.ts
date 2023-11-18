@@ -10,20 +10,21 @@ import { ethers } from 'hardhat'
 import { SmartWalletV3__factory } from '../typechain-types'
 
 import { fixture } from './helper/fixture'
-import {
-  createSmartWallet,
-  sendTx
-} from './helper/utils'
+import { createSmartWallet, sendTx } from './helper/utils'
 
 describe('inheritor test', () => {
   it('basic success testcase', async () => {
     const { smartWallet, create2, entrypoint, sendUserOp } =
       await loadFixture(fixture)
-    const inheritor = ethers.Wallet.createRandom().connect(ethers.provider)
+    const inheritor = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
 
     // check before
     const walletDataBefore = await smartWallet.wallet()
-    expect(walletDataBefore.inheritor).to.eq(ethers.constants.AddressZero)
+    expect(walletDataBefore.inheritor).to.eq(
+      ethers.constants.AddressZero
+    )
     expect(walletDataBefore.inheritWaitingPeriod).to.eq(0)
 
     const waitingPeriod = 3600 * 24 * 30
@@ -40,7 +41,9 @@ describe('inheritor test', () => {
     await time.increaseTo(validBlockTime)
 
     // inherit
-    const newOwner = ethers.Wallet.createRandom().connect(ethers.provider)
+    const newOwner = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
     const tx = await smartWallet.populateTransaction.inherit(
       newOwner.address,
       [] /* keep all guardians */
@@ -66,8 +69,13 @@ describe('inheritor test', () => {
       const walletDataBefore = await smartWallet.wallet()
       expect(walletDataBefore.inheritor).to.eq(inheritor.address)
 
-      await setBalance(inheritor.address, ethers.utils.parseEther('100'))
-      await smartWallet.connect(inheritor).inherit(newOwner.address, [])
+      await setBalance(
+        inheritor.address,
+        ethers.utils.parseEther('100')
+      )
+      await smartWallet
+        .connect(inheritor)
+        .inherit(newOwner.address, [])
       expect(await smartWallet.getOwner()).to.eq(newOwner.address)
     }
   })
@@ -106,7 +114,9 @@ describe('inheritor test', () => {
     await time.increaseTo(validBlockTime)
 
     // inherit
-    const newOwner = ethers.Wallet.createRandom().connect(ethers.provider)
+    const newOwner = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
     const tx = await smartWallet.populateTransaction.inherit(
       newOwner.address,
       [] /* keep all guardians */
@@ -128,7 +138,10 @@ describe('inheritor test', () => {
     // inherit successfully from inheritor directly (send inherit userop from inheritor smart wallet)
     await snapshotRestorer.restore()
     // prepare gas for inheritor smartwallet
-    await setBalance(inheritor.address, ethers.utils.parseEther('100'))
+    await setBalance(
+      inheritor.address,
+      ethers.utils.parseEther('100')
+    )
     // use execute api
     await sendTx(
       [tx],
@@ -144,10 +157,14 @@ describe('inheritor test', () => {
   it('fail without waiting period', async () => {
     const { smartWallet, create2, entrypoint, sendUserOp } =
       await loadFixture(fixture)
-    const inheritor = ethers.Wallet.createRandom().connect(ethers.provider)
+    const inheritor = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
 
     const walletDataBefore = await smartWallet.wallet()
-    expect(walletDataBefore.inheritor).to.eq(ethers.constants.AddressZero)
+    expect(walletDataBefore.inheritor).to.eq(
+      ethers.constants.AddressZero
+    )
     expect(walletDataBefore.inheritWaitingPeriod).to.eq(0)
 
     const waitingPeriod = 3600 * 24 * 30
@@ -162,7 +179,9 @@ describe('inheritor test', () => {
     )
     await time.increaseTo(validBlockTime.sub(1))
 
-    const newOwner = ethers.Wallet.createRandom().connect(ethers.provider)
+    const newOwner = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
     const tx = await smartWallet.populateTransaction.inherit(
       newOwner.address,
       [] /* keep all guardians */
@@ -185,18 +204,28 @@ describe('inheritor test', () => {
     const test = async (removeGuardians: boolean): Promise<void> => {
       const { smartWallet, create2, entrypoint, sendUserOp } =
         await loadFixture(fixture)
-      const inheritor = ethers.Wallet.createRandom().connect(ethers.provider)
+      const inheritor = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
       // check before
       const walletDataBefore = await smartWallet.wallet()
-      expect(walletDataBefore.inheritor).to.eq(ethers.constants.AddressZero)
+      expect(walletDataBefore.inheritor).to.eq(
+        ethers.constants.AddressZero
+      )
       expect(walletDataBefore.inheritWaitingPeriod).to.eq(0)
 
-      const newOwner = ethers.Wallet.createRandom().connect(ethers.provider)
+      const newOwner = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
       // add newOwner to guardians group
-      await smartWallet.addGuardian(newOwner.address).then(async (tx) => tx.wait())
+      await smartWallet
+        .addGuardian(newOwner.address)
+        .then(async (tx) => tx.wait())
       const guardians = await smartWallet.getGuardians(true)
       // expect newOwner is on guardians group
-      expect(guardians.some((g) => g.addr === newOwner.address)).to.eq(true)
+      expect(
+        guardians.some((g) => g.addr === newOwner.address)
+      ).to.eq(true)
 
       const waitingPeriod = 3600 * 24 * 30
       await smartWallet.setInheritor(inheritor.address, waitingPeriod)
@@ -238,7 +267,9 @@ describe('inheritor test', () => {
       expect(await smartWallet.getOwner()).to.eq(newOwner.address)
       const guardians2 = await smartWallet.getGuardians(true)
       // expect newOwner is not on guardians group
-      expect(guardians2.some((g) => g.addr === newOwner.address)).to.eq(false)
+      expect(
+        guardians2.some((g) => g.addr === newOwner.address)
+      ).to.eq(false)
     }
     await test(true) // removeGuardians: true
     await test(false) // removeGuardians: false

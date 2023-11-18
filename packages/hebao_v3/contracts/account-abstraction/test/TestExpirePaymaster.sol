@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import "../core/BasePaymaster.sol";
+import '../core/BasePaymaster.sol';
 
 /**
  * test expiry mechanism: paymasterData encodes the "validUntil" and validAfter" times
@@ -26,7 +26,11 @@ contract TestExpirePaymaster is BasePaymaster {
             userOp.paymasterAndData[20:],
             (uint48, uint48)
         );
-        validationData = _packValidationData(false, validUntil, validAfter);
-        context = "";
+        validationData = _packValidationData(
+            false,
+            validUntil,
+            validAfter
+        );
+        context = '';
     }
 }

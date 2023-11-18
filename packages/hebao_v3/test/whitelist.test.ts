@@ -24,14 +24,16 @@ describe('whitelist test', () => {
 
     // advance one day
     await time.increase(ONE_DAY)
-    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be.true
+    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be
+      .true
 
     // remove it from whitelist
     await smartWallet.removeFromWhitelist(whiteListedAddr)
-    expect(await smartWallet.getWhitelistEffectiveTime(whiteListedAddr)).to.eq(
-      0
-    )
-    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be.false
+    expect(
+      await smartWallet.getWhitelistEffectiveTime(whiteListedAddr)
+    ).to.eq(0)
+    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be
+      .false
   })
 
   it('majority(owner required) should be able to whitelist address immediately', async () => {
@@ -71,7 +73,9 @@ describe('whitelist test', () => {
     )
 
     const recipt = await sendUserOp(signedUserOp)
-    const effectiveTime = await smartWallet.getWhitelistEffectiveTime(addr)
+    const effectiveTime = await smartWallet.getWhitelistEffectiveTime(
+      addr
+    )
     const blockTime = await getBlockTimestamp(recipt.blockNumber)
     expect(effectiveTime.toNumber()).to.equal(blockTime)
 

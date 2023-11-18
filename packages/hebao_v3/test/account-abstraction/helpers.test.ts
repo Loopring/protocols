@@ -4,7 +4,10 @@ import { BigNumber } from 'ethers'
 import { hexlify } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
-import { TestHelpers, TestHelpers__factory } from '../../typechain-types'
+import {
+  TestHelpers,
+  TestHelpers__factory
+} from '../../typechain-types'
 
 import { AddressZero } from './testutils'
 
@@ -19,7 +22,11 @@ describe('#ValidationData helpers', function () {
   ): BigNumber {
     return BigNumber.from(BigNumber.from(addr))
       .add(BigNumber.from(validUntil).mul(BigNumber.from(2).pow(160)))
-      .add(BigNumber.from(validAfter).mul(BigNumber.from(2).pow(160 + 48)))
+      .add(
+        BigNumber.from(validAfter).mul(
+          BigNumber.from(2).pow(160 + 48)
+        )
+      )
   }
 
   let helpers: TestHelpers
@@ -42,12 +49,16 @@ describe('#ValidationData helpers', function () {
       validAfter: 0,
       validUntil: max48
     })
-    expect(await helpers.parseValidationData(pack(AddressZero, 0, 10))).to.eql({
+    expect(
+      await helpers.parseValidationData(pack(AddressZero, 0, 10))
+    ).to.eql({
       aggregator: AddressZero,
       validAfter: 10,
       validUntil: max48
     })
-    expect(await helpers.parseValidationData(pack(AddressZero, 10, 0))).to.eql({
+    expect(
+      await helpers.parseValidationData(pack(AddressZero, 10, 0))
+    ).to.eql({
       aggregator: AddressZero,
       validAfter: 0,
       validUntil: 10
@@ -57,9 +68,9 @@ describe('#ValidationData helpers', function () {
   it('#packValidationData', async () => {
     expect(await helpers.packValidationData(false, 0, 0)).to.eql(0)
     expect(await helpers.packValidationData(true, 0, 0)).to.eql(1)
-    expect(hexlify(await helpers.packValidationData(true, 123, 456))).to.eql(
-      hexlify(pack(addr1, 123, 456))
-    )
+    expect(
+      hexlify(await helpers.packValidationData(true, 123, 456))
+    ).to.eql(hexlify(pack(addr1, 123, 456)))
   })
 
   it('#packValidationData with aggregator', async () => {
@@ -80,13 +91,21 @@ describe('#ValidationData helpers', function () {
         pack(AddressZero, 0, 0),
         pack(AddressZero, 0, 0)
       )
-    ).to.eql({ aggregator: AddressZero, validAfter: 0, validUntil: max48 })
+    ).to.eql({
+      aggregator: AddressZero,
+      validAfter: 0,
+      validUntil: max48
+    })
     expect(
       await helpers.intersectTimeRange(
         pack(AddressZero, 100, 10),
         pack(AddressZero, 200, 50)
       )
-    ).to.eql({ aggregator: AddressZero, validAfter: 50, validUntil: 100 })
+    ).to.eql({
+      aggregator: AddressZero,
+      validAfter: 50,
+      validUntil: 100
+    })
 
     expect(
       await helpers.intersectTimeRange(

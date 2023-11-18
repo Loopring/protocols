@@ -3,7 +3,7 @@
 // with minor modifications.
 pragma solidity ^0.8.17;
 
-import "./UpgradeabilityProxy.sol";
+import './UpgradeabilityProxy.sol';
 
 /**
  * @title OwnedUpgradeabilityProxy
@@ -15,11 +15,14 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityProxy {
      * @param previousOwner representing the address of the previous owner
      * @param newOwner representing the address of the new owner
      */
-    event ProxyOwnershipTransferred(address previousOwner, address newOwner);
+    event ProxyOwnershipTransferred(
+        address previousOwner,
+        address newOwner
+    );
 
     // Storage position of the owner of the contract
     bytes32 private constant proxyOwnerPosition =
-        keccak256("org.zeppelinos.proxy.owner");
+        keccak256('org.zeppelinos.proxy.owner');
 
     /**
      * @dev the constructor sets the original owner of the contract to the sender account.
@@ -61,7 +64,9 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityProxy {
      * @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
      */
-    function transferProxyOwnership(address newOwner) public onlyProxyOwner {
+    function transferProxyOwnership(
+        address newOwner
+    ) public onlyProxyOwner {
         require(newOwner != address(0));
         emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
         setUpgradeabilityOwner(newOwner);
@@ -71,7 +76,9 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityProxy {
      * @dev Allows the proxy owner to upgrade the current version of the proxy.
      * @param implementation representing the address of the new implementation to be set.
      */
-    function upgradeTo(address implementation) public virtual onlyProxyOwner {
+    function upgradeTo(
+        address implementation
+    ) public virtual onlyProxyOwner {
         _upgradeTo(implementation);
     }
 

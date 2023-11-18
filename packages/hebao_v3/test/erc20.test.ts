@@ -1,16 +1,11 @@
-import {
-  loadFixture
-} from '@nomicfoundation/hardhat-network-helpers'
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect, assert } from 'chai'
 import { ethers } from 'hardhat'
 
 import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
-import {
-  getFirstEvent,
-  sendTx
-} from './helper/utils'
+import { getFirstEvent, sendTx } from './helper/utils'
 
 describe('erc20 test', () => {
   it('basic success test', async () => {
@@ -31,28 +26,31 @@ describe('erc20 test', () => {
 
     const tokenAmount = ethers.utils.parseUnits('100', 6)
     const receiver = deployer.address
-    const approve = await smartWallet.populateTransaction.approveToken(
-      usdtToken.address,
-      receiver,
-      tokenAmount,
-      false
-    )
-    const transferToken = await smartWallet.populateTransaction.transferToken(
-      usdtToken.address,
-      receiver,
-      tokenAmount,
-      '0x',
-      false
-    )
+    const approve =
+      await smartWallet.populateTransaction.approveToken(
+        usdtToken.address,
+        receiver,
+        tokenAmount,
+        false
+      )
+    const transferToken =
+      await smartWallet.populateTransaction.transferToken(
+        usdtToken.address,
+        receiver,
+        tokenAmount,
+        '0x',
+        false
+      )
 
     const functionDefault =
       await testTarget.populateTransaction.functionDefault(0)
-    const callcontract = await smartWallet.populateTransaction.callContract(
-      receiver,
-      0,
-      functionDefault.data!,
-      false
-    )
+    const callcontract =
+      await smartWallet.populateTransaction.callContract(
+        receiver,
+        0,
+        functionDefault.data!,
+        false
+      )
 
     const callData = testTarget.interface.encodeFunctionData(
       'functionPayable',
@@ -82,12 +80,8 @@ describe('erc20 test', () => {
   })
 
   it('execute from wallet owner', async () => {
-    const {
-      smartWallet,
-      deployer,
-      usdtToken,
-      testTarget
-    } = await loadFixture(fixture)
+    const { smartWallet, deployer, usdtToken, testTarget } =
+      await loadFixture(fixture)
     // prepare usdt tokens
     const initTokenAmount = ethers.utils.parseUnits('1000', 6)
     await usdtToken.setBalance(smartWallet.address, initTokenAmount)
@@ -135,7 +129,11 @@ describe('erc20 test', () => {
       callData,
       false
     )
-    const event = await getFirstEvent(testTarget, tx.blockNumber!, 'Invoked')
+    const event = await getFirstEvent(
+      testTarget,
+      tx.blockNumber!,
+      'Invoked'
+    )
     assert(event.args)
     expect(event.args.sender).to.equal(smartWallet.address)
   })
@@ -183,7 +181,10 @@ describe('erc20 test', () => {
 
       await sendUserOp(signedUserOp)
       // check allowance
-      const allowance = await usdtToken.allowance(smartWallet.address, toAddr)
+      const allowance = await usdtToken.allowance(
+        smartWallet.address,
+        toAddr
+      )
       expect(allowance).to.eq(amount)
     })
 

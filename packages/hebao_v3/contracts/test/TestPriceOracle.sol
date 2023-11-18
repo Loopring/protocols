@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../iface/PriceOracle.sol";
+import '../iface/PriceOracle.sol';
 
 /// @title PriceOracle
 contract TestPriceOracle is PriceOracle {

@@ -54,7 +54,9 @@ describe('guardian test', () => {
     const receipt1 = await tx1.wait()
     // console.log("receipt1:", receipt1);
 
-    assert(receipt1.events !== undefined && receipt1.events.length > 0)
+    assert(
+      receipt1.events !== undefined && receipt1.events.length > 0
+    )
     const eventData = receipt1.events[0].data
     const eventTopics = receipt1.events[0].topics
     const addEvent = guardianInterfact.decodeEventLog(
@@ -66,7 +68,9 @@ describe('guardian test', () => {
     expect(addEvent.guardian).to.equal(guardian1)
     const blockTime = await getBlockTimestamp(tx1.blockNumber!)
     // first guardian should be effective immediately:
-    expect(addEvent.effectiveTime.toNumber()).to.equal(blockTime + three_days)
+    expect(addEvent.effectiveTime.toNumber()).to.equal(
+      blockTime + three_days
+    )
   })
 
   it('first two guardian additions should be effective immediately', async () => {
@@ -83,7 +87,9 @@ describe('guardian test', () => {
     const receipt1 = await tx1.wait()
 
     // console.log("GuardianLib:", GuardianLib);
-    assert(receipt1.events !== undefined && receipt1.events.length > 0)
+    assert(
+      receipt1.events !== undefined && receipt1.events.length > 0
+    )
     const eventData1 = receipt1.events[0].data
     const eventTopics1 = receipt1.events[0].topics
     const addEvent1 = guardianInterfact.decodeEventLog(
@@ -95,14 +101,18 @@ describe('guardian test', () => {
     expect(addEvent1.guardian).to.equal(guardian1)
     const blockTime1 = await getBlockTimestamp(tx1.blockNumber!)
     // first guardian should be effective immediately:
-    expect(addEvent1.effectiveTime.toNumber()).to.equal(blockTime1 + 1)
+    expect(addEvent1.effectiveTime.toNumber()).to.equal(
+      blockTime1 + 1
+    )
 
     const guardian2 = '0x' + '22'.repeat(20)
     const tx2 = await wallet.addGuardian(guardian2)
     const receipt2 = await tx2.wait()
 
     // console.log("GuardianLib:", GuardianLib);
-    assert(receipt2.events !== undefined && receipt2.events.length > 0)
+    assert(
+      receipt2.events !== undefined && receipt2.events.length > 0
+    )
     const eventData2 = receipt2.events[0].data
     const eventTopics2 = receipt2.events[0].topics
     const addEvent2 = guardianInterfact.decodeEventLog(
@@ -113,7 +123,9 @@ describe('guardian test', () => {
     expect(addEvent2.guardian).to.equal(guardian2)
     const blockTime2 = await getBlockTimestamp(tx2.blockNumber)
     // second guardian should be effective immediately:
-    expect(addEvent2.effectiveTime.toNumber()).to.equal(blockTime2 + 1)
+    expect(addEvent2.effectiveTime.toNumber()).to.equal(
+      blockTime2 + 1
+    )
   })
 
   it('the third guardian addition will be effective in 3 days', async () => {
@@ -123,7 +135,9 @@ describe('guardian test', () => {
     const receipt1 = await tx1.wait()
 
     // console.log("GuardianLib:", GuardianLib);
-    assert(receipt1.events !== undefined && receipt1.events.length > 0)
+    assert(
+      receipt1.events !== undefined && receipt1.events.length > 0
+    )
     const eventData1 = receipt1.events[0].data
     const eventTopics1 = receipt1.events[0].topics
     const addEvent1 = guardianInterfact.decodeEventLog(
@@ -140,13 +154,17 @@ describe('guardian test', () => {
     )
   })
   it('guardian deletion will be effective in 3 days', async () => {
-    const { smartWallet: wallet, guardians } = await loadFixture(fixture)
+    const { smartWallet: wallet, guardians } = await loadFixture(
+      fixture
+    )
     const guardian1 = guardians[0].address
     // await wallet.addGuardian(guardian1);
     const tx1 = await wallet.removeGuardian(guardian1)
     const receipt1 = await tx1.wait()
 
-    assert(receipt1.events !== undefined && receipt1.events.length > 0)
+    assert(
+      receipt1.events !== undefined && receipt1.events.length > 0
+    )
     const eventData = receipt1.events[0].data
     const eventTopics = receipt1.events[0].topics
     const removeEvent = guardianInterfact.decodeEventLog(
@@ -163,9 +181,8 @@ describe('guardian test', () => {
   })
 
   it('guardian can not be owner', async () => {
-    const { smartWalletOwner, guardians, walletFactory } = await loadFixture(
-      fixture
-    )
+    const { smartWalletOwner, guardians, walletFactory } =
+      await loadFixture(fixture)
     await expect(
       createRandomWallet(
         smartWalletOwner,
@@ -180,9 +197,9 @@ describe('guardian test', () => {
       walletFactory
     )
 
-    await expect(wallet.addGuardian(smartWalletOwner.address)).to.rejectedWith(
-      'GUARDIAN_CAN_NOT_BE_OWNER'
-    )
+    await expect(
+      wallet.addGuardian(smartWalletOwner.address)
+    ).to.rejectedWith('GUARDIAN_CAN_NOT_BE_OWNER')
   })
 
   it('guardian can be smartwallet', async () => {
@@ -198,8 +215,14 @@ describe('guardian test', () => {
       deployer,
       smartWalletImpl
     } = await loadFixture(fixture)
-    const guardianOwner = ethers.Wallet.createRandom().connect(ethers.provider)
-    const guardian = await createRandomWallet(guardianOwner, [], walletFactory)
+    const guardianOwner = ethers.Wallet.createRandom().connect(
+      ethers.provider
+    )
+    const guardian = await createRandomWallet(
+      guardianOwner,
+      [],
+      walletFactory
+    )
     await smartWallet.addGuardian(guardian.address)
     await time.increase(three_days)
 
@@ -233,26 +256,32 @@ describe('guardian test', () => {
       entrypoint
     )
     await sendUserOp(signedUserOp)
-    expect(await usdtToken.allowance(smartWallet.address, receiver)).to.eq(
-      tokenAmount
-    )
+    expect(
+      await usdtToken.allowance(smartWallet.address, receiver)
+    ).to.eq(tokenAmount)
   })
 
   describe('execute tx from entrypoint with nonce', () => {
     it('add and remove guardian test', async () => {
       const { smartWallet } = await loadFixture(fixture)
-      const guardian = ethers.Wallet.createRandom().connect(ethers.provider)
+      const guardian = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
       await smartWallet.addGuardian(guardian.address)
-      expect(await smartWallet.isGuardian(guardian.address, true)).to.be.true
+      expect(await smartWallet.isGuardian(guardian.address, true)).to
+        .be.true
       // during pending period
-      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.false
+      expect(await smartWallet.isGuardian(guardian.address, false)).to
+        .be.false
       await time.increase(three_days)
-      expect(await smartWallet.isGuardian(guardian.address, false)).to.be.true
+      expect(await smartWallet.isGuardian(guardian.address, false)).to
+        .be.true
 
       // remove
       await smartWallet.removeGuardian(guardian.address)
       await time.increase(three_days)
-      expect(await smartWallet.isGuardian(guardian.address, true)).to.be.false
+      expect(await smartWallet.isGuardian(guardian.address, true)).to
+        .be.false
 
       // TODO(add test case that remove before pending adding period)
     })
@@ -293,7 +322,9 @@ describe('guardian test', () => {
       )
 
       const receipt = await sendUserOp(signedUserOp)
-      assert(receipt.events !== undefined && receipt.events.length > 0)
+      assert(
+        receipt.events !== undefined && receipt.events.length > 0
+      )
       // skip BeforeExecutionEvent
       const eventData = receipt.events[1].data
       const eventTopics = receipt.events[1].topics
@@ -322,10 +353,12 @@ describe('guardian test', () => {
         guardians: Wallet[],
         walletFactory: WalletFactory,
         entrypoint: EntryPoint
-      ): Promise<{smartWalletOwner: Wallet, smartWallet: SmartWalletV3}> {
-        const smartWalletOwner = await ethers.Wallet.createRandom().connect(
-          ethers.provider
-        )
+      ): Promise<{
+          smartWalletOwner: Wallet
+          smartWallet: SmartWalletV3
+        }> {
+        const smartWalletOwner =
+          await ethers.Wallet.createRandom().connect(ethers.provider)
         const smartWallet = await createRandomWallet(
           smartWalletOwner,
           guardians,
@@ -335,26 +368,43 @@ describe('guardian test', () => {
           smartWalletOwner.address,
           ethers.utils.parseEther('100')
         )
-        await setBalance(smartWallet.address, ethers.utils.parseEther('100'))
+        await setBalance(
+          smartWallet.address,
+          ethers.utils.parseEther('100')
+        )
         await entrypoint.depositTo(smartWallet.address, {
           value: ethers.utils.parseEther('100')
         })
         return { smartWalletOwner, smartWallet }
       }
       const { smartWalletOwner, smartWallet } =
-        await createRandomWalletAndFundingIt([], walletFactory, entrypoint)
-      const {
-        smartWallet: smartGuardian0
-      } = await createRandomWalletAndFundingIt([], walletFactory, entrypoint)
+        await createRandomWalletAndFundingIt(
+          [],
+          walletFactory,
+          entrypoint
+        )
+      const { smartWallet: smartGuardian0 } =
+        await createRandomWalletAndFundingIt(
+          [],
+          walletFactory,
+          entrypoint
+        )
       const {
         smartWalletOwner: smartGuardianOwner1,
         smartWallet: smartGuardian1
-      } = await createRandomWalletAndFundingIt([], walletFactory, entrypoint)
-      const guardianToAdd = await ethers.Wallet.createRandom().connect(
-        ethers.provider
+      } = await createRandomWalletAndFundingIt(
+        [],
+        walletFactory,
+        entrypoint
       )
-      await (await smartWallet.addGuardian(smartGuardian0.address)).wait()
-      await (await smartWallet.addGuardian(smartGuardian1.address)).wait()
+      const guardianToAdd =
+        await ethers.Wallet.createRandom().connect(ethers.provider)
+      await (
+        await smartWallet.addGuardian(smartGuardian0.address)
+      ).wait()
+      await (
+        await smartWallet.addGuardian(smartGuardian1.address)
+      ).wait()
       await increase(3 * 24 * 60 * 60 + 1) // wait for 3 days;
       const guardiansBefore = await smartWallet.getGuardians(false)
       expect(

@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 
 /* solhint-disable reason-string */
 
-import "../interfaces/IAggregator.sol";
-import "../interfaces/IEntryPoint.sol";
-import "../samples/SimpleAccount.sol";
+import '../interfaces/IAggregator.sol';
+import '../interfaces/IEntryPoint.sol';
+import '../samples/SimpleAccount.sol';
 
 /**
  * test signature aggregator.
@@ -24,12 +24,12 @@ contract TestSignatureAggregator is IAggregator {
         }
         require(
             signature.length == 32,
-            "TestSignatureValidator: sig must be uint"
+            'TestSignatureValidator: sig must be uint'
         );
         uint sig = abi.decode(signature, (uint));
         require(
             sig == sum,
-            "TestSignatureValidator: aggregated signature mismatch (nonce sum)"
+            'TestSignatureValidator: aggregated signature mismatch (nonce sum)'
         );
     }
 
@@ -37,7 +37,7 @@ contract TestSignatureAggregator is IAggregator {
     function validateUserOpSignature(
         UserOperation calldata
     ) external pure returns (bytes memory) {
-        return "";
+        return '';
     }
 
     /**
@@ -58,7 +58,10 @@ contract TestSignatureAggregator is IAggregator {
      * @param entryPoint - the EntryPoint to send the stake to.
      * @param delay - the new lock duration before the deposit can be withdrawn.
      */
-    function addStake(IEntryPoint entryPoint, uint32 delay) external payable {
+    function addStake(
+        IEntryPoint entryPoint,
+        uint32 delay
+    ) external payable {
         entryPoint.addStake{value: msg.value}(delay);
     }
 }

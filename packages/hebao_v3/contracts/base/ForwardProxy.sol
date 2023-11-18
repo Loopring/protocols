@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../thirdparty/proxies/Proxy.sol";
-import "./DelayedImplementationManager.sol";
+import '../thirdparty/proxies/Proxy.sol';
+import './DelayedImplementationManager.sol';
 
 /**
  * @title ForwardProxy
@@ -13,7 +13,7 @@ contract ForwardProxy is Proxy {
     DelayedImplementationManager public immutable implManager;
 
     constructor(address _implManager) {
-        require(_implManager != address(0), "ZERO_ADDRESS");
+        require(_implManager != address(0), 'ZERO_ADDRESS');
         implManager = DelayedImplementationManager(_implManager);
     }
 

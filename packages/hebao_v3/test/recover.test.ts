@@ -5,11 +5,7 @@ import { ethers } from 'hardhat'
 import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
-import {
-  evInfo,
-  evRevertInfo,
-  getErrorMessage
-} from './helper/utils'
+import { evInfo, evRevertInfo, getErrorMessage } from './helper/utils'
 
 describe('recover test', () => {
   it('recover success', async () => {
@@ -26,10 +22,10 @@ describe('recover test', () => {
 
     const newOwner = await ethers.Wallet.createRandom()
     const newGuardians: string[] = []
-    const callData = smartWallet.interface.encodeFunctionData('recover', [
-      newOwner.address,
-      newGuardians
-    ])
+    const callData = smartWallet.interface.encodeFunctionData(
+      'recover',
+      [newOwner.address, newGuardians]
+    )
     const approvalOption = {
       validUntil: 0,
       salt: ethers.utils.randomBytes(32),
@@ -51,13 +47,19 @@ describe('recover test', () => {
       entrypoint
     )
 
-    expect(await smartWallet.getOwner()).to.eq(smartWalletOwner.address)
+    expect(await smartWallet.getOwner()).to.eq(
+      smartWalletOwner.address
+    )
     const preDeposit = await smartWallet.getDeposit()
-    const preBalance = await ethers.provider.getBalance(deployer.address)
+    const preBalance = await ethers.provider.getBalance(
+      deployer.address
+    )
     const recipt = await sendUserOp(signedUserOp)
     const postDeposit = await smartWallet.getDeposit()
     expect(await smartWallet.getOwner()).to.eq(newOwner.address)
-    const postBalance = await ethers.provider.getBalance(deployer.address)
+    const postBalance = await ethers.provider.getBalance(
+      deployer.address
+    )
     const events = await evInfo(entrypoint, recipt)
     expect(events.length).to.eq(1)
     // check relayer balance
@@ -94,10 +96,10 @@ describe('recover test', () => {
     } = await loadFixture(fixture)
 
     const newGuardians: string[] = []
-    const callData = smartWallet.interface.encodeFunctionData('recover', [
-      smartWalletOwner.address,
-      newGuardians
-    ])
+    const callData = smartWallet.interface.encodeFunctionData(
+      'recover',
+      [smartWalletOwner.address, newGuardians]
+    )
     const approvalOption = {
       validUntil: 0,
       salt: ethers.utils.randomBytes(32),
@@ -124,19 +126,19 @@ describe('recover test', () => {
     const postDeposit = await smartWallet.getDeposit()
     const revertInfo = await evRevertInfo(entrypoint, recipt)
     // is same owner
-    expect(getErrorMessage(revertInfo[0].revertReason)).to.eq('IS_SAME_OWNER')
+    expect(getErrorMessage(revertInfo[0].revertReason)).to.eq(
+      'IS_SAME_OWNER'
+    )
     // fee charged even if userop execution failed
     expect(postDeposit).to.lt(preDeposit)
   })
 
   it('will fail when recover from owner', async () => {
-    const {
-      smartWallet
-    } = await loadFixture(fixture)
+    const { smartWallet } = await loadFixture(fixture)
     const newOwner = await ethers.Wallet.createRandom()
-    await expect(smartWallet.recover(newOwner.address, [])).to.rejectedWith(
-      'account: not EntryPoint'
-    )
+    await expect(
+      smartWallet.recover(newOwner.address, [])
+    ).to.rejectedWith('account: not EntryPoint')
   })
   it('will fail when recover from execute', async () => {})
   it('recover success even if wallet is locked', async () => {
@@ -154,10 +156,10 @@ describe('recover test', () => {
 
     const newOwner = await ethers.Wallet.createRandom()
     const newGuardians: string[] = []
-    const callData = smartWallet.interface.encodeFunctionData('recover', [
-      newOwner.address,
-      newGuardians
-    ])
+    const callData = smartWallet.interface.encodeFunctionData(
+      'recover',
+      [newOwner.address, newGuardians]
+    )
     const approvalOption = {
       validUntil: 0,
       salt: ethers.utils.randomBytes(32),

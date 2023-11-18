@@ -32,7 +32,14 @@ library Exec {
         uint256 txGas
     ) internal view returns (bool success) {
         assembly {
-            success := staticcall(txGas, to, add(data, 0x20), mload(data), 0, 0)
+            success := staticcall(
+                txGas,
+                to,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
         }
     }
 

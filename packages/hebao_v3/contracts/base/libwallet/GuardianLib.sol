@@ -3,11 +3,11 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./WalletData.sol";
-import "../../lib/SignatureUtil.sol";
-import "../../thirdparty/SafeCast.sol";
-import "./ApprovalLib.sol";
-import "../../lib/EIP712.sol";
+import './WalletData.sol';
+import '../../lib/SignatureUtil.sol';
+import '../../thirdparty/SafeCast.sol';
+import './ApprovalLib.sol';
+import '../../lib/EIP712.sol';
 
 /// @title GuardianModule
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -24,15 +24,15 @@ library GuardianLib {
 
     bytes32 public constant ADD_GUARDIAN_TYPEHASH =
         keccak256(
-            "addGuardian(address wallet,uint256 validUntil,address guardian,bytes32 salt)"
+            'addGuardian(address wallet,uint256 validUntil,address guardian,bytes32 salt)'
         );
     bytes32 public constant REMOVE_GUARDIAN_TYPEHASH =
         keccak256(
-            "removeGuardian(address wallet,uint256 validUntil,address guardian,bytes32 salt)"
+            'removeGuardian(address wallet,uint256 validUntil,address guardian,bytes32 salt)'
         );
     bytes32 public constant RESET_GUARDIANS_TYPEHASH =
         keccak256(
-            "resetGuardians(address wallet,uint256 validUntil,address[] guardians,bytes32 salt)"
+            'resetGuardians(address wallet,uint256 validUntil,address[] guardians,bytes32 salt)'
         );
 
     event GuardianAdded(address guardian, uint effectiveTime);
@@ -44,22 +44,41 @@ library GuardianLib {
     ) external {
         address guardian = address(0);
         for (uint i = 0; i < _guardians.length; i++) {
-            require(_guardians[i] > guardian, "INVALID_ORDERING");
+            require(_guardians[i] > guardian, 'INVALID_ORDERING');
             guardian = _guardians[i];
             _addGuardian(wallet, guardian, 0, true);
         }
     }
 
-    function addGuardian(Wallet storage wallet, address guardian) external {
-        _addGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
+    function addGuardian(
+        Wallet storage wallet,
+        address guardian
+    ) external {
+        _addGuardian(
+            wallet,
+            guardian,
+            GUARDIAN_PENDING_PERIOD,
+            false
+        );
     }
 
-    function addGuardianWA(Wallet storage wallet, address guardian) external {
+    function addGuardianWA(
+        Wallet storage wallet,
+        address guardian
+    ) external {
         _addGuardian(wallet, guardian, 0, true);
     }
 
-    function removeGuardian(Wallet storage wallet, address guardian) external {
-        _removeGuardian(wallet, guardian, GUARDIAN_PENDING_PERIOD, false);
+    function removeGuardian(
+        Wallet storage wallet,
+        address guardian
+    ) external {
+        _removeGuardian(
+            wallet,
+            guardian,
+            GUARDIAN_PENDING_PERIOD,
+            false
+        );
     }
 
     function removeGuardianWA(
@@ -115,14 +134,14 @@ library GuardianLib {
 
         // Calculate total group sizes
         Guardian[] memory allGuardians = guardians(wallet, false);
-        require(allGuardians.length > 0, "NO_GUARDIANS");
+        require(allGuardians.length > 0, 'NO_GUARDIANS');
 
         address lastSigner;
         bool walletOwnerSigned = false;
         address owner = wallet.owner;
         for (uint i = 0; i < signers.length; i++) {
             // Check for duplicates
-            require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
+            require(signers[i] > lastSigner, 'INVALID_SIGNERS_ORDER');
             lastSigner = signers[i];
 
             if (signers[i] == owner) {
@@ -135,28 +154,42 @@ library GuardianLib {
                         break;
                     }
                 }
-                require(_isGuardian, "SIGNER_NOT_GUARDIAN");
+                require(_isGuardian, 'SIGNER_NOT_GUARDIAN');
             }
         }
 
         if (requirement == SigRequirement.OWNER_OR_ANY_GUARDIAN) {
             return signers.length == 1;
         } else if (requirement == SigRequirement.ANY_GUARDIAN) {
-            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
+            require(
+                !walletOwnerSigned,
+                'WALLET_OWNER_SIGNATURE_NOT_ALLOWED'
+            );
             return signers.length == 1;
         }
 
         // Check owner requirements
         if (requirement == SigRequirement.MAJORITY_OWNER_REQUIRED) {
-            require(walletOwnerSigned, "WALLET_OWNER_SIGNATURE_REQUIRED");
-        } else if (requirement == SigRequirement.MAJORITY_OWNER_NOT_ALLOWED) {
-            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
+            require(
+                walletOwnerSigned,
+                'WALLET_OWNER_SIGNATURE_REQUIRED'
+            );
+        } else if (
+            requirement == SigRequirement.MAJORITY_OWNER_NOT_ALLOWED
+        ) {
+            require(
+                !walletOwnerSigned,
+                'WALLET_OWNER_SIGNATURE_NOT_ALLOWED'
+            );
         }
 
         uint numExtendedSigners = allGuardians.length;
         if (walletOwnerSigned) {
             numExtendedSigners += 1;
-            require(signers.length > 1, "NO_GUARDIAN_SIGNED_BESIDES_OWNER");
+            require(
+                signers.length > 1,
+                'NO_GUARDIAN_SIGNED_BESIDES_OWNER'
+            );
         }
 
         return signers.length >= (numExtendedSigners >> 1) + 1;
@@ -179,7 +212,9 @@ library GuardianLib {
         uint index = 0;
         for (uint i = 0; i < wallet.guardians.length; i++) {
             Guardian memory g = wallet.guardians[i];
-            if (_isActiveOrPendingAddition(g, includePendingAddition)) {
+            if (
+                _isActiveOrPendingAddition(g, includePendingAddition)
+            ) {
                 _guardians[index] = g;
                 index++;
             }
@@ -195,7 +230,9 @@ library GuardianLib {
     ) public view returns (uint count) {
         for (uint i = 0; i < wallet.guardians.length; i++) {
             Guardian memory g = wallet.guardians[i];
-            if (_isActiveOrPendingAddition(g, includePendingAddition)) {
+            if (
+                _isActiveOrPendingAddition(g, includePendingAddition)
+            ) {
                 count++;
             }
         }
@@ -216,12 +253,16 @@ library GuardianLib {
         for (uint i = 0; i < wallet.guardians.length; i++) {
             Guardian memory g = wallet.guardians[i];
             if (_isPendingAddition(g)) {
-                wallet.guardians[i].status = uint8(GuardianStatus.REMOVE);
+                wallet.guardians[i].status = uint8(
+                    GuardianStatus.REMOVE
+                );
                 wallet.guardians[i].timestamp = 0;
                 cancelled = true;
             }
             if (_isPendingRemoval(g)) {
-                wallet.guardians[i].status = uint8(GuardianStatus.ADD);
+                wallet.guardians[i].status = uint8(
+                    GuardianStatus.ADD
+                );
                 wallet.guardians[i].timestamp = 0;
                 cancelled = true;
             }
@@ -235,9 +276,9 @@ library GuardianLib {
         uint validSince,
         bool alwaysOverride
     ) internal returns (uint) {
-        require(validSince >= block.timestamp, "INVALID_VALID_SINCE");
-        require(addr != address(0), "ZERO_ADDRESS");
-        require(addr != address(this), "INVALID_ADDRESS");
+        require(validSince >= block.timestamp, 'INVALID_VALID_SINCE');
+        require(addr != address(0), 'ZERO_ADDRESS');
+        require(addr != address(this), 'INVALID_ADDRESS');
 
         uint pos = wallet.guardianIdx[addr];
 
@@ -258,13 +299,18 @@ library GuardianLib {
         Guardian memory g = wallet.guardians[pos - 1];
 
         if (_isRemoved(g)) {
-            wallet.guardians[pos - 1].status = uint8(GuardianStatus.ADD);
-            wallet.guardians[pos - 1].timestamp = validSince.toUint64();
+            wallet.guardians[pos - 1].status = uint8(
+                GuardianStatus.ADD
+            );
+            wallet.guardians[pos - 1].timestamp = validSince
+                .toUint64();
             return validSince;
         }
 
         if (_isPendingRemoval(g)) {
-            wallet.guardians[pos - 1].status = uint8(GuardianStatus.ADD);
+            wallet.guardians[pos - 1].status = uint8(
+                GuardianStatus.ADD
+            );
             wallet.guardians[pos - 1].timestamp = 0;
             return 0;
         }
@@ -272,11 +318,12 @@ library GuardianLib {
         if (_isPendingAddition(g)) {
             if (!alwaysOverride) return g.timestamp;
 
-            wallet.guardians[pos - 1].timestamp = validSince.toUint64();
+            wallet.guardians[pos - 1].timestamp = validSince
+                .toUint64();
             return validSince;
         }
 
-        require(_isAdded(g), "UNEXPECTED_RESULT");
+        require(_isAdded(g), 'UNEXPECTED_RESULT');
         return 0;
     }
 
@@ -286,22 +333,27 @@ library GuardianLib {
         uint validUntil,
         bool alwaysOverride
     ) internal returns (uint) {
-        require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");
-        require(addr != address(0), "ZERO_ADDRESS");
+        require(validUntil >= block.timestamp, 'INVALID_VALID_UNTIL');
+        require(addr != address(0), 'ZERO_ADDRESS');
 
         uint pos = wallet.guardianIdx[addr];
-        require(pos > 0, "GUARDIAN_NOT_EXISTS");
+        require(pos > 0, 'GUARDIAN_NOT_EXISTS');
 
         Guardian memory g = wallet.guardians[pos - 1];
 
         if (_isAdded(g)) {
-            wallet.guardians[pos - 1].status = uint8(GuardianStatus.REMOVE);
-            wallet.guardians[pos - 1].timestamp = validUntil.toUint64();
+            wallet.guardians[pos - 1].status = uint8(
+                GuardianStatus.REMOVE
+            );
+            wallet.guardians[pos - 1].timestamp = validUntil
+                .toUint64();
             return validUntil;
         }
 
         if (_isPendingAddition(g)) {
-            wallet.guardians[pos - 1].status = uint8(GuardianStatus.REMOVE);
+            wallet.guardians[pos - 1].status = uint8(
+                GuardianStatus.REMOVE
+            );
             wallet.guardians[pos - 1].timestamp = 0;
             return 0;
         }
@@ -309,11 +361,12 @@ library GuardianLib {
         if (_isPendingRemoval(g)) {
             if (!alwaysOverride) return g.timestamp;
 
-            wallet.guardians[pos - 1].timestamp = validUntil.toUint64();
+            wallet.guardians[pos - 1].timestamp = validUntil
+                .toUint64();
             return validUntil;
         }
 
-        require(_isRemoved(g), "UNEXPECTED_RESULT");
+        require(_isRemoved(g), 'UNEXPECTED_RESULT');
         return 0;
     }
 
@@ -326,8 +379,11 @@ library GuardianLib {
         bool alwaysOverride
     ) internal {
         uint _numGuardians = numGuardians(wallet, true);
-        require(_numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-        require(guardian != wallet.owner, "GUARDIAN_CAN_NOT_BE_OWNER");
+        require(_numGuardians < MAX_GUARDIANS, 'TOO_MANY_GUARDIANS');
+        require(
+            guardian != wallet.owner,
+            'GUARDIAN_CAN_NOT_BE_OWNER'
+        );
 
         uint validSince = block.timestamp + 1;
         if (_numGuardians >= 2) {
@@ -368,7 +424,9 @@ library GuardianLib {
         }
     }
 
-    function _isAdded(Guardian memory guardian) private view returns (bool) {
+    function _isAdded(
+        Guardian memory guardian
+    ) private view returns (bool) {
         return
             guardian.status == uint8(GuardianStatus.ADD) &&
             guardian.timestamp <= block.timestamp;
@@ -382,7 +440,9 @@ library GuardianLib {
             guardian.timestamp > block.timestamp;
     }
 
-    function _isRemoved(Guardian memory guardian) private view returns (bool) {
+    function _isRemoved(
+        Guardian memory guardian
+    ) private view returns (bool) {
         return
             guardian.status == uint8(GuardianStatus.REMOVE) &&
             guardian.timestamp <= block.timestamp;
@@ -396,7 +456,9 @@ library GuardianLib {
             guardian.timestamp > block.timestamp;
     }
 
-    function _isActive(Guardian memory guardian) private view returns (bool) {
+    function _isActive(
+        Guardian memory guardian
+    ) private view returns (bool) {
         return _isAdded(guardian) || _isPendingRemoval(guardian);
     }
 
@@ -409,7 +471,10 @@ library GuardianLib {
             (includePendingAddition && _isPendingAddition(guardian));
     }
 
-    function _cleanRemovedGuardians(Wallet storage wallet, bool force) private {
+    function _cleanRemovedGuardians(
+        Wallet storage wallet,
+        bool force
+    ) private {
         uint count = wallet.guardians.length;
         if (!force && count < 10) return;
 
@@ -422,7 +487,9 @@ library GuardianLib {
 
                 if (g.addr != lastGuardian.addr) {
                     wallet.guardians[uint(i)] = lastGuardian;
-                    wallet.guardianIdx[lastGuardian.addr] = uint(i) + 1;
+                    wallet.guardianIdx[lastGuardian.addr] =
+                        uint(i) +
+                        1;
                 }
                 wallet.guardians.pop();
                 delete wallet.guardianIdx[g.addr];

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
-import {BLS} from "./hubble-contracts/contracts/libs/BLS.sol";
+import {BLS} from './hubble-contracts/contracts/libs/BLS.sol';
 
 library BLSOpen {
     function verifySingle(
@@ -50,7 +50,9 @@ library BLSOpen {
         return BLS.hashToPoint(domain, message);
     }
 
-    function isZeroBLSKey(uint256[4] memory blsKey) public pure returns (bool) {
+    function isZeroBLSKey(
+        uint256[4] memory blsKey
+    ) public pure returns (bool) {
         bool isZero = true;
         for (uint256 i = 0; isZero && i < 4; i++) {
             isZero = (blsKey[i] == 0);

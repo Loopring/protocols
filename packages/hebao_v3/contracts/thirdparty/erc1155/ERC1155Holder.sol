@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.17;
 
-import "./IERC1155Receiver.sol";
+import './IERC1155Receiver.sol';
 
 /**
  * @dev _Available since v3.1._

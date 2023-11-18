@@ -3,9 +3,9 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./WalletData.sol";
-import "../../lib/MathUint.sol";
-import "./ApprovalLib.sol";
+import './WalletData.sol';
+import '../../lib/MathUint.sol';
+import './ApprovalLib.sol';
 
 /// @title WhitelistLib
 /// @dev This store maintains a wallet's whitelisted addresses.
@@ -19,23 +19,36 @@ library WhitelistLib {
 
     bytes32 public constant ADD_TO_WHITELIST_TYPEHASH =
         keccak256(
-            "addToWhitelist(address wallet,uint256 validUntil,address addr,bytes32 salt)"
+            'addToWhitelist(address wallet,uint256 validUntil,address addr,bytes32 salt)'
         );
 
-    event Whitelisted(address addr, bool whitelisted, uint effectiveTime);
+    event Whitelisted(
+        address addr,
+        bool whitelisted,
+        uint effectiveTime
+    );
 
-    function addToWhitelist(Wallet storage wallet, address addr) external {
+    function addToWhitelist(
+        Wallet storage wallet,
+        address addr
+    ) external {
         wallet._addToWhitelist(
             addr,
             block.timestamp.add(WHITELIST_PENDING_PERIOD)
         );
     }
 
-    function addToWhitelistWA(Wallet storage wallet, address addr) external {
+    function addToWhitelistWA(
+        Wallet storage wallet,
+        address addr
+    ) external {
         wallet._addToWhitelist(addr, block.timestamp);
     }
 
-    function removeFromWhitelist(Wallet storage wallet, address addr) external {
+    function removeFromWhitelist(
+        Wallet storage wallet,
+        address addr
+    ) external {
         wallet._removeFromWhitelist(addr);
     }
 
@@ -54,7 +67,10 @@ library WhitelistLib {
         address addr,
         uint effectiveTime
     ) internal {
-        require(wallet.whitelisted[addr] == 0, "ADDRESS_ALREADY_WHITELISTED");
+        require(
+            wallet.whitelisted[addr] == 0,
+            'ADDRESS_ALREADY_WHITELISTED'
+        );
         uint effective = effectiveTime >= block.timestamp
             ? effectiveTime
             : block.timestamp;

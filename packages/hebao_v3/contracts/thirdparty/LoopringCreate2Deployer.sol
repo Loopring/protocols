@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "../lib/DelayTargetSelectorBasedAccessManager.sol";
+import '../lib/DelayTargetSelectorBasedAccessManager.sol';
 
-contract LoopringCreate2Deployer is DelayTargetSelectorBasedAccessManager {
+contract LoopringCreate2Deployer is
+    DelayTargetSelectorBasedAccessManager
+{
     event Deployed(address addr, uint256 salt);
 
     function deploy(bytes memory code, uint256 salt) public {

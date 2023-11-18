@@ -41,7 +41,10 @@ export interface UserOperation {
   paymasterAndData: typ.bytes
   signature: typ.bytes
 }
-export function packUserOp (op: UserOperation, forSignature = true): string {
+export function packUserOp (
+  op: UserOperation,
+  forSignature = true
+): string {
   if (forSignature) {
     return defaultAbiCoder.encode(
       [
@@ -177,12 +180,20 @@ export async function fillUserOp (
     if (op1.nonce == null) op1.nonce = 0
     if (op1.sender == null) {
       // hack: if the init contract is our known deployer, then we know what the address would be, without a view call
-      if (initAddr.toLowerCase() === walletFactoryAddress.toLowerCase()) {
+      if (
+        initAddr.toLowerCase() === walletFactoryAddress.toLowerCase()
+      ) {
         const ctr = hexDataSlice(initCallData, 32)
         const salt = hexDataSlice(initCallData, 0, 32)
-        op1.sender = getCreate2Address(walletFactoryAddress, salt, ctr)
+        op1.sender = getCreate2Address(
+          walletFactoryAddress,
+          salt,
+          ctr
+        )
       } else {
-        if (provider == null) throw new Error('no entrypoint/provider')
+        if (provider == null) {
+          throw new Error('no entrypoint/provider')
+        }
         op1.sender = await entryPoint!.callStatic
           .getSenderAddress(op1.initCode!)
           .catch((e) => e.errorArgs.sender)
@@ -202,7 +213,9 @@ export async function fillUserOp (
     }
   }
   if (op1.nonce == null) {
-    if (provider == null) { throw new Error('must have entryPoint to autofill nonce') }
+    if (provider == null) {
+      throw new Error('must have entryPoint to autofill nonce')
+    }
     const c = new Contract(
       op.sender!,
       ['function getNonce() view returns(uint256)'],
@@ -211,7 +224,11 @@ export async function fillUserOp (
     op1.nonce = await c.getNonce()
   }
   if (op1.callGasLimit == null && op.callData != null) {
-    if (provider == null) { throw new Error('must have entryPoint for callGasLimit estimate') }
+    if (provider == null) {
+      throw new Error(
+        'must have entryPoint for callGasLimit estimate'
+      )
+    }
     const gasEtimated = await provider.estimateGas({
       from: entryPoint?.address,
       to: op1.sender,
@@ -222,10 +239,13 @@ export async function fillUserOp (
     op1.callGasLimit = gasEtimated.add(55000)
   }
   if (op1.maxFeePerGas == null) {
-    if (provider == null) { throw new Error('must have entryPoint to autofill maxFeePerGas') }
+    if (provider == null) {
+      throw new Error('must have entryPoint to autofill maxFeePerGas')
+    }
     const block = await provider.getBlock('latest')
     op1.maxFeePerGas = block.baseFeePerGas!.add(
-      op1.maxPriorityFeePerGas ?? DefaultsForUserOp.maxPriorityFeePerGas
+      op1.maxPriorityFeePerGas ??
+        DefaultsForUserOp.maxPriorityFeePerGas
     )
   }
   // TODO: this is exactly what fillUserOp below should do - but it doesn't.
@@ -246,12 +266,18 @@ export async function fillAndMultiSign (
   callData: string,
   smartWallet: SmartWallet,
   smartWalletOwner: Wallet,
-  smartWalletOrEOASigners: Array<{ signer: Wallet, smartWalletAddress?: string }>,
+  smartWalletOrEOASigners: Array<{
+    signer: Wallet
+    smartWalletAddress?: string
+  }>,
   walletFactoryAddress: string,
   verifyingContract: string,
   approvalOption: ApprovalOption,
   entryPoint?: EntryPoint,
-  option?: Partial<{ nonce: BigNumberish, callGasLimit: BigNumberish }>
+  option?: Partial<{
+    nonce: BigNumberish
+    callGasLimit: BigNumberish
+  }>
 ): Promise<UserOperation> {
   const provider = entryPoint?.provider
   const nonce = await smartWallet.getNonce()
@@ -262,7 +288,9 @@ export async function fillAndMultiSign (
     ...option
   }
   const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint)
-  const chainId = await provider!.getNetwork().then((net) => net.chainId)
+  const chainId = await provider!
+    .getNetwork()
+    .then((net) => net.chainId)
   const userOpHash = getUserOpHash(op2, entryPoint!.address, chainId)
   const calldata = ethers.utils.hexDataSlice(op.callData, 4)
   const domain = {
@@ -275,11 +303,17 @@ export async function fillAndMultiSign (
   const signatures = await Promise.all(
     smartWalletOrEOASigners.map(
       async (g) =>
-        await signTypedData(calldata, g.signer, approvalOption, domain, {
-          wallet: smartWallet.address,
-          validUntil: approvalOption.validUntil,
-          salt: approvalOption.salt
-        })
+        await signTypedData(
+          calldata,
+          g.signer,
+          approvalOption,
+          domain,
+          {
+            wallet: smartWallet.address,
+            validUntil: approvalOption.validUntil,
+            salt: approvalOption.salt
+          }
+        )
     )
   )
   const [sortedSigners, sortedSignatures] = _.unzip(
@@ -326,8 +360,12 @@ export async function fillAndSign (
 ): Promise<UserOperation> {
   const provider = entryPoint?.provider
   const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint)
-  const chainId = await provider!.getNetwork().then((net) => net.chainId)
-  const message = arrayify(getUserOpHash(op2, entryPoint!.address, chainId))
+  const chainId = await provider!
+    .getNetwork()
+    .then((net) => net.chainId)
+  const message = arrayify(
+    getUserOpHash(op2, entryPoint!.address, chainId)
+  )
 
   return {
     ...op2,
@@ -335,7 +373,9 @@ export async function fillAndSign (
   }
 }
 
-export type SendUserOp = (userOp: UserOperation) => Promise<ContractReceipt>
+export type SendUserOp = (
+  userOp: UserOperation
+) => Promise<ContractReceipt>
 
 /**
  * send UserOp using handleOps, but locally.
@@ -349,7 +389,10 @@ export function localUserOpSender (
   signer: Signer,
   beneficiary?: string
 ): SendUserOp {
-  const entryPoint = EntryPoint__factory.connect(entryPointAddress, signer)
+  const entryPoint = EntryPoint__factory.connect(
+    entryPointAddress,
+    signer
+  )
   return async function (userOp) {
     const gasLimit = BigNumber.from(userOp.preVerificationGas)
       .add(userOp.verificationGasLimit)

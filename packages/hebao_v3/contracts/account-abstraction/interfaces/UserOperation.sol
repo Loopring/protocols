@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 /* solhint-disable no-inline-assembly */
 
-import {calldataKeccak} from "../core/Helpers.sol";
+import {calldataKeccak} from '../core/Helpers.sol';
 
 /**
  * User Operation struct
@@ -55,12 +55,17 @@ library UserOperationLib {
     ) internal view returns (uint256) {
         unchecked {
             uint256 maxFeePerGas = userOp.maxFeePerGas;
-            uint256 maxPriorityFeePerGas = userOp.maxPriorityFeePerGas;
+            uint256 maxPriorityFeePerGas = userOp
+                .maxPriorityFeePerGas;
             if (maxFeePerGas == maxPriorityFeePerGas) {
                 //legacy mode (for networks that don't support basefee opcode)
                 return maxFeePerGas;
             }
-            return min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+            return
+                min(
+                    maxFeePerGas,
+                    maxPriorityFeePerGas + block.basefee
+                );
         }
     }
 
@@ -76,7 +81,9 @@ library UserOperationLib {
         uint256 preVerificationGas = userOp.preVerificationGas;
         uint256 maxFeePerGas = userOp.maxFeePerGas;
         uint256 maxPriorityFeePerGas = userOp.maxPriorityFeePerGas;
-        bytes32 hashPaymasterAndData = calldataKeccak(userOp.paymasterAndData);
+        bytes32 hashPaymasterAndData = calldataKeccak(
+            userOp.paymasterAndData
+        );
 
         return
             abi.encode(
@@ -99,7 +106,10 @@ library UserOperationLib {
         return keccak256(pack(userOp));
     }
 
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+    function min(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256) {
         return a < b ? a : b;
     }
 }

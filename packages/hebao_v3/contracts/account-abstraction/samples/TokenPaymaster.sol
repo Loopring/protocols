@@ -3,8 +3,8 @@ pragma solidity ^0.8.12;
 
 /* solhint-disable reason-string */
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../core/BasePaymaster.sol";
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '../core/BasePaymaster.sol';
 
 /**
  * A sample paymaster that defines itself as a token to pay for gas.
@@ -42,7 +42,10 @@ contract TokenPaymaster is BasePaymaster, ERC20 {
      * @param recipient - the address that will receive the minted tokens.
      * @param amount - the amount it will receive.
      */
-    function mintTokens(address recipient, uint256 amount) external onlyOwner {
+    function mintTokens(
+        address recipient,
+        uint256 amount
+    ) external onlyOwner {
         _mint(recipient, amount);
     }
 
@@ -91,19 +94,19 @@ contract TokenPaymaster is BasePaymaster, ERC20 {
         // make sure that verificationGasLimit is high enough to handle postOp
         require(
             userOp.verificationGasLimit > COST_OF_POST,
-            "TokenPaymaster: gas too low for postOp"
+            'TokenPaymaster: gas too low for postOp'
         );
 
         if (userOp.initCode.length != 0) {
             _validateConstructor(userOp);
             require(
                 balanceOf(userOp.sender) >= tokenPrefund,
-                "TokenPaymaster: no balance (pre-create)"
+                'TokenPaymaster: no balance (pre-create)'
             );
         } else {
             require(
                 balanceOf(userOp.sender) >= tokenPrefund,
-                "TokenPaymaster: no balance"
+                'TokenPaymaster: no balance'
             );
         }
 
@@ -116,7 +119,10 @@ contract TokenPaymaster is BasePaymaster, ERC20 {
         UserOperation calldata userOp
     ) internal view virtual {
         address factory = address(bytes20(userOp.initCode[0:20]));
-        require(factory == theFactory, "TokenPaymaster: wrong account factory");
+        require(
+            factory == theFactory,
+            'TokenPaymaster: wrong account factory'
+        );
     }
 
     /**
@@ -134,7 +140,9 @@ contract TokenPaymaster is BasePaymaster, ERC20 {
         //we don't really care about the mode, we just pay the gas with the user's tokens.
         (mode);
         address sender = abi.decode(context, (address));
-        uint256 charge = getTokenValueOfEth(actualGasCost + COST_OF_POST);
+        uint256 charge = getTokenValueOfEth(
+            actualGasCost + COST_OF_POST
+        );
         //actualGasCost is known to be no larger than the above requiredPreFund, so the transfer should succeed.
         _transfer(sender, address(this), charge);
     }

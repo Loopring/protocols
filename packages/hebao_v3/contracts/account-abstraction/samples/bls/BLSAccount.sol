@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.12;
 
-import "../SimpleAccount.sol";
-import "./IBLSAccount.sol";
+import '../SimpleAccount.sol';
+import './IBLSAccount.sol';
 
 /**
  * Minimal BLS-based account that uses an aggregated signature.
@@ -44,11 +44,14 @@ contract BLSAccount is SimpleAccount, IBLSAccount {
             // BLSSignatureAggregator.getUserOpPublicKey() assumes that during account creation, the public key is
             // the suffix of the initCode.
             // The account MUST validate it
-            bytes32 pubKeyHash = keccak256(abi.encode(getBlsPublicKey()));
+            bytes32 pubKeyHash = keccak256(
+                abi.encode(getBlsPublicKey())
+            );
             require(
-                keccak256(userOp.initCode[userOp.initCode.length - 128:]) ==
-                    pubKeyHash,
-                "wrong pubkey"
+                keccak256(
+                    userOp.initCode[userOp.initCode.length - 128:]
+                ) == pubKeyHash,
+                'wrong pubkey'
             );
         }
         return _packValidationData(ValidationData(aggregator, 0, 0));
@@ -58,11 +61,15 @@ contract BLSAccount is SimpleAccount, IBLSAccount {
      * Allows the owner to set or change the BLS key.
      * @param newPublicKey public key from a BLS keypair that will have a full ownership and control of this account.
      */
-    function setBlsPublicKey(uint256[4] memory newPublicKey) public onlyOwner {
+    function setBlsPublicKey(
+        uint256[4] memory newPublicKey
+    ) public onlyOwner {
         _setBlsPublicKey(newPublicKey);
     }
 
-    function _setBlsPublicKey(uint256[4] memory newPublicKey) internal {
+    function _setBlsPublicKey(
+        uint256[4] memory newPublicKey
+    ) internal {
         emit PublicKeyChanged(publicKey, newPublicKey);
         publicKey = newPublicKey;
     }

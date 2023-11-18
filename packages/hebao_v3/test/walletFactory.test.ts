@@ -14,11 +14,8 @@ import {
 describe('walletFactory', () => {
   describe('A EOA', () => {
     it("should be able to create a new wallet with owner's signature", async () => {
-      const {
-        smartWalletOwner,
-        guardians,
-        walletFactory
-      } = await loadFixture(fixture)
+      const { smartWalletOwner, guardians, walletFactory } =
+        await loadFixture(fixture)
 
       const salt = ethers.utils.formatBytes32String('0x1')
       const recipt = await createSmartWallet(
@@ -36,12 +33,17 @@ describe('walletFactory', () => {
         'WalletCreated'
       )
 
-      const smartWalletAddr = await walletFactory.computeWalletAddress(
-        smartWalletOwner.address,
-        salt
+      const smartWalletAddr =
+        await walletFactory.computeWalletAddress(
+          smartWalletOwner.address,
+          salt
+        )
+      expect(smartWalletOwner.address).to.equal(
+        walletCreatedEvent.args!.owner
       )
-      expect(smartWalletOwner.address).to.equal(walletCreatedEvent.args!.owner)
-      expect(smartWalletAddr).to.equal(walletCreatedEvent.args!.wallet)
+      expect(smartWalletAddr).to.equal(
+        walletCreatedEvent.args!.wallet
+      )
 
       const smartWallet = SmartWalletV3__factory.connect(
         smartWalletAddr,
@@ -50,7 +52,8 @@ describe('walletFactory', () => {
 
       // Check creation timestamp
       const blockTime = await getBlockTimestamp(recipt.blockNumber)
-      const creationTimestamp = await smartWallet.getCreationTimestamp()
+      const creationTimestamp =
+        await smartWallet.getCreationTimestamp()
       expect(creationTimestamp.toNumber()).to.equal(blockTime)
 
       // Check owner
@@ -69,18 +72,18 @@ describe('walletFactory', () => {
 
   describe('operator management', () => {
     it('only owner can add operators', async () => {
-      const {
-        walletFactory
-      } = await loadFixture(fixture)
+      const { walletFactory } = await loadFixture(fixture)
       const account2 = await ethers.Wallet.createRandom().connect(
         ethers.provider
       )
       const account3 = await ethers.Wallet.createRandom().connect(
         ethers.provider
       )
-      expect(await walletFactory.isOperator(account2.address)).to.be.false
+      expect(await walletFactory.isOperator(account2.address)).to.be
+        .false
       await walletFactory.addOperator(account2.address)
-      expect(await walletFactory.isOperator(account2.address)).to.be.true
+      expect(await walletFactory.isOperator(account2.address)).to.be
+        .true
 
       // others cannot add operators
       await expect(
@@ -89,10 +92,9 @@ describe('walletFactory', () => {
     })
 
     it('can create wallet only by operator', async () => {
-      const {
-        smartWalletOwner,
-        walletFactory
-      } = await loadFixture(fixture)
+      const { smartWalletOwner, walletFactory } = await loadFixture(
+        fixture
+      )
       const [, account2] = await ethers.getSigners()
       const account2Addr = await account2.getAddress()
       // create wallet
@@ -111,13 +113,13 @@ describe('walletFactory', () => {
         salt
       }
 
-      const walletAddrComputed = await walletFactory.computeWalletAddress(
-        owner,
-        salt
-      )
+      const walletAddrComputed =
+        await walletFactory.computeWalletAddress(owner, salt)
 
       await expect(
-        walletFactory.connect(account2).createWalletByOperator(walletConfig, 0)
+        walletFactory
+          .connect(account2)
+          .createWalletByOperator(walletConfig, 0)
       ).to.revertedWith('NOT A OPERATOR')
       await walletFactory.addOperator(account2Addr)
       await walletFactory
@@ -133,7 +135,9 @@ describe('walletFactory', () => {
 
       await walletFactory.removeOperator(account2Addr)
       await expect(
-        walletFactory.connect(account2).createWalletByOperator(walletConfig, 0)
+        walletFactory
+          .connect(account2)
+          .createWalletByOperator(walletConfig, 0)
       ).to.revertedWith('NOT A OPERATOR')
     })
   })

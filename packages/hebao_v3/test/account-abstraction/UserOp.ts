@@ -17,7 +17,10 @@ import { Create2Factory } from '../helper/Create2Factory'
 import { UserOperation } from './UserOperation'
 import { AddressZero, callDataCost, rethrow } from './testutils'
 
-export function packUserOp (op: UserOperation, forSignature = true): string {
+export function packUserOp (
+  op: UserOperation,
+  forSignature = true
+): string {
   if (forSignature) {
     return defaultAbiCoder.encode(
       [
@@ -201,14 +204,17 @@ export async function fillUserOp (
     if (op1.sender == null) {
       // hack: if the init contract is our known deployer, then we know what the address would be, without a view call
       if (
-        initAddr.toLowerCase() === Create2Factory.contractAddress.toLowerCase()
+        initAddr.toLowerCase() ===
+        Create2Factory.contractAddress.toLowerCase()
       ) {
         const ctr = hexDataSlice(initCallData, 32)
         const salt = hexDataSlice(initCallData, 0, 32)
         op1.sender = Create2Factory.getDeployedAddress(ctr, salt)
       } else {
         // console.log('\t== not our deployer. our=', Create2Factory.contractAddress, 'got', initAddr)
-        if (provider == null) throw new Error('no entrypoint/provider')
+        if (provider == null) {
+          throw new Error('no entrypoint/provider')
+        }
         op1.sender = await entryPoint!.callStatic
           .getSenderAddress(op1.initCode!)
           .catch((e) => e.errorArgs.sender)
@@ -228,7 +234,9 @@ export async function fillUserOp (
     }
   }
   if (op1.nonce == null) {
-    if (provider == null) { throw new Error('must have entryPoint to autofill nonce') }
+    if (provider == null) {
+      throw new Error('must have entryPoint to autofill nonce')
+    }
     const c = new Contract(
       op.sender!,
       [`function ${getNonceFunction}() view returns(uint256)`],
@@ -237,7 +245,11 @@ export async function fillUserOp (
     op1.nonce = await c[getNonceFunction]().catch(rethrow())
   }
   if (op1.callGasLimit == null && op.callData != null) {
-    if (provider == null) { throw new Error('must have entryPoint for callGasLimit estimate') }
+    if (provider == null) {
+      throw new Error(
+        'must have entryPoint for callGasLimit estimate'
+      )
+    }
     const gasEtimated = await provider.estimateGas({
       from: entryPoint?.address,
       to: op1.sender,
@@ -249,10 +261,13 @@ export async function fillUserOp (
     op1.callGasLimit = gasEtimated // .add(55000)
   }
   if (op1.maxFeePerGas == null) {
-    if (provider == null) { throw new Error('must have entryPoint to autofill maxFeePerGas') }
+    if (provider == null) {
+      throw new Error('must have entryPoint to autofill maxFeePerGas')
+    }
     const block = await provider.getBlock('latest')
     op1.maxFeePerGas = block.baseFeePerGas!.add(
-      op1.maxPriorityFeePerGas ?? DefaultsForUserOp.maxPriorityFeePerGas
+      op1.maxPriorityFeePerGas ??
+        DefaultsForUserOp.maxPriorityFeePerGas
     )
   }
   // TODO: this is exactly what fillUserOp below should do - but it doesn't.
@@ -278,8 +293,12 @@ export async function fillAndSign (
   const provider = entryPoint?.provider
   const op2 = await fillUserOp(op, entryPoint, getNonceFunction)
 
-  const chainId = await provider!.getNetwork().then((net) => net.chainId)
-  const message = arrayify(getUserOpHash(op2, entryPoint!.address, chainId))
+  const chainId = await provider!
+    .getNetwork()
+    .then((net) => net.chainId)
+  const message = arrayify(
+    getUserOpHash(op2, entryPoint!.address, chainId)
+  )
 
   return {
     ...op2,

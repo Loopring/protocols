@@ -4,8 +4,8 @@ pragma solidity ^0.8.12;
 /* solhint-disable reason-string */
 /* solhint-disable no-inline-assembly */
 
-import "../core/BasePaymaster.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import '../core/BasePaymaster.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 /**
  * A sample paymaster that uses external service to decide whether to pay for the UserOp.
@@ -91,7 +91,11 @@ contract VerifyingPaymaster is BasePaymaster {
         UserOperation calldata userOp,
         bytes32 /*userOpHash*/,
         uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    )
+        internal
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         (requiredPreFund);
 
         (
@@ -103,7 +107,7 @@ contract VerifyingPaymaster is BasePaymaster {
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
             signature.length == 64 || signature.length == 65,
-            "VerifyingPaymaster: invalid signature length in paymasterAndData"
+            'VerifyingPaymaster: invalid signature length in paymasterAndData'
         );
         bytes32 hash = ECDSA.toEthSignedMessageHash(
             getHash(userOp, validUntil, validAfter)
@@ -112,12 +116,18 @@ contract VerifyingPaymaster is BasePaymaster {
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != ECDSA.recover(hash, signature)) {
-            return ("", _packValidationData(true, validUntil, validAfter));
+            return (
+                '',
+                _packValidationData(true, validUntil, validAfter)
+            );
         }
 
         //no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return ("", _packValidationData(false, validUntil, validAfter));
+        return (
+            '',
+            _packValidationData(false, validUntil, validAfter)
+        );
     }
 
     function parsePaymasterAndData(
@@ -125,7 +135,11 @@ contract VerifyingPaymaster is BasePaymaster {
     )
         public
         pure
-        returns (uint48 validUntil, uint48 validAfter, bytes calldata signature)
+        returns (
+            uint48 validUntil,
+            uint48 validAfter,
+            bytes calldata signature
+        )
     {
         (validUntil, validAfter) = abi.decode(
             paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],

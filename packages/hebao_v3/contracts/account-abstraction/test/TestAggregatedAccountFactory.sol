@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.12;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import '@openzeppelin/contracts/utils/Create2.sol';
+import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
-import "./TestAggregatedAccount.sol";
+import './TestAggregatedAccount.sol';
 
 /**
  * Based on SimpleAccountFactory.
@@ -40,7 +40,10 @@ contract TestAggregatedAccountFactory {
             payable(
                 new ERC1967Proxy{salt: bytes32(salt)}(
                     address(accountImplementation),
-                    abi.encodeCall(TestAggregatedAccount.initialize, (owner))
+                    abi.encodeCall(
+                        TestAggregatedAccount.initialize,
+                        (owner)
+                    )
                 )
             )
         );

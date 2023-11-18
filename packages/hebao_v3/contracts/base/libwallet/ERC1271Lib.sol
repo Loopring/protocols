@@ -3,8 +3,8 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/SignatureUtil.sol";
-import "./WalletData.sol";
+import '../../lib/SignatureUtil.sol';
+import './WalletData.sol';
 
 /// @title ERC1271Lib
 /// @author Brecht Devos - <brecht@loopring.org>

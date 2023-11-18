@@ -10,7 +10,7 @@ contract TestCounter {
     }
 
     function countFail() public pure {
-        revert("count failed");
+        revert('count failed');
     }
 
     function justemit() public {
@@ -25,7 +25,10 @@ contract TestCounter {
     mapping(uint256 => uint256) public xxx;
     uint256 public offset;
 
-    function gasWaster(uint256 repeat, string calldata /*junk*/) external {
+    function gasWaster(
+        uint256 repeat,
+        string calldata /*junk*/
+    ) external {
         for (uint256 i = 1; i <= repeat; i++) {
             offset++;
             xxx[offset] = i;

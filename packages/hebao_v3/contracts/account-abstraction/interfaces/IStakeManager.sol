@@ -23,7 +23,10 @@ interface IStakeManager {
     );
 
     /// Emitted once a stake is scheduled for withdrawal
-    event StakeUnlocked(address indexed account, uint256 withdrawTime);
+    event StakeUnlocked(
+        address indexed account,
+        uint256 withdrawTime
+    );
 
     event StakeWithdrawn(
         address indexed account,
@@ -63,7 +66,9 @@ interface IStakeManager {
     ) external view returns (DepositInfo memory info);
 
     /// @return the deposit (for gas payment) of the account
-    function balanceOf(address account) external view returns (uint256);
+    function balanceOf(
+        address account
+    ) external view returns (uint256);
 
     /**
      * add to the deposit of the given account

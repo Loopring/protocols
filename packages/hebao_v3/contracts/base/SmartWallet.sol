@@ -3,28 +3,28 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../iface/ILoopringWalletV2.sol";
-import "../account-abstraction/interfaces/IEntryPoint.sol";
-import "../account-abstraction/core/BaseAccount.sol";
+import '../iface/ILoopringWalletV2.sol';
+import '../account-abstraction/interfaces/IEntryPoint.sol';
+import '../account-abstraction/core/BaseAccount.sol';
 
-import "../lib/EIP712.sol";
-import "../lib/ERC20.sol";
-import "../lib/ERC1271.sol";
-import "../lib/ReentrancyGuard.sol";
-import "../thirdparty/erc165/IERC165.sol";
-import "../thirdparty/erc1155/ERC1155Holder.sol";
-import "../thirdparty/erc721/ERC721Holder.sol";
+import '../lib/EIP712.sol';
+import '../lib/ERC20.sol';
+import '../lib/ERC1271.sol';
+import '../lib/ReentrancyGuard.sol';
+import '../thirdparty/erc165/IERC165.sol';
+import '../thirdparty/erc1155/ERC1155Holder.sol';
+import '../thirdparty/erc721/ERC721Holder.sol';
 
-import "./libwallet/ERC20Lib.sol";
-import "./libwallet/ERC1271Lib.sol";
-import "./libwallet/WalletData.sol";
-import "./libwallet/LockLib.sol";
-import "./libwallet/GuardianLib.sol";
-import "./libwallet/InheritanceLib.sol";
-import "./libwallet/WhitelistLib.sol";
-import "./libwallet/QuotaLib.sol";
-import "./libwallet/RecoverLib.sol";
-import "./libwallet/UpgradeLib.sol";
+import './libwallet/ERC20Lib.sol';
+import './libwallet/ERC1271Lib.sol';
+import './libwallet/WalletData.sol';
+import './libwallet/LockLib.sol';
+import './libwallet/GuardianLib.sol';
+import './libwallet/InheritanceLib.sol';
+import './libwallet/WhitelistLib.sol';
+import './libwallet/QuotaLib.sol';
+import './libwallet/RecoverLib.sol';
+import './libwallet/UpgradeLib.sol';
 
 /// @title SmartWallet
 /// @dev Main smart wallet contract
@@ -69,7 +69,7 @@ abstract contract SmartWallet is
     modifier disableInImplementationContract() {
         require(
             !isImplementationContract,
-            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+            'DISALLOWED_ON_IMPLEMENTATION_CONTRACT'
         );
         _;
     }
@@ -77,13 +77,16 @@ abstract contract SmartWallet is
     modifier canTransferOwnership() {
         require(
             msg.sender == blankOwner && wallet.owner == blankOwner,
-            "NOT_ALLOWED_TO_SET_OWNER"
+            'NOT_ALLOWED_TO_SET_OWNER'
         );
         _;
     }
 
     modifier onlyFromEntryPoint() {
-        require(msg.sender == address(entryPoint()), "account: not EntryPoint");
+        require(
+            msg.sender == address(entryPoint()),
+            'account: not EntryPoint'
+        );
         wallet.touchLastActiveWhenRequired();
         _;
     }
@@ -94,14 +97,20 @@ abstract contract SmartWallet is
             msg.sender == address(this) ||
                 ((msg.sender == address(entryPoint()) ||
                     msg.sender == wallet.owner) && !wallet.locked),
-            "account: not Owner, Self or EntryPoint or it is locked"
+            'account: not Owner, Self or EntryPoint or it is locked'
         );
         wallet.touchLastActiveWhenRequired();
         _;
     }
 
     /// @inheritdoc BaseAccount
-    function entryPoint() public view virtual override returns (IEntryPoint) {
+    function entryPoint()
+        public
+        view
+        virtual
+        override
+        returns (IEntryPoint)
+    {
         if (wallet.entryPoint != address(0)) {
             return IEntryPoint(wallet.entryPoint);
         }
@@ -117,7 +126,7 @@ abstract contract SmartWallet is
         _entryPoint = entryPointInput;
 
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("LoopringWallet", "2.0.0", address(this))
+            EIP712.Domain('LoopringWallet', '2.0.0', address(this))
         );
 
         priceOracle = _priceOracle;
@@ -139,8 +148,8 @@ abstract contract SmartWallet is
         address feeToken,
         uint feeAmount
     ) external override disableInImplementationContract {
-        require(wallet.owner == address(0), "INITIALIZED_ALREADY");
-        require(owner != address(0), "INVALID_OWNER");
+        require(wallet.owner == address(0), 'INITIALIZED_ALREADY');
+        require(owner != address(0), 'INVALID_OWNER');
 
         wallet.owner = owner;
         wallet.creationTimestamp = uint64(block.timestamp);
@@ -166,15 +175,22 @@ abstract contract SmartWallet is
         return wallet.owner;
     }
 
-    function getCreationTimestamp() public view override returns (uint64) {
+    function getCreationTimestamp()
+        public
+        view
+        override
+        returns (uint64)
+    {
         return wallet.creationTimestamp;
     }
 
     //
     // Owner
     //
-    function transferOwnership(address _owner) external canTransferOwnership {
-        require(_owner != address(0), "INVALID_OWNER");
+    function transferOwnership(
+        address _owner
+    ) external canTransferOwnership {
+        require(_owner != address(0), 'INVALID_OWNER');
         wallet.owner = _owner;
     }
 
@@ -185,7 +201,12 @@ abstract contract SmartWallet is
         bytes32 signHash,
         bytes memory signature
     ) public view override returns (bytes4 magicValue) {
-        return wallet.isValidSignature(ERC1271_MAGICVALUE, signHash, signature);
+        return
+            wallet.isValidSignature(
+                ERC1271_MAGICVALUE,
+                signHash,
+                signature
+            );
     }
 
     //
@@ -209,8 +230,11 @@ abstract contract SmartWallet is
     function changeEntryPoint(
         address newEntryPoint
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        require(newEntryPoint != address(0), "INVALID ENTRYPOINT");
-        require(address(entryPoint()) != newEntryPoint, "SAME ENTRYPOINT");
+        require(newEntryPoint != address(0), 'INVALID ENTRYPOINT');
+        require(
+            address(entryPoint()) != newEntryPoint,
+            'SAME ENTRYPOINT'
+        );
         wallet.entryPoint = newEntryPoint;
     }
 
@@ -223,7 +247,9 @@ abstract contract SmartWallet is
         wallet.addGuardian(guardian);
     }
 
-    function addGuardianWA(address guardian) external onlyFromEntryPoint {
+    function addGuardianWA(
+        address guardian
+    ) external onlyFromEntryPoint {
         wallet.addGuardianWA(guardian);
     }
 
@@ -233,7 +259,9 @@ abstract contract SmartWallet is
         wallet.removeGuardian(guardian);
     }
 
-    function removeGuardianWA(address guardian) external onlyFromEntryPoint {
+    function removeGuardianWA(
+        address guardian
+    ) external onlyFromEntryPoint {
         wallet.removeGuardianWA(guardian);
     }
 
@@ -282,7 +310,7 @@ abstract contract SmartWallet is
         require(
             msg.sender == address(entryPoint()) ||
                 msg.sender == wallet.inheritor,
-            "account: not EntryPoint or inheritor"
+            'account: not EntryPoint or inheritor'
         );
         wallet.inherit(newOwner, newGuardians);
     }
@@ -309,7 +337,9 @@ abstract contract SmartWallet is
         wallet.changeDailyQuota(newQuota);
     }
 
-    function changeDailyQuotaWA(uint newQuota) external onlyFromEntryPoint {
+    function changeDailyQuotaWA(
+        uint newQuota
+    ) external onlyFromEntryPoint {
         wallet.changeDailyQuotaWA(newQuota);
     }
 
@@ -334,7 +364,9 @@ abstract contract SmartWallet is
         wallet.addToWhitelist(addr);
     }
 
-    function addToWhitelistWA(address addr) external onlyFromEntryPoint {
+    function addToWhitelistWA(
+        address addr
+    ) external onlyFromEntryPoint {
         wallet.addToWhitelistWA(addr);
     }
 
@@ -394,7 +426,14 @@ abstract contract SmartWallet is
         onlyFromEntryPointOrWalletOrOwnerWhenUnlocked
         returns (bytes memory)
     {
-        return wallet.callContract(priceOracle, to, value, data, forceUseQuota);
+        return
+            wallet.callContract(
+                priceOracle,
+                to,
+                value,
+                data,
+                forceUseQuota
+            );
     }
 
     function callContractWA(
@@ -411,7 +450,13 @@ abstract contract SmartWallet is
         uint amount,
         bool forceUseQuota
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        wallet.approveToken(priceOracle, token, to, amount, forceUseQuota);
+        wallet.approveToken(
+            priceOracle,
+            token,
+            to,
+            amount,
+            forceUseQuota
+        );
     }
 
     function approveTokenWA(

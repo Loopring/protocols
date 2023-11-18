@@ -7,16 +7,16 @@ pragma solidity ^0.8.17;
 library MathUint {
     function mul(uint a, uint b) internal pure returns (uint c) {
         c = a * b;
-        require(a == 0 || c / a == b, "MUL_OVERFLOW");
+        require(a == 0 || c / a == b, 'MUL_OVERFLOW');
     }
 
     function sub(uint a, uint b) internal pure returns (uint) {
-        require(b <= a, "SUB_UNDERFLOW");
+        require(b <= a, 'SUB_UNDERFLOW');
         return a - b;
     }
 
     function add(uint a, uint b) internal pure returns (uint c) {
         c = a + b;
-        require(c >= a, "ADD_OVERFLOW");
+        require(c >= a, 'ADD_OVERFLOW');
     }
 }

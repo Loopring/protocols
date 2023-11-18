@@ -3,23 +3,23 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../thirdparty/BytesUtil.sol";
-import {SmartWallet} from "./SmartWallet.sol";
-import "../account-abstraction/core/BaseAccount.sol";
-import "../account-abstraction/interfaces/IEntryPoint.sol";
-import "../iface/PriceOracle.sol";
-import "./libwallet/WalletData.sol";
-import "./libwallet/GuardianLib.sol";
-import "./libwallet/RecoverLib.sol";
-import "./libwallet/QuotaLib.sol";
-import "./libwallet/RecoverLib.sol";
-import "../lib/EIP712.sol";
-import "./libwallet/UpgradeLib.sol";
-import "./libwallet/WhitelistLib.sol";
-import "./libwallet/ApprovalLib.sol";
-import "./libwallet/ERC20Lib.sol";
-import "../lib/SignatureUtil.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import '../thirdparty/BytesUtil.sol';
+import {SmartWallet} from './SmartWallet.sol';
+import '../account-abstraction/core/BaseAccount.sol';
+import '../account-abstraction/interfaces/IEntryPoint.sol';
+import '../iface/PriceOracle.sol';
+import './libwallet/WalletData.sol';
+import './libwallet/GuardianLib.sol';
+import './libwallet/RecoverLib.sol';
+import './libwallet/QuotaLib.sol';
+import './libwallet/RecoverLib.sol';
+import '../lib/EIP712.sol';
+import './libwallet/UpgradeLib.sol';
+import './libwallet/WhitelistLib.sol';
+import './libwallet/ApprovalLib.sol';
+import './libwallet/ERC20Lib.sol';
+import '../lib/SignatureUtil.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 contract SmartWalletV3 is SmartWallet {
     using SignatureUtil for bytes32;
@@ -38,7 +38,7 @@ contract SmartWalletV3 is SmartWallet {
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         for (uint i = 0; i < data.length; i++) {
             (bool success, ) = address(this).call(data[i]);
-            require(success, "BATCHED_CALL_FAILED");
+            require(success, 'BATCHED_CALL_FAILED');
         }
     }
 
@@ -78,8 +78,10 @@ contract SmartWalletV3 is SmartWallet {
             bytes4 methodId = userOp.callData.toBytes4(0);
             if (isDataless(userOp)) {
                 bytes memory data = userOp.callData[4:];
-                (Approval memory approval, bytes memory ownerSignature) = abi
-                    .decode(userOp.signature, (Approval, bytes));
+                (
+                    Approval memory approval,
+                    bytes memory ownerSignature
+                ) = abi.decode(userOp.signature, (Approval, bytes));
 
                 // then check guardians signature for actions
                 if (methodId == SmartWallet.addGuardianWA.selector) {
@@ -97,7 +99,9 @@ contract SmartWalletV3 is SmartWallet {
                     );
                 }
 
-                if (methodId == SmartWallet.removeGuardianWA.selector) {
+                if (
+                    methodId == SmartWallet.removeGuardianWA.selector
+                ) {
                     bytes32 approvedHash = GuardianLib
                         .encodeApprovalForRemoveGuardian(
                             data,
@@ -112,7 +116,9 @@ contract SmartWalletV3 is SmartWallet {
                     );
                 }
 
-                if (methodId == SmartWallet.resetGuardiansWA.selector) {
+                if (
+                    methodId == SmartWallet.resetGuardiansWA.selector
+                ) {
                     bytes32 approvedHash = GuardianLib
                         .encodeApprovalForResetGuardians(
                             data,
@@ -127,7 +133,10 @@ contract SmartWalletV3 is SmartWallet {
                     );
                 }
 
-                if (methodId == SmartWallet.changeDailyQuotaWA.selector) {
+                if (
+                    methodId ==
+                    SmartWallet.changeDailyQuotaWA.selector
+                ) {
                     bytes32 approvedHash = QuotaLib
                         .encodeApprovalForChangeDailyQuota(
                             data,
@@ -142,7 +151,9 @@ contract SmartWalletV3 is SmartWallet {
                     );
                 }
 
-                if (methodId == SmartWallet.addToWhitelistWA.selector) {
+                if (
+                    methodId == SmartWallet.addToWhitelistWA.selector
+                ) {
                     bytes32 approvedHash = WhitelistLib
                         .encodeApprovalForAddToWhitelist(
                             data,
@@ -157,7 +168,9 @@ contract SmartWalletV3 is SmartWallet {
                     );
                 }
 
-                if (methodId == SmartWallet.transferTokenWA.selector) {
+                if (
+                    methodId == SmartWallet.transferTokenWA.selector
+                ) {
                     bytes32 approvedHash = ERC20Lib
                         .encodeApprovalForTransferToken(
                             data,
@@ -203,7 +216,8 @@ contract SmartWalletV3 is SmartWallet {
                 }
 
                 if (
-                    methodId == SmartWallet.approveThenCallContractWA.selector
+                    methodId ==
+                    SmartWallet.approveThenCallContractWA.selector
                 ) {
                     bytes32 approvedHash = ERC20Lib
                         .encodeApprovalForApproveThenCallContract(
@@ -220,12 +234,13 @@ contract SmartWalletV3 is SmartWallet {
                 }
 
                 if (methodId == SmartWallet.unlock.selector) {
-                    bytes32 approvedHash = LockLib.encodeApprovalForUnlock(
-                        data,
-                        DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        approval.salt
-                    );
+                    bytes32 approvedHash = LockLib
+                        .encodeApprovalForUnlock(
+                            data,
+                            DOMAIN_SEPARATOR,
+                            approval.validUntil,
+                            approval.salt
+                        );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
                         LockLib.sigRequirement,
@@ -233,7 +248,9 @@ contract SmartWalletV3 is SmartWallet {
                     );
                 }
 
-                if (methodId == SmartWallet.changeMasterCopy.selector) {
+                if (
+                    methodId == SmartWallet.changeMasterCopy.selector
+                ) {
                     bytes32 approvedHash = UpgradeLib
                         .encodeApprovalForChangeMasterCopy(
                             data,
@@ -249,29 +266,39 @@ contract SmartWalletV3 is SmartWallet {
                 }
 
                 if (methodId == SmartWallet.recover.selector) {
-                    (address newOwner, address[] memory newGuardians) = abi
-                        .decode(data, (address, address[]));
-                    bytes32 approvedHash = RecoverLib.encodeApprovalForRecover(
-                        newOwner,
-                        newGuardians,
-                        DOMAIN_SEPARATOR,
-                        approval.validUntil,
-                        approval.salt
-                    );
+                    (
+                        address newOwner,
+                        address[] memory newGuardians
+                    ) = abi.decode(data, (address, address[]));
+                    bytes32 approvedHash = RecoverLib
+                        .encodeApprovalForRecover(
+                            newOwner,
+                            newGuardians,
+                            DOMAIN_SEPARATOR,
+                            approval.validUntil,
+                            approval.salt
+                        );
                     sigTimeRange = wallet.verifyApproval(
                         approvedHash,
                         RecoverLib.sigRequirement,
                         approval
                     );
-                    if (!hash.verifySignature(newOwner, ownerSignature))
-                        return SIG_VALIDATION_FAILED;
+                    if (
+                        !hash.verifySignature(
+                            newOwner,
+                            ownerSignature
+                        )
+                    ) return SIG_VALIDATION_FAILED;
                 }
 
                 // check owner signature first
                 // check signature of new owner when recover
                 if (
                     methodId != SmartWallet.recover.selector &&
-                    !hash.verifySignature(wallet.owner, ownerSignature)
+                    !hash.verifySignature(
+                        wallet.owner,
+                        ownerSignature
+                    )
                 ) {
                     return SIG_VALIDATION_FAILED;
                 }
@@ -280,14 +307,19 @@ contract SmartWalletV3 is SmartWallet {
             }
 
             if (methodId == SmartWallet.inherit.selector) {
-                if (hash.verifySignature(wallet.inheritor, userOp.signature)) {
+                if (
+                    hash.verifySignature(
+                        wallet.inheritor,
+                        userOp.signature
+                    )
+                ) {
                     return 0;
                 }
                 return SIG_VALIDATION_FAILED;
             }
         }
 
-        require(!wallet.locked, "wallet is locked");
+        require(!wallet.locked, 'wallet is locked');
 
         if (!hash.verifySignature(wallet.owner, userOp.signature))
             return SIG_VALIDATION_FAILED;
@@ -313,6 +345,7 @@ contract SmartWalletV3 is SmartWallet {
             methodId == SmartWallet.transferTokenWA.selector ||
             methodId == SmartWallet.callContractWA.selector ||
             methodId == SmartWallet.approveTokenWA.selector ||
-            methodId == SmartWallet.approveThenCallContractWA.selector);
+            methodId ==
+            SmartWallet.approveThenCallContractWA.selector);
     }
 }

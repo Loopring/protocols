@@ -25,7 +25,11 @@ abstract contract ILoopringWalletV2 {
 
     /// @dev Returns the timestamp the wallet was created.
     /// @return The timestamp the wallet was created.
-    function getCreationTimestamp() public view virtual returns (uint64);
+    function getCreationTimestamp()
+        public
+        view
+        virtual
+        returns (uint64);
 
     /// @dev Returns the current wallet owner.
     /// @return The current wallet owner.

@@ -1,4 +1,7 @@
-import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers'
+import {
+  loadFixture,
+  time
+} from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { Wallet } from 'ethers'
 import { ethers } from 'hardhat'
@@ -15,8 +18,13 @@ import {
 
 describe('quota test', () => {
   it('change daily quota from entrypoint directly', async () => {
-    const { smartWallet, smartWalletOwner, create2, entrypoint, sendUserOp } =
-      await loadFixture(fixture)
+    const {
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      entrypoint,
+      sendUserOp
+    } = await loadFixture(fixture)
     const quotaAmount = ethers.utils.parseEther('20')
     const tx = await smartWallet.populateTransaction.changeDailyQuota(
       quotaAmount
@@ -57,15 +65,16 @@ describe('quota test', () => {
   })
 
   it('changeDailyQuota extra test', async () => {
-    const {
-      smartWallet: wallet
-    } = await loadFixture(fixture)
+    const { smartWallet: wallet } = await loadFixture(fixture)
 
     const quotaAmount = ethers.utils.parseEther('10')
     const tx = await wallet.changeDailyQuota(quotaAmount)
     const quotaInfo = (await wallet.wallet()).quota
     // 0 (MAX_AMOUNT) => quotaAmount, become effective immediately.
-    const currentQuota = await getCurrentQuota(quotaInfo, tx.blockNumber!)
+    const currentQuota = await getCurrentQuota(
+      quotaInfo,
+      tx.blockNumber!
+    )
     expect(currentQuota).to.equal(quotaAmount)
     expect(quotaInfo.pendingQuota).to.equal(quotaAmount)
     expect(quotaInfo.pendingUntil).to.equal(0)
@@ -75,24 +84,26 @@ describe('quota test', () => {
     const tx2 = await wallet.changeDailyQuota(quotaAmount2)
     const blockTime2 = await getBlockTimestamp(tx2.blockNumber!)
     const quotaInfo2 = (await wallet.wallet()).quota
-    const currentQuota2 = await getCurrentQuota(quotaInfo2, tx2.blockNumber!)
+    const currentQuota2 = await getCurrentQuota(
+      quotaInfo2,
+      tx2.blockNumber!
+    )
     expect(currentQuota2).to.equal(quotaAmount)
     expect(quotaInfo2.pendingQuota).to.equal(quotaAmount2)
-    expect(quotaInfo2.pendingUntil).to.equal(
-      blockTime2 + 3600 * 24
-    )
+    expect(quotaInfo2.pendingUntil).to.equal(blockTime2 + 3600 * 24)
 
     await time.increase(3600 * 24)
     const quotaAmount3 = ethers.utils.parseEther('50')
     const tx3 = await wallet.changeDailyQuota(quotaAmount3)
     const blockTime3 = await getBlockTimestamp(tx3.blockNumber!)
     const quotaInfo3 = (await wallet.wallet()).quota
-    const currentQuota3 = await getCurrentQuota(quotaInfo3, tx3.blockNumber!)
+    const currentQuota3 = await getCurrentQuota(
+      quotaInfo3,
+      tx3.blockNumber!
+    )
     expect(currentQuota3).to.equal(quotaAmount2)
     expect(quotaInfo3.pendingQuota).to.equal(quotaAmount3)
-    expect(quotaInfo3.pendingUntil).to.equal(
-      blockTime3 + 3600 * 24
-    )
+    expect(quotaInfo3.pendingUntil).to.equal(blockTime3 + 3600 * 24)
 
     await time.increase(3600 * 24)
 
@@ -100,7 +111,10 @@ describe('quota test', () => {
     const quotaAmount4 = ethers.utils.parseEther('49')
     const tx4 = await wallet.changeDailyQuota(quotaAmount4)
     const quotaInfo4 = (await wallet.wallet()).quota
-    const currentQuota4 = await getCurrentQuota(quotaInfo4, tx4.blockNumber!)
+    const currentQuota4 = await getCurrentQuota(
+      quotaInfo4,
+      tx4.blockNumber!
+    )
     expect(currentQuota4).to.equal(quotaAmount4)
     expect(quotaInfo4.pendingQuota).to.equal(quotaAmount4)
     expect(quotaInfo4.pendingUntil).to.equal(0)
@@ -145,7 +159,10 @@ describe('quota test', () => {
     const recipt = await sendUserOp(signedUserOp)
 
     const quotaInfo = (await smartWallet.wallet()).quota
-    const currentQuota = await getCurrentQuota(quotaInfo, recipt.blockNumber)
+    const currentQuota = await getCurrentQuota(
+      quotaInfo,
+      recipt.blockNumber
+    )
     expect(currentQuota).to.equal(newQuota)
     expect(quotaInfo.pendingUntil).to.equal(0)
   })
@@ -205,7 +222,9 @@ describe('quota test', () => {
       await sendUserOp(signedUserOp)
       const masterCopyOfWallet = await smartWallet.getMasterCopy()
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address)
-      expect(await smartWallet.priceOracle()).to.eq(testPriceOracle.address)
+      expect(await smartWallet.priceOracle()).to.eq(
+        testPriceOracle.address
+      )
 
       // spent daily quota using approving token
       const tokenAmount = ethers.utils.parseUnits('100', 6)
@@ -294,7 +313,9 @@ describe('quota test', () => {
       await sendUserOp(signedUserOp)
       const masterCopyOfWallet = await smartWallet.getMasterCopy()
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address)
-      expect(await smartWallet.priceOracle()).to.eq(testPriceOracle.address)
+      expect(await smartWallet.priceOracle()).to.eq(
+        testPriceOracle.address
+      )
 
       // spent daily quota using approving token
       const tokenAmount = ethers.utils.parseUnits('100', 6)
@@ -394,7 +415,9 @@ describe('quota test', () => {
       await sendUserOp(signedUserOp)
       const masterCopyOfWallet = await smartWallet.getMasterCopy()
       expect(masterCopyOfWallet).to.equal(newSmartWalletImpl.address)
-      expect(await smartWallet.priceOracle()).to.eq(testPriceOracle.address)
+      expect(await smartWallet.priceOracle()).to.eq(
+        testPriceOracle.address
+      )
 
       // spent daily quota using approving token
       const tokenAmount = ethers.utils.parseUnits('100', 6)

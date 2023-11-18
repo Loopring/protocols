@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.12;
 
-import "../interfaces/IEntryPoint.sol";
+import '../interfaces/IEntryPoint.sol';
 
 /**
  * nonce management functionality
@@ -10,13 +10,15 @@ contract NonceManager is INonceManager {
     /**
      * The next valid sequence number for a given nonce key.
      */
-    mapping(address => mapping(uint192 => uint256)) public nonceSequenceNumber;
+    mapping(address => mapping(uint192 => uint256))
+        public nonceSequenceNumber;
 
     function getNonce(
         address sender,
         uint192 key
     ) public view override returns (uint256 nonce) {
-        return nonceSequenceNumber[sender][key] | (uint256(key) << 64);
+        return
+            nonceSequenceNumber[sender][key] | (uint256(key) << 64);
     }
 
     // allow an account to manually increment its own nonce.

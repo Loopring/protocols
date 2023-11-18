@@ -44,13 +44,14 @@ describe('EntryPoint with VerifyingPaymaster', function () {
     offchainSigner = createAccountOwner()
     accountOwner = createAccountOwner()
 
-    paymaster = await new VerifyingPaymaster__factory(ethersSigner).deploy(
-      entryPoint.address,
-      offchainSigner.address
-    )
+    paymaster = await new VerifyingPaymaster__factory(
+      ethersSigner
+    ).deploy(entryPoint.address, offchainSigner.address)
     await paymaster.addStake(1, { value: parseEther('2') })
-    await entryPoint.depositTo(paymaster.address, { value: parseEther('1') });
-    ({ proxy: account } = await createAccount(
+    await entryPoint.depositTo(paymaster.address, {
+      value: parseEther('1')
+    })
+    ;({ proxy: account } = await createAccount(
       ethersSigner,
       accountOwner.address,
       entryPoint.address
@@ -68,7 +69,9 @@ describe('EntryPoint with VerifyingPaymaster', function () {
         MOCK_SIG
       ])
       console.log(paymasterAndData)
-      const res = await paymaster.parsePaymasterAndData(paymasterAndData)
+      const res = await paymaster.parsePaymasterAndData(
+        paymasterAndData
+      )
       expect(res.validUntil).to.be.equal(
         ethers.BigNumber.from(MOCK_VALID_UNTIL)
       )
@@ -98,7 +101,9 @@ describe('EntryPoint with VerifyingPaymaster', function () {
       )
       await expect(
         entryPoint.callStatic.simulateValidation(userOp)
-      ).to.be.rejectedWith('invalid signature length in paymasterAndData')
+      ).to.be.rejectedWith(
+        'invalid signature length in paymasterAndData'
+      )
     })
 
     it('should reject on invalid signature', async () => {
@@ -126,7 +131,9 @@ describe('EntryPoint with VerifyingPaymaster', function () {
       let wrongSigUserOp: UserOperation
       const beneficiaryAddress = createAddress()
       before(async () => {
-        const sig = await offchainSigner.signMessage(arrayify('0xdead'))
+        const sig = await offchainSigner.signMessage(
+          arrayify('0xdead')
+        )
         wrongSigUserOp = await fillAndSign(
           {
             sender: account.address,
@@ -153,7 +160,10 @@ describe('EntryPoint with VerifyingPaymaster', function () {
 
       it('handleOp revert on signature failure in handleOps', async () => {
         await expect(
-          entryPoint.estimateGas.handleOps([wrongSigUserOp], beneficiaryAddress)
+          entryPoint.estimateGas.handleOps(
+            [wrongSigUserOp],
+            beneficiaryAddress
+          )
         ).to.rejectedWith('AA34 signature error')
       })
     })

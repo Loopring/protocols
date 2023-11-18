@@ -3,19 +3,19 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../iface/ILoopringWalletV2.sol";
-import "../lib/EIP712.sol";
-import "../lib/SignatureUtil.sol";
-import "./WalletDeploymentLib.sol";
-import "../lib/Ownable.sol";
-import "../lib/AddressSet.sol";
+import '../iface/ILoopringWalletV2.sol';
+import '../lib/EIP712.sol';
+import '../lib/SignatureUtil.sol';
+import './WalletDeploymentLib.sol';
+import '../lib/Ownable.sol';
+import '../lib/AddressSet.sol';
 
 /// @title WalletFactory
 /// @dev A factory contract to create a new wallet by deploying a proxy
 ///      in front of a real wallet.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
-    bytes32 internal constant OPERATOR = keccak256("__OPERATOR__");
+    bytes32 internal constant OPERATOR = keccak256('__OPERATOR__');
     using SignatureUtil for bytes32;
 
     event WalletCreated(address wallet, address owner);
@@ -27,12 +27,12 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
 
     bytes32 public constant CREATE_WALLET_TYPEHASH =
         keccak256(
-            "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)"
+            'createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)'
         );
 
     ///////////////////////////////// opeartor ///////////////////
     modifier onlyOperator() {
-        require(isOperator(msg.sender), "NOT A OPERATOR");
+        require(isOperator(msg.sender), 'NOT A OPERATOR');
         _;
     }
 
@@ -98,7 +98,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
         address _walletImplementation
     ) WalletDeploymentLib(_walletImplementation) {
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("WalletFactory", "2.0.0", address(this))
+            EIP712.Domain('WalletFactory', '2.0.0', address(this))
         );
     }
 
@@ -110,7 +110,10 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
         WalletConfig calldata config,
         uint feeAmount
     ) external onlyOperator returns (address wallet) {
-        require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
+        require(
+            feeAmount <= config.maxFeeAmount,
+            'INVALID_FEE_AMOUNT'
+        );
 
         _validateConfig(config);
         wallet = _deploy(config.owner, config.salt);
@@ -125,9 +128,12 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
         WalletConfigV2 calldata config,
         uint feeAmount
     ) external onlyOperator returns (address wallet) {
-        require(feeAmount <= config.maxFeeAmount, "INVALID_FEE_AMOUNT");
+        require(
+            feeAmount <= config.maxFeeAmount,
+            'INVALID_FEE_AMOUNT'
+        );
 
-        require(config.owner != address(0), "INVALID_OWNER");
+        require(config.owner != address(0), 'INVALID_OWNER');
         wallet = _deploy(config.initOwner, config.salt);
         ILoopringWalletV2(wallet).initialize(
             config.owner,
@@ -173,8 +179,10 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
         emit WalletCreated(wallet, config.owner);
     }
 
-    function _validateConfig(WalletConfig calldata config) private view {
-        require(config.owner != address(0), "INVALID_OWNER");
+    function _validateConfig(
+        WalletConfig calldata config
+    ) private view {
+        require(config.owner != address(0), 'INVALID_OWNER');
 
         bytes32 dataHash = keccak256(
             abi.encode(
@@ -190,10 +198,13 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
             )
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, dataHash);
+        bytes32 signHash = EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
+            dataHash
+        );
         require(
             signHash.verifySignature(config.owner, config.signature),
-            "INVALID_SIGNATURE"
+            'INVALID_SIGNATURE'
         );
     }
 }

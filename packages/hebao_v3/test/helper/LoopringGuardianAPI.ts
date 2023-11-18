@@ -19,7 +19,7 @@ export enum ActionType {
   ChangeDailyQuota,
   AddGuardian,
   RemoveGuardian,
-  ResetGuardians,
+  ResetGuardians
 }
 
 export interface ApprovalOption {
@@ -41,7 +41,11 @@ export async function signTypedData (
   signer: Wallet,
   approvalOption: ApprovalOption,
   domain: any,
-  initValue: { wallet: string, validUntil: BigNumberish, salt: BytesLike }
+  initValue: {
+    wallet: string
+    validUntil: BigNumberish
+    salt: BytesLike
+  }
 ): Promise<string> {
   let message: any
   switch (approvalOption.action_type) {

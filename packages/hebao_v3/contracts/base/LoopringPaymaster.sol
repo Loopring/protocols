@@ -4,11 +4,11 @@ pragma solidity ^0.8.12;
 /* solhint-disable reason-string */
 /* solhint-disable no-inline-assembly */
 
-import "../account-abstraction/core/BasePaymaster.sol";
-import "../thirdparty/SafeERC20.sol";
-import "../lib/ERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import '../account-abstraction/core/BasePaymaster.sol';
+import '../thirdparty/SafeERC20.sol';
+import '../lib/ERC20.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 /**
  * A sample paymaster that uses external service to decide whether to pay for the UserOp.
@@ -31,7 +31,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     //calculated cost of the postOp
     uint256 private COST_OF_POST = 20000;
     uint8 constant priceDecimal = 8;
-    bytes32 public constant SIGNER = keccak256("SIGNER");
+    bytes32 public constant SIGNER = keccak256('SIGNER');
 
     mapping(ERC20 => bool) public registeredToken;
     mapping(ERC20 => mapping(address => uint256)) public balances;
@@ -56,7 +56,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     }
 
     receive() external payable {
-        revert("eth rejected");
+        revert('eth rejected');
     }
 
     mapping(address => uint256) public senderNonce;
@@ -111,7 +111,11 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         UserOperation calldata userOp,
         bytes32 userOpHash,
         uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    )
+        internal
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         address sender = userOp.getSender();
         (
             DecodedData memory decoded_data,
@@ -119,20 +123,21 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         require(
             unlockBlock[sender] == 0,
-            "DepositPaymaster: deposit not locked"
+            'DepositPaymaster: deposit not locked'
         );
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
             signature.length == 64 || signature.length == 65,
-            "VerifyingPaymaster: invalid signature length in paymasterAndData"
+            'VerifyingPaymaster: invalid signature length in paymasterAndData'
         );
 
         uint256 costOfPost = userOp.gasPrice() * COST_OF_POST;
         // check allowance of user
         if (decoded_data.valueOfEth > 0) {
-            uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
-                10 ** priceDecimal) / decoded_data.valueOfEth;
+            uint256 tokenRequiredPreFund = ((requiredPreFund +
+                costOfPost) * 10 ** priceDecimal) /
+                decoded_data.valueOfEth;
             require(
                 balances[ERC20(decoded_data.token)][sender] >=
                     tokenRequiredPreFund ||
@@ -143,7 +148,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                         tokenRequiredPreFund &&
                         ERC20(decoded_data.token).balanceOf(sender) >=
                         tokenRequiredPreFund),
-                "Paymaster: no enough allowance or token balances"
+                'Paymaster: no enough allowance or token balances'
             );
         }
         bytes32 hash = ECDSA.toEthSignedMessageHash(
@@ -164,7 +169,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (!hasRole(SIGNER, hash.recover(signature))) {
             return (
-                "",
+                '',
                 _packValidationData(
                     true,
                     decoded_data.validUntil,
@@ -196,7 +201,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     )
         public
         pure
-        returns (DecodedData memory decodedData, bytes memory signature)
+        returns (
+            DecodedData memory decodedData,
+            bytes memory signature
+        )
     {
         (
             decodedData.token,
@@ -233,7 +241,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             address payable token,
             uint256 costOfPost,
             uint256 valueOfEth
-        ) = abi.decode(context, (bytes32, address, address, uint256, uint256));
+        ) = abi.decode(
+                context,
+                (bytes32, address, address, uint256, uint256)
+            );
         uint256 actualTokenCost;
         if (valueOfEth > 0) {
             actualTokenCost =
@@ -253,7 +264,12 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             balances[ERC20(token)][owner()] += actualTokenCost;
         }
 
-        emit PaymasterEvent(userOpHash, token, valueOfEth, actualTokenCost);
+        emit PaymasterEvent(
+            userOpHash,
+            token,
+            valueOfEth,
+            actualTokenCost
+        );
     }
 
     ////////////////////////////////////
@@ -263,18 +279,23 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      * owner of the paymaster should add supported tokens
      */
     function addToken(ERC20 token) external onlyOwner {
-        require(!registeredToken[token], "registered already");
+        require(!registeredToken[token], 'registered already');
         registeredToken[token] = true;
     }
 
     function removeToken(ERC20 token) external onlyOwner {
-        require(registeredToken[token], "unregistered already");
+        require(registeredToken[token], 'unregistered already');
         registeredToken[token] = false;
     }
 
-    function changeEntryPoint(IEntryPoint newEntryPoint) external onlyOwner {
-        require(address(newEntryPoint) != address(0), "INVALID ENTRYPOINT");
-        require(entryPoint != newEntryPoint, "SAME ENTRYPOINT");
+    function changeEntryPoint(
+        IEntryPoint newEntryPoint
+    ) external onlyOwner {
+        require(
+            address(newEntryPoint) != address(0),
+            'INVALID ENTRYPOINT'
+        );
+        require(entryPoint != newEntryPoint, 'SAME ENTRYPOINT');
         entryPoint = newEntryPoint;
 
         emit EntryPointChanged(address(newEntryPoint));
@@ -297,7 +318,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     ) external {
         //(sender must have approval for the paymaster)
         token.safeTransferFrom(msg.sender, address(this), amount);
-        require(registeredToken[token], "unsupported token");
+        require(registeredToken[token], 'unsupported token');
         balances[token][account] += amount;
         if (msg.sender == account) {
             lockTokenDeposit();
@@ -343,7 +364,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         require(
             unlockBlock[msg.sender] != 0 &&
                 block.number > unlockBlock[msg.sender],
-            "DepositPaymaster: must unlockTokenDeposit"
+            'DepositPaymaster: must unlockTokenDeposit'
         );
         balances[token][msg.sender] -= amount;
         token.safeTransfer(target, amount);

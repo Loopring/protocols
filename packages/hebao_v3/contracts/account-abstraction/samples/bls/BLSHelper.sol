@@ -25,7 +25,15 @@ library BLSHelper {
         uint z = 1;
 
         for (uint i = 1; i < points.length; i++) {
-            (x, y, z) = jacAdd(x, y, z, points[i].x, points[i].y, 1, _pp);
+            (x, y, z) = jacAdd(
+                x,
+                y,
+                z,
+                points[i].x,
+                points[i].y,
+                1,
+                _pp
+            );
         }
         (x, y) = toAffine(x, y, z, _pp);
         ret.x = x;
@@ -72,7 +80,7 @@ library BLSHelper {
         // In case of zs[0] == zs[2] && zs[1] == zs[3], double function should be used
         require(
             zs[0] != zs[2] || zs[1] != zs[3],
-            "Use jacDouble function instead"
+            'Use jacDouble function instead'
         );
 
         uint[4] memory hr;
@@ -85,8 +93,16 @@ library BLSHelper {
         // h^3
         hr[3] = mulmod(hr[2], hr[0], _pp);
         // qx = -h^3  -2u1h^2+r^2
-        uint256 qx = addmod(mulmod(hr[1], hr[1], _pp), _pp - hr[3], _pp);
-        qx = addmod(qx, _pp - mulmod(2, mulmod(zs[0], hr[2], _pp), _pp), _pp);
+        uint256 qx = addmod(
+            mulmod(hr[1], hr[1], _pp),
+            _pp - hr[3],
+            _pp
+        );
+        qx = addmod(
+            qx,
+            _pp - mulmod(2, mulmod(zs[0], hr[2], _pp), _pp),
+            _pp
+        );
         // qy = -s1*z1*h^3+r(u1*h^2 -x^3)
         uint256 qy = mulmod(
             hr[1],
@@ -123,15 +139,21 @@ library BLSHelper {
     /// @param _x The number
     /// @param _pp The modulus
     /// @return q such that x*q = 1 (mod _pp)
-    function invMod(uint256 _x, uint256 _pp) internal pure returns (uint256) {
-        require(_x != 0 && _x != _pp && _pp != 0, "Invalid number");
+    function invMod(
+        uint256 _x,
+        uint256 _pp
+    ) internal pure returns (uint256) {
+        require(_x != 0 && _x != _pp && _pp != 0, 'Invalid number');
         uint256 q = 0;
         uint256 newT = 1;
         uint256 r = _pp;
         uint256 t;
         while (_x != 0) {
             t = r / _x;
-            (q, newT) = (newT, addmod(q, (_pp - mulmod(t, newT, _pp)), _pp));
+            (q, newT) = (
+                newT,
+                addmod(q, (_pp - mulmod(t, newT, _pp)), _pp)
+            );
             (r, _x) = (_x, r - t * _x);
         }
 

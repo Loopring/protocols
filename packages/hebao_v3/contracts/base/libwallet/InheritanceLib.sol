@@ -3,10 +3,10 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "./WalletData.sol";
-import "./GuardianLib.sol";
-import "./LockLib.sol";
-import "./Utils.sol";
+import './WalletData.sol';
+import './GuardianLib.sol';
+import './LockLib.sol';
+import './Utils.sol';
 
 /// @title InheritanceLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -23,7 +23,9 @@ library InheritanceLib {
 
     event InheritorChanged(address inheritor, uint32 waitingPeriod);
 
-    function touchLastActiveWhenRequired(Wallet storage wallet) internal {
+    function touchLastActiveWhenRequired(
+        Wallet storage wallet
+    ) internal {
         if (
             wallet.inheritor != address(0) &&
             block.timestamp > wallet.lastActive + TOUCH_GRACE_PERIOD
@@ -38,15 +40,15 @@ library InheritanceLib {
         uint32 waitingPeriod
     ) internal {
         if (inheritor == address(0)) {
-            require(waitingPeriod == 0, "INVALID_WAITING_PERIOD");
+            require(waitingPeriod == 0, 'INVALID_WAITING_PERIOD');
         } else {
             require(
                 waitingPeriod >= TOUCH_GRACE_PERIOD,
-                "INVALID_WAITING_PERIOD"
+                'INVALID_WAITING_PERIOD'
             );
         }
 
-        require(inheritor != address(this), "INVALID_ARGS");
+        require(inheritor != address(this), 'INVALID_ARGS');
         wallet.inheritor = inheritor;
         wallet.inheritWaitingPeriod = waitingPeriod;
         wallet.lastActive = uint64(block.timestamp);
@@ -57,26 +59,34 @@ library InheritanceLib {
         address newOwner,
         address[] calldata newGuardians
     ) external {
-        require(wallet.owner != newOwner, "IS_WALLET_OWNER");
-        require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
+        require(wallet.owner != newOwner, 'IS_WALLET_OWNER');
         require(
-            uint(wallet.lastActive) + uint(wallet.inheritWaitingPeriod) <
+            newOwner.isValidWalletOwner(),
+            'INVALID_NEW_WALLET_OWNER'
+        );
+        require(
+            uint(wallet.lastActive) +
+                uint(wallet.inheritWaitingPeriod) <
                 block.timestamp,
-            "TOO_EARLY"
+            'TOO_EARLY'
         );
 
         if (newGuardians.length > 0) {
             for (uint i = 0; i < newGuardians.length; i++) {
                 require(
                     newGuardians[i] != newOwner,
-                    "INVALID_NEW_WALLET_GUARDIAN"
+                    'INVALID_NEW_WALLET_GUARDIAN'
                 );
             }
             wallet.removeAllGuardians();
             wallet.addGuardiansImmediately(newGuardians);
         } else {
             if (wallet.isGuardian(newOwner, true)) {
-                wallet.deleteGuardian(newOwner, block.timestamp, true);
+                wallet.deleteGuardian(
+                    newOwner,
+                    block.timestamp,
+                    true
+                );
             }
             wallet.cancelPendingGuardians();
         }

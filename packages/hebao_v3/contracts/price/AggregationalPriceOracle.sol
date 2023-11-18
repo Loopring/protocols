@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../iface/PriceOracle.sol";
-import "../lib/MathUint.sol";
+import '../iface/PriceOracle.sol';
+import '../lib/MathUint.sol';
 
 /// @title AggregationalPriceOracle
 contract AggregationalPriceOracle is PriceOracle {
@@ -22,7 +22,10 @@ contract AggregationalPriceOracle is PriceOracle {
         uint total;
         uint count;
         for (uint i = 0; i < oracles.length; i++) {
-            uint value = PriceOracle(oracles[i]).tokenValue(token, amount);
+            uint value = PriceOracle(oracles[i]).tokenValue(
+                token,
+                amount
+            );
             if (value > 0) {
                 count += 1;
                 total = total.add(value);

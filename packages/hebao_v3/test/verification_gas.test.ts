@@ -1,16 +1,12 @@
 import { BytesLike } from '@ethersproject/bytes'
-import {
-  loadFixture
-} from '@nomicfoundation/hardhat-network-helpers'
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { BigNumber, BigNumberish, Wallet } from 'ethers'
 import { arrayify } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 import _ from 'lodash'
 
-import {
-  EntryPoint
-} from '../typechain-types'
+import { EntryPoint } from '../typechain-types'
 
 import {
   callDataCost,
@@ -20,13 +16,14 @@ import {
 } from './helper/AASigner'
 import { Approval } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
-import {
-  simulationResultCatch
-} from './helper/utils'
+import { simulationResultCatch } from './helper/utils'
 
 describe('verification gaslimit test', () => {
   async function generateApprovals (
-    smartWalletOrEOASigners: Array<{ signer: Wallet, smartWalletAddress?: string }>,
+    smartWalletOrEOASigners: Array<{
+      signer: Wallet
+      smartWalletAddress?: string
+    }>,
     smartWalletAddr: string,
     verifyingContract: string,
     token: string,
@@ -70,7 +67,11 @@ describe('verification gaslimit test', () => {
 
     const signatures = await Promise.all(
       smartWalletOrEOASigners.map(async (g) =>
-        g.signer._signTypedData(message.domain, message.types, message.value)
+        g.signer._signTypedData(
+          message.domain,
+          message.types,
+          message.value
+        )
       )
     )
     const [sortedSigners, sortedSignatures] = _.unzip(
@@ -143,7 +144,10 @@ describe('verification gaslimit test', () => {
     }
   }
 
-  function encodeSignature (approval: Approval, ownerSignature: string) {
+  function encodeSignature (
+    approval: Approval,
+    ownerSignature: string
+  ) {
     const signature = ethers.utils.defaultAbiCoder.encode(
       [
         'tuple(address[] signers,bytes[] signatures,uint256 validUntil,bytes32 salt)',
@@ -175,11 +179,12 @@ describe('verification gaslimit test', () => {
     const validUntil = 0
     const nonce = 0
     // prepare userOp first
-    const approveTokenWA = await smartWallet.populateTransaction.approveTokenWA(
-      usdtToken.address,
-      receiver,
-      tokenAmount
-    )
+    const approveTokenWA =
+      await smartWallet.populateTransaction.approveTokenWA(
+        usdtToken.address,
+        receiver,
+        tokenAmount
+      )
     // generate approvals of guardian
     const approval = await generateApprovals(
       [
@@ -199,7 +204,10 @@ describe('verification gaslimit test', () => {
     const gasPriceData = await getEIP1559GasPrice()
 
     // only used to estimate gas
-    const fakeSignature = encodeSignature(approval, '0x' + '0'.repeat(130))
+    const fakeSignature = encodeSignature(
+      approval,
+      '0x' + '0'.repeat(130)
+    )
     const userOp = {
       sender: smartWallet.address,
       nonce,
@@ -222,7 +230,11 @@ describe('verification gaslimit test', () => {
     }
 
     // get owner signature
-    const userOpHash = getUserOpHash(finalUserOp, entrypoint.address, chainId)
+    const userOpHash = getUserOpHash(
+      finalUserOp,
+      entrypoint.address,
+      chainId
+    )
     const ownerSignature = await smartWalletOwner.signMessage(
       arrayify(userOpHash)
     )
@@ -238,9 +250,9 @@ describe('verification gaslimit test', () => {
     )
 
     await sendUserOp(signedUserOp)
-    expect(await usdtToken.allowance(smartWallet.address, receiver)).to.eq(
-      tokenAmount
-    )
+    expect(
+      await usdtToken.allowance(smartWallet.address, receiver)
+    ).to.eq(tokenAmount)
   })
   it('estimate gas when using paymaster', async () => {})
 })

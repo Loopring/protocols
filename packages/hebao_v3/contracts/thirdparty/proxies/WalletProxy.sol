@@ -23,7 +23,7 @@ contract WalletProxy {
     constructor(address _masterCopy) {
         require(
             _masterCopy != address(0),
-            "Invalid master copy address provided"
+            'Invalid master copy address provided'
         );
         masterCopy = _masterCopy;
     }

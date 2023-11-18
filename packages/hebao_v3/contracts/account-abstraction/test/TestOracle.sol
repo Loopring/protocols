@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.12;
 
-import "../samples/IOracle.sol";
+import '../samples/IOracle.sol';
 
 contract TestOracle is IOracle {
     function getTokenValueOfEth(

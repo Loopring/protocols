@@ -3,12 +3,12 @@ pragma solidity ^0.8.7;
 
 /* solhint-disable no-inline-assembly */
 
-import "@gnosis.pm/safe-contracts/contracts/handler/DefaultCallbackHandler.sol";
-import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
-import "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../../interfaces/IAccount.sol";
-import "./EIP4337Manager.sol";
+import '@gnosis.pm/safe-contracts/contracts/handler/DefaultCallbackHandler.sol';
+import '@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol';
+import '@openzeppelin/contracts/interfaces/IERC1271.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '../../interfaces/IAccount.sol';
+import './EIP4337Manager.sol';
 
 using ECDSA for bytes32;
 
@@ -18,7 +18,11 @@ using ECDSA for bytes32;
  * Note that the implementation of the 'validateUserOp' method is located in the EIP4337Manager.
  * Upon receiving the 'validateUserOp', a Safe with EIP4337Fallback enabled makes a 'delegatecall' to EIP4337Manager.
  */
-contract EIP4337Fallback is DefaultCallbackHandler, IAccount, IERC1271 {
+contract EIP4337Fallback is
+    DefaultCallbackHandler,
+    IAccount,
+    IERC1271
+{
     bytes4 internal constant ERC1271_MAGIC_VALUE = 0x1626ba7e;
 
     address public immutable eip4337manager;

@@ -8,14 +8,19 @@ pragma solidity ^0.8.17;
 abstract contract ERC20 {
     function totalSupply() public view virtual returns (uint);
 
-    function balanceOf(address who) public view virtual returns (uint);
+    function balanceOf(
+        address who
+    ) public view virtual returns (uint);
 
     function allowance(
         address owner,
         address spender
     ) public view virtual returns (uint);
 
-    function transfer(address to, uint value) public virtual returns (bool);
+    function transfer(
+        address to,
+        uint value
+    ) public virtual returns (bool);
 
     function transferFrom(
         address from,
@@ -23,5 +28,8 @@ abstract contract ERC20 {
         uint value
     ) public virtual returns (bool);
 
-    function approve(address spender, uint value) public virtual returns (bool);
+    function approve(
+        address spender,
+        uint value
+    ) public virtual returns (bool);
 }

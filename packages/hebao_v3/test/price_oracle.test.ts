@@ -3,7 +3,10 @@ import { ethers } from 'hardhat'
 
 describe('price oracle test', () => {
   // only valid price(should be positive number) is considered
-  function getTokenValue (tokenPrices: number[], amount: number): number {
+  function getTokenValue (
+    tokenPrices: number[],
+    amount: number
+  ): number {
     tokenPrices = tokenPrices.filter((tp) => tp > 0)
     return (
       tokenPrices.reduce((acc, cur) => acc + cur * amount, 0) /
@@ -27,7 +30,10 @@ describe('price oracle test', () => {
     ).deploy(testPriceOraclesAddr)
     const token = ethers.constants.AddressZero
     const amount = 1000
-    const tokenValue = await aggregationalPriceOracle.tokenValue(token, amount)
+    const tokenValue = await aggregationalPriceOracle.tokenValue(
+      token,
+      amount
+    )
     expect(tokenValue).to.eq(getTokenValue(prices, amount))
   })
 
@@ -60,15 +66,17 @@ describe('price oracle test', () => {
       amount * initPrice
     )
     // calculate token value using the fixed ratio(fixed token price as to say)
-    expect(await cachedPriceOracle.tokenValue(token, 2 * amount)).to.eq(
-      2 * amount * initPrice
-    )
-    expect(await cachedPriceOracle.tokenValue(token, 0.5 * amount)).to.eq(
-      0.5 * amount * initPrice
-    )
+    expect(
+      await cachedPriceOracle.tokenValue(token, 2 * amount)
+    ).to.eq(2 * amount * initPrice)
+    expect(
+      await cachedPriceOracle.tokenValue(token, 0.5 * amount)
+    ).to.eq(0.5 * amount * initPrice)
 
     // update token price by price oracle
-    await cachedPriceOracle.connect(manager).updateTokenPrice(token, amount)
+    await cachedPriceOracle
+      .connect(manager)
+      .updateTokenPrice(token, amount)
     expect(await cachedPriceOracle.tokenValue(token, amount)).to.eq(
       amount * oraclePrice
     )
@@ -78,14 +86,18 @@ describe('price oracle test', () => {
     const newPriceOracle = await (
       await ethers.getContractFactory('TestPriceOracle')
     ).deploy(newOraclePrice)
-    await cachedPriceOracle.connect(manager).setOracle(newPriceOracle.address)
+    await cachedPriceOracle
+      .connect(manager)
+      .setOracle(newPriceOracle.address)
     // token value is not changed before oracle update price
     expect(await cachedPriceOracle.tokenValue(token, amount)).to.eq(
       amount * oraclePrice
     )
 
     // change to new oracle price
-    await cachedPriceOracle.connect(manager).updateTokenPrice(token, amount)
+    await cachedPriceOracle
+      .connect(manager)
+      .updateTokenPrice(token, amount)
     expect(await cachedPriceOracle.tokenValue(token, amount)).to.eq(
       amount * newOraclePrice
     )
@@ -107,13 +119,13 @@ describe('price oracle test', () => {
     expect(
       await uniswapV2PriceOracle.tokenValue(nativeTokenAddr, amount)
     ).to.eq(amount * 1)
-    expect(await uniswapV2PriceOracle.tokenValue(wethAddr, amount)).to.eq(
-      amount * 1
-    )
+    expect(
+      await uniswapV2PriceOracle.tokenValue(wethAddr, amount)
+    ).to.eq(amount * 1)
     // token value of common erc20
-    expect(await uniswapV2PriceOracle.tokenValue(erc20Addr, amount)).to.eq(
-      amount * 0
-    )
+    expect(
+      await uniswapV2PriceOracle.tokenValue(erc20Addr, amount)
+    ).to.eq(amount * 0)
 
     // create a mocked token pair and add it to uniswapv2 factory
     const testUniswapV2Pair = await (
@@ -124,9 +136,9 @@ describe('price oracle test', () => {
       wethAddr,
       testUniswapV2Pair.address
     )
-    expect(await uniswapV2PriceOracle.tokenValue(erc20Addr, amount)).to.eq(
-      amount / 10
-    )
+    expect(
+      await uniswapV2PriceOracle.tokenValue(erc20Addr, amount)
+    ).to.eq(amount / 10)
   })
 
   it('kyber price oracle test', async () => {
@@ -144,14 +156,14 @@ describe('price oracle test', () => {
     const amount = 1000
 
     // token value of eth/weth
-    expect(await kyberPriceOracle.tokenValue(nativeTokenAddr, amount)).to.eq(
-      amount * 1
-    )
+    expect(
+      await kyberPriceOracle.tokenValue(nativeTokenAddr, amount)
+    ).to.eq(amount * 1)
     expect(await kyberPriceOracle.tokenValue(wethAddr, amount)).to.eq(
       amount * 1
     )
-    expect(await kyberPriceOracle.tokenValue(erc20Addr, amount)).to.eq(
-      amount * price
-    )
+    expect(
+      await kyberPriceOracle.tokenValue(erc20Addr, amount)
+    ).to.eq(amount * price)
   })
 })

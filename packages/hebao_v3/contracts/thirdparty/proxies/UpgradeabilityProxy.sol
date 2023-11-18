@@ -3,7 +3,7 @@
 // with minor modifications.
 pragma solidity ^0.8.17;
 
-import "./Proxy.sol";
+import './Proxy.sol';
 
 /**
  * @title UpgradeabilityProxy
@@ -18,7 +18,7 @@ contract UpgradeabilityProxy is Proxy {
 
     // Storage position of the address of the current implementation
     bytes32 private constant implementationPosition =
-        keccak256("org.zeppelinos.proxy.implementation");
+        keccak256('org.zeppelinos.proxy.implementation');
 
     /**
      * @dev Constructor function

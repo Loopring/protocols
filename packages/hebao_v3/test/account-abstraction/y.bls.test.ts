@@ -8,7 +8,11 @@ import {
 import { expect } from 'chai'
 import { keccak256 } from 'ethereumjs-util'
 import { BigNumber, Signer } from 'ethers'
-import { arrayify, defaultAbiCoder, hexConcat } from 'ethers/lib/utils'
+import {
+  arrayify,
+  defaultAbiCoder,
+  hexConcat
+} from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
 import {
@@ -37,15 +41,23 @@ async function deployBlsAccount (
   factoryAddr: string,
   blsSigner: any
 ): Promise<BLSAccount> {
-  const factory = BLSAccountFactory__factory.connect(factoryAddr, ethersSigner)
-  const addr = await factory.callStatic.createAccount(0, blsSigner.pubkey)
+  const factory = BLSAccountFactory__factory.connect(
+    factoryAddr,
+    ethersSigner
+  )
+  const addr = await factory.callStatic.createAccount(
+    0,
+    blsSigner.pubkey
+  )
   await factory.createAccount(0, blsSigner.pubkey)
   return BLSAccount__factory.connect(addr, ethersSigner)
 }
 
 describe('bls account', function () {
   this.timeout(20000)
-  const BLS_DOMAIN = arrayify(keccak256(Buffer.from('eip4337.bls.domain')))
+  const BLS_DOMAIN = arrayify(
+    keccak256(Buffer.from('eip4337.bls.domain'))
+  )
   const etherSigner = ethers.provider.getSigner()
   let fact: BlsSignerFactory
   let signer1: any
@@ -73,10 +85,9 @@ describe('bls account', function () {
     signer1 = fact.getSigner(arrayify(BLS_DOMAIN), '0x01')
     signer2 = fact.getSigner(arrayify(BLS_DOMAIN), '0x02')
 
-    accountDeployer = await new BLSAccountFactory__factory(etherSigner).deploy(
-      entrypoint.address,
-      blsAgg.address
-    )
+    accountDeployer = await new BLSAccountFactory__factory(
+      etherSigner
+    ).deploy(entrypoint.address, blsAgg.address)
 
     account1 = await deployBlsAccount(
       etherSigner,
@@ -91,7 +102,10 @@ describe('bls account', function () {
   })
 
   it('#getTrailingPublicKey', async () => {
-    const data = defaultAbiCoder.encode(['uint[6]'], [[1, 2, 3, 4, 5, 6]])
+    const data = defaultAbiCoder.encode(
+      ['uint[6]'],
+      [[1, 2, 3, 4, 5, 6]]
+    )
     const last4 = await blsAgg.getTrailingPublicKey(data)
     expect(last4.map((x) => x.toNumber())).to.eql([3, 4, 5, 6])
   })
@@ -99,8 +113,14 @@ describe('bls account', function () {
     const sig1 = signer1.sign('0x1234')
     const sig2 = signer2.sign('0x5678')
     const offChainSigResult = hexConcat(aggregate([sig1, sig2]))
-    const userOp1 = { ...DefaultsForUserOp, signature: hexConcat(sig1) }
-    const userOp2 = { ...DefaultsForUserOp, signature: hexConcat(sig2) }
+    const userOp1 = {
+      ...DefaultsForUserOp,
+      signature: hexConcat(sig1)
+    }
+    const userOp2 = {
+      ...DefaultsForUserOp,
+      signature: hexConcat(sig2)
+    }
     const solidityAggResult = await blsAgg.aggregateSignatures([
       userOp1,
       userOp2
@@ -116,11 +136,13 @@ describe('bls account', function () {
       entrypoint
     )
     const requestHash = await blsAgg.getUserOpHash(userOp1)
-    const solPoint: BigNumber[] = await blsAgg.userOpToMessage(userOp1)
-    const messagePoint = hashToPoint(requestHash, BLS_DOMAIN)
-    expect(`1 ${solPoint[0].toString()} ${solPoint[1].toString()}`).to.equal(
-      messagePoint.getStr()
+    const solPoint: BigNumber[] = await blsAgg.userOpToMessage(
+      userOp1
     )
+    const messagePoint = hashToPoint(requestHash, BLS_DOMAIN)
+    expect(
+      `1 ${solPoint[0].toString()} ${solPoint[1].toString()}`
+    ).to.equal(messagePoint.getStr())
   })
 
   it('#validateUserOpSignature', async () => {
@@ -137,9 +159,9 @@ describe('bls account', function () {
     expect(userOp1.signature.length).to.equal(130) // 64-byte hex value
 
     const verifier = new BlsVerifier(BLS_DOMAIN)
-    expect(verifier.verify(sigParts, signer1.pubkey, requestHash)).to.equal(
-      true
-    )
+    expect(
+      verifier.verify(sigParts, signer1.pubkey, requestHash)
+    ).to.equal(true)
 
     const ret = await blsAgg.validateUserOpSignature(userOp1)
     expect(ret).to.equal('0x')
@@ -148,9 +170,11 @@ describe('bls account', function () {
   it('aggregated sig validation must succeed if off-chain UserOp sig succeeds', async () => {
     // regression AA-119: prevent off-chain signature success and on-chain revert.
     // "broken account" uses different public-key during construction and runtime.
-    const brokenAccountFactory = await new BrokenBLSAccountFactory__factory(
-      etherSigner
-    ).deploy(entrypoint.address, blsAgg.address)
+    const brokenAccountFactory =
+      await new BrokenBLSAccountFactory__factory(etherSigner).deploy(
+        entrypoint.address,
+        blsAgg.address
+      )
     // const brokenAccountFactory = await new BLSAccountFactory__factory(etherSigner).deploy(entrypoint.address, blsAgg.address)
     const deployTx =
       await brokenAccountFactory.populateTransaction.createAccount(
@@ -166,18 +190,25 @@ describe('bls account', function () {
     const userOp = await fillUserOp(
       {
         sender: acc,
-        initCode: hexConcat([brokenAccountFactory.address, deployTx.data!])
+        initCode: hexConcat([
+          brokenAccountFactory.address,
+          deployTx.data!
+        ])
       },
       entrypoint
     )
     const requestHash = await blsAgg.getUserOpHash(userOp)
-    const signature = (userOp.signature = hexConcat(signer1.sign(requestHash)))
+    const signature = (userOp.signature = hexConcat(
+      signer1.sign(requestHash)
+    ))
 
     // and sig validation should fail:
-    const singleOpSigCheck = (await blsAgg.validateUserOpSignature(userOp).then(
-      () => 'ok',
-      (e) => e.message
-    )) as string
+    const singleOpSigCheck = (await blsAgg
+      .validateUserOpSignature(userOp)
+      .then(
+        () => 'ok',
+        (e) => e.message
+      )) as string
 
     // above account should fail on-chain:
     const beneficiary = createAddress()
@@ -224,7 +255,10 @@ describe('bls account', function () {
     userOp2.signature = hexConcat(sig2)
 
     const aggSig = aggregate([sig1, sig2])
-    const aggregatedSig = await blsAgg.aggregateSignatures([userOp1, userOp2])
+    const aggregatedSig = await blsAgg.aggregateSignatures([
+      userOp1,
+      userOp2
+    ])
     expect(hexConcat(aggSig)).to.equal(aggregatedSig)
 
     const pubkeys = [signer1.pubkey, signer2.pubkey]
@@ -243,7 +277,11 @@ describe('bls account', function () {
         aggregatedSig
       )
     )
-    console.log('validateSignatures (on-chain)', Date.now() - now2, 'ms')
+    console.log(
+      'validateSignatures (on-chain)',
+      Date.now() - now2,
+      'ms'
+    )
   })
 
   describe('#EntryPoint.simulateValidation with aggregator', () => {
@@ -253,10 +291,10 @@ describe('bls account', function () {
       signer3 = fact.getSigner(arrayify(BLS_DOMAIN), '0x03')
       initCode = hexConcat([
         accountDeployer.address,
-        accountDeployer.interface.encodeFunctionData('createAccount', [
-          0,
-          signer3.pubkey
-        ])
+        accountDeployer.interface.encodeFunctionData(
+          'createAccount',
+          [0, signer3.pubkey]
+        )
       ])
     })
 
@@ -288,13 +326,15 @@ describe('bls account', function () {
         ['bytes32[2]'],
         userOp.signature
       )
-      const pubkey = (await blsAgg.getUserOpPublicKey(userOp)).map((n) =>
-        hexValue(n)
+      const pubkey = (await blsAgg.getUserOpPublicKey(userOp)).map(
+        (n) => hexValue(n)
       ) // TODO: returns uint256[4], verify needs bytes32[4]
       const requestHash1 = await blsAgg.getUserOpHash(userOp)
 
       // @ts-ignore
-      expect(verifier.verify(signature, pubkey, requestHash1)).to.equal(true)
+      expect(
+        verifier.verify(signature, pubkey, requestHash1)
+      ).to.equal(true)
     })
   })
 })

@@ -8,7 +8,12 @@ import {
   Signer,
   Wallet
 } from 'ethers'
-import { arrayify, hexConcat, keccak256, parseEther } from 'ethers/lib/utils'
+import {
+  arrayify,
+  hexConcat,
+  keccak256,
+  parseEther
+} from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
 import {
@@ -33,7 +38,8 @@ export const ONE_ETH = parseEther('1')
 export const TWO_ETH = parseEther('2')
 export const FIVE_ETH = parseEther('5')
 
-export const tostr = (x: any): string => (x != null ? x.toString() : 'null')
+export const tostr = (x: any): string =>
+  x != null ? x.toString() : 'null'
 
 export function tonumber (x: any): number {
   try {
@@ -106,12 +112,22 @@ export async function calcGasUsage (
     rcpt.blockHash
   )
   const { actualGasCost, actualGasUsed } = logs[0].args
-  console.log('\t== actual gasUsed (from tx receipt)=', actualGas.toString())
-  console.log('\t== calculated gasUsed (paid to beneficiary)=', actualGasUsed)
-  const tx = await ethers.provider.getTransaction(rcpt.transactionHash)
+  console.log(
+    '\t== actual gasUsed (from tx receipt)=',
+    actualGas.toString()
+  )
+  console.log(
+    '\t== calculated gasUsed (paid to beneficiary)=',
+    actualGasUsed
+  )
+  const tx = await ethers.provider.getTransaction(
+    rcpt.transactionHash
+  )
   console.log(
     '\t== gasDiff',
-    actualGas.toNumber() - actualGasUsed.toNumber() - callDataCost(tx.data)
+    actualGas.toNumber() -
+      actualGasUsed.toNumber() -
+      callDataCost(tx.data)
   )
   if (beneficiaryAddress != null) {
     expect(await getBalance(beneficiaryAddress)).to.eq(
@@ -129,7 +145,10 @@ export function getAccountInitCode (
 ): BytesLike {
   return hexConcat([
     factory.address,
-    factory.interface.encodeFunctionData('createAccount', [owner, salt])
+    factory.interface.encodeFunctionData('createAccount', [
+      owner,
+      salt
+    ])
   ])
 }
 
@@ -142,7 +161,10 @@ export async function getAggregatedAccountInitCode (
   const owner = AddressZero
   return hexConcat([
     factory.address,
-    factory.interface.encodeFunctionData('createAccount', [owner, salt])
+    factory.interface.encodeFunctionData('createAccount', [
+      owner,
+      salt
+    ])
   ])
 }
 
@@ -178,7 +200,9 @@ export function rethrow (): (e: Error) => void {
     .replace(/.*at.* \(internal[\s\S]*/, '')
 
   if (arguments[0] != null) {
-    throw new Error('must use .catch(rethrow()), and NOT .catch(rethrow)')
+    throw new Error(
+      'must use .catch(rethrow()), and NOT .catch(rethrow)'
+    )
   }
   return function (e: Error) {
     const solstack = e.stack!.match(/((?:.* at .*\.sol.*\n)+)/)
@@ -189,7 +213,8 @@ export function rethrow (): (e: Error) => void {
     if (found != null) {
       const data = found[1]
       message =
-        decodeRevertReason(data) ?? e.message + ' - ' + data.slice(0, 100)
+        decodeRevertReason(data) ??
+        e.message + ' - ' + data.slice(0, 100)
     } else {
       message = e.message
     }
@@ -207,20 +232,27 @@ export function decodeRevertReason (
   const dataParams = '0x' + data.slice(10)
 
   if (methodSig === '0x08c379a0') {
-    const [err] = ethers.utils.defaultAbiCoder.decode(['string'], dataParams)
+    const [err] = ethers.utils.defaultAbiCoder.decode(
+      ['string'],
+      dataParams
+    )
 
     return `Error(${err})`
   } else if (methodSig === '0x00fa072b') {
-    const [opindex, paymaster, msg] = ethers.utils.defaultAbiCoder.decode(
-      ['uint256', 'address', 'string'],
-      dataParams
-    )
+    const [opindex, paymaster, msg] =
+      ethers.utils.defaultAbiCoder.decode(
+        ['uint256', 'address', 'string'],
+        dataParams
+      )
 
     return `FailedOp(${opindex}, ${
       paymaster !== AddressZero ? paymaster : 'none'
     }, ${msg})`
   } else if (methodSig === '0x4e487b71') {
-    const [code] = ethers.utils.defaultAbiCoder.decode(['uint256'], dataParams)
+    const [code] = ethers.utils.defaultAbiCoder.decode(
+      ['uint256'],
+      dataParams
+    )
     return `Panic(${panicCodes[code] ?? code} + ')`
   }
   if (!nullIfNoMatch) {
@@ -237,7 +269,9 @@ export async function checkForGeth (): Promise<void> {
   // @ts-ignore
   const provider = ethers.provider._hardhatProvider
 
-  currentNode = await provider.request({ method: 'web3_clientVersion' })
+  currentNode = await provider.request({
+    method: 'web3_clientVersion'
+  })
 
   console.log('node version:', currentNode)
   // NOTE: must run geth with params:
@@ -249,7 +283,10 @@ export async function checkForGeth (): Promise<void> {
         .request({ method: 'personal_newAccount', params: ['pass'] })
         .catch(rethrow)
       await provider
-        .request({ method: 'personal_unlockAccount', params: [acc, 'pass'] })
+        .request({
+          method: 'personal_unlockAccount',
+          params: [acc, 'pass']
+        })
         .catch(rethrow)
       await fund(acc, '10')
     }
@@ -295,8 +332,16 @@ export async function checkForBannedOps (
     .filter((log) => log.depth > 1)
     .map((log) => log.op)
 
-  expect(ops).to.include('POP', 'not a valid ops list: ' + JSON.stringify(ops)) // sanity
-  const bannedOpCodes = new Set(['GAS', 'BASEFEE', 'GASPRICE', 'NUMBER'])
+  expect(ops).to.include(
+    'POP',
+    'not a valid ops list: ' + JSON.stringify(ops)
+  ) // sanity
+  const bannedOpCodes = new Set([
+    'GAS',
+    'BASEFEE',
+    'GASPRICE',
+    'NUMBER'
+  ])
   expect(
     ops.filter((op, index) => {
       // don't ban "GAS" op followed by "*CALL"
@@ -383,11 +428,19 @@ export async function createAccount (
   }> {
   const accountFactory =
     _factory ??
-    (await new SimpleAccountFactory__factory(ethersSigner).deploy(entryPoint))
+    (await new SimpleAccountFactory__factory(ethersSigner).deploy(
+      entryPoint
+    ))
   const implementation = await accountFactory.accountImplementation()
   await accountFactory.createAccount(accountOwner, 0)
-  const accountAddress = await accountFactory.getAddress(accountOwner, 0)
-  const proxy = SimpleAccount__factory.connect(accountAddress, ethersSigner)
+  const accountAddress = await accountFactory.getAddress(
+    accountOwner,
+    0
+  )
+  const proxy = SimpleAccount__factory.connect(
+    accountAddress,
+    ethersSigner
+  )
   return {
     implementation,
     accountFactory,

@@ -2,9 +2,9 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../lib/ERC1271.sol";
-import "../lib/OwnerManagable.sol";
-import "../lib/SignatureUtil.sol";
+import '../lib/ERC1271.sol';
+import '../lib/OwnerManagable.sol';
+import '../lib/SignatureUtil.sol';
 
 /// @title OfficialGuardian
 /// @author Freeman Zhong - <kongliang@loopring.org>
@@ -13,7 +13,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271 {
 
     /// @dev init owner for proxy contract:
     function initOwner(address _owner) external {
-        require(owner == address(0), "INITIALIZED_ALREADY");
+        require(owner == address(0), 'INITIALIZED_ALREADY');
         owner = _owner;
     }
 
@@ -31,7 +31,11 @@ contract OfficialGuardian is OwnerManagable, ERC1271 {
         address target,
         uint value,
         bytes calldata data
-    ) external onlyManager returns (bool success, bytes memory returnData) {
+    )
+        external
+        onlyManager
+        returns (bool success, bytes memory returnData)
+    {
         // solium-disable-next-line security/no-call-value
         (success, returnData) = target.call{value: value}(data);
     }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
-import {ModexpInverse, ModexpSqrt} from "./ModExp.sol";
-import {BNPairingPrecompileCostEstimator} from "./BNPairingPrecompileCostEstimator.sol";
+import {ModexpInverse, ModexpSqrt} from './ModExp.sol';
+import {BNPairingPrecompileCostEstimator} from './BNPairingPrecompileCostEstimator.sol';
 
 /**
     @title  Boneh–Lynn–Shacham (BLS) signature scheme on Barreto-Naehrig 254 bit curve (BN-254)
@@ -87,10 +87,10 @@ library BLS {
         uint256[2][] memory messages
     ) internal view returns (bool checkResult, bool callSuccess) {
         uint256 size = pubkeys.length;
-        require(size > 0, "BLS: number of public key is zero");
+        require(size > 0, 'BLS: number of public key is zero');
         require(
             size == messages.length,
-            "BLS: number of public keys and messages must be equal"
+            'BLS: number of public keys and messages must be equal'
         );
         uint256 inputSize = (size + 1) * 6;
         uint256[] memory input = new uint256[](inputSize);
@@ -148,20 +148,27 @@ library BLS {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas(), 2000), 6, bnAddInput, 128, p0, 64)
+            success := staticcall(
+                sub(gas(), 2000),
+                6,
+                bnAddInput,
+                128,
+                p0,
+                64
+            )
             switch success
             case 0 {
                 invalid()
             }
         }
-        require(success, "BLS: bn add call failed");
+        require(success, 'BLS: bn add call failed');
         return p0;
     }
 
     function mapToPoint(
         uint256 _x
     ) internal pure returns (uint256[2] memory p) {
-        require(_x < N, "mapToPointFT: invalid field element");
+        require(_x < N, 'mapToPointFT: invalid field element');
         uint256 x = _x;
 
         (, bool decision) = sqrt(x);
@@ -215,7 +222,7 @@ library BLS {
         a1 = mulmod(a1, x, N);
         a1 = addmod(a1, 3, N);
         (a1, found) = sqrt(a1);
-        require(found, "BLS: bad ft mapping implementation");
+        require(found, 'BLS: bad ft mapping implementation');
         if (!decision) {
             a1 = N - a1;
         }
@@ -284,7 +291,11 @@ library BLS {
             t2 := mload(add(point, 64))
             t3 := mload(add(point, 96))
             // y ^ 2
-            t4 := mulmod(addmod(t2, t3, N), addmod(t2, sub(N, t3), N), N)
+            t4 := mulmod(
+                addmod(t2, t3, N),
+                addmod(t2, sub(N, t3), N),
+                N
+            )
             t3 := mulmod(shl(1, t2), t3, N)
 
             // y ^ 2 == x ^ 3 + b
@@ -292,7 +303,9 @@ library BLS {
         }
     }
 
-    function sqrt(uint256 xx) internal pure returns (uint256 x, bool hasRoot) {
+    function sqrt(
+        uint256 xx
+    ) internal pure returns (uint256 x, bool hasRoot) {
         x = ModexpSqrt.run(xx);
         hasRoot = mulmod(x, x, N) == xx;
     }

@@ -26,12 +26,15 @@ export class Create2Factory {
   static readonly deploymentGasPrice = 100e9
   static readonly deploymentGasLimit = 100000
   static readonly factoryDeploymentFee = (
-    Create2Factory.deploymentGasPrice * Create2Factory.deploymentGasLimit
+    Create2Factory.deploymentGasPrice *
+    Create2Factory.deploymentGasLimit
   ).toString()
 
   constructor (
     readonly provider: Provider,
-    readonly signer = (provider as ethers.providers.JsonRpcProvider).getSigner()
+    readonly signer = (
+      provider as ethers.providers.JsonRpcProvider
+    ).getSigner()
   ) {}
 
   /**
@@ -53,7 +56,11 @@ export class Create2Factory {
     }
 
     const addr = Create2Factory.getDeployedAddress(initCode, salt)
-    if ((await this.provider.getCode(addr).then((code) => code.length)) > 2) {
+    if (
+      (await this.provider
+        .getCode(addr)
+        .then((code) => code.length)) > 2
+    ) {
       return addr
     }
 
@@ -80,9 +87,16 @@ export class Create2Factory {
       gasLimit = Math.floor((gasLimit * 64) / 63)
     }
 
-    const ret = await this.signer.sendTransaction({ ...deployTx, gasLimit })
+    const ret = await this.signer.sendTransaction({
+      ...deployTx,
+      gasLimit
+    })
     await ret.wait()
-    if ((await this.provider.getCode(addr).then((code) => code.length)) === 2) {
+    if (
+      (await this.provider
+        .getCode(addr)
+        .then((code) => code.length)) === 2
+    ) {
       throw new Error('failed to deploy')
     }
     return addr
@@ -102,7 +116,10 @@ export class Create2Factory {
    * @param initCode
    * @param salt
    */
-  static getDeployedAddress (initCode: string, salt: BigNumberish): string {
+  static getDeployedAddress (
+    initCode: string,
+    salt: BigNumberish
+  ): string {
     const saltBytes32 = hexZeroPad(hexlify(salt), 32)
     return (
       '0x' +
@@ -128,7 +145,9 @@ export class Create2Factory {
     })
     await this.provider.sendTransaction(Create2Factory.factoryTx)
     if (!(await this._isFactoryDeployed())) {
-      throw new Error('fatal: failed to deploy deterministic deployer')
+      throw new Error(
+        'fatal: failed to deploy deterministic deployer'
+      )
     }
   }
 

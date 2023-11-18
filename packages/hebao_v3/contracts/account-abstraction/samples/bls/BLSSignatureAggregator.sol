@@ -2,11 +2,11 @@
 pragma solidity >=0.8.4 <0.9.0;
 pragma abicoder v2;
 
-import "../../interfaces/IAggregator.sol";
-import "../../interfaces/IEntryPoint.sol";
-import {BLSOpen} from "./lib/BLSOpen.sol";
-import "./IBLSAccount.sol";
-import "./BLSHelper.sol";
+import '../../interfaces/IAggregator.sol';
+import '../../interfaces/IEntryPoint.sol';
+import {BLSOpen} from './lib/BLSOpen.sol';
+import './IBLSAccount.sol';
+import './BLSHelper.sol';
 
 /**
  * A BLS-based signature aggregator, to validate aggregated signature of multiple UserOps if BLSAccount
@@ -14,7 +14,8 @@ import "./BLSHelper.sol";
 contract BLSSignatureAggregator is IAggregator {
     using UserOperationLib for UserOperation;
 
-    bytes32 public constant BLS_DOMAIN = keccak256("eip4337.bls.domain");
+    bytes32 public constant BLS_DOMAIN =
+        keccak256('eip4337.bls.domain');
 
     //copied from BLS.sol
     uint256 public constant N =
@@ -32,7 +33,10 @@ contract BLSSignatureAggregator is IAggregator {
         if (initCode.length > 0) {
             publicKey = getTrailingPublicKey(initCode);
         } else {
-            return IBLSAccount(userOp.sender).getBlsPublicKey{gas: 50000}();
+            return
+                IBLSAccount(userOp.sender).getBlsPublicKey{
+                    gas: 50000
+                }();
         }
     }
 
@@ -43,7 +47,7 @@ contract BLSSignatureAggregator is IAggregator {
         bytes memory data
     ) public pure returns (uint256[4] memory publicKey) {
         uint len = data.length;
-        require(len > 32 * 4, "data too short for sig");
+        require(len > 32 * 4, 'data too short for sig');
 
         /* solhint-disable-next-line no-inline-assembly */
         assembly {
@@ -61,11 +65,16 @@ contract BLSSignatureAggregator is IAggregator {
         UserOperation[] calldata userOps,
         bytes calldata signature
     ) external view override {
-        require(signature.length == 64, "BLS: invalid signature");
-        uint256[2] memory blsSignature = abi.decode(signature, (uint256[2]));
+        require(signature.length == 64, 'BLS: invalid signature');
+        uint256[2] memory blsSignature = abi.decode(
+            signature,
+            (uint256[2])
+        );
 
         uint userOpsLen = userOps.length;
-        uint256[4][] memory blsPublicKeys = new uint256[4][](userOpsLen);
+        uint256[4][] memory blsPublicKeys = new uint256[4][](
+            userOpsLen
+        );
         uint256[2][] memory messages = new uint256[2][](userOpsLen);
         for (uint256 i = 0; i < userOpsLen; i++) {
             UserOperation memory userOp = userOps[i];
@@ -77,8 +86,12 @@ contract BLSSignatureAggregator is IAggregator {
             );
         }
         require(
-            BLSOpen.verifyMultiple(blsSignature, blsPublicKeys, messages),
-            "BLS: validateSignatures failed"
+            BLSOpen.verifyMultiple(
+                blsSignature,
+                blsPublicKeys,
+                messages
+            ),
+            'BLS: validateSignatures failed'
         );
     }
 
@@ -114,7 +127,9 @@ contract BLSSignatureAggregator is IAggregator {
     function userOpToMessage(
         UserOperation memory userOp
     ) public view returns (uint256[2] memory) {
-        bytes32 publicKeyHash = _getPublicKeyHash(getUserOpPublicKey(userOp));
+        bytes32 publicKeyHash = _getPublicKeyHash(
+            getUserOpPublicKey(userOp)
+        );
         return _userOpToMessage(userOp, publicKeyHash);
     }
 
@@ -123,14 +138,20 @@ contract BLSSignatureAggregator is IAggregator {
         bytes32 publicKeyHash
     ) internal view returns (uint256[2] memory) {
         bytes32 userOpHash = _getUserOpHash(userOp, publicKeyHash);
-        return BLSOpen.hashToPoint(BLS_DOMAIN, abi.encodePacked(userOpHash));
+        return
+            BLSOpen.hashToPoint(
+                BLS_DOMAIN,
+                abi.encodePacked(userOpHash)
+            );
     }
 
     // helper for test
     function getUserOpHash(
         UserOperation memory userOp
     ) public view returns (bytes32) {
-        bytes32 publicKeyHash = _getPublicKeyHash(getUserOpPublicKey(userOp));
+        bytes32 publicKeyHash = _getPublicKeyHash(
+            getUserOpPublicKey(userOp)
+        );
         return _getUserOpHash(userOp, publicKeyHash);
     }
 
@@ -178,9 +199,9 @@ contract BLSSignatureAggregator is IAggregator {
 
         require(
             BLSOpen.verifySingle(signature, pubkey, message),
-            "BLS: wrong sig"
+            'BLS: wrong sig'
         );
-        return "";
+        return '';
     }
 
     /**
@@ -193,7 +214,9 @@ contract BLSSignatureAggregator is IAggregator {
     function aggregateSignatures(
         UserOperation[] calldata userOps
     ) external pure returns (bytes memory aggregatedSignature) {
-        BLSHelper.XY[] memory points = new BLSHelper.XY[](userOps.length);
+        BLSHelper.XY[] memory points = new BLSHelper.XY[](
+            userOps.length
+        );
         for (uint i = 0; i < points.length; i++) {
             (uint256 x, uint256 y) = abi.decode(
                 userOps[i].signature,
@@ -210,7 +233,10 @@ contract BLSSignatureAggregator is IAggregator {
      * there is no limit on stake or delay, but it is not a problem, since it is a permissionless
      * signature aggregator, which doesn't support unstaking.
      */
-    function addStake(IEntryPoint entryPoint, uint32 delay) external payable {
+    function addStake(
+        IEntryPoint entryPoint,
+        uint32 delay
+    ) external payable {
         entryPoint.addStake{value: msg.value}(delay);
     }
 }

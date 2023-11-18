@@ -12,10 +12,7 @@ module.exports = {
     contract: false,
     web3: false
   },
-  extends:
-    [
-      'standard-with-typescript'
-    ],
+  extends: ['standard-with-typescript'],
   // This is needed to add configuration to rules with type information
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -32,7 +29,8 @@ module.exports = {
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/return-await': 'off',
     '@typescript-eslint/no-unnecessary-type-assertion': 'off',
-    '@typescript-eslint/require-array-sort-compare': ['error',
+    '@typescript-eslint/require-array-sort-compare': [
+      'error',
       {
         ignoreStringArrays: true
       }
@@ -48,9 +46,7 @@ module.exports = {
       }
     },
     {
-      files: [
-        '**/test/**/*.ts'
-      ],
+      files: ['**/test/**/*.ts'],
       rules: {
         'no-unused-expressions': 'off',
         // chai assertions trigger this rule

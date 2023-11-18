@@ -2,9 +2,9 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "./AddressUtil.sol";
-import "./ERC20.sol";
-import "./ERC20SafeTransfer.sol";
+import './AddressUtil.sol';
+import './ERC20.sol';
+import './ERC20SafeTransfer.sol';
 
 /// @title Drainable
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -15,8 +15,11 @@ abstract contract Drainable {
 
     event Drained(address to, address token, uint amount);
 
-    function drain(address to, address token) external returns (uint amount) {
-        require(canDrain(msg.sender, token), "UNAUTHORIZED");
+    function drain(
+        address to,
+        address token
+    ) external returns (uint amount) {
+        require(canDrain(msg.sender, token), 'UNAUTHORIZED');
 
         if (token == address(0)) {
             amount = address(this).balance;

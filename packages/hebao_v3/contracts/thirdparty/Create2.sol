@@ -25,9 +25,14 @@ library Create2 {
         address payable addr;
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            addr := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
+            addr := create2(
+                0,
+                add(bytecode, 0x20),
+                mload(bytecode),
+                salt
+            )
         }
-        require(addr != address(0), "CREATE2_FAILED");
+        require(addr != address(0), 'CREATE2_FAILED');
         return addr;
     }
 
@@ -53,7 +58,12 @@ library Create2 {
     ) internal pure returns (address) {
         bytes32 bytecodeHashHash = keccak256(bytecodeHash);
         bytes32 _data = keccak256(
-            abi.encodePacked(bytes1(0xff), deployer, salt, bytecodeHashHash)
+            abi.encodePacked(
+                bytes1(0xff),
+                deployer,
+                salt,
+                bytecodeHashHash
+            )
         );
         return address(bytes20(_data << 96));
     }

@@ -20,7 +20,9 @@ interface MockInterface {
 
     function givenAnyRevert() external;
 
-    function givenAnyRevertWithMessage(string calldata message) external;
+    function givenAnyRevertWithMessage(
+        string calldata message
+    ) external;
 
     function givenAnyRunOutOfGas() external;
 
@@ -134,10 +136,11 @@ contract MockContract is MockInterface {
         OutOfGas
     }
 
-    bytes32 public constant MOCKS_LIST_START = hex"01";
-    bytes public constant MOCKS_LIST_END = "0xff";
-    bytes32 public constant MOCKS_LIST_END_HASH = keccak256(MOCKS_LIST_END);
-    bytes4 public constant SENTINEL_ANY_MOCKS = hex"01";
+    bytes32 public constant MOCKS_LIST_START = hex'01';
+    bytes public constant MOCKS_LIST_END = '0xff';
+    bytes32 public constant MOCKS_LIST_END_HASH =
+        keccak256(MOCKS_LIST_END);
+    bytes4 public constant SENTINEL_ANY_MOCKS = hex'01';
 
     // A linked list allows easy iteration and inclusion checks
     mapping(bytes32 => bytes) calldataMocks;
@@ -173,7 +176,9 @@ contract MockContract is MockInterface {
 
     function trackMethodIdMock(bytes4 methodId) private {
         if (methodIdMocks[methodId] == 0x0) {
-            methodIdMocks[methodId] = methodIdMocks[SENTINEL_ANY_MOCKS];
+            methodIdMocks[methodId] = methodIdMocks[
+                SENTINEL_ANY_MOCKS
+            ];
             methodIdMocks[SENTINEL_ANY_MOCKS] = methodId;
         }
     }
@@ -183,7 +188,9 @@ contract MockContract is MockInterface {
         fallbackExpectation = response;
     }
 
-    function givenAnyReturn(bytes calldata response) external override {
+    function givenAnyReturn(
+        bytes calldata response
+    ) external override {
         _givenAnyReturn(response);
     }
 
@@ -196,13 +203,15 @@ contract MockContract is MockInterface {
         _givenAnyReturn(uintToBytes(response));
     }
 
-    function givenAnyReturnAddress(address response) external override {
+    function givenAnyReturnAddress(
+        address response
+    ) external override {
         _givenAnyReturn(uintToBytes(uint(uint160(response))));
     }
 
     function givenAnyRevert() external override {
         fallbackMockType = MockType.Revert;
-        fallbackRevertMessage = "";
+        fallbackRevertMessage = '';
     }
 
     function givenAnyRevertWithMessage(
@@ -251,7 +260,10 @@ contract MockContract is MockInterface {
         bytes calldata call,
         address response
     ) external override {
-        _givenCalldataReturn(call, uintToBytes(uint(uint160(response))));
+        _givenCalldataReturn(
+            call,
+            uintToBytes(uint(uint160(response)))
+        );
     }
 
     function _givenMethodReturn(
@@ -290,16 +302,23 @@ contract MockContract is MockInterface {
         bytes calldata call,
         address response
     ) external override {
-        _givenMethodReturn(call, uintToBytes(uint(uint160(response))));
+        _givenMethodReturn(
+            call,
+            uintToBytes(uint(uint160(response)))
+        );
     }
 
-    function givenCalldataRevert(bytes calldata call) external override {
+    function givenCalldataRevert(
+        bytes calldata call
+    ) external override {
         calldataMockTypes[call] = MockType.Revert;
-        calldataRevertMessage[call] = "";
+        calldataRevertMessage[call] = '';
         trackCalldataMock(call);
     }
 
-    function givenMethodRevert(bytes calldata call) external override {
+    function givenMethodRevert(
+        bytes calldata call
+    ) external override {
         bytes4 method = bytesToBytes4(call);
         methodIdMockTypes[method] = MockType.Revert;
         trackMethodIdMock(method);
@@ -324,12 +343,16 @@ contract MockContract is MockInterface {
         trackMethodIdMock(method);
     }
 
-    function givenCalldataRunOutOfGas(bytes calldata call) external override {
+    function givenCalldataRunOutOfGas(
+        bytes calldata call
+    ) external override {
         calldataMockTypes[call] = MockType.OutOfGas;
         trackCalldataMock(call);
     }
 
-    function givenMethodRunOutOfGas(bytes calldata call) external override {
+    function givenMethodRunOutOfGas(
+        bytes calldata call
+    ) external override {
         bytes4 method = bytesToBytes4(call);
         methodIdMockTypes[method] = MockType.OutOfGas;
         trackMethodIdMock(method);
@@ -353,7 +376,9 @@ contract MockContract is MockInterface {
         bytes calldata call
     ) external view override returns (uint) {
         return
-            calldataInvocations[keccak256(abi.encodePacked(resetCount, call))];
+            calldataInvocations[
+                keccak256(abi.encodePacked(resetCount, call))
+            ];
     }
 
     function reset() external override {
@@ -364,12 +389,12 @@ contract MockContract is MockInterface {
         while (mockHash != MOCKS_LIST_END_HASH) {
             // Reset all mock maps
             calldataMockTypes[nextMock] = MockType.Return;
-            calldataExpectations[nextMock] = hex"";
-            calldataRevertMessage[nextMock] = "";
+            calldataExpectations[nextMock] = hex'';
+            calldataRevertMessage[nextMock] = '';
             // Set next mock to remove
             nextMock = calldataMocks[mockHash];
             // Remove from linked list
-            calldataMocks[mockHash] = "";
+            calldataMocks[mockHash] = '';
             // Update mock hash
             mockHash = keccak256(nextMock);
         }
@@ -381,8 +406,8 @@ contract MockContract is MockInterface {
         while (nextAnyMock != SENTINEL_ANY_MOCKS) {
             bytes4 currentAnyMock = nextAnyMock;
             methodIdMockTypes[currentAnyMock] = MockType.Return;
-            methodIdExpectations[currentAnyMock] = hex"";
-            methodIdRevertMessages[currentAnyMock] = "";
+            methodIdExpectations[currentAnyMock] = hex'';
+            methodIdRevertMessages[currentAnyMock] = '';
             nextAnyMock = methodIdMocks[currentAnyMock];
             // Remove from linked list
             methodIdMocks[currentAnyMock] = 0x0;
@@ -390,7 +415,7 @@ contract MockContract is MockInterface {
         // Clear list
         methodIdMocks[SENTINEL_ANY_MOCKS] = SENTINEL_ANY_MOCKS;
 
-        fallbackExpectation = "";
+        fallbackExpectation = '';
         fallbackMockType = MockType.Return;
         invocations = 0;
         resetCount += 1;
@@ -401,12 +426,22 @@ contract MockContract is MockInterface {
             bool s;
             assembly {
                 //expensive call to EC multiply contract
-                s := call(sub(gas(), 2000), 6, 0, 0x0, 0xc0, 0x0, 0x60)
+                s := call(
+                    sub(gas(), 2000),
+                    6,
+                    0,
+                    0x0,
+                    0xc0,
+                    0x0,
+                    0x60
+                )
             }
         }
     }
 
-    function bytesToBytes4(bytes memory b) private pure returns (bytes4) {
+    function bytesToBytes4(
+        bytes memory b
+    ) private pure returns (bytes4) {
         bytes4 out;
         for (uint i = 0; i < 4; i++) {
             out |= bytes4(b[i] & 0xFF) >> (i * 8);
@@ -414,7 +449,9 @@ contract MockContract is MockInterface {
         return out;
     }
 
-    function uintToBytes(uint256 x) private pure returns (bytes memory b) {
+    function uintToBytes(
+        uint256 x
+    ) private pure returns (bytes memory b) {
         b = new bytes(32);
         assembly {
             mstore(add(b, 32), x)
@@ -427,7 +464,7 @@ contract MockContract is MockInterface {
     ) public {
         require(
             msg.sender == address(this),
-            "Can only be called from the contract itself"
+            'Can only be called from the contract itself'
         );
         invocations += 1;
         methodIdInvocations[
@@ -486,7 +523,7 @@ contract MockContract is MockInterface {
         // Record invocation as separate call so we don't rollback in case we are called with STATICCALL
         (, bytes memory r) = address(this).call{gas: 100000}(
             abi.encodeWithSignature(
-                "updateInvocationCount(bytes4,bytes)",
+                'updateInvocationCount(bytes4,bytes)',
                 methodId,
                 msg.data
             )

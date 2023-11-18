@@ -6,7 +6,11 @@ pragma solidity ^0.8.17;
 contract TestUniswapV2Factory {
     mapping(address => mapping(address => address)) public getPair;
 
-    function addPair(address tokenA, address tokenB, address pair) external {
+    function addPair(
+        address tokenA,
+        address tokenB,
+        address pair
+    ) external {
         getPair[tokenA][tokenB] = pair;
         getPair[tokenB][tokenA] = pair;
     }

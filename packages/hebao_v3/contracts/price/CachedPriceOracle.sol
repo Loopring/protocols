@@ -2,10 +2,10 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../iface/PriceOracle.sol";
-import "../lib/MathUint.sol";
-import "../lib/OwnerManagable.sol";
-import "../thirdparty/SafeCast.sol";
+import '../iface/PriceOracle.sol';
+import '../lib/MathUint.sol';
+import '../lib/OwnerManagable.sol';
+import '../thirdparty/SafeCast.sol';
 
 /// @title CachedPriceOracle
 contract CachedPriceOracle is PriceOracle, OwnerManagable {
@@ -16,7 +16,12 @@ contract CachedPriceOracle is PriceOracle, OwnerManagable {
 
     PriceOracle public oracle;
 
-    event PriceCached(address token, uint amount, uint value, uint timestamp);
+    event PriceCached(
+        address token,
+        uint amount,
+        uint value,
+        uint timestamp
+    );
 
     // Optimized to fit into 32 bytes (1 slot)
     struct TokenPrice {
@@ -37,7 +42,8 @@ contract CachedPriceOracle is PriceOracle, OwnerManagable {
     ) public view override returns (uint) {
         TokenPrice memory tp = prices[token];
         if (
-            tp.timestamp > 0 && block.timestamp < tp.timestamp + EXPIRY_PERIOD
+            tp.timestamp > 0 &&
+            block.timestamp < tp.timestamp + EXPIRY_PERIOD
         ) {
             return uint(tp.value).mul(amount) / tp.amount;
         } else {
@@ -67,7 +73,11 @@ contract CachedPriceOracle is PriceOracle, OwnerManagable {
         oracle = _oracle;
     }
 
-    function _cacheTokenPrice(address token, uint amount, uint value) internal {
+    function _cacheTokenPrice(
+        address token,
+        uint amount,
+        uint value
+    ) internal {
         prices[token].amount = amount.toUint128();
         prices[token].value = value.toUint96();
         prices[token].timestamp = block.timestamp.toUint32();

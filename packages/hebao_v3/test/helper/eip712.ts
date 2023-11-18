@@ -30,7 +30,10 @@ export function hash (
   )
 }
 
-export function hashPacked (domainSeprator: string, encodedData: string) {
+export function hashPacked (
+  domainSeprator: string,
+  encodedData: string
+) {
   return keccak256(
     hexConcat([EIP191_HEADER, domainSeprator, keccak256(encodedData)])
   )
