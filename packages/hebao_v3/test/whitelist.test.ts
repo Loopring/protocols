@@ -1,40 +1,40 @@
-import { fixture } from "./helper/fixture";
 import {
   loadFixture,
-  setBalance,
-  time,
-} from "@nomicfoundation/hardhat-network-helpers";
-import { ActionType } from "./helper/LoopringGuardianAPI";
-import { ethers } from "hardhat";
-import { expect } from "chai";
-import { getBlockTimestamp, sortSignersAndSignatures } from "./helper/utils";
-import { fillUserOp, fillAndMultiSign } from "./helper/AASigner";
+  time
+} from '@nomicfoundation/hardhat-network-helpers'
+import { expect } from 'chai'
+import { ethers } from 'hardhat'
 
-describe("whitelist test", () => {
-  const ONE_DAY = 3600 * 24;
-  it("owner should be able to add address to its whitelist", async () => {
-    const whiteListedAddr = "0x" + "11".repeat(20);
-    const { smartWallet } = await loadFixture(fixture);
-    const tx = await smartWallet.addToWhitelist(whiteListedAddr);
+import { fillAndMultiSign } from './helper/AASigner'
+import { ActionType } from './helper/LoopringGuardianAPI'
+import { fixture } from './helper/fixture'
+import { getBlockTimestamp } from './helper/utils'
+
+describe('whitelist test', () => {
+  const ONE_DAY = 3600 * 24
+  it('owner should be able to add address to its whitelist', async () => {
+    const whiteListedAddr = '0x' + '11'.repeat(20)
+    const { smartWallet } = await loadFixture(fixture)
+    const tx = await smartWallet.addToWhitelist(whiteListedAddr)
     const effectiveTime = await smartWallet.getWhitelistEffectiveTime(
       whiteListedAddr
-    );
-    const blockTime = await getBlockTimestamp(tx.blockNumber);
-    expect(effectiveTime.toNumber()).to.equal(blockTime + 3600 * 24);
+    )
+    const blockTime = await getBlockTimestamp(tx.blockNumber!)
+    expect(effectiveTime.toNumber()).to.equal(blockTime + 3600 * 24)
 
     // advance one day
-    await time.increase(ONE_DAY);
-    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be.true;
+    await time.increase(ONE_DAY)
+    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be.true
 
     // remove it from whitelist
-    await smartWallet.removeFromWhitelist(whiteListedAddr);
+    await smartWallet.removeFromWhitelist(whiteListedAddr)
     expect(await smartWallet.getWhitelistEffectiveTime(whiteListedAddr)).to.eq(
       0
-    );
-    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be.false;
-  });
+    )
+    expect(await smartWallet.isWhitelisted(whiteListedAddr)).to.be.false
+  })
 
-  it("majority(owner required) should be able to whitelist address immediately", async () => {
+  it('majority(owner required) should be able to whitelist address immediately', async () => {
     const {
       smartWallet,
       smartWalletImpl,
@@ -42,41 +42,41 @@ describe("whitelist test", () => {
       guardians,
       create2,
       entrypoint,
-      sendUserOp,
-    } = await loadFixture(fixture);
-    const addr = "0x" + "12".repeat(20);
+      sendUserOp
+    } = await loadFixture(fixture)
+    const addr = '0x' + '12'.repeat(20)
     const callData = smartWallet.interface.encodeFunctionData(
-      "addToWhitelistWA",
+      'addToWhitelistWA',
       [addr]
-    );
+    )
     const approvalOption = {
       validUntil: 0,
       salt: ethers.utils.randomBytes(32),
-      action_type: ActionType.AddToWhitelist,
-    };
+      action_type: ActionType.AddToWhitelist
+    }
     const signedUserOp = await fillAndMultiSign(
       callData,
       smartWallet,
       smartWalletOwner,
       [
         {
-          signer: guardians[0],
+          signer: guardians[0]
         },
-        { signer: smartWalletOwner },
+        { signer: smartWalletOwner }
       ],
       create2.address,
       smartWalletImpl.address,
       approvalOption,
       entrypoint
-    );
+    )
 
-    const recipt = await sendUserOp(signedUserOp);
-    const effectiveTime = await smartWallet.getWhitelistEffectiveTime(addr);
-    const blockTime = await getBlockTimestamp(recipt.blockNumber);
-    expect(effectiveTime.toNumber()).to.equal(blockTime);
+    const recipt = await sendUserOp(signedUserOp)
+    const effectiveTime = await smartWallet.getWhitelistEffectiveTime(addr)
+    const blockTime = await getBlockTimestamp(recipt.blockNumber)
+    expect(effectiveTime.toNumber()).to.equal(blockTime)
 
     // advance one day
-    await time.increase(ONE_DAY);
-    expect(await smartWallet.isWhitelisted(addr)).to.be.true;
-  });
-});
+    await time.increase(ONE_DAY)
+    expect(await smartWallet.isWhitelisted(addr)).to.be.true
+  })
+})

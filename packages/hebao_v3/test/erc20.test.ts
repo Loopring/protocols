@@ -1,31 +1,19 @@
-import { ethers } from "hardhat";
-import { expect } from "chai";
-import { BigNumberish, Wallet, PopulatedTransaction } from "ethers";
-import { ActionType } from "./helper/LoopringGuardianAPI";
 import {
-  loadFixture,
-  setBalance,
-} from "@nomicfoundation/hardhat-network-helpers";
-import { fixture } from "./helper/fixture";
-import {
-  sendTx,
-  PaymasterOption,
-  evInfo,
-  sortSignersAndSignatures,
-  getCurrentQuota,
-  createSmartWallet,
-  getFirstEvent,
-} from "./helper/utils";
-import { UserOperation, fillUserOp, fillAndMultiSign } from "./helper/AASigner";
-import {
-  SmartWalletV3,
-  EntryPoint,
-  LoopringCreate2Deployer,
-  SmartWalletV3__factory,
-} from "../typechain-types";
+  loadFixture
+} from '@nomicfoundation/hardhat-network-helpers'
+import { expect, assert } from 'chai'
+import { ethers } from 'hardhat'
 
-describe("erc20 test", () => {
-  it("basic success test", async () => {
+import { fillAndMultiSign } from './helper/AASigner'
+import { ActionType } from './helper/LoopringGuardianAPI'
+import { fixture } from './helper/fixture'
+import {
+  getFirstEvent,
+  sendTx
+} from './helper/utils'
+
+describe('erc20 test', () => {
+  it('basic success test', async () => {
     // execute approve, transfer and call contract using batch way
     const {
       entrypoint,
@@ -34,55 +22,53 @@ describe("erc20 test", () => {
       create2,
       deployer,
       sendUserOp,
-      smartWalletImpl,
-      guardians,
       usdtToken,
-      testTarget,
-    } = await loadFixture(fixture);
+      testTarget
+    } = await loadFixture(fixture)
     // prepare usdt tokens
-    const initTokenAmount = ethers.utils.parseUnits("1000", 6);
-    await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+    const initTokenAmount = ethers.utils.parseUnits('1000', 6)
+    await usdtToken.setBalance(smartWallet.address, initTokenAmount)
 
-    const tokenAmount = ethers.utils.parseUnits("100", 6);
-    const receiver = deployer.address;
+    const tokenAmount = ethers.utils.parseUnits('100', 6)
+    const receiver = deployer.address
     const approve = await smartWallet.populateTransaction.approveToken(
       usdtToken.address,
       receiver,
       tokenAmount,
       false
-    );
+    )
     const transferToken = await smartWallet.populateTransaction.transferToken(
       usdtToken.address,
       receiver,
       tokenAmount,
-      "0x",
+      '0x',
       false
-    );
+    )
 
     const functionDefault =
-      await testTarget.populateTransaction.functionDefault(0);
+      await testTarget.populateTransaction.functionDefault(0)
     const callcontract = await smartWallet.populateTransaction.callContract(
       receiver,
       0,
-      functionDefault.data,
+      functionDefault.data!,
       false
-    );
+    )
 
     const callData = testTarget.interface.encodeFunctionData(
-      "functionPayable",
+      'functionPayable',
       [10]
-    );
+    )
     const approveThenCall =
       await smartWallet.populateTransaction.approveThenCallContract(
         usdtToken.address,
         testTarget.address,
-        ethers.utils.parseEther("10000"),
-        ethers.utils.parseEther("0.01"),
+        ethers.utils.parseEther('10000'),
+        ethers.utils.parseEther('0.01'),
         callData,
         false
-      );
+      )
 
-    const recipt = await sendTx(
+    await sendTx(
       [approve, transferToken, callcontract, approveThenCall],
       smartWallet,
       smartWalletOwner,
@@ -91,76 +77,71 @@ describe("erc20 test", () => {
       sendUserOp,
       undefined,
       false
-    );
-    expect(await usdtToken.balanceOf(receiver)).to.eq(tokenAmount);
-  });
+    )
+    expect(await usdtToken.balanceOf(receiver)).to.eq(tokenAmount)
+  })
 
-  it("execute from wallet owner", async () => {
+  it('execute from wallet owner', async () => {
     const {
-      entrypoint,
       smartWallet,
-      smartWalletOwner,
-      create2,
       deployer,
-      sendUserOp,
-      smartWalletImpl,
-      guardians,
       usdtToken,
-      testTarget,
-    } = await loadFixture(fixture);
+      testTarget
+    } = await loadFixture(fixture)
     // prepare usdt tokens
-    const initTokenAmount = ethers.utils.parseUnits("1000", 6);
-    await usdtToken.setBalance(smartWallet.address, initTokenAmount);
+    const initTokenAmount = ethers.utils.parseUnits('1000', 6)
+    await usdtToken.setBalance(smartWallet.address, initTokenAmount)
 
-    const tokenAmount = ethers.utils.parseUnits("100", 6);
-    const receiver = deployer.address;
+    const tokenAmount = ethers.utils.parseUnits('100', 6)
+    const receiver = deployer.address
     // approve first
     await smartWallet.populateTransaction.approveToken(
       usdtToken.address,
       receiver,
       tokenAmount,
       false
-    );
+    )
     // then transfer token
     await smartWallet.transferToken(
       usdtToken.address,
       receiver,
       tokenAmount,
-      "0x",
+      '0x',
       false
-    );
-    expect(await usdtToken.balanceOf(receiver)).to.eq(tokenAmount);
+    )
+    expect(await usdtToken.balanceOf(receiver)).to.eq(tokenAmount)
     // finally call contract
     const functionDefault =
-      await testTarget.populateTransaction.functionDefault(0);
+      await testTarget.populateTransaction.functionDefault(0)
     await expect(
       smartWallet.populateTransaction.callContract(
         receiver,
         0,
-        functionDefault.data,
+        functionDefault.data!,
         false
       )
-    ).not.to.reverted;
+    ).not.to.reverted
 
     // approvethencall
     const callData = testTarget.interface.encodeFunctionData(
-      "functionPayable",
+      'functionPayable',
       [10]
-    );
+    )
     const tx = await smartWallet.approveThenCallContract(
       usdtToken.address,
       testTarget.address,
-      ethers.utils.parseEther("10000"),
-      ethers.utils.parseEther("0.01"),
+      ethers.utils.parseEther('10000'),
+      ethers.utils.parseEther('0.01'),
       callData,
       false
-    );
-    const event = await getFirstEvent(testTarget, tx.blockNumber, "Invoked");
-    expect(event.args.sender).to.equal(smartWallet.address);
-  });
+    )
+    const event = await getFirstEvent(testTarget, tx.blockNumber!, 'Invoked')
+    assert(event.args)
+    expect(event.args.sender).to.equal(smartWallet.address)
+  })
 
-  describe("execute tx with approval", () => {
-    it("approve token test", async () => {
+  describe('execute tx with approval', () => {
+    it('approve token test', async () => {
       const {
         entrypoint,
         smartWallet,
@@ -170,20 +151,20 @@ describe("erc20 test", () => {
         sendUserOp,
         smartWalletImpl,
         guardians,
-        usdtToken,
-      } = await loadFixture(fixture);
+        usdtToken
+      } = await loadFixture(fixture)
 
-      const toAddr = deployer.address;
-      const amount = 100;
+      const toAddr = deployer.address
+      const amount = 100
       const callData = smartWallet.interface.encodeFunctionData(
-        "approveTokenWA",
+        'approveTokenWA',
         [usdtToken.address, toAddr, amount]
-      );
+      )
       const approvalOption = {
         validUntil: 0,
         salt: ethers.utils.randomBytes(32),
-        action_type: ActionType.ApproveToken,
-      };
+        action_type: ActionType.ApproveToken
+      }
       const signedUserOp = await fillAndMultiSign(
         callData,
         smartWallet,
@@ -191,47 +172,44 @@ describe("erc20 test", () => {
         [
           { signer: smartWalletOwner },
           {
-            signer: guardians[0],
-          },
+            signer: guardians[0]
+          }
         ],
         create2.address,
         smartWalletImpl.address,
         approvalOption,
         entrypoint
-      );
+      )
 
-      const recipt = await sendUserOp(signedUserOp);
+      await sendUserOp(signedUserOp)
       // check allowance
-      const allowance = await usdtToken.allowance(smartWallet.address, toAddr);
-      expect(allowance).to.eq(amount);
-    });
+      const allowance = await usdtToken.allowance(smartWallet.address, toAddr)
+      expect(allowance).to.eq(amount)
+    })
 
-    it("callcontract test", async () => {
+    it('callcontract test', async () => {
       const {
         entrypoint,
         smartWallet,
         smartWalletOwner,
         create2,
-        deployer,
         sendUserOp,
         smartWalletImpl,
         guardians,
-        usdtToken,
-        testTarget,
-      } = await loadFixture(fixture);
+        testTarget
+      } = await loadFixture(fixture)
 
-      const toAddr = deployer.address;
       const functionDefault =
-        await testTarget.populateTransaction.functionDefault(0);
+        await testTarget.populateTransaction.functionDefault(0)
       const callData = smartWallet.interface.encodeFunctionData(
-        "callContractWA",
+        'callContractWA',
         [testTarget.address, 0, functionDefault.data]
-      );
+      )
       const approvalOption = {
         validUntil: 0,
         salt: ethers.utils.randomBytes(32),
-        action_type: ActionType.CallContract,
-      };
+        action_type: ActionType.CallContract
+      }
       const signedUserOp = await fillAndMultiSign(
         callData,
         smartWallet,
@@ -239,24 +217,25 @@ describe("erc20 test", () => {
         [
           { signer: smartWalletOwner },
           {
-            signer: guardians[0],
-          },
+            signer: guardians[0]
+          }
         ],
         create2.address,
         smartWalletImpl.address,
         approvalOption,
         entrypoint
-      );
-      const recipt = await sendUserOp(signedUserOp);
+      )
+      const recipt = await sendUserOp(signedUserOp)
       const event = await getFirstEvent(
         testTarget,
         recipt.blockNumber,
-        "Invoked"
-      );
-      expect(event.args.sender).to.equal(smartWallet.address);
-    });
+        'Invoked'
+      )
+      assert(event.args)
+      expect(event.args.sender).to.equal(smartWallet.address)
+    })
 
-    it("approveThenCallContract test", async () => {
+    it('approveThenCallContract test', async () => {
       const {
         sendUserOp,
         entrypoint,
@@ -267,29 +246,29 @@ describe("erc20 test", () => {
         smartWallet: wallet,
         smartWalletOwner,
         smartWalletImpl,
-        smartWallet,
-      } = await loadFixture(fixture);
+        smartWallet
+      } = await loadFixture(fixture)
       const innerCallData = testTarget.interface.encodeFunctionData(
-        "functionPayable",
+        'functionPayable',
         [10]
-      );
-      const amount = ethers.utils.parseEther("10000");
-      const value = ethers.utils.parseEther("50");
+      )
+      const amount = ethers.utils.parseEther('10000')
+      const value = ethers.utils.parseEther('50')
       const callData = smartWallet.interface.encodeFunctionData(
-        "approveThenCallContractWA",
+        'approveThenCallContractWA',
         [
           usdtToken.address,
           testTarget.address,
           amount.toString(),
           value,
-          innerCallData,
+          innerCallData
         ]
-      );
+      )
       const approvalOption = {
         validUntil: 0,
         salt: ethers.utils.randomBytes(32),
-        action_type: ActionType.ApproveThenCallContract,
-      };
+        action_type: ActionType.ApproveThenCallContract
+      }
       const signedUserOp = await fillAndMultiSign(
         callData,
         smartWallet,
@@ -297,22 +276,23 @@ describe("erc20 test", () => {
         [
           { signer: smartWalletOwner },
           {
-            signer: guardians[0],
-          },
+            signer: guardians[0]
+          }
         ],
         create2.address,
         smartWalletImpl.address,
         approvalOption,
         entrypoint
-      );
+      )
 
-      const recipt = await sendUserOp(signedUserOp);
+      const recipt = await sendUserOp(signedUserOp)
       const event = await getFirstEvent(
         testTarget,
         recipt.blockNumber,
-        "Invoked"
-      );
-      expect(event.args.sender).to.equal(wallet.address);
-    });
-  });
-});
+        'Invoked'
+      )
+      assert(event.args)
+      expect(event.args.sender).to.equal(wallet.address)
+    })
+  })
+})
