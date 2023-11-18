@@ -337,7 +337,7 @@ export async function createSmartWallet (
     feeToken: ethers.constants.AddressZero,
     maxFeeAmount: 0,
     salt,
-    signature: Buffer.from(signature.slice(2), 'hex')
+    signature
   }
 
   const tx = await walletFactory.createWallet(walletConfig, 0)

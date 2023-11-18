@@ -31,7 +31,6 @@ async function deployAll() {
   const blankOwner = process.env.BLANK_OWNER ?? deployer.address
 
   // create2 factory
-
   let create2: LoopringCreate2Deployer
   // NOTE(update address when create2 factory contract is modified)
   const create2Addr = '0xd57d71A16D850038e7266E3885140A7E7d1Ba3fD'
@@ -144,19 +143,30 @@ async function deployAll() {
     '0x456ecAca6A1Bc3a71fC1955562d1d9BF662974D8'
   ]
   const salt = ethers.utils.formatBytes32String('0x5')
-  await createSmartWallet(
-    smartWalletOwner,
-    guardians,
-    await WalletFactory__factory.connect(
-      walletFactory.address,
-      deployer
-    ),
-    salt
-  )
   const smartWalletAddr = await walletFactory.computeWalletAddress(
     smartWalletOwner.address,
     salt
   )
+  if ((await ethers.provider.getCode(smartWalletAddr)) !== '0x') {
+    console.log(
+      'smart wallet of the owner',
+      smartWalletOwner.address,
+      ' is deployed already at: ',
+      smartWalletAddr
+    )
+  } else {
+    await createSmartWallet(
+      smartWalletOwner,
+      guardians,
+      await WalletFactory__factory.connect(
+        walletFactory.address,
+        deployer
+      ),
+      salt
+    )
+    console.log('wallet created at: ', smartWalletAddr)
+  }
+
   const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
     smartWalletOwner
@@ -353,7 +363,7 @@ async function testExecuteTx (): Promise<void> {
 
 async function main (): Promise<void> {
   await testExecuteTx()
-  // await deployAll()
+  await deployAll()
   // uncomment below to get gascost info of some sample txs on chain
   await testExecuteTxWithEth()
   await testExecuteTxWithUSDCPaymaster()

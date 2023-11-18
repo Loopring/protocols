@@ -29,6 +29,11 @@ describe('verifingPaymaster test', () => {
       ).to.revertedWith('unregistered already')
       expect(await paymaster.registeredToken(usdtToken.address)).to.be
         .false
+      // change entrypoint
+      const newEntrypoint = ethers.constants.AddressZero
+      await expect(
+        paymaster.changeEntryPoint(newEntrypoint)
+      ).to.revertedWith('')
     })
 
     it('roles management', async () => {
