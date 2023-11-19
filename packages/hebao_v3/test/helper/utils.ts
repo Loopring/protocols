@@ -23,6 +23,7 @@ import {
   keccak256
 } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
+import * as hre from 'hardhat'
 
 import {
   EntryPoint,
@@ -239,16 +240,17 @@ export async function deploySingle (
     console.log(contractName, 'deployed address: ', deployedAddress)
   }
 
-  // if (
-  // hre.network.name == "goerli" ||
-  // hre.network.name == "sepolia" ||
-  // hre.network.name == "ethereum"
-  // ) {
-  // await hre.run("verify:verify", {
-  // address: deployedAddress,
-  // constructorArguments: args,
-  // });
-  // }
+  if (
+    hre.network.name === 'goerli' ||
+    hre.network.name === 'sepolia' ||
+    hre.network.name === 'ethereum'
+  ) {
+    await hre.run('verify:verify', {
+      address: deployedAddress,
+      cnstructorArguments: args,
+      libraries
+    })
+  }
 
   return contract.attach(deployedAddress)
 }
@@ -525,7 +527,6 @@ export async function createBatchTransactions (
   return {
     sender: wallet.address,
     initCode,
-    // increase nonce
     nonce,
     callData: execFromEntryPoint.data!,
     callGasLimit: execFromEntryPoint.gasLimit,

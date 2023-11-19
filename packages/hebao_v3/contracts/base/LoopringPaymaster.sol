@@ -123,17 +123,17 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         require(
             unlockBlock[sender] == 0,
-            'DepositPaymaster: deposit not locked'
+            'LoopringPaymaster: deposit not locked'
         );
         require(
-            registeredToken[decoded_data.token],
-            'unsupported tokens'
+            registeredToken[ERC20(decoded_data.token)],
+            'LoopringPaymaster: unsupported tokens'
         );
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
         require(
             signature.length == 64 || signature.length == 65,
-            'VerifyingPaymaster: invalid signature length in paymasterAndData'
+            'LoopringPaymaster: invalid signature length in paymasterAndData'
         );
 
         uint256 costOfPost = userOp.gasPrice() * COST_OF_POST;
@@ -152,7 +152,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                         tokenRequiredPreFund &&
                         ERC20(decoded_data.token).balanceOf(sender) >=
                         tokenRequiredPreFund),
-                'Paymaster: no enough allowance or token balances'
+                'LoopringPaymaster: no enough allowance or token balances'
             );
         }
         bytes32 hash = ECDSA.toEthSignedMessageHash(
@@ -322,7 +322,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     ) external {
         //(sender must have approval for the paymaster)
         token.safeTransferFrom(msg.sender, address(this), amount);
-        require(registeredToken[token], 'unsupported token');
+        require(
+            registeredToken[token],
+            'LoopringPaymaster: unsupported token'
+        );
         balances[token][account] += amount;
         if (msg.sender == account) {
             lockTokenDeposit();
@@ -368,7 +371,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         require(
             unlockBlock[msg.sender] != 0 &&
                 block.number > unlockBlock[msg.sender],
-            'DepositPaymaster: must unlockTokenDeposit'
+            'LoopringPaymaster: must unlockTokenDeposit'
         );
         balances[token][msg.sender] -= amount;
         token.safeTransfer(target, amount);

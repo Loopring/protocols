@@ -8,7 +8,8 @@ import {
   LoopringPaymaster__factory,
   SmartWalletV3__factory,
   USDT__factory,
-  WalletFactory__factory
+  WalletFactory__factory,
+  LRC__factory
 } from '../../typechain-types'
 
 import { localUserOpSender } from './AASigner'
@@ -46,10 +47,15 @@ export async function fixture() {
   // const entrypointAddr = "0x515aC6B1Cd51BcFe88334039cC32e3919D13b35d";
   // const entrypoint = await ethers.getContractAt("EntryPoint", entrypointAddr);
 
-  const paymaster = await deploySingle(create2, 'LoopringPaymaster', [
-    entrypoint.address,
-    paymasterOwner.address
-  ])
+  const paymaster = LoopringPaymaster__factory.connect(
+    (
+      await deploySingle(create2, 'LoopringPaymaster', [
+        entrypoint.address,
+        paymasterOwner.address
+      ])
+    ).address,
+    paymasterOwner
+  )
 
   const smartWalletImpl = await deployWalletImpl(
     create2,
@@ -154,6 +160,12 @@ export async function fixture() {
     (await deploySingle(create2, 'USDT')).address,
     deployer
   )
+  // usdt token is supported by paymaster
+  await paymaster.addToken(usdtToken.address)
+  const lrcToken = LRC__factory.connect(
+    (await deploySingle(create2, 'LRC')).address,
+    deployer
+  )
 
   // used for any call contract test
   const testTarget = await (
@@ -162,10 +174,7 @@ export async function fixture() {
 
   return {
     entrypoint,
-    paymaster: LoopringPaymaster__factory.connect(
-      paymaster.address,
-      paymasterOwner
-    ),
+    paymaster,
     forwardProxy,
     smartWallet,
     create2,
@@ -177,6 +186,7 @@ export async function fixture() {
     sendUserOp,
     smartWalletImpl,
     guardians,
+    lrcToken,
     walletFactory,
     implStorage,
     testTarget,

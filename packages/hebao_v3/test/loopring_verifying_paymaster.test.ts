@@ -11,29 +11,34 @@ import { PaymasterOption, sendTx } from './helper/utils'
 describe('verifingPaymaster test', () => {
   describe('admin operation success', () => {
     it('adjust paramster params by owner', async () => {
-      const { usdtToken, paymaster, somebody } = await loadFixture(
+      const { paymaster, somebody, lrcToken } = await loadFixture(
         fixture
       )
+
       await expect(
-        paymaster.connect(somebody).addToken(usdtToken.address)
+        paymaster.connect(somebody).addToken(lrcToken.address)
       ).to.revertedWith('Ownable: caller is not the owner')
-      await paymaster.addToken(usdtToken.address)
+      await paymaster.addToken(lrcToken.address)
       await expect(
-        paymaster.addToken(usdtToken.address)
+        paymaster.addToken(lrcToken.address)
       ).to.revertedWith('registered already')
-      expect(await paymaster.registeredToken(usdtToken.address)).to.be
+      expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .true
-      await paymaster.removeToken(usdtToken.address)
+      await paymaster.removeToken(lrcToken.address)
       await expect(
-        paymaster.removeToken(usdtToken.address)
+        paymaster.removeToken(lrcToken.address)
       ).to.revertedWith('unregistered already')
-      expect(await paymaster.registeredToken(usdtToken.address)).to.be
+      expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .false
       // change entrypoint
-      const newEntrypoint = ethers.constants.AddressZero
+      const fakeEntrypoint = ethers.constants.AddressZero
       await expect(
-        paymaster.changeEntryPoint(newEntrypoint)
-      ).to.revertedWith('')
+        paymaster.changeEntryPoint(fakeEntrypoint)
+      ).to.revertedWith('INVALID ENTRYPOINT')
+      const newEntrypoint = await (
+        await ethers.getContractFactory('EntryPoint')
+      ).deploy()
+      await paymaster.changeEntryPoint(newEntrypoint.address)
     })
 
     it('roles management', async () => {
@@ -113,9 +118,9 @@ describe('verifingPaymaster test', () => {
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
         .withArgs(
           0,
-          'AA33 reverted: Paymaster: no enough allowance or token balances'
+          'AA33 reverted: LoopringPaymaster: no enough allowance or token balances'
         )
-      // approve before transfertoken
+      // approve before transfer token
       await sendTx(
         [approveToken],
         smartWallet,
@@ -144,9 +149,9 @@ describe('verifingPaymaster test', () => {
       expect(await usdtToken.balanceOf(paymaster.address)).to.eq(
         initTokenAmount.sub(afterBalance).sub(tokenAmount)
       )
-      // // TODO(check eth balance for paymaster)
+      // TODO(check eth balance for paymaster)
 
-      // // sendtx for free
+      // sendtx for free
       paymasterOption.valueOfEth = 0
 
       await sendTx(
@@ -158,10 +163,29 @@ describe('verifingPaymaster test', () => {
         sendUserOp,
         paymasterOption
       )
-      // // no fee for sending tx
+      // no fee for sending tx
       expect(await usdtToken.balanceOf(smartWallet.address)).to.eq(
         afterBalance.sub(tokenAmount)
       )
+
+      // if usdt token is unregistered, user cannot pay the tokens to paymaster any more
+      await paymaster.removeToken(usdtToken.address)
+      await expect(
+        sendTx(
+          [transferToken],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp,
+          paymasterOption
+        )
+      )
+        .to.revertedWithCustomError(entrypoint, 'FailedOp')
+        .withArgs(
+          0,
+          'AA33 reverted: LoopringPaymaster: unsupported tokens'
+        )
     })
 
     it('replay the same paymasterAndData should fail', async () => {})
@@ -291,26 +315,29 @@ describe('verifingPaymaster test', () => {
 
   describe('gas tank', () => {
     it('deposit and withdraw for user', async () => {
-      const { usdtToken, deployer, paymaster } = await loadFixture(
+      const { deployer, paymaster, lrcToken } = await loadFixture(
         fixture
       )
-      const amount = ethers.utils.parseUnits('1000', 6)
-      await usdtToken.setBalance(deployer.address, amount)
-      await usdtToken.approve(paymaster.address, amount)
+      const amount = ethers.utils.parseUnits(
+        '1000',
+        await lrcToken.decimals()
+      )
+      await lrcToken.setBalance(deployer.address, amount)
+      await lrcToken.approve(paymaster.address, amount)
       await expect(
         paymaster
           .connect(deployer)
-          .addDepositFor(usdtToken.address, deployer.address, amount)
-      ).to.revertedWith('unsupported token')
+          .addDepositFor(lrcToken.address, deployer.address, amount)
+      ).to.revertedWith('LoopringPaymaster: unsupported token')
 
       // add token before deposit
-      await paymaster.addToken(usdtToken.address)
+      await paymaster.addToken(lrcToken.address)
       await paymaster
         .connect(deployer)
-        .addDepositFor(usdtToken.address, deployer.address, amount)
+        .addDepositFor(lrcToken.address, deployer.address, amount)
       // check deposit info
       const depositInfo = await paymaster.depositInfo(
-        usdtToken.address,
+        lrcToken.address,
         deployer.address
       )
       // token is already locked in paymaster contract
@@ -322,18 +349,16 @@ describe('verifingPaymaster test', () => {
         paymaster
           .connect(deployer)
           .withdrawTokensTo(
-            usdtToken.address,
+            lrcToken.address,
             deployer.address,
             amount
           )
-      ).to.revertedWith('DepositPaymaster: must unlockTokenDeposit')
+      ).to.revertedWith('LoopringPaymaster: must unlockTokenDeposit')
       await paymaster.connect(deployer).unlockTokenDeposit()
       await paymaster
         .connect(deployer)
-        .withdrawTokensTo(usdtToken.address, deployer.address, amount)
-      expect(await usdtToken.balanceOf(deployer.address)).to.eq(
-        amount
-      )
+        .withdrawTokensTo(lrcToken.address, deployer.address, amount)
+      expect(await lrcToken.balanceOf(deployer.address)).to.eq(amount)
     })
 
     it('transfer usdtToken with gastank', async () => {
@@ -352,7 +377,6 @@ describe('verifingPaymaster test', () => {
       const initAmount = ethers.utils.parseUnits('1000', 6)
       await usdtToken.setBalance(deployer.address, initAmount)
       await usdtToken.approve(paymaster.address, initAmount)
-      await paymaster.addToken(usdtToken.address)
 
       // predeposit usdt token to paymaster for smartwallet
       await paymaster
@@ -400,7 +424,7 @@ describe('verifingPaymaster test', () => {
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
         .withArgs(
           0,
-          'AA33 reverted: DepositPaymaster: deposit not locked'
+          'AA33 reverted: LoopringPaymaster: deposit not locked'
         )
 
       // only locked fund can be used for gas fee. so lock it again here.

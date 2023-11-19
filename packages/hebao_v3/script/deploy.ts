@@ -195,6 +195,7 @@ async function deployAll() {
   }
 }
 
+// eslint-disable-next-line
 async function testExecuteTxWithEth (): Promise<void> {
   const {
     entrypoint,
@@ -270,6 +271,7 @@ async function testExecuteTxWithEth (): Promise<void> {
   )
 }
 
+// eslint-disable-next-line
 async function testExecuteTxWithUSDCPaymaster (): Promise<void> {
   const {
     entrypoint,
@@ -294,6 +296,7 @@ async function testExecuteTxWithUSDCPaymaster (): Promise<void> {
   /// ///////////////////////////////////////
   // usdt token transfer test
   const tokenAmount = ethers.utils.parseUnits('100', 6)
+  await (await paymaster.addToken(usdtToken.address)).wait()
   // approve paymaster before using usdt paymaster service
   const approveToken = await usdtToken.populateTransaction.approve(
     paymaster.address,
@@ -334,6 +337,7 @@ async function testExecuteTxWithUSDCPaymaster (): Promise<void> {
   console.log('gas cost of usdt token transfer: ', recipt.gasUsed)
 }
 
+// eslint-disable-next-line
 async function testExecuteTx (): Promise<void> {
   const {
     entrypoint,
@@ -362,11 +366,11 @@ async function testExecuteTx (): Promise<void> {
 }
 
 async function main (): Promise<void> {
-  await testExecuteTx()
   await deployAll()
   // uncomment below to get gascost info of some sample txs on chain
-  await testExecuteTxWithEth()
-  await testExecuteTxWithUSDCPaymaster()
+  // await testExecuteTx()
+  // await testExecuteTxWithEth()
+  // await testExecuteTxWithUSDCPaymaster()
 }
 
 main()
