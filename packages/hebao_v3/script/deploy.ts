@@ -1,5 +1,6 @@
 import { type Contract } from 'ethers'
 import { ethers } from 'hardhat'
+import * as hre from 'hardhat'
 
 import { localUserOpSender } from '../test/helper/AASigner'
 import {
@@ -23,11 +24,17 @@ import {
 async function deployAll() {
   const signers = await ethers.getSigners()
   const deployer = signers[0]
-  const paymasterOwner = new ethers.Wallet(
-    process.env.PAYMASTER_OWNER_PRIVATE_KEY ??
-      (process.env.PRIVATE_KEY as string),
-    ethers.provider
-  )
+  let paymasterOwner
+  if (hre.network.name === 'hardhat') {
+    // as a paymaster owner, enough eth is necessary
+    paymasterOwner = signers[1]
+  } else {
+    paymasterOwner = new ethers.Wallet(
+      process.env.PAYMASTER_OWNER_PRIVATE_KEY ??
+        (process.env.PRIVATE_KEY as string),
+      ethers.provider
+    )
+  }
   const blankOwner = process.env.BLANK_OWNER ?? deployer.address
 
   // create2 factory

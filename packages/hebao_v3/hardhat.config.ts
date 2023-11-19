@@ -11,9 +11,6 @@ const privateKey = process.env.PRIVATE_KEY as string
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   networks: {
-    hardhat: {
-      accounts: [{ privateKey, balance: '10000000000000000000000' }]
-    },
     ethereum: {
       chainId: 1,
       url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03',
