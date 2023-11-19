@@ -170,7 +170,13 @@ async function deployAll() {
   )
 
   // deploy mock usdt token for test.
-  const usdtToken = await deploySingle(create2, 'USDT')
+  const usdtToken = await deploySingle(
+    create2,
+    'USDT',
+    undefined,
+    undefined,
+    'contracts/test/tokens/USDT.sol:USDT'
+  )
   return {
     entrypoint: EntryPoint__factory.connect(
       entrypoint.address,

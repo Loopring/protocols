@@ -203,7 +203,7 @@ export async function deploySingle(
   contractName: string,
   args?: any[],
   libs?: Map<string, any>,
-  print = false
+  verifiedContract?: string
 ): Promise<Contract> {
   // use same salt for all deployments:
   const salt = ethers.utils.formatBytes32String('0x5')
@@ -253,6 +253,7 @@ export async function deploySingle(
     hre.network.name === 'ethereum'
   ) {
     await hre.run('verify:verify', {
+      contract: verifiedContract,
       address: deployedAddress,
       constructorArguments: args,
       libraries
