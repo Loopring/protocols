@@ -1,12 +1,12 @@
-import { BytesLike } from '@ethersproject/bytes'
+import { type BytesLike } from '@ethersproject/bytes'
 import { expect } from 'chai'
 import {
   BigNumber,
-  BigNumberish,
-  Contract,
-  ContractReceipt,
-  Signer,
-  Wallet
+  type BigNumberish,
+  type Contract,
+  type ContractReceipt,
+  type Signer,
+  type Wallet
 } from 'ethers'
 import {
   arrayify,
@@ -17,19 +17,19 @@ import {
 import { ethers } from 'hardhat'
 
 import {
-  EntryPoint,
+  type EntryPoint,
   EntryPoint__factory,
-  IEntryPoint,
-  IERC20,
-  SimpleAccount,
+  type IEntryPoint,
+  type IERC20,
+  type SimpleAccount,
   SimpleAccount__factory,
-  SimpleAccountFactory,
+  type SimpleAccountFactory,
   SimpleAccountFactory__factory,
-  TestAggregatedAccountFactory
+  type TestAggregatedAccountFactory
 } from '../../typechain-types'
 import { Create2Factory } from '../helper/Create2Factory'
 
-import { UserOperation } from './UserOperation'
+import { type UserOperation } from './UserOperation'
 import { debugTransaction } from './debugTx'
 
 export const AddressZero = ethers.constants.AddressZero
@@ -106,7 +106,7 @@ export async function calcGasUsage (
   entryPoint: EntryPoint,
   beneficiaryAddress?: string
 ): Promise<{ actualGasCost: BigNumberish }> {
-  const actualGas = await rcpt.gasUsed
+  const actualGas = rcpt.gasUsed
   const logs = await entryPoint.queryFilter(
     entryPoint.filters.UserOperationEvent(),
     rcpt.blockHash
@@ -177,7 +177,7 @@ export async function getAccountAddress (
   return await factory.getAddress(owner, salt)
 }
 
-const panicCodes: { [key: number]: string } = {
+const panicCodes: Record<number, string> = {
   // from https://docs.soliditylang.org/en/v0.8.0/control-structures.html
   0x01: 'assert(false)',
   0x11: 'arithmetic overflow/underflow',
@@ -269,7 +269,7 @@ let currentNode = ''
 // basic geth support
 // - by default, has a single account. our code needs more.
 export async function checkForGeth (): Promise<void> {
-  // @ts-ignore
+  // @ts-expect-error nothing
   const provider = ethers.provider._hardhatProvider
 
   currentNode = await provider.request({
@@ -301,7 +301,7 @@ export async function checkForGeth (): Promise<void> {
 // { '0': "a", '1': 20, first: "a", second: 20 }
 // becomes:
 // { first: "a", second: "20" }
-export function objdump (obj: { [key: string]: any }): any {
+export function objdump (obj: Record<string, any>): any {
   return Object.keys(obj)
     .filter((key) => key.match(/^[\d_]/) == null)
     .reduce(

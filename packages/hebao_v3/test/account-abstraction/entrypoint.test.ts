@@ -1,9 +1,9 @@
 import './aa.init'
-import { BytesLike } from '@ethersproject/bytes'
+import { type BytesLike } from '@ethersproject/bytes'
 import { expect } from 'chai'
 import { toChecksumAddress } from 'ethereumjs-util'
-import { BigNumber, Event, Wallet } from 'ethers'
-import { PopulatedTransaction } from 'ethers/lib/ethers'
+import { BigNumber, type Event, type Wallet } from 'ethers'
+import { type PopulatedTransaction } from 'ethers/lib/ethers'
 import {
   arrayify,
   defaultAbiCoder,
@@ -14,23 +14,23 @@ import {
 import { ethers } from 'hardhat'
 
 import {
-  EntryPoint,
+  type EntryPoint,
   MaliciousAccount__factory,
-  SimpleAccount,
-  SimpleAccountFactory,
-  TestAggregatedAccount,
+  type SimpleAccount,
+  type SimpleAccountFactory,
+  type TestAggregatedAccount,
   TestAggregatedAccount__factory,
   TestAggregatedAccountFactory__factory,
-  TestCounter,
+  type TestCounter,
   TestCounter__factory,
-  TestExpirePaymaster,
+  type TestExpirePaymaster,
   TestExpirePaymaster__factory,
-  TestExpiryAccount,
+  type TestExpiryAccount,
   TestExpiryAccount__factory,
-  TestPaymasterAcceptAll,
+  type TestPaymasterAcceptAll,
   TestPaymasterAcceptAll__factory,
   TestRevertAccount__factory,
-  TestSignatureAggregator,
+  type TestSignatureAggregator,
   TestSignatureAggregator__factory,
   TestWarmColdAccount__factory
 } from '../../typechain-types'
@@ -40,7 +40,7 @@ import {
   fillAndSign,
   getUserOpHash
 } from './UserOp'
-import { UserOperation } from './UserOperation'
+import { type UserOperation } from './UserOperation'
 import { debugTransaction } from './debugTx'
 import {
   AddressZero,
@@ -1390,7 +1390,7 @@ describe('EntryPoint', function () {
           entryPoint
         )
 
-        await expect(
+        expect(
           await ethers.provider.getCode(preAddr).then((x) => x.length)
         ).to.equal(2, 'account exists before creation')
         const ret = await entryPoint.handleOps(

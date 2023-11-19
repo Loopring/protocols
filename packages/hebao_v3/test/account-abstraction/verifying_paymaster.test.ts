@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Wallet } from 'ethers'
+import { type Wallet } from 'ethers'
 import {
   arrayify,
   defaultAbiCoder,
@@ -9,14 +9,14 @@ import {
 import { ethers } from 'hardhat'
 
 import {
-  EntryPoint,
-  SimpleAccount,
-  VerifyingPaymaster,
+  type EntryPoint,
+  type SimpleAccount,
+  type VerifyingPaymaster,
   VerifyingPaymaster__factory
 } from '../../typechain-types'
 
 import { fillAndSign } from './UserOp'
-import { UserOperation } from './UserOperation'
+import { type UserOperation } from './UserOperation'
 import {
   createAccount,
   createAccountOwner,

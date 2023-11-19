@@ -48,7 +48,7 @@ async function main (): Promise<void> {
       })
     ).wait()
   }
-  const smartWallet = await SmartWalletV3__factory.connect(
+  const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
     smartWalletOwner
   )

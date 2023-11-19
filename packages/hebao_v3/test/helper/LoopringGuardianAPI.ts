@@ -1,4 +1,9 @@
-import { BigNumberish, BytesLike, utils, Wallet } from 'ethers'
+import {
+  type BigNumberish,
+  type BytesLike,
+  utils,
+  type Wallet
+} from 'ethers'
 
 export interface GuardianParams {
   guardians: Wallet[]

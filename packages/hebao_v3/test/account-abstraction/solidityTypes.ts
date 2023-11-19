@@ -1,6 +1,6 @@
 // define the same export types as used by export typechain/ethers
-import { BytesLike } from '@ethersproject/bytes'
-import { BigNumberish } from 'ethers'
+import { type BytesLike } from '@ethersproject/bytes'
+import { type BigNumberish } from 'ethers'
 
 export type address = string
 export type uint256 = BigNumberish

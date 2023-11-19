@@ -1,6 +1,6 @@
 import './aa.init'
 import { expect } from 'chai'
-import { Signer } from 'ethers'
+import { type Signer } from 'ethers'
 import {
   defaultAbiCoder,
   hexConcat,
@@ -11,17 +11,17 @@ import { ethers } from 'hardhat'
 
 import {
   EIP4337Fallback__factory,
-  EIP4337Manager,
+  type EIP4337Manager,
   EIP4337Manager__factory,
-  EntryPoint,
+  type EntryPoint,
   EntryPoint__factory,
-  GnosisSafe,
+  type GnosisSafe,
   GnosisSafe__factory,
-  GnosisSafeAccountFactory,
+  type GnosisSafeAccountFactory,
   GnosisSafeAccountFactory__factory,
-  GnosisSafeProxy,
+  type GnosisSafeProxy,
   GnosisSafeProxyFactory__factory,
-  TestCounter,
+  type TestCounter,
   TestCounter__factory
 } from '../../typechain-types'
 

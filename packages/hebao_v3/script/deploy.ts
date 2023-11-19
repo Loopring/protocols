@@ -1,4 +1,4 @@
-import { Contract } from 'ethers'
+import { type Contract } from 'ethers'
 import { ethers } from 'hardhat'
 
 import { localUserOpSender } from '../test/helper/AASigner'
@@ -8,12 +8,12 @@ import {
   createSmartWallet,
   simulationResultCatch,
   sendTx,
-  PaymasterOption,
+  type PaymasterOption,
   generateSignedUserOp
 } from '../test/helper/utils'
 import {
   EntryPoint__factory,
-  LoopringCreate2Deployer,
+  type LoopringCreate2Deployer,
   LoopringPaymaster__factory,
   SmartWalletV3__factory,
   WalletFactory__factory
@@ -158,10 +158,7 @@ async function deployAll() {
     await createSmartWallet(
       smartWalletOwner,
       guardians,
-      await WalletFactory__factory.connect(
-        walletFactory.address,
-        deployer
-      ),
+      WalletFactory__factory.connect(walletFactory.address, deployer),
       salt
     )
     console.log('wallet created at: ', smartWalletAddr)
@@ -196,7 +193,7 @@ async function deployAll() {
 }
 
 // eslint-disable-next-line
-async function testExecuteTxWithEth (): Promise<void> {
+async function testExecuteTxWithEth(): Promise<void> {
   const {
     entrypoint,
     smartWallet,
@@ -272,7 +269,7 @@ async function testExecuteTxWithEth (): Promise<void> {
 }
 
 // eslint-disable-next-line
-async function testExecuteTxWithUSDCPaymaster (): Promise<void> {
+async function testExecuteTxWithUSDCPaymaster(): Promise<void> {
   const {
     entrypoint,
     smartWallet,
@@ -338,7 +335,7 @@ async function testExecuteTxWithUSDCPaymaster (): Promise<void> {
 }
 
 // eslint-disable-next-line
-async function testExecuteTx (): Promise<void> {
+async function testExecuteTx(): Promise<void> {
   const {
     entrypoint,
     smartWallet,

@@ -1,11 +1,11 @@
-import { ContractReceipt } from '@ethersproject/contracts'
+import { type ContractReceipt } from '@ethersproject/contracts'
 import {
   BigNumber,
-  BigNumberish,
+  type BigNumberish,
   constants,
   Contract,
-  Signer,
-  Wallet
+  type Signer,
+  type Wallet
 } from 'ethers'
 import {
   arrayify,
@@ -18,13 +18,16 @@ import { ethers } from 'hardhat'
 import _ from 'lodash'
 
 import {
-  EntryPoint,
+  type EntryPoint,
   EntryPoint__factory,
-  SmartWallet
+  type SmartWallet
 } from '../../typechain-types'
 
-import { ApprovalOption, signTypedData } from './LoopringGuardianAPI'
-import * as typ from './solidityTypes'
+import {
+  type ApprovalOption,
+  signTypedData
+} from './LoopringGuardianAPI'
+import type * as typ from './solidityTypes'
 
 export const HashZero = ethers.constants.HashZero
 

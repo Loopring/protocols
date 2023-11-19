@@ -11,7 +11,7 @@ async function main (): Promise<void> {
     ethers.provider
   )
   const smartWalletAddr = '0x44e7527ab6cFeB896e53e1F45B6177E81FC985a8'
-  const smartWallet = await SmartWalletV3__factory.connect(
+  const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
     smartWalletOwner
   )

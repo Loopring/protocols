@@ -1,4 +1,4 @@
-import { BytesLike, hexValue } from '@ethersproject/bytes'
+import { type BytesLike, hexValue } from '@ethersproject/bytes'
 import { hashToPoint } from '@thehubbleproject/bls/dist/mcl'
 import {
   aggregate,
@@ -7,7 +7,7 @@ import {
 } from '@thehubbleproject/bls/dist/signer'
 import { expect } from 'chai'
 import { keccak256 } from 'ethereumjs-util'
-import { BigNumber, Signer } from 'ethers'
+import { type BigNumber, type Signer } from 'ethers'
 import {
   arrayify,
   defaultAbiCoder,
@@ -16,15 +16,15 @@ import {
 import { ethers } from 'hardhat'
 
 import {
-  BLSAccount,
+  type BLSAccount,
   BLSAccount__factory,
-  BLSAccountFactory,
+  type BLSAccountFactory,
   BLSAccountFactory__factory,
   BLSOpen__factory,
-  BLSSignatureAggregator,
+  type BLSSignatureAggregator,
   BLSSignatureAggregator__factory,
   BrokenBLSAccountFactory__factory,
-  EntryPoint
+  type EntryPoint
 } from '../../typechain-types'
 
 import { DefaultsForUserOp, fillUserOp } from './UserOp'
@@ -331,8 +331,8 @@ describe('bls account', function () {
       ) // TODO: returns uint256[4], verify needs bytes32[4]
       const requestHash1 = await blsAgg.getUserOpHash(userOp)
 
-      // @ts-ignore
       expect(
+        // @ts-expect-error nothing
         verifier.verify(signature, pubkey, requestHash1)
       ).to.equal(true)
     })

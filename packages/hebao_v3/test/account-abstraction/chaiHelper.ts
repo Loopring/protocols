@@ -10,7 +10,7 @@
 import chai from 'chai'
 
 export function objValues (
-  obj: { [key: string]: any },
+  obj: Record<string, any>,
   mapFunc: (val: any, key?: string) => any
 ): any {
   return Object.keys(obj)
@@ -54,7 +54,6 @@ export function cleanValue (val: any): any {
 // use cleanValue for comparing. MUCH easier, since numbers compare well with bignumbers, etc
 
 chai.Assertion.overwriteMethod('eql', (original) => {
-  // @ts-ignore
   return function (this: any, expected: any) {
     const _actual = cleanValue(this._obj)
     const _expected = cleanValue(expected)

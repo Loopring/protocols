@@ -60,15 +60,7 @@ module.exports = {
       rules: {
         '@typescript-eslint/prefer-ts-expect-error': 'off',
         // allow using '${val}' with numbers, bool and null types
-        '@typescript-eslint/restrict-template-expressions': [
-          'error',
-          {
-            allowNumber: true,
-            allowBoolean: true,
-            allowNullish: true,
-            allowNullable: true
-          }
-        ]
+        '@typescript-eslint/restrict-template-expressions': ['error']
       }
     }
   ]

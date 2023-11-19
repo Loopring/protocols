@@ -6,7 +6,7 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 
 import { fixture } from './helper/fixture'
-import { PaymasterOption, sendTx } from './helper/utils'
+import { type PaymasterOption, sendTx } from './helper/utils'
 
 describe('verifingPaymaster test', () => {
   describe('admin operation success', () => {
@@ -50,7 +50,7 @@ describe('verifingPaymaster test', () => {
         await paymaster.hasRole(paymaster.SIGNER(), owner.address)
       ).to.be.true
       // add other to be admin
-      const other = await ethers.Wallet.createRandom()
+      const other = ethers.Wallet.createRandom()
       expect(
         await paymaster.hasRole(paymaster.SIGNER(), other.address)
       ).to.be.false

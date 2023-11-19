@@ -1,7 +1,12 @@
 // from: https://github.com/Arachnid/deterministic-deployment-proxy
-import { TransactionRequest } from '@ethersproject/abstract-provider'
-import { Provider } from '@ethersproject/providers'
-import { BigNumber, BigNumberish, ethers, Signer } from 'ethers'
+import { type TransactionRequest } from '@ethersproject/abstract-provider'
+import { type Provider } from '@ethersproject/providers'
+import {
+  BigNumber,
+  type BigNumberish,
+  type ethers,
+  type Signer
+} from 'ethers'
 import {
   arrayify,
   hexConcat,

@@ -20,7 +20,7 @@ describe('recover test', () => {
       guardians
     } = await loadFixture(fixture)
 
-    const newOwner = await ethers.Wallet.createRandom()
+    const newOwner = ethers.Wallet.createRandom()
     const newGuardians: string[] = []
     const callData = smartWallet.interface.encodeFunctionData(
       'recover',
@@ -135,7 +135,7 @@ describe('recover test', () => {
 
   it('will fail when recover from owner', async () => {
     const { smartWallet } = await loadFixture(fixture)
-    const newOwner = await ethers.Wallet.createRandom()
+    const newOwner = ethers.Wallet.createRandom()
     await expect(
       smartWallet.recover(newOwner.address, [])
     ).to.rejectedWith('account: not EntryPoint')
@@ -154,7 +154,7 @@ describe('recover test', () => {
     // lock wallet first
     await smartWallet.lock()
 
-    const newOwner = await ethers.Wallet.createRandom()
+    const newOwner = ethers.Wallet.createRandom()
     const newGuardians: string[] = []
     const callData = smartWallet.interface.encodeFunctionData(
       'recover',

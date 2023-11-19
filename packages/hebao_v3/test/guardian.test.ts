@@ -6,14 +6,14 @@ import {
 import { increase } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time'
 import { expect, assert } from 'chai'
 import { ethers } from 'hardhat'
-import { Wallet } from 'ethers'
+import { type Wallet } from 'ethers'
 
 import {
   GuardianLib__factory,
   SmartWalletV3__factory,
-  WalletFactory,
-  EntryPoint,
-  SmartWalletV3
+  type WalletFactory,
+  type EntryPoint,
+  type SmartWalletV3
 } from '../typechain-types'
 
 import { fillAndMultiSign } from './helper/AASigner'
@@ -357,8 +357,9 @@ describe('guardian test', () => {
           smartWalletOwner: Wallet
           smartWallet: SmartWalletV3
         }> {
-        const smartWalletOwner =
-          await ethers.Wallet.createRandom().connect(ethers.provider)
+        const smartWalletOwner = ethers.Wallet.createRandom().connect(
+          ethers.provider
+        )
         const smartWallet = await createRandomWallet(
           smartWalletOwner,
           guardians,
@@ -397,8 +398,9 @@ describe('guardian test', () => {
         walletFactory,
         entrypoint
       )
-      const guardianToAdd =
-        await ethers.Wallet.createRandom().connect(ethers.provider)
+      const guardianToAdd = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
       await (
         await smartWallet.addGuardian(smartGuardian0.address)
       ).wait()

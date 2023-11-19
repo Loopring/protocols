@@ -1,4 +1,4 @@
-import { Provider } from '@ethersproject/providers'
+import { type Provider } from '@ethersproject/providers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 

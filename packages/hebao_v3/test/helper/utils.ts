@@ -1,20 +1,23 @@
-import { Event, ContractReceipt } from '@ethersproject/contracts'
-import { BytesLike } from '@ethersproject/bytes'
 import {
-  Deferrable,
+  type Event,
+  type ContractReceipt
+} from '@ethersproject/contracts'
+import { type BytesLike } from '@ethersproject/bytes'
+import {
+  type Deferrable,
   resolveProperties
 } from '@ethersproject/properties'
 import {
-  BaseProvider,
-  TransactionReceipt,
-  TransactionRequest
+  type BaseProvider,
+  type TransactionReceipt,
+  type TransactionRequest
 } from '@ethersproject/providers'
 import {
-  Contract,
+  type Contract,
   BigNumber,
-  BigNumberish,
-  Signer,
-  Wallet
+  type BigNumberish,
+  type Signer,
+  type Wallet
 } from 'ethers'
 import {
   arrayify,
@@ -26,16 +29,20 @@ import { ethers } from 'hardhat'
 import * as hre from 'hardhat'
 
 import {
-  EntryPoint,
-  LoopringCreate2Deployer,
-  LoopringPaymaster,
-  SmartWalletV3,
-  WalletFactory
+  type EntryPoint,
+  type LoopringCreate2Deployer,
+  type LoopringPaymaster,
+  type SmartWalletV3,
+  type WalletFactory
 } from '../../typechain-types'
 
-import { fillAndSign, SendUserOp, UserOperation } from './AASigner'
+import {
+  fillAndSign,
+  type SendUserOp,
+  type UserOperation
+} from './AASigner'
 import { signCreateWallet } from './signatureUtils'
-import * as typ from './solidityTypes'
+import type * as typ from './solidityTypes'
 
 export interface WalletConfig {
   accountOwner: typ.address
@@ -247,7 +254,7 @@ export async function deploySingle (
   ) {
     await hre.run('verify:verify', {
       address: deployedAddress,
-      cnstructorArguments: args,
+      constructorArguments: args,
       libraries
     })
   }

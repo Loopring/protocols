@@ -5,23 +5,23 @@ import {
 import { expect } from 'chai'
 import {
   BigNumber,
-  BigNumberish,
-  PopulatedTransaction,
-  Wallet
+  type BigNumberish,
+  type PopulatedTransaction,
+  type Wallet
 } from 'ethers'
 import { ethers } from 'hardhat'
 
 import {
-  EntryPoint,
-  LoopringCreate2Deployer,
-  SmartWalletV3,
+  type EntryPoint,
+  type LoopringCreate2Deployer,
+  type SmartWalletV3,
   SmartWalletV3__factory
 } from '../typechain-types'
 
 import {
   fillAndMultiSign,
   fillAndSign,
-  UserOperation
+  type UserOperation
 } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'

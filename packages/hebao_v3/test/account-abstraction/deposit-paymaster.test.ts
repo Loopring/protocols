@@ -4,14 +4,14 @@ import { hexConcat, hexZeroPad, parseEther } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
 import {
-  DepositPaymaster,
+  type DepositPaymaster,
   DepositPaymaster__factory,
-  EntryPoint,
-  SimpleAccount,
-  TestCounter,
+  type EntryPoint,
+  type SimpleAccount,
+  type TestCounter,
   TestCounter__factory,
   TestOracle__factory,
-  TestToken,
+  type TestToken,
   TestToken__factory
 } from '../../typechain-types'
 

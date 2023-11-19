@@ -1,20 +1,20 @@
-import { BytesLike } from '@ethersproject/bytes'
+import { type BytesLike } from '@ethersproject/bytes'
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
-import { BigNumber, BigNumberish, Wallet } from 'ethers'
+import { BigNumber, type BigNumberish, type Wallet } from 'ethers'
 import { arrayify } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 import _ from 'lodash'
 
-import { EntryPoint } from '../typechain-types'
+import { type EntryPoint } from '../typechain-types'
 
 import {
   callDataCost,
   getUserOpHash,
   packUserOp,
-  UserOperation
+  type UserOperation
 } from './helper/AASigner'
-import { Approval } from './helper/LoopringGuardianAPI'
+import { type Approval } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
 import { simulationResultCatch } from './helper/utils'
 

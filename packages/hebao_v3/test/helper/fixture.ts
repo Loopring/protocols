@@ -1,5 +1,5 @@
 import * as helpers from '@nomicfoundation/hardhat-network-helpers'
-import { Wallet } from 'ethers'
+import { type Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 
 import {
@@ -25,7 +25,7 @@ export async function fixture() {
   const deployer = signers[0]
   const paymasterOwner = signers[1]
   const somebody = signers[2]
-  const blankOwner = await ethers.Wallet.createRandom().connect(
+  const blankOwner = ethers.Wallet.createRandom().connect(
     ethers.provider
   )
   await helpers.setBalance(
@@ -105,7 +105,7 @@ export async function fixture() {
   await create2.transact(transferImplStorageOwnership.data!)
 
   // create demo wallet
-  const smartWalletOwner = await ethers.Wallet.createRandom().connect(
+  const smartWalletOwner = ethers.Wallet.createRandom().connect(
     ethers.provider
   )
   // prepare eth for walletowner
@@ -118,7 +118,7 @@ export async function fixture() {
   const guardians: Wallet[] = []
   for (let i = 0; i < 2; i++) {
     guardians.push(
-      await ethers.Wallet.createRandom().connect(ethers.provider)
+      ethers.Wallet.createRandom().connect(ethers.provider)
     )
   }
   guardians.sort((a, b) =>

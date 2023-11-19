@@ -5,7 +5,7 @@ import { hexlify } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
 import {
-  TestHelpers,
+  type TestHelpers,
   TestHelpers__factory
 } from '../../typechain-types'
 

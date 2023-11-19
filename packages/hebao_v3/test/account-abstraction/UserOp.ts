@@ -3,7 +3,7 @@ import {
   keccak256 as keccak256_buffer,
   toRpcSig
 } from 'ethereumjs-util'
-import { BigNumber, Contract, Signer, Wallet } from 'ethers'
+import { BigNumber, Contract, type Signer, type Wallet } from 'ethers'
 import {
   arrayify,
   defaultAbiCoder,
@@ -11,10 +11,10 @@ import {
   keccak256
 } from 'ethers/lib/utils'
 
-import { EntryPoint } from '../../typechain-types'
+import { type EntryPoint } from '../../typechain-types'
 import { Create2Factory } from '../helper/Create2Factory'
 
-import { UserOperation } from './UserOperation'
+import { type UserOperation } from './UserOperation'
 import { AddressZero, callDataCost, rethrow } from './testutils'
 
 export function packUserOp (

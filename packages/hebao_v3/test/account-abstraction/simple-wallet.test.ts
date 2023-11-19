@@ -1,14 +1,14 @@
 import { expect } from 'chai'
-import { Wallet } from 'ethers'
+import { type Wallet } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
 import {
   ERC1967Proxy__factory,
-  SimpleAccount,
+  type SimpleAccount,
   SimpleAccount__factory,
   SimpleAccountFactory__factory,
-  TestUtil,
+  type TestUtil,
   TestUtil__factory
 } from '../../typechain-types'
 
@@ -18,7 +18,7 @@ import {
   packUserOp,
   signUserOp
 } from './UserOp'
-import { UserOperation } from './UserOperation'
+import { type UserOperation } from './UserOperation'
 import {
   createAccount,
   createAccountOwner,
@@ -73,7 +73,7 @@ describe('SimpleAccount', function () {
   })
 
   it('should pack in js the same as solidity', async () => {
-    const op = await fillUserOpDefaults({ sender: accounts[0] })
+    const op = fillUserOpDefaults({ sender: accounts[0] })
     const packed = packUserOp(op)
     expect(await testUtil.packUserOp(op)).to.equal(packed)
   })
@@ -129,7 +129,7 @@ describe('SimpleAccount', function () {
         chainId
       )
 
-      userOpHash = await getUserOpHash(userOp, entryPointEoa, chainId)
+      userOpHash = getUserOpHash(userOp, entryPointEoa, chainId)
 
       expectedPay =
         actualGasPrice * (callGasLimit + verificationGasLimit)

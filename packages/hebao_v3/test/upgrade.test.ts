@@ -8,7 +8,7 @@ import { ethers } from 'hardhat'
 
 import {
   DummySmartWallet__factory,
-  DummySmartWallet
+  type DummySmartWallet
 } from '../typechain-types'
 
 import { fillAndMultiSign } from './helper/AASigner'
@@ -112,9 +112,8 @@ describe('wallet', () => {
         blockTime + 3600 * 24
       )
 
-      const storageWithAnotherSigner = await implStorage.connect(
-        otherSigner
-      )
+      const storageWithAnotherSigner =
+        implStorage.connect(otherSigner)
       const signer2 =
         await storageWithAnotherSigner.signer.getAddress()
       expect(owner).not.to.equal(signer2)

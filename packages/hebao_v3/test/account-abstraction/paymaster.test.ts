@@ -1,21 +1,21 @@
 import { hexValue } from '@ethersproject/bytes'
 import { expect } from 'chai'
-import { Wallet } from 'ethers'
+import { type Wallet } from 'ethers'
 import { hexConcat, parseEther } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 
 import {
-  EntryPoint,
-  SimpleAccount,
-  SimpleAccountFactory,
+  type EntryPoint,
+  type SimpleAccount,
+  type SimpleAccountFactory,
   SimpleAccountFactory__factory,
   TestCounter__factory,
-  TokenPaymaster,
+  type TokenPaymaster,
   TokenPaymaster__factory
 } from '../../typechain-types'
 
 import { fillAndSign } from './UserOp'
-import { UserOperation } from './UserOperation'
+import { type UserOperation } from './UserOperation'
 import {
   AddressZero,
   calcGasUsage,

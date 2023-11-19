@@ -73,10 +73,10 @@ describe('walletFactory', () => {
   describe('operator management', () => {
     it('only owner can add operators', async () => {
       const { walletFactory } = await loadFixture(fixture)
-      const account2 = await ethers.Wallet.createRandom().connect(
+      const account2 = ethers.Wallet.createRandom().connect(
         ethers.provider
       )
-      const account3 = await ethers.Wallet.createRandom().connect(
+      const account3 = ethers.Wallet.createRandom().connect(
         ethers.provider
       )
       expect(await walletFactory.isOperator(account2.address)).to.be

@@ -1,4 +1,4 @@
-import { BigNumberish, Wallet } from 'ethers'
+import { type BigNumberish, type Wallet } from 'ethers'
 
 export async function signCreateWallet (
   moduleAddress: string,
