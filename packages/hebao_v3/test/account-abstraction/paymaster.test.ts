@@ -41,7 +41,7 @@ describe('EntryPoint with paymaster', function () {
   const beneficiaryAddress = '0x'.padEnd(42, '1')
   let factory: SimpleAccountFactory
 
-  function getAccountDeployer (
+  function getAccountDeployer(
     entryPoint: string,
     accountOwner: string,
     _salt = 0

@@ -362,7 +362,7 @@ async function testExecuteTx(): Promise<void> {
   await sendUserOp(signedUserOp)
 }
 
-async function main (): Promise<void> {
+async function main(): Promise<void> {
   await deployAll()
   // uncomment below to get gascost info of some sample txs on chain
   // await testExecuteTx()

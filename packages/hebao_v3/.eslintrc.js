@@ -12,7 +12,7 @@ module.exports = {
     contract: false,
     web3: false
   },
-  extends: ['standard-with-typescript'],
+  extends: ['standard-with-typescript', 'prettier'],
   // This is needed to add configuration to rules with type information
   parser: '@typescript-eslint/parser',
   parserOptions: {

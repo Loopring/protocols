@@ -51,7 +51,7 @@ export interface WalletConfig {
   inheritor: typ.address
 }
 
-function getPaymasterHash (userOp: UserOperation): string {
+function getPaymasterHash(userOp: UserOperation): string {
   return keccak256(
     defaultAbiCoder.encode(
       [
@@ -80,7 +80,7 @@ function getPaymasterHash (userOp: UserOperation): string {
   )
 }
 
-export async function getPaymasterData (
+export async function getPaymasterData(
   userOp: UserOperation,
   payMasterAddress: string,
   paymasterOwner: Signer,
@@ -101,7 +101,7 @@ export async function getPaymasterData (
   return enc
 }
 
-export async function getPaymasterAndData (
+export async function getPaymasterAndData(
   payMasterAddress: string,
   paymasterOwner: Signer,
   hash: string,
@@ -121,14 +121,14 @@ export async function getPaymasterAndData (
  * process exception of ValidationResult
  * usage: entryPoint.simulationResult(..).catch(simulationResultCatch)
  */
-export function simulationResultCatch (e: any): any {
+export function simulationResultCatch(e: any): any {
   if (e.errorName !== 'ValidationResult') {
     throw e
   }
   return e.errorArgs
 }
 
-export async function evInfo (
+export async function evInfo(
   entryPoint: EntryPoint,
   rcpt: TransactionReceipt
 ): Promise<
@@ -138,7 +138,7 @@ export async function evInfo (
     actualGasCost: BigNumber
     actualGasUsed: BigNumber
   }>
-  > {
+> {
   // TODO: checking only latest block...
   const block = rcpt.blockNumber
   const ev = await entryPoint.queryFilter(
@@ -157,7 +157,7 @@ export async function evInfo (
   })
 }
 
-export async function evRevertInfo (
+export async function evRevertInfo(
   entryPoint: EntryPoint,
   rcpt: TransactionReceipt
 ): Promise<
@@ -166,7 +166,7 @@ export async function evRevertInfo (
     gasUsed: BigNumber
     revertReason: string
   }>
-  > {
+> {
   // TODO: checking only latest block...
   const block = rcpt.blockNumber
   const ev = await entryPoint.queryFilter(
@@ -184,7 +184,7 @@ export async function evRevertInfo (
   })
 }
 
-export function computeRequiredPreFund (
+export function computeRequiredPreFund(
   userOp: UserOperation,
   usePaymaster = false
 ): BigNumber {
@@ -198,7 +198,7 @@ export function computeRequiredPreFund (
   return requiredPrefund
 }
 
-export async function deploySingle (
+export async function deploySingle(
   deployFactory: Contract,
   contractName: string,
   args?: any[],
@@ -262,7 +262,7 @@ export async function deploySingle (
   return contract.attach(deployedAddress)
 }
 
-export async function deployWalletImpl (
+export async function deployWalletImpl(
   deployFactory: LoopringCreate2Deployer,
   entryPointAddr: string,
   blankOwner: string,
@@ -315,7 +315,7 @@ export async function deployWalletImpl (
   return smartWallet
 }
 
-export async function createSmartWallet (
+export async function createSmartWallet(
   owner: Wallet,
   guardians: string[],
   walletFactory: WalletFactory,
@@ -361,7 +361,7 @@ export interface PaymasterOption {
   validUntil: BigNumberish
 }
 
-export async function generateSignedUserOp (
+export async function generateSignedUserOp(
   txs: Array<Deferrable<TransactionRequest>>,
   smartWallet: SmartWalletV3,
   smartWalletOwner: Signer,
@@ -447,7 +447,7 @@ export async function generateSignedUserOp (
   return signedUserOp
 }
 
-export async function sendTx (
+export async function sendTx(
   txs: Array<Deferrable<TransactionRequest>>,
   smartWallet: SmartWalletV3,
   smartWalletOwner: Signer,
@@ -475,7 +475,7 @@ export async function sendTx (
   return recipt
 }
 
-export async function createBatchTransactions (
+export async function createBatchTransactions(
   transactions: Array<Deferrable<TransactionRequest>>,
   ethersProvider: BaseProvider,
   wallet: SmartWalletV3,
@@ -542,7 +542,7 @@ export async function createBatchTransactions (
   }
 }
 
-async function getEthBalance (
+async function getEthBalance(
   smartWallet: SmartWalletV3
 ): Promise<BigNumber> {
   const ethBalance = await ethers.provider.getBalance(
@@ -561,14 +561,14 @@ export function getErrorMessage(revertReason: string) {
   )[0]
 }
 
-export async function getBlockTimestamp (
+export async function getBlockTimestamp(
   blockNumber: number
 ): Promise<number> {
   const block = await ethers.provider.getBlock(blockNumber)
   return block.timestamp
 }
 
-export async function getCurrentQuota (
+export async function getCurrentQuota(
   quotaInfo: any,
   blockNumber: number
 ): Promise<number> {
@@ -580,7 +580,7 @@ export async function getCurrentQuota (
     : quotaInfo.currentQuota
 }
 
-export async function getFirstEvent (
+export async function getFirstEvent(
   contract: Contract,
   fromBlock: number,
   eventName: string

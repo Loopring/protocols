@@ -17,7 +17,7 @@ import { Create2Factory } from '../helper/Create2Factory'
 import { type UserOperation } from './UserOperation'
 import { AddressZero, callDataCost, rethrow } from './testutils'
 
-export function packUserOp (
+export function packUserOp(
   op: UserOperation,
   forSignature = true
 ): string {
@@ -81,7 +81,7 @@ export function packUserOp (
   }
 }
 
-export function packUserOp1 (op: UserOperation): string {
+export function packUserOp1(op: UserOperation): string {
   return defaultAbiCoder.encode(
     [
       'address', // sender
@@ -110,7 +110,7 @@ export function packUserOp1 (op: UserOperation): string {
   )
 }
 
-export function getUserOpHash (
+export function getUserOpHash(
   op: UserOperation,
   entryPoint: string,
   chainId: number
@@ -137,7 +137,7 @@ export const DefaultsForUserOp: UserOperation = {
   signature: '0x'
 }
 
-export function signUserOp (
+export function signUserOp(
   op: UserOperation,
   signer: Wallet,
   entryPoint: string,
@@ -162,7 +162,7 @@ export function signUserOp (
   }
 }
 
-export function fillUserOpDefaults (
+export function fillUserOpDefaults(
   op: Partial<UserOperation>,
   defaults = DefaultsForUserOp
 ): UserOperation {
@@ -191,7 +191,7 @@ export function fillUserOpDefaults (
 // sender - only in case of construction: fill sender from initCode.
 // callGasLimit: VERY crude estimation (by estimating call to account, and add rough entryPoint overhead
 // verificationGasLimit: hard-code default at 100k. should add "create2" cost
-export async function fillUserOp (
+export async function fillUserOp(
   op: Partial<UserOperation>,
   entryPoint?: EntryPoint,
   getNonceFunction = 'getNonce'
@@ -285,7 +285,7 @@ export async function fillUserOp (
   return op2
 }
 
-export async function fillAndSign (
+export async function fillAndSign(
   op: Partial<UserOperation>,
   signer: Wallet | Signer,
   entryPoint?: EntryPoint,

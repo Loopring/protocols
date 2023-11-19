@@ -41,7 +41,7 @@ export const FIVE_ETH = parseEther('5')
 export const tostr = (x: any): string =>
   x != null ? x.toString() : 'null'
 
-export function tonumber (x: any): number {
+export function tonumber(x: any): number {
   try {
     return parseFloat(x.toString())
   } catch (e: any) {
@@ -51,7 +51,7 @@ export function tonumber (x: any): number {
 }
 
 // just throw 1eth from account[0] to the given address (or contract instance)
-export async function fund (
+export async function fund(
   contractOrAddress: string | Contract,
   amountEth = '1'
 ): Promise<void> {
@@ -66,12 +66,12 @@ export async function fund (
     .sendTransaction({ to: address, value: parseEther(amountEth) })
 }
 
-export async function getBalance (address: string): Promise<number> {
+export async function getBalance(address: string): Promise<number> {
   const balance = await ethers.provider.getBalance(address)
   return parseInt(balance.toString())
 }
 
-export async function getTokenBalance (
+export async function getTokenBalance(
   token: IERC20,
   address: string
 ): Promise<number> {
@@ -82,7 +82,7 @@ export async function getTokenBalance (
 let counter = 0
 
 // create non-random account, so gas calculations are deterministic
-export function createAccountOwner (): Wallet {
+export function createAccountOwner(): Wallet {
   const privateKey = keccak256(
     Buffer.from(arrayify(BigNumber.from(++counter)))
   )
@@ -90,18 +90,18 @@ export function createAccountOwner (): Wallet {
   // return new ethers.Wallet('0x'.padEnd(66, privkeyBase), ethers.provider);
 }
 
-export function createAddress (): string {
+export function createAddress(): string {
   return createAccountOwner().address
 }
 
-export function callDataCost (data: string): number {
+export function callDataCost(data: string): number {
   return ethers.utils
     .arrayify(data)
     .map((x) => (x === 0 ? 4 : 16))
     .reduce((sum, x) => sum + x)
 }
 
-export async function calcGasUsage (
+export async function calcGasUsage(
   rcpt: ContractReceipt,
   entryPoint: EntryPoint,
   beneficiaryAddress?: string
@@ -138,7 +138,7 @@ export async function calcGasUsage (
 }
 
 // helper function to create the initCode to deploy the account, using our account factory.
-export function getAccountInitCode (
+export function getAccountInitCode(
   owner: string,
   factory: SimpleAccountFactory,
   salt = 0
@@ -152,7 +152,7 @@ export function getAccountInitCode (
   ])
 }
 
-export async function getAggregatedAccountInitCode (
+export async function getAggregatedAccountInitCode(
   entryPoint: string,
   factory: TestAggregatedAccountFactory,
   salt = 0
@@ -169,7 +169,7 @@ export async function getAggregatedAccountInitCode (
 }
 
 // given the parameters as AccountDeployer, return the resulting "counterfactual address" that it would create.
-export async function getAccountAddress (
+export async function getAccountAddress(
   owner: string,
   factory: SimpleAccountFactory,
   salt = 0
@@ -194,7 +194,7 @@ const panicCodes: Record<number, string> = {
 // - stack trace goes back to method (or catch) line, not inner provider
 // - attempt to parse revert data (needed for geth)
 // use with ".catch(rethrow())", so that current source file/line is meaningful.
-export function rethrow (): (e: Error) => void {
+export function rethrow(): (e: Error) => void {
   const callerStack = new Error()
     .stack!.replace(/Error.*\n.*at.*\n/, '')
     .replace(/.*at.* \(internal[\s\S]*/, '')
@@ -224,7 +224,7 @@ export function rethrow (): (e: Error) => void {
   }
 }
 
-export function decodeRevertReason (
+export function decodeRevertReason(
   data: string,
   nullIfNoMatch = true
 ): string | null {
@@ -268,7 +268,7 @@ let currentNode = ''
 
 // basic geth support
 // - by default, has a single account. our code needs more.
-export async function checkForGeth (): Promise<void> {
+export async function checkForGeth(): Promise<void> {
   // @ts-expect-error nothing
   const provider = ethers.provider._hardhatProvider
 
@@ -301,7 +301,7 @@ export async function checkForGeth (): Promise<void> {
 // { '0': "a", '1': 20, first: "a", second: 20 }
 // becomes:
 // { first: "a", second: "20" }
-export function objdump (obj: Record<string, any>): any {
+export function objdump(obj: Record<string, any>): any {
   return Object.keys(obj)
     .filter((key) => key.match(/^[\d_]/) == null)
     .reduce(
@@ -313,7 +313,7 @@ export function objdump (obj: Record<string, any>): any {
     )
 }
 
-export async function checkForBannedOps (
+export async function checkForBannedOps(
   txHash: string,
   checkPaymaster: boolean
 ): Promise<void> {
@@ -369,7 +369,7 @@ export async function checkForBannedOps (
  * process exception of ValidationResult
  * usage: entryPoint.simulationResult(..).catch(simulationResultCatch)
  */
-export function simulationResultCatch (e: any): any {
+export function simulationResultCatch(e: any): any {
   if (e.errorName !== 'ValidationResult') {
     throw e
   }
@@ -380,14 +380,14 @@ export function simulationResultCatch (e: any): any {
  * process exception of ValidationResultWithAggregation
  * usage: entryPoint.simulationResult(..).catch(simulationResultWithAggregation)
  */
-export function simulationResultWithAggregationCatch (e: any): any {
+export function simulationResultWithAggregationCatch(e: any): any {
   if (e.errorName !== 'ValidationResultWithAggregation') {
     throw e
   }
   return e.errorArgs
 }
 
-export async function deployEntryPoint (
+export async function deployEntryPoint(
   provider = ethers.provider
 ): Promise<EntryPoint> {
   const create2factory = new Create2Factory(provider)
@@ -400,13 +400,13 @@ export async function deployEntryPoint (
   return EntryPoint__factory.connect(addr, provider.getSigner())
 }
 
-export async function isDeployed (addr: string): Promise<boolean> {
+export async function isDeployed(addr: string): Promise<boolean> {
   const code = await ethers.provider.getCode(addr)
   return code.length > 2
 }
 
 // internal helper function: create a UserOpsPerAggregator structure, with no aggregator or signature
-export function userOpsWithoutAgg (
+export function userOpsWithoutAgg(
   userOps: UserOperation[]
 ): IEntryPoint.UserOpsPerAggregatorStruct[] {
   return [
@@ -419,16 +419,16 @@ export function userOpsWithoutAgg (
 }
 
 // Deploys an implementation and a proxy pointing to this implementation
-export async function createAccount (
+export async function createAccount(
   ethersSigner: Signer,
   accountOwner: string,
   entryPoint: string,
   _factory?: SimpleAccountFactory
 ): Promise<{
-    proxy: SimpleAccount
-    accountFactory: SimpleAccountFactory
-    implementation: string
-  }> {
+  proxy: SimpleAccount
+  accountFactory: SimpleAccountFactory
+  implementation: string
+}> {
   const accountFactory =
     _factory ??
     (await new SimpleAccountFactory__factory(ethersSigner).deploy(

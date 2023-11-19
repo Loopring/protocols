@@ -3,7 +3,7 @@ import { SmartWalletV3__factory } from '../typechain-types'
 
 import { deployWalletImpl } from '../test/helper/utils'
 
-async function main (): Promise<void> {
+async function main(): Promise<void> {
   const signers = await ethers.getSigners()
   const deployer = signers[0]
   const smartWalletOwner = new ethers.Wallet(

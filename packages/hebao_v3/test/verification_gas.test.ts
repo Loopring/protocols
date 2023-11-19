@@ -19,7 +19,7 @@ import { fixture } from './helper/fixture'
 import { simulationResultCatch } from './helper/utils'
 
 describe('verification gaslimit test', () => {
-  async function generateApprovals (
+  async function generateApprovals(
     smartWalletOrEOASigners: Array<{
       signer: Wallet
       smartWalletAddress?: string
@@ -97,14 +97,14 @@ describe('verification gaslimit test', () => {
     return approval
   }
 
-  async function estimateUserOpGas (
+  async function estimateUserOpGas(
     entryPoint: EntryPoint,
     userOp1: UserOperation
   ): Promise<{
-      preVerificationGas: BigNumber
-      callGasLimit: BigNumber
-      verificationGasLimit: BigNumber
-    }> {
+    preVerificationGas: BigNumber
+    callGasLimit: BigNumber
+    verificationGasLimit: BigNumber
+  }> {
     const userOp = {
       ...userOp1,
       // default values for missing fields.
@@ -138,12 +138,12 @@ describe('verification gaslimit test', () => {
     }
   }
 
-  async function getEIP1559GasPrice (
+  async function getEIP1559GasPrice(
     maxPriorityFeePerGas1?: BigNumber
   ): Promise<{
-      maxPriorityFeePerGas: BigNumber
-      maxFeePerGas: BigNumber
-    }> {
+    maxPriorityFeePerGas: BigNumber
+    maxFeePerGas: BigNumber
+  }> {
     const block = await ethers.provider.getBlock('latest')
     const maxPriorityFeePerGas =
       maxPriorityFeePerGas1 ?? BigNumber.from(1e9) // default
@@ -156,7 +156,7 @@ describe('verification gaslimit test', () => {
     }
   }
 
-  function encodeSignature (
+  function encodeSignature(
     approval: Approval,
     ownerSignature: string
   ): string {

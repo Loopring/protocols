@@ -41,7 +41,7 @@ export interface Approval {
   salt: BytesLike
 }
 
-export async function signTypedData (
+export async function signTypedData(
   data: BytesLike,
   signer: Wallet,
   approvalOption: ApprovalOption,

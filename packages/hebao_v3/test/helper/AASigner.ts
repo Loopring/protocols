@@ -44,7 +44,7 @@ export interface UserOperation {
   paymasterAndData: typ.bytes
   signature: typ.bytes
 }
-export function packUserOp (
+export function packUserOp(
   op: UserOperation,
   forSignature = true
 ): string {
@@ -108,7 +108,7 @@ export function packUserOp (
   }
 }
 
-export function getUserOpHash (
+export function getUserOpHash(
   op: UserOperation,
   entryPoint: string,
   chainId: number
@@ -135,7 +135,7 @@ export const DefaultsForUserOp: UserOperation = {
   signature: '0x'
 }
 
-export function fillUserOpDefaults (
+export function fillUserOpDefaults(
   op: Partial<UserOperation>,
   defaults = DefaultsForUserOp
 ): UserOperation {
@@ -152,7 +152,7 @@ export function fillUserOpDefaults (
   return filled
 }
 
-export function callDataCost (data: string): number {
+export function callDataCost(data: string): number {
   return ethers.utils
     .arrayify(data)
     .map((x) => (x === 0 ? 4 : 16))
@@ -171,7 +171,7 @@ export function callDataCost (data: string): number {
 // sender - only in case of construction: fill sender from initCode.
 // callGasLimit: VERY crude estimation (by estimating call to account, and add rough entryPoint overhead
 // verificationGasLimit: hard-code default at 100k. should add "create2" cost
-export async function fillUserOp (
+export async function fillUserOp(
   op: Partial<UserOperation>,
   walletFactoryAddress: string,
   entryPoint?: EntryPoint
@@ -266,7 +266,7 @@ export async function fillUserOp (
   return op2
 }
 
-export async function fillAndMultiSign (
+export async function fillAndMultiSign(
   callData: string,
   smartWallet: SmartWallet,
   smartWalletOwner: Wallet,
@@ -356,7 +356,7 @@ export async function fillAndMultiSign (
   }
 }
 
-export async function fillAndSign (
+export async function fillAndSign(
   op: Partial<UserOperation>,
   signer: Wallet | Signer,
   walletFactoryAddress: string,
@@ -388,7 +388,7 @@ export type SendUserOp = (
  * @param signer ethers provider to send the request (must have eth balance to send)
  * @param beneficiary the account to receive the payment (from account/paymaster). defaults to the signer's address
  */
-export function localUserOpSender (
+export function localUserOpSender(
   entryPointAddress: string,
   signer: Signer,
   beneficiary?: string

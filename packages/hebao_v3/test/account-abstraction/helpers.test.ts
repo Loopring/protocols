@@ -15,7 +15,7 @@ const provider = ethers.provider
 const ethersSigner = provider.getSigner()
 
 describe('#ValidationData helpers', function () {
-  function pack (
+  function pack(
     addr: string,
     validUntil: number,
     validAfter: number

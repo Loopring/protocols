@@ -1,6 +1,6 @@
 import { type BigNumberish, type Wallet } from 'ethers'
 
-export async function signCreateWallet (
+export async function signCreateWallet(
   moduleAddress: string,
   owner: Wallet,
   guardians: string[],

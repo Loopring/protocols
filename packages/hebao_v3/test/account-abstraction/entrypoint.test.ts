@@ -2104,7 +2104,7 @@ describe('EntryPoint', function () {
         })
 
         // helper method
-        async function createOpWithPaymasterParams (
+        async function createOpWithPaymasterParams(
           owner: Wallet,
           after: number,
           until: number
@@ -2133,7 +2133,7 @@ describe('EntryPoint', function () {
             await account.addTemporaryOwner(owner.address, 100, 500)
           })
 
-          async function simulateWithPaymasterParams (
+          async function simulateWithPaymasterParams(
             after: number,
             until: number
           ): Promise<any> {

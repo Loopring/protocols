@@ -3,7 +3,7 @@ import { ethers } from 'hardhat'
 
 describe('price oracle test', () => {
   // only valid price(should be positive number) is considered
-  function getTokenValue (
+  function getTokenValue(
     tokenPrices: number[],
     amount: number
   ): number {

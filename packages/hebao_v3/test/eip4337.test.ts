@@ -34,7 +34,7 @@ import {
 
 describe('eip4337 test', () => {
   // execute tx from entrypoint instead of `execute` or `executebatch`
-  async function getSignedUserOp (
+  async function getSignedUserOp(
     tx: PopulatedTransaction,
     nonce: BigNumberish,
     smartWallet: SmartWalletV3,

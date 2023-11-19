@@ -35,7 +35,7 @@ export class Create2Factory {
     Create2Factory.deploymentGasLimit
   ).toString()
 
-  constructor (
+  constructor(
     readonly provider: Provider,
     readonly signer = (
       provider as ethers.providers.JsonRpcProvider
@@ -50,7 +50,7 @@ export class Create2Factory {
    * @param salt specific salt for deployment
    * @param gasLimit gas limit or 'estimate' to use estimateGas. by default, calculate gas based on data size.
    */
-  async deploy (
+  async deploy(
     initCode: string | TransactionRequest,
     salt: BigNumberish = 0,
     gasLimit?: BigNumberish | 'estimate'
@@ -109,7 +109,7 @@ export class Create2Factory {
     return addr
   }
 
-  getDeployTransactionCallData (
+  getDeployTransactionCallData(
     initCode: string,
     salt: BigNumberish = 0
   ): string {
@@ -123,7 +123,7 @@ export class Create2Factory {
    * @param initCode
    * @param salt
    */
-  static getDeployedAddress (
+  static getDeployedAddress(
     initCode: string,
     salt: BigNumberish
   ): string {
@@ -142,7 +142,7 @@ export class Create2Factory {
   }
 
   // deploy the factory, if not already deployed.
-  async deployFactory (signer?: Signer): Promise<void> {
+  async deployFactory(signer?: Signer): Promise<void> {
     if (await this._isFactoryDeployed()) {
       return
     }
@@ -158,7 +158,7 @@ export class Create2Factory {
     }
   }
 
-  async _isFactoryDeployed (): Promise<boolean> {
+  async _isFactoryDeployed(): Promise<boolean> {
     if (!this.factoryDeployed) {
       const deployed = await this.provider.getCode(
         Create2Factory.contractAddress

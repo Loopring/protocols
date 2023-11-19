@@ -9,7 +9,7 @@
 // map values inside object using mapping func.
 import chai from 'chai'
 
-export function objValues (
+export function objValues(
   obj: Record<string, any>,
   mapFunc: (val: any, key?: string) => any
 ): any {
@@ -32,7 +32,7 @@ export function objValues (
  * - recursively handle inner members of object, arrays.
  * - attempt toString. but if no normal value, recurse into fields.
  */
-export function cleanValue (val: any): any {
+export function cleanValue(val: any): any {
   if (val == null) return val
   if (Array.isArray(val)) {
     if (val.length * 2 === Object.keys(val).length) {

@@ -16,7 +16,7 @@ export interface DebugTransactionResult {
   structLogs: DebugLog[]
 }
 
-export async function debugTransaction (
+export async function debugTransaction(
   txHash: string,
   disableMemory = true,
   disableStorage = true

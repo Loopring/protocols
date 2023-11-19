@@ -6,7 +6,7 @@ import {
   USDT__factory
 } from './../typechain-types'
 
-async function main (): Promise<void> {
+async function main(): Promise<void> {
   // some addresses
   // official entrypoint
   const entryPointAddr = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'

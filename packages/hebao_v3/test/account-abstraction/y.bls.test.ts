@@ -36,7 +36,7 @@ import {
   simulationResultWithAggregationCatch
 } from './testutils'
 
-async function deployBlsAccount (
+async function deployBlsAccount(
   ethersSigner: Signer,
   factoryAddr: string,
   blsSigner: any

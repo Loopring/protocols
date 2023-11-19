@@ -24,7 +24,7 @@ import { createSmartWallet, getBlockTimestamp } from './helper/utils'
 describe('guardian test', () => {
   const three_days = 3 * 3600 * 24
   const guardianInterfact = GuardianLib__factory.createInterface()
-  async function createRandomWallet (
+  async function createRandomWallet(
     smartWalletOwner: Wallet,
     guardians: Wallet[],
     walletFactory: WalletFactory
@@ -349,14 +349,14 @@ describe('guardian test', () => {
         walletFactory,
         smartWalletImpl
       } = await loadFixture(fixture)
-      async function createRandomWalletAndFundingIt (
+      async function createRandomWalletAndFundingIt(
         guardians: Wallet[],
         walletFactory: WalletFactory,
         entrypoint: EntryPoint
       ): Promise<{
-          smartWalletOwner: Wallet
-          smartWallet: SmartWalletV3
-        }> {
+        smartWalletOwner: Wallet
+        smartWallet: SmartWalletV3
+      }> {
         const smartWalletOwner = ethers.Wallet.createRandom().connect(
           ethers.provider
         )
