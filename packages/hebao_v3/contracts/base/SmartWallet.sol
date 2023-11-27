@@ -467,20 +467,16 @@ abstract contract SmartWallet is
             interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
-    function executorPermission(address executor) external view returns (AutomationPermission memory) {
+    function executorPermission(address executor) external view returns (uint[] memory, address[] memory) {
         return AutomationLib.executorPermission(wallet, executor);
     }
 
-    function approveExecutor(address executor, address[] calldata connectors) onlyFromEntryPoint external {
-        return AutomationLib.approveExecutor(wallet, executor, connectors);
+    function approveExecutor(address executor, address[] calldata connectors, uint[] calldata validUntils) onlyFromEntryPoint external {
+        return AutomationLib.approveExecutor(wallet, executor, connectors, validUntils);
     }
 
     function unApproveExecutor(address executor) onlyFromEntryPoint external {
         return AutomationLib.unApproveExecutor(wallet, executor);
-    }
-
-    function spell(address, address _target, bytes calldata _data) onlyFromEntryPoint external returns (bytes memory response) {
-        return AutomationLib.spell(_target, _data);
     }
 
     function cast(

@@ -21,6 +21,7 @@ import { getVerifiedContractAt } from "./helper/defi";
 import { evRevertInfo, getErrorMessage } from "./helper/utils";
 import { SendUserOp, UserOperation, fillAndSign } from "./helper/AASigner";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
+import { range } from "lodash";
 
 describe("trade agent test", () => {
   
@@ -97,7 +98,7 @@ describe("trade agent test", () => {
     setId: number
   ) => {
     const data = await depositData(tokenId, amount, getId, setId);
-    return userOpCast(CONSTANTS.COMPOUND_CONNECTOR_ADDRESS, data, executor, fixture);
+    return userOpCast([CONSTANTS.COMPOUND_CONNECTOR_ADDRESS], [data], executor, fixture);
   };
   const withdrawData = async (
     tokenId: string,
@@ -137,7 +138,7 @@ describe("trade agent test", () => {
         setId
       )
     ).data;
-    return userOpCast(CONSTANTS.COMPOUND_CONNECTOR_ADDRESS, data, executor, fixture);
+    return userOpCast([CONSTANTS.COMPOUND_CONNECTOR_ADDRESS], [data], executor, fixture);
   };
 
   const repayData = async (
@@ -167,7 +168,7 @@ describe("trade agent test", () => {
     setId: number
   ) => {
     const data = await repayData(tokenId, amount, getId, setId);
-    return userOpCast(CONSTANTS.COMPOUND_CONNECTOR_ADDRESS, data, executor, fixture);
+    return userOpCast([CONSTANTS.COMPOUND_CONNECTOR_ADDRESS], [data], executor, fixture);
   };
   const uniswapSellData = async (
     buyAddress: string,
@@ -213,8 +214,8 @@ describe("trade agent test", () => {
     return signedUserOp;
   };
   const userOpCast = async (
-    addresses: string[] | string,
-    datas: string[] | string,
+    addresses: string[],
+    datas: string[],
     smartWalletSigner: Signer,
     loadedFixture: Fixture
   ) => {
@@ -228,51 +229,67 @@ describe("trade agent test", () => {
     const nonce = await smartWallet.nonce();
     const smartWalletSignerAddr = await smartWalletSigner.getAddress();
 
-    if (typeof addresses === "string" && typeof datas === "string") {
-      const populatedTx = await smartWallet.populateTransaction.spell(
-        smartWalletSignerAddr,
-        addresses,
-        datas
-      );
-      var signedUserOp = await getSignedUserOp(
-        populatedTx,
-        nonce.add(1),
-        smartWallet,
-        smartWalletSigner,
-        create2,
-        entrypoint
-      );
-    } else if (typeof addresses !== "string" && typeof datas !== "string") {
-      const populatedTx = await smartWallet.populateTransaction.cast(
-        smartWalletSignerAddr,
-        addresses,
-        datas
-      );
-      signedUserOp = await getSignedUserOp(
-        populatedTx,
-        nonce.add(1),
-        smartWallet,
-        smartWalletSigner,
-        create2,
-        entrypoint
-      );
-    } else {
-      throw "wrong input";
-    }
+    // if (typeof addresses === "string" && typeof datas === "string") {
+    //   const populatedTx = await smartWallet.populateTransaction.spell(
+    //     smartWalletSignerAddr,
+    //     addresses,
+    //     datas
+    //   );
+    //   var signedUserOp = await getSignedUserOp(
+    //     populatedTx,
+    //     nonce.add(1),
+    //     smartWallet,
+    //     smartWalletSigner,
+    //     create2,
+    //     entrypoint
+    //   );
+    // } else if (typeof addresses !== "string" && typeof datas !== "string") {
+    //   const populatedTx = await smartWallet.populateTransaction.cast(
+    //     smartWalletSignerAddr,
+    //     addresses,
+    //     datas
+    //   );
+    //   signedUserOp = await getSignedUserOp(
+    //     populatedTx,
+    //     nonce.add(1),
+    //     smartWallet,
+    //     smartWalletSigner,
+    //     create2,
+    //     entrypoint
+    //   );
+    // } else {
+    //   throw "wrong input";
+    // }
+    const populatedTx = await smartWallet.populateTransaction.cast(
+      smartWalletSignerAddr,
+      addresses,
+      datas
+    );
+    const signedUserOp = await getSignedUserOp(
+      populatedTx,
+      nonce.add(1),
+      smartWallet,
+      smartWalletSigner,
+      create2,
+      entrypoint
+    );
     return await sendUserOp(signedUserOp);
   };
 
   const approveExecutor = async (
     loadedFixture: Fixture,
     executor: string,
-    connectors: string[]
+    connectors: string[],
+    validUntils: string[],
+
   ) => {
     const { smartWallet, smartWalletOwner, create2, entrypoint, sendUserOp } =
       loadedFixture;
     const nonce = await smartWallet.nonce();
     const populatedTx = await smartWallet.populateTransaction.approveExecutor(
       executor,
-      connectors
+      connectors,
+      validUntils
     );
     const signedUserOp = await getSignedUserOp(
       populatedTx,
@@ -323,7 +340,8 @@ describe("trade agent test", () => {
     const txReceipt1 = await approveExecutor(
       loadedFixture,
       executor.address,
-      connectors
+      connectors,
+      range(connectors.length).map(() => Math.floor((Date.now()/1000) + 24 * 60 * 60).toString() )
     );
     const msg = await getFirstUserOpErrMsg(
       txReceipt1,
@@ -361,8 +379,8 @@ describe("trade agent test", () => {
       ).data;
       const executor = Wallet.createRandom();
       expect(userOpCast(
-        CONSTANTS.WETH_CONNECTOR_ADDRESS,
-        data,
+        [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+        [data],
         executor,
         loadedFixture
       )).to.revertedWithCustomError(loadedFixture.entrypoint, "SignatureValidationFailed");;
@@ -375,8 +393,8 @@ describe("trade agent test", () => {
       ).data;
       const executor = await makeAnExecutor([CONSTANTS.WETH_CONNECTOR_ADDRESS], loadedFixture);
       const txReceipt = await userOpCast(
-        CONSTANTS.WETH_CONNECTOR_ADDRESS,
-        data,
+        [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+        [data],
         executor,
         loadedFixture
       )
@@ -392,8 +410,8 @@ describe("trade agent test", () => {
       const executor = await makeAnExecutor([CONSTANTS.WETH_CONNECTOR_ADDRESS], loadedFixture);
       await unApproveExecutor(loadedFixture, executor.address)
       expect(userOpCast(
-        CONSTANTS.WETH_CONNECTOR_ADDRESS,
-        data,
+        [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+        [data],
         executor,
         loadedFixture
       )).to.revertedWithCustomError(loadedFixture.entrypoint, "SignatureValidationFailed");;
@@ -419,8 +437,8 @@ describe("trade agent test", () => {
       const data = await depositData("USDC-A", CONSTANTS.ONE_FOR_USDC, 0, 0);
       const balance1: BigNumber = await cERC20.balanceOf(smartWallet.address);
       const txReceipt = await userOpCast(
-        CONSTANTS.COMPOUND_CONNECTOR_ADDRESS,
-        data,
+        [CONSTANTS.COMPOUND_CONNECTOR_ADDRESS],
+        [data],
         executor,
         loadedFixture
       );
@@ -450,8 +468,8 @@ describe("trade agent test", () => {
       const { smartWallet, entrypoint } = loadedFixture;
       const data = await withdrawData("USDC-A", CONSTANTS.ONE_FOR_USDC, 0, 0);
       const txReceipt = await userOpCast(
-        CONSTANTS.COMPOUND_CONNECTOR_ADDRESS,
-        data,
+        [CONSTANTS.COMPOUND_CONNECTOR_ADDRESS],
+        [data],
         executor,
         loadedFixture
       );
@@ -482,8 +500,8 @@ describe("trade agent test", () => {
         )
       ).data;
       const txReceipt = await userOpCast(
-        CONSTANTS.COMPOUND_CONNECTOR_ADDRESS,
-        data,
+        [CONSTANTS.COMPOUND_CONNECTOR_ADDRESS],
+        [data],
         executor,
         loadedFixture
       );
@@ -531,8 +549,8 @@ describe("trade agent test", () => {
       await wETHConnector.populateTransaction.deposit(CONSTANTS.ONE_FOR_ETH, 0, 0)
     ).data;
     const txReceipt = await userOpCast(
-      CONSTANTS.WETH_CONNECTOR_ADDRESS,
-      data2,
+      [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+      [data2],
       executor,
       loadedFixture
     );
@@ -561,8 +579,8 @@ describe("trade agent test", () => {
       0
     );
     const txReceipt = await userOpCast(
-      CONSTANTS.UniswapV2_CONNECTOR_ADDRESS,
-      data,
+      [CONSTANTS.UniswapV2_CONNECTOR_ADDRESS],
+      [data],
       executor,
       loadedFixture
     );

@@ -29,46 +29,15 @@ library AutomationLib {
                 }
         }
     }
-    
-    function _arrayInArray(address[] memory array1, address[] memory array2) pure private returns (bool) {
-      for (uint i = 0; i < array1.length; i++){
-        bool found = false;
-        for (uint j = 0; j < array2.length; j++) {
-          if (array2[j] == array1[i]){
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
+
+    function _verifyPermission(Wallet storage wallet, address executor, address[] memory targets) internal view returns (bool) {
+      mapping(address => uint) storage permissionInfo = wallet.executorsPermission[executor];
+      for (uint i = 0; i < targets.length; i++){
+        if (permissionInfo[targets[i]] < block.timestamp) {
           return false;
         }
       }
       return true;
-    }
-
-    function _verifyPermission(Wallet storage wallet, address executor, address[] memory targets) internal view returns (bool) {
-      AutomationPermission memory permissionInfo = wallet.automationPermission[executor];
-      if (permissionInfo.permitted) {
-        for (uint i = 0; i < targets.length; i++){
-          bool found = false;
-          for (uint j = 0; j < permissionInfo.connectorWhitelist.length; j++) {
-            if (permissionInfo.connectorWhitelist[j] == targets[i]){
-              found = true;
-              break;
-            }
-          }
-          if (!found) {
-            return false;
-          }
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    function spell(address target, bytes memory data) internal returns (bytes memory response) {
-      return _spell(target, data);
     }
 
     function cast(
@@ -82,16 +51,32 @@ library AutomationLib {
       }
     }
     
-    function executorPermission(Wallet storage wallet, address executor) internal view returns (AutomationPermission memory) {
-        return wallet.automationPermission[executor];
+    function executorPermission(Wallet storage wallet, address executor) internal view returns (uint[] memory, address[] memory) {
+      address[] memory addresses = wallet.executorsConnectors[executor];
+      uint[] memory validUntils = new uint[](addresses.length);
+      for (uint i = 0; i < addresses.length; i++) {
+        validUntils[i] = wallet.executorsPermission[executor][addresses[i]];
+      }
+      return (validUntils, addresses);
     }
 
-    function approveExecutor(Wallet storage wallet, address executor, address[] calldata connectors) internal {
-      wallet.automationPermission[executor] = AutomationPermission(connectors, true);
+    function _unApproveExecutor(Wallet storage wallet, address executor) private {
+      address[] memory connectors = wallet.executorsConnectors[executor];
+      for (uint i = 0; i < connectors.length; i++) {
+        wallet.executorsPermission[executor][connectors[i]] = 0;
+      }
+      wallet.executorsConnectors[executor] = new address[](0);
+    }
+
+    function approveExecutor(Wallet storage wallet, address executor, address[] calldata connectors, uint[] calldata validUntils) internal {
+      _unApproveExecutor(wallet, executor);
+      wallet.executorsConnectors[executor] = connectors;
+      for (uint i = 0; i < connectors.length; i++) {
+        wallet.executorsPermission[executor][connectors[i]] = validUntils[i];
+      }
     }
 
     function unApproveExecutor(Wallet storage wallet, address executor) internal {
-      address[] memory empty;
-      wallet.automationPermission[executor] = AutomationPermission(empty, false);
+      _unApproveExecutor(wallet, executor);
     }
 }

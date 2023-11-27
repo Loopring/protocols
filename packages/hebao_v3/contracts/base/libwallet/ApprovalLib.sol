@@ -300,24 +300,14 @@ library ApprovalLib {
             return SIG_VALIDATION_FAILED;
         }
 
-        if (methodId == SmartWallet.spell.selector) {
-            (address executor, address connector, bytes memory data) = abi
-                .decode(userOp.callData[4:], (address, address, bytes));
-            address[] memory connectors = new address[](1);
-            connectors[0] = connector;
-            if (
-                hash.verifySignature(executor, userOp.signature) && AutomationLib._verifyPermission(wallet, executor, connectors)
-            ) {
-                return 0;
-            }
-            return SIG_VALIDATION_FAILED;
-        }
-
         if (methodId == SmartWallet.cast.selector) {
             (address executor, address[] memory connectors, bytes[] memory datas) = abi
                 .decode(userOp.callData[4:], (address, address[], bytes[]));
             if (hash.verifySignature(executor, userOp.signature) && AutomationLib._verifyPermission(wallet, executor, connectors)
             ) {
+                return 0;
+            }
+            if (hash.verifySignature(wallet.owner, userOp.signature)) {
                 return 0;
             }
             return SIG_VALIDATION_FAILED;
