@@ -229,13 +229,7 @@ export async function deploySingle(
     ethers.utils.keccak256(deployableCode)
   )
   // check if it is deployed already
-  if ((await ethers.provider.getCode(deployedAddress)) !== '0x') {
-    console.log(
-      contractName,
-      ' is deployed already at: ',
-      deployedAddress
-    )
-  } else {
+  if ((await ethers.provider.getCode(deployedAddress)) === '0x') {
     const gasLimit = await deployFactory.estimateGas.deploy(
       deployableCode,
       salt
@@ -244,7 +238,6 @@ export async function deploySingle(
       gasLimit
     })
     await tx.wait()
-    console.log(contractName, 'deployed address: ', deployedAddress)
   }
 
   if (
@@ -443,7 +436,6 @@ export async function generateSignedUserOp(
         value: missingValue
       })
     ).wait()
-    console.log('prefund missing amount ', missingValue)
   }
   return signedUserOp
 }

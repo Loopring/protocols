@@ -3,6 +3,7 @@ import { ethers } from 'hardhat'
 import * as hre from 'hardhat'
 
 import { localUserOpSender } from '../test/helper/AASigner'
+import { saveDeploymentsAddress } from './addresses'
 import {
   deploySingle,
   deployWalletImpl,
@@ -22,6 +23,7 @@ import {
 
 // eslint-disable-next-line
 async function deployAll() {
+  const addressBook: Record<string, string> = {}
   const signers = await ethers.getSigners()
   const deployer = signers[0]
   let paymasterOwner
@@ -46,15 +48,10 @@ async function deployAll() {
       'LoopringCreate2Deployer',
       create2Addr
     )
-    console.log(
-      'create2 factory is deployed already at : ',
-      create2.address
-    )
   } else {
     create2 = await (
       await ethers.getContractFactory('LoopringCreate2Deployer')
     ).deploy()
-    console.log('create2 factory is deployed at : ', create2.address)
   }
 
   // entrypoint and paymaster
@@ -70,17 +67,20 @@ async function deployAll() {
   } else {
     entrypoint = await deploySingle(create2, 'EntryPoint')
   }
+  addressBook.EntryPoint = entrypoint.address
 
   const paymaster = await deploySingle(create2, 'LoopringPaymaster', [
     entrypoint.address,
     paymasterOwner.address
   ])
+  addressBook.LoopringPaymaster = paymaster.address
 
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
     blankOwner
   )
+  addressBook.SmartWalletImpl = smartWalletImpl.address
 
   const implStorage = await deploySingle(
     create2,
@@ -88,18 +88,20 @@ async function deployAll() {
     // deployer as implementation manager
     [smartWalletImpl.address]
   )
+  addressBook.DelayedImplementationManager = implStorage.address
 
   const forwardProxy = await deploySingle(create2, 'ForwardProxy', [
     implStorage.address
   ])
+  addressBook.ForwardProxy = forwardProxy.address
 
   const walletFactory = await deploySingle(create2, 'WalletFactory', [
     forwardProxy.address
   ])
+  addressBook.WalletFactory = walletFactory.address
   // transfer wallet factory ownership to deployer
   const walletFactoryOwner = await walletFactory.owner()
   if (create2.address === walletFactoryOwner) {
-    console.log('transfer wallet factory ownership to deployer')
     await (await create2.setTarget(walletFactory.address)).wait()
     const transferWalletFactoryOwnership =
       await walletFactory.populateTransaction.transferOwnership(
@@ -108,8 +110,6 @@ async function deployAll() {
     await (
       await create2.transact(transferWalletFactoryOwnership.data!)
     ).wait()
-  } else {
-    console.log('ownership of wallet factory is transfered already')
   }
 
   if (
@@ -120,9 +120,6 @@ async function deployAll() {
 
   // transfer DelayedImplementationManager ownership to deployer
   if (create2.address === (await implStorage.owner())) {
-    console.log(
-      'transfer DelayedImplementationManager ownership to deployer'
-    )
     await (await create2.setTarget(implStorage.address)).wait()
     const transferImplStorageOwnership =
       await implStorage.populateTransaction.transferOwnership(
@@ -131,14 +128,9 @@ async function deployAll() {
     await (
       await create2.transact(transferImplStorageOwnership.data!)
     ).wait()
-  } else {
-    console.log(
-      'ownership of DelayedImplementationManager is transfered already'
-    )
   }
 
   // create demo wallet
-  console.log('create demo wallet...')
   const smartWalletOwner = new ethers.Wallet(
     process.env.TEST_ACCOUNT_PRIVATE_KEY ?? deployer.address,
     ethers.provider
@@ -154,27 +146,20 @@ async function deployAll() {
     smartWalletOwner.address,
     salt
   )
-  if ((await ethers.provider.getCode(smartWalletAddr)) !== '0x') {
-    console.log(
-      'smart wallet of the owner',
-      smartWalletOwner.address,
-      ' is deployed already at: ',
-      smartWalletAddr
-    )
-  } else {
+  if ((await ethers.provider.getCode(smartWalletAddr)) === '0x') {
     await createSmartWallet(
       smartWalletOwner,
       guardians,
       WalletFactory__factory.connect(walletFactory.address, deployer),
       salt
     )
-    console.log('wallet created at: ', smartWalletAddr)
   }
 
   const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
     smartWalletOwner
   )
+  addressBook.SmartWallet = smartWallet.address
 
   // deploy mock usdt token for test.
   const usdtToken = await deploySingle(
@@ -184,6 +169,7 @@ async function deployAll() {
     undefined,
     'contracts/test/tokens/USDT.sol:USDT'
   )
+  addressBook.USDT = usdtToken.address
   return {
     entrypoint: EntryPoint__factory.connect(
       entrypoint.address,
@@ -201,7 +187,8 @@ async function deployAll() {
     blankOwner,
     smartWalletOwner,
     usdtToken,
-    sendUserOp
+    sendUserOp,
+    addressBook
   }
 }
 
@@ -232,7 +219,7 @@ async function testExecuteTxWithEth(): Promise<void> {
     tokenAmount
   )
 
-  const recipt = await sendTx(
+  await sendTx(
     [transferToken],
     smartWallet,
     smartWalletOwner,
@@ -240,7 +227,6 @@ async function testExecuteTxWithEth(): Promise<void> {
     entrypoint,
     sendUserOp
   )
-  console.log('gas cost of usdt token transfer: ', recipt.gasUsed)
   /// /////////////////////////////////
   // eth transfer test
   const ethAmount = 1
@@ -254,7 +240,7 @@ async function testExecuteTxWithEth(): Promise<void> {
     value: ethAmount,
     to: deployer.address
   }
-  const recipt1 = await sendTx(
+  await sendTx(
     [transferEth],
     smartWallet,
     smartWalletOwner,
@@ -262,22 +248,17 @@ async function testExecuteTxWithEth(): Promise<void> {
     entrypoint,
     sendUserOp
   )
-  console.log('gas cost of eth transfer: ', recipt1.gasUsed)
   /// ////////////////////////////
   // batch tx
   // transfer usdt token by three times
 
-  const recipt2 = await sendTx(
+  await sendTx(
     [transferToken, transferToken, transferToken],
     smartWallet,
     smartWalletOwner,
     create2,
     entrypoint,
     sendUserOp
-  )
-  console.log(
-    'gas cost of usdt token transfer by three times(batch tx): ',
-    recipt2.gasUsed
   )
 }
 
@@ -294,7 +275,6 @@ async function testExecuteTxWithUSDCPaymaster(): Promise<void> {
     paymaster,
     paymasterOwner
   } = await deployAll()
-  console.log('deployer: ', deployer.address)
   // prepare mock usdt token first
   await (
     await usdtToken.setBalance(
@@ -335,7 +315,7 @@ async function testExecuteTxWithUSDCPaymaster(): Promise<void> {
     sendUserOp
   )
 
-  const recipt = await sendTx(
+  await sendTx(
     [transferToken],
     smartWallet,
     smartWalletOwner,
@@ -344,7 +324,6 @@ async function testExecuteTxWithUSDCPaymaster(): Promise<void> {
     sendUserOp,
     paymasterOption
   )
-  console.log('gas cost of usdt token transfer: ', recipt.gasUsed)
 }
 
 // eslint-disable-next-line
@@ -376,7 +355,12 @@ async function testExecuteTx(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await deployAll()
+  const { addressBook } = await deployAll()
+  saveDeploymentsAddress(
+    addressBook,
+    hre.network.name,
+    './deployments'
+  )
   // uncomment below to get gascost info of some sample txs on chain
   // await testExecuteTx()
   // await testExecuteTxWithEth()
