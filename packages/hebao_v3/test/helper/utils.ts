@@ -26,7 +26,7 @@ import {
   keccak256
 } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
-import * as hre from 'hardhat'
+// import * as hre from 'hardhat'
 
 import {
   type EntryPoint,
@@ -240,18 +240,19 @@ export async function deploySingle(
     await tx.wait()
   }
 
-  if (
-    hre.network.name === 'goerli' ||
-    hre.network.name === 'sepolia' ||
-    hre.network.name === 'ethereum'
-  ) {
-    await hre.run('verify:verify', {
-      contract: verifiedContract,
-      address: deployedAddress,
-      constructorArguments: args,
-      libraries
-    })
-  }
+  // NOTE(may throw error when contract code verification too quickly.)
+  // if (
+  // hre.network.name === 'goerli' ||
+  // hre.network.name === 'sepolia' ||
+  // hre.network.name === 'ethereum'
+  // ) {
+  // await hre.run('verify:verify', {
+  // contract: verifiedContract,
+  // address: deployedAddress,
+  // constructorArguments: args,
+  // libraries
+  // })
+  // }
 
   return contract.attach(deployedAddress)
 }

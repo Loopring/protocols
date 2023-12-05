@@ -8,6 +8,7 @@ import {
   deployWalletImpl,
   createSmartWallet
 } from '../test/helper/utils'
+import * as create2AddrJson from '../deployments/create2.json'
 import {
   EntryPoint__factory,
   type LoopringCreate2Deployer,
@@ -37,8 +38,17 @@ export async function deployAll() {
   // create2 factory
   let create2: LoopringCreate2Deployer
   // NOTE(update address when create2 factory contract is modified)
-  const create2Addr = '0xd57d71A16D850038e7266E3885140A7E7d1Ba3fD'
-  if ((await ethers.provider.getCode(create2Addr)) !== '0x') {
+  const create2Addr = (create2AddrJson as Record<string, string>)[
+    hre.network.name
+  ]
+  if (
+    create2Addr !== undefined &&
+    (await ethers.provider.getCode(create2Addr)) !== '0x'
+  ) {
+    console.log(
+      'create2 factory is deployed already at : ',
+      create2Addr
+    )
     create2 = await ethers.getContractAt(
       'LoopringCreate2Deployer',
       create2Addr
@@ -47,6 +57,7 @@ export async function deployAll() {
     create2 = await (
       await ethers.getContractFactory('LoopringCreate2Deployer')
     ).deploy()
+    console.log('create2 factory is deployed at : ', create2.address)
   }
   addressBook.LoopringCreate2Deployer = create2.address
 
@@ -91,13 +102,21 @@ export async function deployAll() {
   ])
   addressBook.ForwardProxy = forwardProxy.address
 
-  const walletFactory = await deploySingle(create2, 'WalletFactory', [
-    forwardProxy.address
-  ])
+  const walletFactory = WalletFactory__factory.connect(
+    (
+      await deploySingle(create2, 'WalletFactory', [
+        forwardProxy.address
+      ])
+    ).address,
+    deployer
+  )
   addressBook.WalletFactory = walletFactory.address
   // transfer wallet factory ownership to deployer
   const walletFactoryOwner = await walletFactory.owner()
-  if (create2.address === walletFactoryOwner) {
+  if (
+    create2.address.toLowerCase() === walletFactoryOwner.toLowerCase()
+  ) {
+    console.log('transfer wallet factory ownership to deployer')
     await (await create2.setTarget(walletFactory.address)).wait()
     const transferWalletFactoryOwnership =
       await walletFactory.populateTransaction.transferOwnership(
@@ -106,6 +125,8 @@ export async function deployAll() {
     await (
       await create2.transact(transferWalletFactoryOwnership.data!)
     ).wait()
+  } else {
+    console.log('ownership of wallet factory is transfered already')
   }
 
   if (
@@ -116,6 +137,9 @@ export async function deployAll() {
 
   // transfer DelayedImplementationManager ownership to deployer
   if (create2.address === (await implStorage.owner())) {
+    console.log(
+      'transfer DelayedImplementationManager ownership to deployer'
+    )
     await (await create2.setTarget(implStorage.address)).wait()
     const transferImplStorageOwnership =
       await implStorage.populateTransaction.transferOwnership(
@@ -124,9 +148,15 @@ export async function deployAll() {
     await (
       await create2.transact(transferImplStorageOwnership.data!)
     ).wait()
+  } else {
+    console.log(
+      'ownership of DelayedImplementationManager is transfered already'
+    )
   }
 
   // create demo wallet
+  console.log('create demo wallet...')
+
   const smartWalletOwner = new ethers.Wallet(
     process.env.TEST_ACCOUNT_PRIVATE_KEY ?? deployer.address,
     ethers.provider
@@ -146,7 +176,7 @@ export async function deployAll() {
     await createSmartWallet(
       smartWalletOwner,
       guardians,
-      WalletFactory__factory.connect(walletFactory.address, deployer),
+      walletFactory,
       salt
     )
   }

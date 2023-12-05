@@ -1,5 +1,6 @@
 {
   "goerli": {
+    "LoopringCreate2Deployer": "0xd57d71A16D850038e7266E3885140A7E7d1Ba3fD",
     "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
     "LoopringPaymaster": "0xE4DB45858207C5c40FdeD30abbF615B084d87166",
     "SmartWalletImpl": "0xF0e9f567001b76d893cB819f08C71b34d9FCCe6c",
@@ -19,5 +20,16 @@
     "WalletFactory": "0x5B593Ce707878d5442534b02e7A37C7dd58C8308",
     "SmartWallet": "0xf5da381D54EcD9f842B66D69E4480121B9be31CB",
     "USDT": "0xF347dbD43bFCFaeeE8F44998EC66B48fDDdEb365"
+  },
+  "sepolia": {
+    "LoopringCreate2Deployer": "0x100f3f74125c8c724c7c0ee81e4dd5626830dd9a",
+    "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    "LoopringPaymaster": "0xA494d9c241d854d49168d1EF31238899d5f6BE52",
+    "SmartWalletImpl": "0x982B18eBec272eD532Db8911524f718E0b5dfA58",
+    "DelayedImplementationManager": "0x66A23B59cF3A08BA155eD0b41E17315d7865ab98",
+    "ForwardProxy": "0xeEAB35Ec2d775cEC1E228FB854ed4Ac3f850B0b4",
+    "WalletFactory": "0x8e18b65FC6DD963d14B120dE7a7DedE183421f3e",
+    "SmartWallet": "0x2966695d67212db8367643218C7Ab52fB99de56F",
+    "USDT": "0x45191CFe4a75EB76Bf2DC8c8e42dFb96ac6BB740"
   }
 }
