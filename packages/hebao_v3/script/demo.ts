@@ -127,7 +127,6 @@ async function testExecuteTxWithUSDCPaymaster(): Promise<void> {
     entrypoint,
     sendUserOp
   )
-
   await sendTx(
     [transferToken],
     smartWallet,

@@ -14,7 +14,8 @@ import {
   type LoopringCreate2Deployer,
   LoopringPaymaster__factory,
   SmartWalletV3__factory,
-  WalletFactory__factory
+  WalletFactory__factory,
+  USDT__factory
 } from '../typechain-types'
 
 // eslint-disable-next-line
@@ -212,7 +213,7 @@ export async function deployAll() {
     paymasterOwner,
     blankOwner,
     smartWalletOwner,
-    usdtToken,
+    usdtToken: USDT__factory.connect(usdtToken.address, deployer),
     sendUserOp,
     addressBook
   }
