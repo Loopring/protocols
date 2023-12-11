@@ -35,17 +35,20 @@ function loadTestAccounts() {
 
   return accounts;
 }
-
 export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       accounts: loadTestAccounts(),
-      forking: {
-        url: 'https://mainnet.infura.io/v3/cbc2ebb75911420fa3ac63026264e70a',
-        blockNumber: 18482580,
-      },
-      chainId: 1
+      ...(process.env.TRADE_AGENT === "true"
+        ? {
+            forking: {
+              url: "https://mainnet.infura.io/v3/cbc2ebb75911420fa3ac63026264e70a",
+              blockNumber: 18482580,
+            },
+            chainId: 1,
+          }
+        : {}),
     },
 
     optimistic: {
@@ -162,6 +165,9 @@ export default {
     disambiguatePaths: false,
     runOnCompile: true,
     strict: true,
-    only: [':SmartWalletV3$'],
-  }
+    only: [":SmartWalletV3$"],
+  },
+  paths: {
+    tests: process.env.TRADE_AGENT === "true" ? "./testTradeAgent" : "./test",
+  },
 };

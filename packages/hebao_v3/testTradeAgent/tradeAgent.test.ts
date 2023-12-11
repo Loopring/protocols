@@ -10,16 +10,16 @@ import {
   Signer,
 } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { fixture } from "./helper/fixture";
+import { fixture } from "../test/helper/fixture";
 import {
   ERC20__factory,
   EntryPoint,
   LoopringCreate2Deployer,
   SmartWalletV3,
 } from "../typechain-types";
-import { getVerifiedContractAt } from "./helper/defi";
-import { evRevertInfo, getErrorMessage } from "./helper/utils";
-import { SendUserOp, UserOperation, fillAndSign } from "./helper/AASigner";
+import { getVerifiedContractAt } from "../test/helper/defi";
+import { evRevertInfo, getErrorMessage } from "../test/helper/utils";
+import { SendUserOp, UserOperation, fillAndSign } from "../test/helper/AASigner";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import { range } from "lodash";
 

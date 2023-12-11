@@ -14,7 +14,8 @@
     "lint:ts": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --ext .js,.ts .",
     "prettier": "prettier --write \"**/*.{js,json,md,sol,ts}\"",
     "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
-    "test": "yarn clean && hardhat test"
+    "test": "yarn clean && hardhat test",
+    "test-trade-agent": "yarn clean && TRADE_AGENT=true hardhat test"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
