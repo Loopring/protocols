@@ -213,6 +213,37 @@ describe("trade agent test", () => {
     );
     return signedUserOp;
   };
+  const userOpCastFromOwner = async (
+    addresses: string[],
+    datas: string[],
+    smartWalletSigner: Signer,
+    loadedFixture: Fixture
+  ) => {
+    const {
+      smartWallet,
+      create2,
+      entrypoint,
+      sendUserOp,
+    } = loadedFixture;
+    // const smartWallet = _smartWallet.connect(smartWalletSigner);
+    const nonce = await smartWallet.nonce();
+    const smartWalletSignerAddr = await smartWalletSigner.getAddress();
+
+    const populatedTx = await smartWallet.populateTransaction.cast(
+      smartWalletSignerAddr,
+      addresses,
+      datas
+    );
+    const signedUserOp = await getSignedUserOp(
+      populatedTx,
+      nonce.add(1),
+      smartWallet,
+      smartWalletSigner,
+      create2,
+      entrypoint
+    );
+    return await sendUserOp(signedUserOp);
+  };
   const userOpCast = async (
     addresses: string[],
     datas: string[],
@@ -229,37 +260,6 @@ describe("trade agent test", () => {
     const nonce = await smartWallet.nonce();
     const smartWalletSignerAddr = await smartWalletSigner.getAddress();
 
-    // if (typeof addresses === "string" && typeof datas === "string") {
-    //   const populatedTx = await smartWallet.populateTransaction.spell(
-    //     smartWalletSignerAddr,
-    //     addresses,
-    //     datas
-    //   );
-    //   var signedUserOp = await getSignedUserOp(
-    //     populatedTx,
-    //     nonce.add(1),
-    //     smartWallet,
-    //     smartWalletSigner,
-    //     create2,
-    //     entrypoint
-    //   );
-    // } else if (typeof addresses !== "string" && typeof datas !== "string") {
-    //   const populatedTx = await smartWallet.populateTransaction.cast(
-    //     smartWalletSignerAddr,
-    //     addresses,
-    //     datas
-    //   );
-    //   signedUserOp = await getSignedUserOp(
-    //     populatedTx,
-    //     nonce.add(1),
-    //     smartWallet,
-    //     smartWalletSigner,
-    //     create2,
-    //     entrypoint
-    //   );
-    // } else {
-    //   throw "wrong input";
-    // }
     const populatedTx = await smartWallet.populateTransaction.cast(
       smartWalletSignerAddr,
       addresses,
@@ -415,6 +415,27 @@ describe("trade agent test", () => {
         executor,
         loadedFixture
       )).to.revertedWithCustomError(loadedFixture.entrypoint, "SignatureValidationFailed");;
+    });
+
+  });
+
+  describe("excute from owner", () => {
+    
+    it.only("excute from owner should not be rejected", async () => {
+      const loadedFixture = await loadFixture(fixture);
+      const wETHConnector = await getVerifiedContractAt(CONSTANTS.WETH_CONNECTOR_ADDRESS);
+      const data = (
+        await wETHConnector.populateTransaction.deposit(CONSTANTS.ONE_FOR_ETH, 0, 0)
+      ).data;
+      const executor = await makeAnExecutor([CONSTANTS.WETH_CONNECTOR_ADDRESS], loadedFixture);
+      const txReceipt = await userOpCastFromOwner(
+        [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+        [data],
+        executor,
+        loadedFixture
+      )
+      const msg = await getFirstUserOpErrMsg(txReceipt, loadedFixture.entrypoint) 
+      expect(msg).undefined
     });
 
   });
