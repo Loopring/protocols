@@ -20,7 +20,7 @@ import _ from 'lodash'
 import {
   type EntryPoint,
   EntryPoint__factory,
-  type SmartWallet
+  type SmartWalletV3
 } from '../../typechain-types'
 
 import {
@@ -268,7 +268,7 @@ export async function fillUserOp(
 
 export async function fillAndMultiSign(
   callData: string,
-  smartWallet: SmartWallet,
+  smartWallet: SmartWalletV3,
   smartWalletOwner: Wallet,
   smartWalletOrEOASigners: Array<{
     signer: Wallet

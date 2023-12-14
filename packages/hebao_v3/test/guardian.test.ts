@@ -340,6 +340,80 @@ describe('guardian test', () => {
     })
     it('remove guardian test', async () => {})
   })
+  describe('wallet test when no guardians', () => {
+    it('wa operation', async () => {
+      const {
+        smartWalletOwner,
+        walletFactory,
+        create2,
+        smartWalletImpl,
+        entrypoint,
+        usdtToken,
+        sendUserOp
+      } = await loadFixture(fixture)
+      // create wallet with empty guardians list
+      const wallet = await createRandomWallet(
+        smartWalletOwner,
+        [],
+        walletFactory
+      )
+
+      // recover test
+      const newOwner = ethers.Wallet.createRandom()
+      const newGuardians: string[] = []
+      const callData = wallet.interface.encodeFunctionData(
+        'recover',
+        [newOwner.address, newGuardians]
+      )
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.Recover
+      }
+      const signedUserOp = await fillAndMultiSign(
+        callData,
+        wallet,
+        smartWalletOwner,
+        [{ signer: smartWalletOwner }],
+        create2.address,
+        smartWalletImpl.address,
+        approvalOption,
+        entrypoint
+      )
+
+      await expect(sendUserOp(signedUserOp))
+        .to.revertedWithCustomError(entrypoint, 'FailedOp')
+        .withArgs(0, 'AA23 reverted: NO_GUARDIANS')
+
+      // approveTokenWA test
+      {
+        const approvalOption = {
+          validUntil: 0,
+          salt: ethers.utils.randomBytes(32),
+          action_type: ActionType.ApproveToken
+        }
+        const toAddr = ethers.constants.AddressZero
+        const amount = 100
+        const callData = wallet.interface.encodeFunctionData(
+          'approveTokenWA',
+          [usdtToken.address, toAddr, amount]
+        )
+        const signedUserOp = await fillAndMultiSign(
+          callData,
+          wallet,
+          smartWalletOwner,
+          [{ signer: smartWalletOwner }],
+          create2.address,
+          smartWalletImpl.address,
+          approvalOption,
+          entrypoint
+        )
+        await expect(sendUserOp(signedUserOp))
+          .to.revertedWithCustomError(entrypoint, 'FailedOp')
+          .withArgs(0, 'AA23 reverted: NO_GUARDIANS')
+      }
+    })
+  })
   describe('smart wallet guardians approval', () => {
     it('add guardian with smart wallet guardian approval', async () => {
       const {
