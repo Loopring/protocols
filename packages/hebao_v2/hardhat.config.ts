@@ -44,7 +44,12 @@ export default {
       url: "http://127.0.0.1:8545",
     },
     hardhat: {
-      accounts: loadTestAccounts(),
+      accounts: [
+        {
+          privateKey: process.env.PRIVATE_KEY,
+          balance: "1" + "0".repeat(24),
+        },
+      ],
     },
 
     optimistic: {
@@ -65,7 +70,7 @@ export default {
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
-      accounts: loadTestAccounts().map((item) => item.privateKey),
+      accounts: [process.env.PRIVATE_KEY],
     },
 
     goerli: {
@@ -96,7 +101,11 @@ export default {
       gasPrice: 20000000000,
       accounts: loadTestAccounts().map((item) => item.privateKey),
     },
-
+    arbitrum_goerli: {
+      chainId: 421613,
+      url: "https://endpoints.omniatech.io/v1/arbitrum/goerli/public",
+      accounts: [process.env.PRIVATE_KEY],
+    },
     arbitrum_test: {
       chainId: 421611,
       url: "https://rinkeby.arbitrum.io/rpc",
