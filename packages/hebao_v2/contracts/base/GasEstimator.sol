@@ -28,6 +28,7 @@ function executeMetaTx(
 contract GasEstimator{
 
     bytes32 constant ERROR_STRING_HASH  = keccak256("METATX_INVALID_SIGNATURE");
+    uint256 constant GAS_OVERHEAD = 50000;
     function estimateGas(
         WalletInterface wallet,
         address to,
@@ -65,6 +66,6 @@ contract GasEstimator{
         }
 
         // add gas overhead
-        estimatedGas+= 10000;
+        estimatedGas+= GAS_OVERHEAD;
     }
 }

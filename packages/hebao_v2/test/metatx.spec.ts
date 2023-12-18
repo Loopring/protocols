@@ -249,7 +249,7 @@ describe("wallet", () => {
       expect(toBalanceAfter).to.equal(ethers.utils.parseEther("10"));
     });
 
-    it.only("call contract WA", async () => {
+    it("call contract WA", async () => {
       const owner = await account1.getAddress();
       const guardian1 = await account2.getAddress();
       const guardian2 = await account3.getAddress();
@@ -329,19 +329,6 @@ describe("wallet", () => {
         approvedHash: sig1.hash,
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
-      const gasUsed = await GasEstimator.callStatic.estimateGas(
-          wallet.address,
-          metaTx.to,
-        metaTx.nonce.toString(10),
-        metaTx.gasToken,
-        metaTx.gasPrice.toString(10),
-        metaTx.gasLimit.toString(10),
-        metaTx.gasOverhead.toString(10),
-        metaTx.feeRecipient,
-        metaTx.requiresSuccess,
-        data,
-        '0x'+"00".repeat(66));
-      console.log(gasUsed)
 
       const tx = await wallet.executeMetaTx(
         metaTx.to,
@@ -376,6 +363,79 @@ describe("wallet", () => {
         "Invoked"
       );
       expect(event.args.sender).to.equal(wallet.address);
+    });
+  });
+
+  describe("gas estimator", () => {
+    it("basic usage", async () => {
+      const owner = await account1.getAddress();
+      let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, []);
+      const masterCopy = await wallet.getMasterCopy();
+
+      await account2.sendTransaction({
+        from: await account2.getAddress(),
+        to: wallet.address,
+        value: ethers.utils.parseEther("100"),
+      });
+
+      const transferTo = "0x" + "30".repeat(20);
+      // transfer ETH:
+      const data = wallet.interface.encodeFunctionData("transferToken", [
+        ethers.constants.AddressZero,
+        transferTo,
+        ethers.utils.parseEther("10"),
+        [],
+        false,
+      ]);
+
+      wallet = wallet.connect(account3);
+      const metaTx: MetaTx = {
+        to: wallet.address,
+        nonce: new BN(new Date().getTime()),
+        gasToken: ethers.constants.AddressZero,
+        gasPrice: new BN(1),
+        gasLimit: new BN(1000000),
+        gasOverhead: new BN(0),
+        feeRecipient,
+        requiresSuccess: true,
+        data: Buffer.from(data.slice(2), "hex"),
+        signature: Buffer.from(""),
+        approvedHash: Buffer.from(
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "hex"
+        ),
+      };
+      const toBalanceBefore = await ethers.provider.getBalance(transferTo);
+
+      const gasUsed = await GasEstimator.callStatic.estimateGas(
+        wallet.address,
+        metaTx.to,
+        metaTx.nonce.toString(10),
+        metaTx.gasToken,
+        metaTx.gasPrice.toString(10),
+        metaTx.gasLimit.toString(10),
+        metaTx.gasOverhead.toString(10),
+        metaTx.feeRecipient,
+        metaTx.requiresSuccess,
+        data,
+        "0x" + "00".repeat(66)
+      );
+
+      const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
+      const tx = await wallet.executeMetaTx(
+        metaTx.to,
+        metaTx.nonce.toString(10),
+        metaTx.gasToken,
+        metaTx.gasPrice.toString(10),
+        metaTx.gasLimit.toString(10),
+        metaTx.gasOverhead.toString(10),
+        metaTx.feeRecipient,
+        metaTx.requiresSuccess,
+        metaTx.data,
+        Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+      );
+      const receipt = await tx.wait();
+      expect(gasUsed).gt(receipt.gasUsed)
     });
   });
 });

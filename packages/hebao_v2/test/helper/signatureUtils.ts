@@ -191,7 +191,7 @@ export function signRecover(
   newOwner: string,
   guardians: string[],
   signer: string,
-  privateKey?: string
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
@@ -212,12 +212,7 @@ export function signRecover(
   return { txSignature, hash };
 }
 
-export function signMetaTx(
-  masterCopy: string,
-  metaTx: MetaTx,
-  signer: string,
-  privateKey?: string
-) {
+export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR =
     "MetaTx(address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,bytes data,bytes32 approvedHash)";
@@ -255,7 +250,7 @@ export function signMetaTx(
   const hash = eip712.hashPacked(domainSeprator, encodedMetaTx);
 
   if (signer) {
-    const txSignature = sign2(signer, privateKey, hash);
+    const txSignature = sign(signer, hash);
     return { txSignature, hash };
   } else {
     return { txSignature: "", hash };
@@ -266,8 +261,7 @@ export function signUnlock(
   masterCopy: string,
   wallet: string,
   validUntil: BN,
-  signer: string,
-  privateKey?: string
+  signer: string
 ) {
   const domainSeprator = eip712.hash("LoopringWallet", "2.0.0", masterCopy);
   const TYPE_STR = "unlock(address wallet,uint256 validUntil)";
@@ -279,7 +273,7 @@ export function signUnlock(
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);
 
-  const txSignature = sign2(signer, privateKey, hash);
+  const txSignature = sign(signer, hash);
   return { txSignature, hash };
 }
 

@@ -44,12 +44,7 @@ export default {
       url: "http://127.0.0.1:8545",
     },
     hardhat: {
-      accounts: [
-        {
-          privateKey: process.env.PRIVATE_KEY,
-          balance: "1" + "0".repeat(24),
-        },
-      ],
+        accounts: loadTestAccounts(),
     },
 
     optimistic: {
@@ -70,7 +65,7 @@ export default {
       gasMultiplier: 1,
       timeout: 20000,
       httpHeaders: undefined,
-      accounts: [process.env.PRIVATE_KEY],
+      accounts: loadTestAccounts().map((item) => item.privateKey),
     },
 
     goerli: {
