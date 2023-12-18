@@ -21,7 +21,7 @@ describe("wallet", () => {
 
       const guardians: string[] = [
         await account2.getAddress(),
-        await account3.getAddress()
+        await account3.getAddress(),
       ];
 
       const salt = new Date().getTime();
@@ -46,7 +46,7 @@ describe("wallet", () => {
 
       const guardians: string[] = [
         await account2.getAddress(),
-        await account3.getAddress()
+        await account3.getAddress(),
       ];
 
       const salt = new Date().getTime();
@@ -70,7 +70,7 @@ describe("wallet", () => {
       const owner = await account1.getAddress();
       const guardians: string[] = [
         await account2.getAddress(),
-        await account3.getAddress()
+        await account3.getAddress(),
       ];
       const salt = new Date().getTime();
       let wallet = await newWallet(
@@ -105,7 +105,7 @@ describe("wallet", () => {
         [owner, guardians[0]],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -113,7 +113,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.unlock(approval);

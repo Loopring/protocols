@@ -3,7 +3,7 @@ const ethAbi = require("web3-eth-abi");
 import { sign, sign2, SignatureType } from "./Signature";
 import * as eip712 from "./eip712";
 import BN = require("bn.js");
-import {BigNumberish } from 'ethers';
+import { BigNumberish } from "ethers";
 
 export interface SignedRequest {
   signers: string[];
@@ -28,7 +28,7 @@ export interface MetaTx {
 
 function encodeAddressesPacked(addrs: string[]) {
   const addrsBs = Buffer.concat(
-    addrs.map(a => Buffer.from("00".repeat(12) + a.slice(2), "hex"))
+    addrs.map((a) => Buffer.from("00".repeat(12) + a.slice(2), "hex"))
   );
   return addrsBs;
 }
@@ -43,7 +43,7 @@ export function signCreateWalletV2(
   feeToken: string,
   maxFeeAmount: BN,
   salt: BigNumberish,
-  privateKey: string,
+  privateKey: string
 ) {
   const domainSeprator = eip712.hash("WalletFactory", "2.0.0", moduleAddress);
 
@@ -64,7 +64,7 @@ export function signCreateWalletV2(
       "address",
       "address",
       "uint256",
-      "uint256"
+      "uint256",
     ],
     [
       CREATE_WALLET_TYPEHASH,
@@ -75,7 +75,7 @@ export function signCreateWalletV2(
       feeRecipient,
       feeToken,
       maxFeeAmount,
-      salt
+      salt,
     ]
   );
 
@@ -116,7 +116,7 @@ export function signCreateWallet(
       "address",
       "address",
       "uint256",
-      "uint256"
+      "uint256",
     ],
     [
       CREATE_WALLET_TYPEHASH,
@@ -127,7 +127,7 @@ export function signCreateWallet(
       feeRecipient,
       feeToken,
       maxFeeAmount,
-      salt
+      salt,
     ]
   );
 
@@ -230,7 +230,7 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
       "address",
       "bool",
       "bytes32",
-      "bytes32"
+      "bytes32",
     ],
     [
       METATX_TYPEHASH,
@@ -243,7 +243,7 @@ export function signMetaTx(masterCopy: string, metaTx: MetaTx, signer: string) {
       metaTx.feeRecipient,
       metaTx.requiresSuccess,
       ethUtil.keccak(metaTx.data),
-      metaTx.approvedHash
+      metaTx.approvedHash,
     ]
   );
 
@@ -344,7 +344,7 @@ export function signTransferTokenWA(
       "address",
       "address",
       "uint256",
-      "bytes32"
+      "bytes32",
     ],
     [TYPEHASH, wallet, validUntil, token, to, amount, ethUtil.keccak(logdata)]
   );
@@ -427,7 +427,7 @@ export function signApproveThenCallContractWA(
       "address",
       "uint256",
       "uint256",
-      "bytes32"
+      "bytes32",
     ],
     [
       TYPEHASH,
@@ -437,7 +437,7 @@ export function signApproveThenCallContractWA(
       to,
       amount,
       value,
-      ethUtil.keccak(data)
+      ethUtil.keccak(data),
     ]
   );
   const hash = eip712.hashPacked(domainSeprator, approvalEncoded);

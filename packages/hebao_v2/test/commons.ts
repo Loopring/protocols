@@ -8,53 +8,61 @@ import ethUtil = require("ethereumjs-util");
 import { signCreateWallet } from "./helper/signatureUtils";
 
 export async function newWalletImpl() {
-  const ERC1271Lib = await (await ethers.getContractFactory(
-    "ERC1271Lib"
-  )).deploy();
+  const ERC1271Lib = await (
+    await ethers.getContractFactory("ERC1271Lib")
+  ).deploy();
   const ERC20Lib = await (await ethers.getContractFactory("ERC20Lib")).deploy();
-  const GuardianLib = await (await ethers.getContractFactory(
-    "GuardianLib"
-  )).deploy();
-  const InheritanceLib = await (await ethers.getContractFactory(
-    "InheritanceLib"
-  )).deploy();
-  const LockLib = await (await ethers.getContractFactory("LockLib", {
-    libraries: {
-      GuardianLib: GuardianLib.address
-    }
-  })).deploy();
-  const MetaTxLib = await (await ethers.getContractFactory("MetaTxLib", {
-    libraries: {
-      ERC20Lib: ERC20Lib.address
-    }
-  })).deploy();
+  const GuardianLib = await (
+    await ethers.getContractFactory("GuardianLib")
+  ).deploy();
+  const InheritanceLib = await (
+    await ethers.getContractFactory("InheritanceLib")
+  ).deploy();
+  const LockLib = await (
+    await ethers.getContractFactory("LockLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address,
+      },
+    })
+  ).deploy();
+  const MetaTxLib = await (
+    await ethers.getContractFactory("MetaTxLib", {
+      libraries: {
+        ERC20Lib: ERC20Lib.address,
+      },
+    })
+  ).deploy();
   const QuotaLib = await (await ethers.getContractFactory("QuotaLib")).deploy();
-  const RecoverLib = await (await ethers.getContractFactory("RecoverLib", {
-    libraries: {
-      GuardianLib: GuardianLib.address
-    }
-  })).deploy();
-  const UpgradeLib = await (await ethers.getContractFactory(
-    "UpgradeLib"
-  )).deploy();
-  const WhitelistLib = await (await ethers.getContractFactory(
-    "WhitelistLib"
-  )).deploy();
+  const RecoverLib = await (
+    await ethers.getContractFactory("RecoverLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address,
+      },
+    })
+  ).deploy();
+  const UpgradeLib = await (
+    await ethers.getContractFactory("UpgradeLib")
+  ).deploy();
+  const WhitelistLib = await (
+    await ethers.getContractFactory("WhitelistLib")
+  ).deploy();
 
-  const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
-    libraries: {
-      ERC1271Lib: ERC1271Lib.address,
-      ERC20Lib: ERC20Lib.address,
-      GuardianLib: GuardianLib.address,
-      InheritanceLib: InheritanceLib.address,
-      LockLib: LockLib.address,
-      MetaTxLib: MetaTxLib.address,
-      QuotaLib: QuotaLib.address,
-      RecoverLib: RecoverLib.address,
-      UpgradeLib: UpgradeLib.address,
-      WhitelistLib: WhitelistLib.address
-    }
-  })).deploy(ethers.constants.AddressZero, ethers.constants.AddressZero);
+  const smartWallet = await (
+    await ethers.getContractFactory("SmartWallet", {
+      libraries: {
+        ERC1271Lib: ERC1271Lib.address,
+        ERC20Lib: ERC20Lib.address,
+        GuardianLib: GuardianLib.address,
+        InheritanceLib: InheritanceLib.address,
+        LockLib: LockLib.address,
+        MetaTxLib: MetaTxLib.address,
+        QuotaLib: QuotaLib.address,
+        RecoverLib: RecoverLib.address,
+        UpgradeLib: UpgradeLib.address,
+        WhitelistLib: WhitelistLib.address,
+      },
+    })
+  ).deploy(ethers.constants.AddressZero, ethers.constants.AddressZero);
 
   return smartWallet;
 }
@@ -64,75 +72,85 @@ export async function newWalletFactoryContract(deployer?: string) {
   let smartWallet: Contract;
   let walletFactory: Contract;
 
-  testPriceOracle = await (await ethers.getContractFactory(
-    "TestPriceOracle"
-  )).deploy();
+  testPriceOracle = await (
+    await ethers.getContractFactory("TestPriceOracle")
+  ).deploy();
 
-  const ERC1271Lib = await (await ethers.getContractFactory(
-    "ERC1271Lib"
-  )).deploy();
+  const ERC1271Lib = await (
+    await ethers.getContractFactory("ERC1271Lib")
+  ).deploy();
   const ERC20Lib = await (await ethers.getContractFactory("ERC20Lib")).deploy();
-  const GuardianLib = await (await ethers.getContractFactory(
-    "GuardianLib"
-  )).deploy();
-  const InheritanceLib = await (await ethers.getContractFactory(
-    "InheritanceLib"
-  )).deploy();
-  const LockLib = await (await ethers.getContractFactory("LockLib", {
-    libraries: {
-      GuardianLib: GuardianLib.address
-    }
-  })).deploy();
-  const MetaTxLib = await (await ethers.getContractFactory("MetaTxLib", {
-    libraries: {
-      ERC20Lib: ERC20Lib.address
-    }
-  })).deploy();
+  const GuardianLib = await (
+    await ethers.getContractFactory("GuardianLib")
+  ).deploy();
+  const InheritanceLib = await (
+    await ethers.getContractFactory("InheritanceLib")
+  ).deploy();
+  const LockLib = await (
+    await ethers.getContractFactory("LockLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address,
+      },
+    })
+  ).deploy();
+  const MetaTxLib = await (
+    await ethers.getContractFactory("MetaTxLib", {
+      libraries: {
+        ERC20Lib: ERC20Lib.address,
+      },
+    })
+  ).deploy();
   const QuotaLib = await (await ethers.getContractFactory("QuotaLib")).deploy();
-  const RecoverLib = await (await ethers.getContractFactory("RecoverLib", {
-    libraries: {
-      GuardianLib: GuardianLib.address
-    }
-  })).deploy();
-  const UpgradeLib = await (await ethers.getContractFactory(
-    "UpgradeLib"
-  )).deploy();
-  const WhitelistLib = await (await ethers.getContractFactory(
-    "WhitelistLib"
-  )).deploy();
+  const RecoverLib = await (
+    await ethers.getContractFactory("RecoverLib", {
+      libraries: {
+        GuardianLib: GuardianLib.address,
+      },
+    })
+  ).deploy();
+  const UpgradeLib = await (
+    await ethers.getContractFactory("UpgradeLib")
+  ).deploy();
+  const WhitelistLib = await (
+    await ethers.getContractFactory("WhitelistLib")
+  ).deploy();
 
   const ownerSetter = deployer ? deployer : ethers.constants.AddressZero;
-  smartWallet = await (await ethers.getContractFactory("SmartWallet", {
-    libraries: {
-      ERC1271Lib: ERC1271Lib.address,
-      ERC20Lib: ERC20Lib.address,
-      GuardianLib: GuardianLib.address,
-      InheritanceLib: InheritanceLib.address,
-      LockLib: LockLib.address,
-      MetaTxLib: MetaTxLib.address,
-      QuotaLib: QuotaLib.address,
-      RecoverLib: RecoverLib.address,
-      UpgradeLib: UpgradeLib.address,
-      WhitelistLib: WhitelistLib.address
-    }
-  })).deploy(
+  smartWallet = await (
+    await ethers.getContractFactory("SmartWallet", {
+      libraries: {
+        ERC1271Lib: ERC1271Lib.address,
+        ERC20Lib: ERC20Lib.address,
+        GuardianLib: GuardianLib.address,
+        InheritanceLib: InheritanceLib.address,
+        LockLib: LockLib.address,
+        MetaTxLib: MetaTxLib.address,
+        QuotaLib: QuotaLib.address,
+        RecoverLib: RecoverLib.address,
+        UpgradeLib: UpgradeLib.address,
+        WhitelistLib: WhitelistLib.address,
+      },
+    })
+  ).deploy(
     ethers.constants.AddressZero /*testPriceOracle.address*/,
     ownerSetter
   );
 
-  walletFactory = await (await ethers.getContractFactory(
-    "WalletFactory"
-  )).deploy(smartWallet.address);
+  walletFactory = await (
+    await ethers.getContractFactory("WalletFactory")
+  ).deploy(smartWallet.address);
 
   await walletFactory.deployed();
+  const [signer] = await ethers.getSigners();
+  await walletFactory.addOperator(signer.address);
 
-  if (deployer) {
-    const _signer = await addrToSigner(deployer);
-    // console.log("_signer:", _signer);
-    return await walletFactory.connect(_signer);
-  } else {
-    return walletFactory;
-  }
+  // if (deployer) {
+  // const _signer = await addrToSigner(deployer);
+  // // console.log("_signer:", _signer);
+  // return await walletFactory.connect(_signer);
+  // } else {
+  return walletFactory;
+  // }
 }
 
 export async function newWallet(
@@ -166,7 +184,7 @@ export async function newWallet(
     feeToken: ethers.constants.AddressZero,
     maxFeeAmount: 0,
     salt,
-    signature: Buffer.from(signature.txSignature.slice(2), "hex")
+    signature: Buffer.from(signature.txSignature.slice(2), "hex"),
   };
 
   const walletAddrComputed = await walletFactory.computeWalletAddress(
@@ -185,20 +203,22 @@ export async function newWallet(
 }
 
 export async function attachWallet(wallet: string) {
-  const smartWallet = await (await ethers.getContractFactory("SmartWallet", {
-    libraries: {
-      ERC1271Lib: ethers.constants.AddressZero,
-      ERC20Lib: ethers.constants.AddressZero,
-      GuardianLib: ethers.constants.AddressZero,
-      InheritanceLib: ethers.constants.AddressZero,
-      LockLib: ethers.constants.AddressZero,
-      MetaTxLib: ethers.constants.AddressZero,
-      QuotaLib: ethers.constants.AddressZero,
-      RecoverLib: ethers.constants.AddressZero,
-      UpgradeLib: ethers.constants.AddressZero,
-      WhitelistLib: ethers.constants.AddressZero
-    }
-  })).attach(wallet);
+  const smartWallet = await (
+    await ethers.getContractFactory("SmartWallet", {
+      libraries: {
+        ERC1271Lib: ethers.constants.AddressZero,
+        ERC20Lib: ethers.constants.AddressZero,
+        GuardianLib: ethers.constants.AddressZero,
+        InheritanceLib: ethers.constants.AddressZero,
+        LockLib: ethers.constants.AddressZero,
+        MetaTxLib: ethers.constants.AddressZero,
+        QuotaLib: ethers.constants.AddressZero,
+        RecoverLib: ethers.constants.AddressZero,
+        UpgradeLib: ethers.constants.AddressZero,
+        WhitelistLib: ethers.constants.AddressZero,
+      },
+    })
+  ).attach(wallet);
 
   return smartWallet;
 }
@@ -247,7 +267,7 @@ export async function getContractABI(contractName: string) {
   if (!contractName) return undefined;
 
   return new Promise((resolve, reject) => {
-    glob("./artifacts/**/*.json", function(err, files) {
+    glob("./artifacts/**/*.json", function (err, files) {
       if (err) return reject(err);
       for (const f of files) {
         if (f.endsWith(contractName + ".json")) {
@@ -277,7 +297,7 @@ export function sortSignersAndSignatures(
   signatures: Buffer[]
 ) {
   const sigMap = new Map();
-  signers.forEach(function(signer, i) {
+  signers.forEach(function (signer, i) {
     sigMap.set(signer, signatures[i]);
   });
 
@@ -286,7 +306,7 @@ export function sortSignersAndSignatures(
     const numB = parseInt(b.slice(2, 10), 16);
     return numA - numB;
   });
-  const sortedSignatures = sortedSigners.map(s => sigMap.get(s));
+  const sortedSignatures = sortedSigners.map((s) => sigMap.get(s));
   return { sortedSigners, sortedSignatures };
 }
 

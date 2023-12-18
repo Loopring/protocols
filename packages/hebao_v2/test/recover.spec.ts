@@ -5,7 +5,7 @@ import {
   newWallet,
   getFirstEvent,
   getBlockTimestamp,
-  sortSignersAndSignatures
+  sortSignersAndSignatures,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -25,8 +25,8 @@ describe("wallet", () => {
     const GuardianLib = await ethers.getContractFactory("GuardianLib");
     const RecoverLib = await ethers.getContractFactory("RecoverLib", {
       libraries: {
-        GuardianLib: ethers.constants.AddressZero
-      }
+        GuardianLib: ethers.constants.AddressZero,
+      },
     });
     recoverInterface = RecoverLib.interface;
     guardianInterface = GuardianLib.interface;
@@ -42,7 +42,7 @@ describe("wallet", () => {
 
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
         guardian1.address,
-        guardian2.address
+        guardian2.address,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
@@ -79,7 +79,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.recover(approval, newOwner, []);
@@ -108,7 +108,7 @@ describe("wallet", () => {
 
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
         guardian1.address,
-        guardian2.address
+        guardian2.address,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
@@ -147,7 +147,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.recover(approval, newOwner, []);
@@ -176,7 +176,7 @@ describe("wallet", () => {
 
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
         guardian1.address,
-        guardian2.address
+        guardian2.address,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
@@ -213,7 +213,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.recover(approval, newOwner, newGuardians);
@@ -243,7 +243,7 @@ describe("wallet", () => {
 
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
         guardian1.address,
-        guardian2.address
+        guardian2.address,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
@@ -251,7 +251,7 @@ describe("wallet", () => {
       const newGuardians = [
         "0x" + "11".repeat(20),
         "0x" + "11".repeat(20),
-        "0x" + "11".repeat(20)
+        "0x" + "11".repeat(20),
       ];
       const sig1 = signRecover(
         masterCopy,
@@ -284,7 +284,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       try {

@@ -11,7 +11,7 @@ async function newSingleFactory() {
   const singleFactoryAddress = "0xce0042B868300000d44A59004Da54A005ffdcf9f";
 
   const iface = new ethers.utils.Interface([
-    "function deploy(bytes memory _initCode, bytes32 _salt) public returns (address payable createdContract)"
+    "function deploy(bytes memory _initCode, bytes32 _salt) public returns (address payable createdContract)",
   ]);
   const [signer] = await ethers.getSigners();
   return new ethers.Contract(singleFactoryAddress, iface, signer);
@@ -35,7 +35,7 @@ async function deploySingle(
   if (args && args.length > 0) {
     deployableCode = ethers.utils.hexConcat([
       deployableCode,
-      contract.interface.encodeDeploy(args)
+      contract.interface.encodeDeploy(args),
     ]);
   }
 
@@ -89,7 +89,7 @@ export async function deployWalletImpl() {
       ["QuotaLib", QuotaLibAddr],
       ["RecoverLib", RecoverLibAddr],
       ["UpgradeLib", UpgradeLibAddr],
-      ["WhitelistLib", WhitelistLibAddr]
+      ["WhitelistLib", WhitelistLibAddr],
     ])
   );
 
@@ -98,7 +98,7 @@ export async function deployWalletImpl() {
 
 export async function deployWalletFactory(smartWalletAddr: string) {
   const walletFactoryAddr = await deploySingle("WalletFactory", [
-    smartWalletAddr
+    smartWalletAddr,
   ]);
   return walletFactoryAddr;
 }

@@ -8,7 +8,7 @@ export enum SignatureType {
   INVALID,
   EIP_712,
   ETH_SIGN,
-  WALLET // deprecated
+  WALLET, // deprecated
 }
 
 export function batchSign(
@@ -67,7 +67,7 @@ export function appendType(str: string, type: SignatureType) {
 function signEthereum(message: Buffer, privateKey: string) {
   const parts = [
     Buffer.from("\x19Ethereum Signed Message:\n32", "utf8"),
-    message
+    message,
   ];
   const totalHash = ethUtil.keccak(Buffer.concat(parts));
   const signature = ethUtil.ecsign(totalHash, new Buffer(privateKey, "hex"));

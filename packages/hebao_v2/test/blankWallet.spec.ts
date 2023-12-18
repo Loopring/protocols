@@ -3,7 +3,7 @@ import { signCreateWallet } from "./helper/signatureUtils";
 import {
   newWalletFactoryContract,
   getFirstEvent,
-  attachWallet
+  attachWallet,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -46,7 +46,7 @@ describe("wallet", () => {
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount: 0,
         salt,
-        signature: Buffer.from(signature.txSignature.slice(2), "hex")
+        signature: Buffer.from(signature.txSignature.slice(2), "hex"),
       };
 
       const walletAddrComputed = await walletFactory.computeWalletAddress(

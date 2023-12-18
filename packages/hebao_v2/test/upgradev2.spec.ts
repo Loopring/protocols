@@ -117,6 +117,7 @@ describe("DelayedImplementationManager", () => {
     const walletFactory = await (
       await ethers.getContractFactory("WalletFactory")
     ).deploy(forwardProxy.address);
+    await walletFactory.addOperator(owner);
 
     // create smart wallet
     const signature = signCreateWallet(

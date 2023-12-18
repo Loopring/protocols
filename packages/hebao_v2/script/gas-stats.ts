@@ -24,7 +24,7 @@ async function fetchAllMetaTxHashs() {
     "0xc238c9f6e0d73f7e16632430bc0af758c9c5184d",
     "0xcea2f215d122e7e43615789ad7c80128c82b3742",
     "0xd5535729714618e57c42a072b8d56e72517f3800",
-    "0xacba35c89046f6083bbd6bf6d6e88b438c9b1a1b"
+    "0xacba35c89046f6083bbd6bf6d6e88b438c9b1a1b",
   ];
 
   // get all transactions within 3 days:
@@ -32,18 +32,20 @@ async function fetchAllMetaTxHashs() {
   const metaTxHashs: Set<string> = new Set();
 
   for (const walletAddr of walletAddrs) {
-    const metatxContract = await (await ethers.getContractFactory("MetaTxLib", {
-      libraries: {
-        ERC20Lib: ethers.constants.AddressZero
-      }
-    })).attach(walletAddr);
+    const metatxContract = await (
+      await ethers.getContractFactory("MetaTxLib", {
+        libraries: {
+          ERC20Lib: ethers.constants.AddressZero,
+        },
+      })
+    ).attach(walletAddr);
 
     const events = await metatxContract.queryFilter(
       metatxContract.filters.MetaTxExecuted,
       fromBlock
     );
     // console.log("events:", events);
-    events.forEach(e => {
+    events.forEach((e) => {
       metaTxHashs.add(e.transactionHash);
     });
   }
@@ -71,7 +73,7 @@ async function gasStats() {
       res.push({
         txHash,
         gasUsed: receipt.gasUsed.toString(),
-        txType: innerTx.name
+        txType: innerTx.name,
       });
     } catch (err) {
       console.error(err);
@@ -88,7 +90,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(err => {
+  .catch((err) => {
     console.error(err);
     process.exit(1);
   });

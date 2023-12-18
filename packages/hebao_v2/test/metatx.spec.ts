@@ -3,13 +3,13 @@ import {
   MetaTx,
   signCallContractWA,
   signRecover,
-  signMetaTx
+  signMetaTx,
 } from "./helper/signatureUtils";
 import {
   newWallet,
   getFirstEvent,
   getBlockTimestamp,
-  sortSignersAndSignatures
+  sortSignersAndSignatures,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -32,22 +32,22 @@ describe("wallet", () => {
     const GuardianLib = await ethers.getContractFactory("GuardianLib");
     const RecoverLib = await ethers.getContractFactory("RecoverLib", {
       libraries: {
-        GuardianLib: ethers.constants.AddressZero
-      }
+        GuardianLib: ethers.constants.AddressZero,
+      },
     });
     const MetaTxLib = await ethers.getContractFactory("MetaTxLib", {
       libraries: {
-        ERC20Lib: ethers.constants.AddressZero
-      }
+        ERC20Lib: ethers.constants.AddressZero,
+      },
     });
 
     recoverInterface = RecoverLib.interface;
     guardianInterface = GuardianLib.interface;
     metaTxInterface = MetaTxLib.interface;
 
-    TestContract = await (await ethers.getContractFactory(
-      "TestTargetContract"
-    )).deploy();
+    TestContract = await (
+      await ethers.getContractFactory("TestTargetContract")
+    ).deploy();
   });
 
   describe("MetaTx", () => {
@@ -60,7 +60,7 @@ describe("wallet", () => {
 
       let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
         guardian1.address,
-        guardian2.address
+        guardian2.address,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
@@ -97,13 +97,13 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const data = wallet.interface.encodeFunctionData("recover", [
         approval,
         newOwner,
-        newGuardians
+        newGuardians,
       ]);
 
       // const metaTxSigner = await account3.getAddress();
@@ -118,7 +118,7 @@ describe("wallet", () => {
         requiresSuccess: true,
         data: Buffer.from(data.slice(2, 10), "hex"),
         signature: Buffer.from(""),
-        approvedHash: sig1.hash
+        approvedHash: sig1.hash,
       };
 
       // can not sign with old owner, because wallet owner if changed when
@@ -171,7 +171,7 @@ describe("wallet", () => {
       await account2.sendTransaction({
         from: await account2.getAddress(),
         to: wallet.address,
-        value: ethers.utils.parseEther("100")
+        value: ethers.utils.parseEther("100"),
       });
 
       const transferTo = "0x" + "30".repeat(20);
@@ -181,7 +181,7 @@ describe("wallet", () => {
         transferTo,
         ethers.utils.parseEther("10"),
         [],
-        false
+        false,
       ]);
 
       wallet = wallet.connect(account3);
@@ -199,7 +199,7 @@ describe("wallet", () => {
         approvedHash: Buffer.from(
           "0000000000000000000000000000000000000000000000000000000000000000",
           "hex"
-        )
+        ),
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
 
@@ -250,14 +250,14 @@ describe("wallet", () => {
       const guardian2 = await account3.getAddress();
       let wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
         guardian1,
-        guardian2
+        guardian2,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
       await account2.sendTransaction({
         from: await account2.getAddress(),
         to: wallet.address,
-        value: ethers.utils.parseEther("100")
+        value: ethers.utils.parseEther("100"),
       });
 
       const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
@@ -290,7 +290,7 @@ describe("wallet", () => {
         [owner, guardian1],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -298,7 +298,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       // callContractWA
@@ -306,7 +306,7 @@ describe("wallet", () => {
         approval,
         TestContract.address,
         0,
-        callData
+        callData,
       ]);
 
       wallet = wallet.connect(account3);
@@ -321,7 +321,7 @@ describe("wallet", () => {
         requiresSuccess: true,
         data: Buffer.from(data.slice(2, 10), "hex"),
         signature: Buffer.from(""),
-        approvedHash: sig1.hash
+        approvedHash: sig1.hash,
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
 

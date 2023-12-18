@@ -17,8 +17,8 @@ async function getWalletIface() {
       QuotaLib: ethers.constants.AddressZero,
       RecoverLib: ethers.constants.AddressZero,
       UpgradeLib: ethers.constants.AddressZero,
-      WhitelistLib: ethers.constants.AddressZero
-    }
+      WhitelistLib: ethers.constants.AddressZero,
+    },
   });
 
   return walletContract.interface;
@@ -44,9 +44,9 @@ async function verifySignatureERC1271(
   hash: string,
   signature: string
 ) {
-  const officialGuardian = await (await ethers.getContractFactory(
-    "OfficialGuardian"
-  )).attach(officialGuardianAddr);
+  const officialGuardian = await (
+    await ethers.getContractFactory("OfficialGuardian")
+  ).attach(officialGuardianAddr);
 
   const message = Buffer.from(hash.slice(2), "hex");
   const recoveredAddr = recoverECDSA(message, signature);
@@ -172,7 +172,7 @@ async function signMetaTxTest(inputData: string) {
     requiresSuccess: dataParsed.requiresSuccess,
     data: Buffer.from(dataParsed.data.slice(2), "hex"),
     signature: Buffer.from(dataParsed.signature.slice(2), "hex"),
-    approvedHash: Buffer.from(dataParsed.approvedHash.slice(2), "hex")
+    approvedHash: Buffer.from(dataParsed.approvedHash.slice(2), "hex"),
   };
 
   console.log("metaTx:", metaTx);
@@ -222,7 +222,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(err => {
+  .catch((err) => {
     console.error(err);
     process.exit(1);
   });

@@ -292,7 +292,7 @@ describe("walletFactory", () => {
         feeRecipient: ethers.constants.AddressZero,
         feeToken: ethers.constants.AddressZero,
         maxFeeAmount: 0,
-        salt
+        salt,
       };
 
       const walletAddrComputed = await walletFactory.computeWalletAddress(

@@ -1,7 +1,7 @@
 import { expect } from "./setup";
 import {
   signCreateWallet,
-  signChangeMasterCopy
+  signChangeMasterCopy,
 } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
 import {
@@ -41,14 +41,18 @@ describe("wallet", () => {
 
     wallet = await newWallet(owner, ethers.constants.AddressZero, 0, [
       guardian1,
-      guardian2
+      guardian2,
     ]);
     newSmartWalletImpl = await newWalletImpl();
-    console.log('newSmartWalletImpl.address: ', newSmartWalletImpl.address);
+    console.log("newSmartWalletImpl.address: ", newSmartWalletImpl.address);
 
-    const implStorage = await (await ethers.getContractFactory("DelayedImplementationManager")).deploy(newSmartWalletImpl.address);
-    forwardProxy = await (await ethers.getContractFactory("ForwardProxy")).deploy(implStorage.address);
-    console.log('forwardProxy.address: ', forwardProxy.address);
+    const implStorage = await (
+      await ethers.getContractFactory("DelayedImplementationManager")
+    ).deploy(newSmartWalletImpl.address);
+    forwardProxy = await (
+      await ethers.getContractFactory("ForwardProxy")
+    ).deploy(implStorage.address);
+    console.log("forwardProxy.address: ", forwardProxy.address);
   });
 
   describe("upgrade", () => {
@@ -81,7 +85,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.changeMasterCopy(
@@ -98,13 +102,15 @@ describe("wallet", () => {
 
   describe("DelayedImplementationManager", () => {
     it("only owner is able to set nextImpl & effectiveTime", async () => {
-      const storage = await (await ethers.getContractFactory("DelayedImplementationManager")).deploy(newSmartWalletImpl.address);
+      const storage = await (
+        await ethers.getContractFactory("DelayedImplementationManager")
+      ).deploy(newSmartWalletImpl.address);
       const owner = await storage.owner();
       const signer = storage.signer;
       expect(owner).to.equal(signer.address);
 
       try {
-        await storage.executeUpgrade()
+        await storage.executeUpgrade();
       } catch (err) {
         expect(err.message.includes("NOT_IN_EFFECT")).to.be.true;
       }
@@ -115,7 +121,9 @@ describe("wallet", () => {
       const receipt = await tx.wait();
       const upgradeScheduledEvent = receipt.events[0].args;
       expect(upgradeScheduledEvent.nextImpl).to.equal(newImpl);
-      expect(upgradeScheduledEvent.effectiveTime.toNumber()).to.equal(blockTime + 3600*24);
+      expect(upgradeScheduledEvent.effectiveTime.toNumber()).to.equal(
+        blockTime + 3600 * 24
+      );
 
       const storageWithAnotherSigner = await storage.connect(account2);
       const signer2 = storageWithAnotherSigner.signer.address;
@@ -134,7 +142,7 @@ describe("wallet", () => {
         expect(err.message.includes("NOT_IN_EFFECT")).to.be.true;
       }
 
-      await advanceTime(3600*24);
+      await advanceTime(3600 * 24);
       const executeTx = await storageWithAnotherSigner.executeUpgrade();
       const executeReceipt = await executeTx.wait();
       const implementationChangedEvent = executeReceipt.events[0].args;
@@ -142,11 +150,10 @@ describe("wallet", () => {
 
       // upgrade can not be executed agin:
       try {
-        await storage.executeUpgrade()
+        await storage.executeUpgrade();
       } catch (err) {
         expect(err.message.includes("NOT_IN_EFFECT")).to.be.true;
       }
-
     });
   });
 
@@ -188,13 +195,10 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
-      const tx = await wallet.changeMasterCopy(
-        approval,
-        newImpl,
-      );
+      const tx = await wallet.changeMasterCopy(approval, newImpl);
 
       const masterCopyOfWallet = await wallet.getMasterCopy();
       // console.log("masterCopyofwallet:", masterCopyOfWallet);
@@ -205,5 +209,4 @@ describe("wallet", () => {
       // console.log('walletAfter: ', walletAfter);
     });
   });
-
 });

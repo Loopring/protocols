@@ -1,7 +1,7 @@
 import { expect } from "./setup";
 import {
   signTransferTokenWA,
-  signApproveTokenWA
+  signApproveTokenWA,
 } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
 import {
@@ -10,7 +10,7 @@ import {
   advanceTime,
   getBlockTimestamp,
   timeAlmostEqual,
-  sortSignersAndSignatures
+  sortSignersAndSignatures,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -37,7 +37,7 @@ describe("wallet", () => {
     await account2.sendTransaction({
       from: owner,
       to: wallet.address,
-      value: ethers.utils.parseEther("100")
+      value: ethers.utils.parseEther("100"),
     });
 
     LRC = await (await ethers.getContractFactory("LRC")).deploy();
@@ -101,7 +101,7 @@ describe("wallet", () => {
     it("transfer token with approval(owner required)", async () => {
       const guardians: string[] = [
         await account1.getAddress(),
-        await account3.getAddress()
+        await account3.getAddress(),
       ];
       const salt = new Date().getTime();
       wallet = await newWallet(
@@ -116,7 +116,7 @@ describe("wallet", () => {
       await account2.sendTransaction({
         from: owner,
         to: wallet.address,
-        value: ethers.utils.parseEther("100")
+        value: ethers.utils.parseEther("100"),
       });
 
       await wallet.changeDailyQuota(ethers.utils.parseEther("10"));
@@ -154,7 +154,7 @@ describe("wallet", () => {
         [owner, guardians[0]],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -162,7 +162,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const toBalanceBefore = await ethers.provider.getBalance(toAddr);
@@ -195,7 +195,7 @@ describe("wallet", () => {
     it("approve token with approval(owner required)", async () => {
       const guardians: string[] = [
         await account1.getAddress(),
-        await account3.getAddress()
+        await account3.getAddress(),
       ];
       const salt = new Date().getTime();
       wallet = await newWallet(
@@ -236,7 +236,7 @@ describe("wallet", () => {
         [owner, guardians[0]],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -244,7 +244,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.approveTokenWA(

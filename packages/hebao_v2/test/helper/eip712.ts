@@ -15,7 +15,7 @@ export function hash(name: string, version: string, moduleAddress: string) {
       ethUtil.keccak(name),
       ethUtil.keccak(version),
       hre.network.config.chainId, // chainId
-      moduleAddress
+      moduleAddress,
     ]
   );
 
@@ -27,7 +27,7 @@ export function hashPacked(domainSeprator: Buffer, encodedData: string) {
     Buffer.concat([
       Buffer.from(EIP191_HEADER, "utf8"),
       domainSeprator,
-      ethUtil.keccak(encodedData)
+      ethUtil.keccak(encodedData),
     ])
   );
 }

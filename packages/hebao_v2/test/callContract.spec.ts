@@ -1,14 +1,14 @@
 import { expect } from "./setup";
 import {
   signCallContractWA,
-  signApproveThenCallContractWA
+  signApproveThenCallContractWA,
 } from "./helper/signatureUtils";
 import { sign } from "./helper/Signature";
 import {
   newWallet,
   getContractABI,
   getFirstEvent,
-  sortSignersAndSignatures
+  sortSignersAndSignatures,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -40,12 +40,12 @@ describe("wallet", () => {
     await account1.sendTransaction({
       from: owner,
       to: wallet.address,
-      value: ethers.utils.parseEther("100")
+      value: ethers.utils.parseEther("100"),
     });
     LRC = await (await ethers.getContractFactory("LRC")).deploy();
-    TestContract = await (await ethers.getContractFactory(
-      "TestTargetContract"
-    )).deploy();
+    TestContract = await (
+      await ethers.getContractFactory("TestTargetContract")
+    ).deploy();
   });
 
   describe("callContract", () => {
@@ -100,7 +100,7 @@ describe("wallet", () => {
         [owner, guardians[0]],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -108,7 +108,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.callContractWA(
@@ -185,7 +185,7 @@ describe("wallet", () => {
         [owner, guardians[0]],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -193,7 +193,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx = await wallet.approveThenCallContractWA(

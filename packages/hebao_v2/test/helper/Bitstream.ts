@@ -29,7 +29,7 @@ export class Bitstream {
         0,
         "Bitstream not compatible with bytes32[]"
       );
-      return this.data.match(/.{1,64}/g).map(element => "0x" + element);
+      return this.data.match(/.{1,64}/g).map((element) => "0x" + element);
     }
   }
 

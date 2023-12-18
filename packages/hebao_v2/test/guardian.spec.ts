@@ -5,7 +5,7 @@ import {
   newWallet,
   getFirstEvent,
   getBlockTimestamp,
-  sortSignersAndSignatures
+  sortSignersAndSignatures,
 } from "./commons";
 // import { /*l2ethers as*/ ethers } from "hardhat";
 const { ethers } = require("hardhat");
@@ -96,7 +96,7 @@ describe("wallet", () => {
       const guardian2 = "0x" + "22".repeat(20);
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 1, [
         guardian1,
-        guardian2
+        guardian2,
       ]);
 
       const guardian3 = "0x" + "33".repeat(20);
@@ -150,14 +150,14 @@ describe("wallet", () => {
       try {
         const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
           owner,
-          guardian1
+          guardian1,
         ]);
       } catch (err) {
         expect(err.message.includes("GUARDIAN_CAN_NOT_BE_OWNER"));
       }
 
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
-        guardian1
+        guardian1,
       ]);
       try {
         await wallet.addGuardian(owner);
@@ -172,7 +172,7 @@ describe("wallet", () => {
       const guardian2 = await account3.getAddress();
       const wallet = await newWallet(owner, ethers.constants.AddressZero, 4, [
         guardian1,
-        guardian2
+        guardian2,
       ]);
       const masterCopy = await wallet.getMasterCopy();
 
@@ -199,7 +199,7 @@ describe("wallet", () => {
         [owner, guardian1],
         [
           Buffer.from(sig1.txSignature.slice(2), "hex"),
-          Buffer.from(sig2.txSignature.slice(2), "hex")
+          Buffer.from(sig2.txSignature.slice(2), "hex"),
         ]
       );
 
@@ -207,7 +207,7 @@ describe("wallet", () => {
         signers: sortedSigs.sortedSigners,
         signatures: sortedSigs.sortedSignatures,
         validUntil,
-        wallet: wallet.address
+        wallet: wallet.address,
       };
 
       const tx1 = await wallet.addGuardianWA(approval, guardian3);
