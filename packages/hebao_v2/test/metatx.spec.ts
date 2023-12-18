@@ -26,6 +26,7 @@ describe("wallet", () => {
   let metaTxInterface: any;
   const feeRecipient = "0x" + "30".repeat(20);
   let TestContract: Contract;
+  let GasEstimator: Contract;
 
   before(async () => {
     [account1, account2, account3] = await ethers.getSigners();
@@ -47,6 +48,10 @@ describe("wallet", () => {
 
     TestContract = await (
       await ethers.getContractFactory("TestTargetContract")
+    ).deploy();
+
+    GasEstimator = await (
+      await ethers.getContractFactory("GasEstimator")
     ).deploy();
   });
 
@@ -244,7 +249,7 @@ describe("wallet", () => {
       expect(toBalanceAfter).to.equal(ethers.utils.parseEther("10"));
     });
 
-    it("call contract WA", async () => {
+    it.only("call contract WA", async () => {
       const owner = await account1.getAddress();
       const guardian1 = await account2.getAddress();
       const guardian2 = await account3.getAddress();
@@ -324,6 +329,19 @@ describe("wallet", () => {
         approvedHash: sig1.hash,
       };
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
+      const gasUsed = await GasEstimator.callStatic.estimateGas(
+          wallet.address,
+          metaTx.to,
+        metaTx.nonce.toString(10),
+        metaTx.gasToken,
+        metaTx.gasPrice.toString(10),
+        metaTx.gasLimit.toString(10),
+        metaTx.gasOverhead.toString(10),
+        metaTx.feeRecipient,
+        metaTx.requiresSuccess,
+        data,
+        '0x'+"00".repeat(66));
+      console.log(gasUsed)
 
       const tx = await wallet.executeMetaTx(
         metaTx.to,
@@ -338,7 +356,6 @@ describe("wallet", () => {
         metaTxSig.txSignature
       );
       const receipt = await tx.wait();
-
       const eventsLen = receipt.events.length;
       const metaTxEvent = metaTxInterface.decodeEventLog(
         "MetaTxExecuted(uint256,bytes32,bytes32,bool,uint256)",
