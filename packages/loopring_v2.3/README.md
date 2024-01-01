@@ -42,8 +42,8 @@ The logs command is optional but will give you an easy to read output of the tes
 
 ## Deployment
 * deploy on testnet(rinkeby or ropsten)
-    - fill the mnemonic phases of your account in truffle.js 
-    - get some ethers from rinkeby/ropsten faucet.
+    - fill the mnemonic phrases of your account in truffle.js 
+    - get some ether from rinkeby/ropsten faucet.
     - run `npm run migrate -- --network rinkeby` or `npm run migrate -- --network ropsten`
 * For deployment information, please see [deployment.md](deployment.md).
 * For deployment information on kovan, please see [deployment-kovan.md](deployment-kovan.md).
