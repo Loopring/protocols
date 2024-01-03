@@ -420,6 +420,7 @@ describe("wallet", () => {
         data,
         "0x" + "00".repeat(66)
       );
+      await expect(ethers.provider.call({to: wallet.address, data, from: wallet.address})).not.to.be.reverted;
 
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
       const tx = await wallet.executeMetaTx(
