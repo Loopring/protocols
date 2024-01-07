@@ -78,6 +78,10 @@ export default {
       url: "https://l2rpc.a2.taiko.xyz/",
       accounts: [process.env.PRIVATE_KEY],
     },
+    taiko6: {
+      url: "https://rpc.katla.taiko.xyz/",
+      accounts: [process.env.PRIVATE_KEY],
+    },
     sepolia: {
       chainId: 11155111,
       url: "https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB",
