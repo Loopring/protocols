@@ -8,13 +8,15 @@
   "scripts": {
     "clean": "rimraf ./cache && rimraf ./artifacts",
     "compile": "yarn clean && hardhat compile",
+    "size": "hardhat size-contracts",
     "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
     "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
     "lint:ts": "eslint -f unix .",
     "lint-fix": "eslint -f unix . --fix",
     "prettier": "prettier --config ./.prettierrc --write \"**/*.{js,json,md,sol,ts}\"",
     "prettier:check": "prettier --check --config ./.prettierrc \"**/*.{js,json,md,sol,ts}\"",
-    "test": "yarn clean && hardhat test"
+    "test": "yarn clean && hardhat test",
+    "test-trade-agent": "yarn clean && TRADE_AGENT=true hardhat test"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
@@ -46,7 +48,6 @@
     "eslint-plugin-n": "^16.3.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-standard": "^5.0.0",
     "ethers": "^5.4.7",
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.4.1",
