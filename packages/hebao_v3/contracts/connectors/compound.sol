@@ -36,6 +36,13 @@ interface CTokenInterface {
     function balanceOf(
         address owner
     ) external view returns (uint256 balance);
+
+    function isCToken() external view returns (bool);
+    function underlying() external view returns (address);
+    function borrowBalanceStored(
+        address account
+    ) external view returns (uint);
+    function exchangeRateStored() external view returns (uint);
 }
 
 interface CETHInterface {
@@ -84,7 +91,7 @@ contract CompoundConnector is BaseConnector {
      * @param getId ID to retrieve amt.
      * @param setId ID stores the amount of tokens deposited.
      */
-    function depositRaw(
+    function deposit(
         address token,
         address cToken,
         uint256 amt,

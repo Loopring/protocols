@@ -32,7 +32,11 @@ contract BalancerFlashLoan is IFlashLoanRecipient {
             console.log('flashloan fee: ', feeAmount);
 
             // do sth here
-            // Address.functionCall(address(this), userData, "flashloan-fallback-failed");
+            Address.functionCall(
+                address(this),
+                userData,
+                'flashloan-fallback-failed'
+            );
 
             // Return loan
             token.transfer(vault, amount);
