@@ -308,7 +308,7 @@ describe('trade agent test', () => {
       entrypoint,
       sendUserOp
     } = loadedFixture
-    const nonce = await smartWallet.nonce()
+    const nonce = await smartWallet.getNonce()
     const populatedTx =
       await smartWallet.populateTransaction.approveExecutor(
         executor,
