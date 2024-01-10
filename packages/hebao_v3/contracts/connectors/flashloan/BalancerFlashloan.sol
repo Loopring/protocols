@@ -8,7 +8,18 @@ import './IVault.sol';
 import 'hardhat/console.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 
-contract BalancerFlashLoan is IFlashLoanRecipient {
+interface FlashLoanPoolInterface {
+    function flashLoan(
+        address token,
+        uint256 amount,
+        bytes memory userData
+    ) external;
+}
+
+contract BalancerFlashLoan is
+    IFlashLoanRecipient,
+    FlashLoanPoolInterface
+{
     address public immutable vault;
 
     constructor(address _vault) {
@@ -31,10 +42,14 @@ contract BalancerFlashLoan is IFlashLoanRecipient {
             uint256 feeAmount = feeAmounts[i];
             console.log('flashloan fee: ', feeAmount);
 
-            // do sth here
-            Address.functionCall(
-                address(this),
+            (address target, bytes memory data) = abi.decode(
                 userData,
+                (address, bytes)
+            );
+            // execute from smartwallet
+            Address.functionCall(
+                target,
+                data,
                 'flashloan-fallback-failed'
             );
 
@@ -44,10 +59,17 @@ contract BalancerFlashLoan is IFlashLoanRecipient {
     }
 
     function flashLoan(
-        IERC20[] memory tokens,
-        uint256[] memory amounts,
-        bytes memory userData
+        address token,
+        uint256 amount,
+        bytes memory data
     ) external {
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = IERC20(token);
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = amount;
+        // including `from` address
+        bytes memory userData = abi.encode(address(this), data);
+
         IBalancerVault(vault).flashLoan(
             IFlashLoanRecipient(address(this)),
             tokens,

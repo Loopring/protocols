@@ -1,12 +1,14 @@
 import { ethers } from 'hardhat'
 import { fixture } from '../../test/helper/fixture'
 import { type Wallet, type BigNumberish } from 'ethers'
+import { type Interface } from '@ethersproject/abi'
 import { type TransactionReceipt } from '@ethersproject/providers'
 import { range } from 'lodash'
 import {
   CompoundConnector__factory,
   UniswapConnector__factory,
-  WETHConnector__factory
+  WETHConnector__factory,
+  FlashLoanConnector__factory
 } from '../../typechain-types'
 
 import {
@@ -34,18 +36,24 @@ export const CONSTANTS = {
   ONE_FOR_USDC: ethers.utils.parseUnits('1', 6)
 }
 
-export const ctokenMapping = {
-  'BAT-A': '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
-  'COMP-A': '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
-  'DAI-A': '0x5d3a536e4d6dbd6114cc1ead35777bab948e3643',
-  'REP-A': '0x158079ee67fce2f58472a96584a73c7ab9ac95c1',
-  'UNI-A': '0x35a18000230da775cac24873d00ff85bccded550',
-  'USDC-A': '0x39aa39c021dfbae8fac545936693ac917d5e7563',
-  'USDT-A': '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9',
-  'WBTC-A': '0xc11b1268c1a384e55c48c2391d8d480264a3a7f4',
-  'ZRX-A': '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
-  'TUSD-A': '0x12392F67bdf24faE0AF363c24aC620a2f67DAd86',
-  'LINK-A': '0xFAce851a4921ce59e912d19329929CE6da6EB0c7'
+export const tokenMapping = {
+  BAT: {
+    cToken: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
+    token: ''
+  },
+  COMP: {
+    cToken: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
+    token: ''
+  },
+  DAI: '0x5d3a536e4d6dbd6114cc1ead35777bab948e3643',
+  REP: '0x158079ee67fce2f58472a96584a73c7ab9ac95c1',
+  UNI: '0x35a18000230da775cac24873d00ff85bccded550',
+  USDC: '0x39aa39c021dfbae8fac545936693ac917d5e7563',
+  USDT: '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9',
+  WBTC: '0xc11b1268c1a384e55c48c2391d8d480264a3a7f4',
+  ZRX: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
+  TUSD: '0x12392F67bdf24faE0AF363c24aC620a2f67DAd86',
+  LINK: '0xFAce851a4921ce59e912d19329929CE6da6EB0c7'
 }
 
 // eslint-disable-next-line
@@ -63,11 +71,22 @@ export async function fixtureForAutoMation() {
   const compoundConnector = await (
     await ethers.getContractFactory('CompoundConnector')
   ).deploy(ownedMemory.address)
+
+  const vaultAddr = '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+  const flashLoanPool = await (
+    await ethers.getContractFactory('BalancerFlashLoan')
+  ).deploy(vaultAddr)
+
+  const flashLoanConnector = await (
+    await ethers.getContractFactory('FlashLoanConnector')
+  ).deploy(ownedMemory.address, flashLoanPool.address)
   return {
     ...initFixture,
     wethConnector,
     uniswapConnector,
-    compoundConnector
+    compoundConnector,
+    flashLoanConnector,
+    flashLoanPool
   }
 }
 
@@ -140,13 +159,13 @@ export const userOpCast = async (
   const nonce = await smartWallet.getNonce()
   const smartWalletSignerAddr = await signer.getAddress()
 
-  const tx = await smartWallet.populateTransaction.cast(
+  const data = smartWallet.interface.encodeFunctionData('cast', [
     smartWalletSignerAddr,
     addresses,
     datas
-  )
+  ])
   const signedUserOp = await getSignedUserOp(
-    tx.data!,
+    data,
     nonce,
     smartWallet.address,
     signer,
@@ -174,13 +193,12 @@ export const makeAnExecutor = async (
   const validUntils = range(connectors.length).map(() =>
     Math.floor(Date.now() / 1000 + 24 * 60 * 60).toString()
   )
-  const tx = await smartWallet.populateTransaction.approveExecutor(
-    executor.address,
-    connectors,
-    validUntils
+  const data = smartWallet.interface.encodeFunctionData(
+    'approveExecutor',
+    [executor.address, connectors, validUntils]
   )
   const signedUserOp = await getSignedUserOp(
-    tx.data!,
+    data,
     nonce,
     smartWallet.address,
     smartWalletOwner,
@@ -204,10 +222,12 @@ export const unApproveExecutor = async (
     sendUserOp
   } = loadedFixture
   const nonce = await smartWallet.getNonce()
-  const populatedTx =
-    await smartWallet.populateTransaction.unApproveExecutor(executor)
+  const data = smartWallet.interface.encodeFunctionData(
+    'unApproveExecutor',
+    [executor]
+  )
   const signedUserOp = await getSignedUserOp(
-    populatedTx.data!,
+    data,
     nonce,
     smartWallet.address,
     smartWalletOwner,
@@ -217,24 +237,40 @@ export const unApproveExecutor = async (
   return sendUserOp(signedUserOp)
 }
 
-export const connectMapping = {
-  'COMPOUND-A': CompoundConnector__factory.createInterface(),
-  'UNISWAP-A': UniswapConnector__factory.createInterface(),
-  WETH: WETHConnector__factory.createInterface()
+export const connectMapping: Record<string, Interface> = {
+  COMPOUND: CompoundConnector__factory.createInterface(),
+  UNISWAP: UniswapConnector__factory.createInterface(),
+  WETH: WETHConnector__factory.createInterface(),
+  FLASHLOAN: FlashLoanConnector__factory.createInterface()
+}
+
+interface SpellType {
+  connector: string
+  method: string
+  args: any[]
 }
 
 export const encodeSpells = (
-  spells: Array<{ connector: string; method: string; args: any[] }>
+  spells: SpellType[]
 ): [string[], string[]] => {
   const targets = spells.map((a) => a.connector)
   const calldatas = spells.map((a) => {
     if (!(a.connector in connectMapping)) {
-      throw new Error("Couldn't find function")
+      throw new Error(`Couldn't find connector: ${a.connector}`)
     }
-    return connectMapping[a.connector].encodeFunctionCall(
+    return connectMapping[a.connector].encodeFunctionData(
       a.method,
       a.args
     )
   })
   return [targets, calldatas]
+}
+
+export function encodeFlashcastData(spells: SpellType[]): string {
+  const encodeSpellsData = encodeSpells(spells)
+  const argTypes = ['string[]', 'bytes[]']
+  return ethers.utils.defaultAbiCoder.encode(argTypes, [
+    encodeSpellsData[0],
+    encodeSpellsData[1]
+  ])
 }

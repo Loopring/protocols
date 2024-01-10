@@ -7,7 +7,9 @@ import {
   CONSTANTS,
   userOpCast,
   makeAnExecutor,
-  unApproveExecutor
+  unApproveExecutor,
+  encodeSpells,
+  encodeFlashcastData
 } from './automation_utils'
 
 describe('automation test', () => {
@@ -15,13 +17,10 @@ describe('automation test', () => {
     it('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const wethConnector = loadedFixture.wethConnector
-      const data = (
-        await wethConnector.populateTransaction.deposit(
-          CONSTANTS.ONE_FOR_ETH,
-          0,
-          0
-        )
-      ).data!
+      const data = wethConnector.interface.encodeFunctionData(
+        'deposit',
+        [CONSTANTS.ONE_FOR_ETH, 0, 0]
+      )
       const someone = ethers.Wallet.createRandom()
 
       await expect(
@@ -128,21 +127,17 @@ describe('automation test', () => {
 
       // deposit
       {
-        const tx =
-          await compoundConnector.populateTransaction.deposit(
-            tokenAddr,
-            cTokenAddr,
-            CONSTANTS.ONE_FOR_USDC,
-            0,
-            0
-          )
+        const data = compoundConnector.interface.encodeFunctionData(
+          'deposit',
+          [tokenAddr, cTokenAddr, CONSTANTS.ONE_FOR_USDC, 0, 0]
+        )
         const balanceBefore = await cERC20.balanceOf(
           smartWallet.address
         )
         await expect(
           userOpCast(
             [compoundConnector.address],
-            [tx.data!],
+            [data],
             executor,
             loadedFixture
           )
@@ -168,17 +163,20 @@ describe('automation test', () => {
         const balanceBefore = await token.balanceOf(
           smartWallet.address
         )
-        const tx = await compoundConnector.populateTransaction.borrow(
-          tokenAddr,
-          cToken.address,
-          CONSTANTS.ONE_FOR_USDC.div(2),
-          0,
-          0
+        const data = compoundConnector.interface.encodeFunctionData(
+          'borrow',
+          [
+            tokenAddr,
+            cToken.address,
+            CONSTANTS.ONE_FOR_USDC.div(2),
+            0,
+            0
+          ]
         )
         await expect(
           userOpCast(
             [compoundConnector.address],
-            [tx.data!],
+            [data],
             executor,
             loadedFixture
           )
@@ -191,19 +189,21 @@ describe('automation test', () => {
         )
 
         // repay
-        const tx2 =
-          await compoundConnector.populateTransaction.payback(
+        const data2 = compoundConnector.interface.encodeFunctionData(
+          'payback',
+          [
             tokenAddr,
             cToken.address,
             ethers.constants.MaxUint256, // repay all borrowed tokens
             0,
             0
-          )
+          ]
+        )
 
         await expect(
           userOpCast(
             [compoundConnector.address],
-            [tx2.data!],
+            [data2],
             executor,
             loadedFixture
           )
@@ -245,18 +245,21 @@ describe('automation test', () => {
       )
 
       // buy uni with usdc
-      const tx1 = await uniswapConnector.populateTransaction.sell(
-        CONSTANTS.UNI_ADDRESS,
-        CONSTANTS.USDC_ADDRESS,
-        CONSTANTS.ONE_FOR_USDC,
-        0,
-        0,
-        0
+      const data2 = uniswapConnector.interface.encodeFunctionData(
+        'sell',
+        [
+          CONSTANTS.UNI_ADDRESS,
+          CONSTANTS.USDC_ADDRESS,
+          CONSTANTS.ONE_FOR_USDC,
+          0,
+          0,
+          0
+        ]
       )
       await expect(
         userOpCast(
           [uniswapConnector.address],
-          [tx1.data!],
+          [data2],
           executor,
           loadedFixture
         )
@@ -265,18 +268,21 @@ describe('automation test', () => {
       expect(balance2.sub(balance1).gt(0)).true
 
       // sell uni
-      const tx2 = await uniswapConnector.populateTransaction.buy(
-        CONSTANTS.UNI_ADDRESS,
-        CONSTANTS.USDC_ADDRESS,
-        ethers.utils.parseEther('1'), // 1 UNI
-        ethers.utils.parseEther('1000'), // ratio
-        0,
-        0
+      const data = uniswapConnector.interface.encodeFunctionData(
+        'buy',
+        [
+          CONSTANTS.UNI_ADDRESS,
+          CONSTANTS.USDC_ADDRESS,
+          ethers.utils.parseEther('1'), // 1 UNI
+          ethers.utils.parseEther('1000'), // ratio
+          0,
+          0
+        ]
       )
       await expect(
         userOpCast(
           [uniswapConnector.address],
-          [tx2.data!],
+          [data],
           executor,
           loadedFixture
         )
@@ -292,9 +298,11 @@ describe('automation test', () => {
   describe('flashloan test', () => {
     it('using balancerv2', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, uniswapConnector, compoundConnector } =
-        loadedFixture
-      const vaultAddr = '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
+      const {
+        uniswapConnector,
+        compoundConnector,
+        flashLoanConnector
+      } = loadedFixture
       const ratio = 3
       const total = ethers.utils.parseUnits(
         (200 * ratio).toString(),
@@ -305,49 +313,70 @@ describe('automation test', () => {
         6
       )
       const IdOne = '2878734423'
-      const castDatas = [
-        uniswapConnector.interface.encodeFunctionData('sell', [
-          CONSTANTS.ETH_ADDRESS,
-          CONSTANTS.USDC_ADDRESS,
-          total,
-          0,
-          0,
-          IdOne
-        ]),
-        compoundConnector.interface.encodeFunctionData('deposit', [
-          CONSTANTS.ETH_ADDRESS,
-          '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
-          0,
-          IdOne,
-          0
-        ]),
-        compoundConnector.interface.encodeFunctionData('borrow', [
-          CONSTANTS.USDC_ADDRESS,
-          '0x39aa39c021dfbae8fac545936693ac917d5e7563',
-          loan,
-          0,
-          0
-        ])
+      const spells = [
+        {
+          connector: 'UNISWAP',
+          method: 'sell',
+          args: [
+            CONSTANTS.ETH_ADDRESS,
+            CONSTANTS.USDC_ADDRESS,
+            total,
+            0,
+            0,
+            IdOne
+          ] // margin trade
+        },
+        {
+          connector: 'COMPOUND',
+          method: 'deposit',
+          args: [
+            CONSTANTS.ETH_ADDRESS,
+            '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
+            0,
+            IdOne,
+            0
+          ]
+        },
+        {
+          connector: 'COMPOUND',
+          method: 'borrow',
+          args: [
+            CONSTANTS.USDC_ADDRESS,
+            '0x39aa39c021dfbae8fac545936693ac917d5e7563',
+            loan,
+            0,
+            0
+          ] // borrow usdt, note use token id here
+        },
+        {
+          connector: 'FLASHLOAN',
+          method: 'flashPayback',
+          args: [CONSTANTS.USDC_ADDRESS, loan, 0, 0]
+        }
       ]
-      const castAddresses = [
-        uniswapConnector.address,
-        compoundConnector.address,
-        compoundConnector.address
-      ]
+
+      const calldata = encodeFlashcastData(spells)
       const executor = await makeAnExecutor(
-        [uniswapConnector.address, compoundConnector.address],
+        [
+          uniswapConnector.address,
+          compoundConnector.address,
+          flashLoanConnector.address
+        ],
         loadedFixture
       )
-      const userData = smartWallet.interface.encodeFunctionData(
-        'cast',
-        [executor.address, castAddresses, castDatas]
+      const spells2 = [
+        {
+          connector: 'FLASHLOAN',
+          method: 'flashBorrowAndCast',
+          args: [CONSTANTS.USDC_ADDRESS, loan, calldata]
+        }
+      ]
+
+      await userOpCast(
+        ...encodeSpells(spells2),
+        executor,
+        loadedFixture
       )
-      const balancerFlashLoan = await (
-        await ethers.getContractFactory('BalancerFlashLoan')
-      ).deploy(vaultAddr)
-      const tokens = [CONSTANTS.WETH_ADDRESS]
-      const amounts = [ethers.utils.parseEther('1')]
-      await balancerFlashLoan.flashLoan(tokens, amounts, userData)
     })
   })
 
