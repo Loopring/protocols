@@ -301,21 +301,31 @@ describe('automation test', () => {
       const {
         uniswapConnector,
         compoundConnector,
-        flashLoanConnector
+        flashLoanConnector,
+        smartWallet,
+        usdc
       } = loadedFixture
       const ratio = 3
+      const collateral = 200
+      const decimal = await usdc.decimals()
       const total = ethers.utils.parseUnits(
-        (200 * ratio).toString(),
-        6
+        (collateral * ratio).toString(),
+        decimal
       )
       const loan = ethers.utils.parseUnits(
-        (200 * (ratio - 1)).toString(),
-        6
+        (collateral * (ratio - 1)).toString(),
+        decimal
+      )
+      await faucetToken(
+        CONSTANTS.USDC_ADDRESS,
+        smartWallet.address,
+        collateral.toString()
       )
       const IdOne = '2878734423'
       const spells = [
         {
-          connector: 'UNISWAP',
+          connectorName: 'UNISWAP',
+          connectorAddr: uniswapConnector.address,
           method: 'sell',
           args: [
             CONSTANTS.ETH_ADDRESS,
@@ -327,7 +337,8 @@ describe('automation test', () => {
           ] // margin trade
         },
         {
-          connector: 'COMPOUND',
+          connectorName: 'COMPOUND',
+          connectorAddr: compoundConnector.address,
           method: 'deposit',
           args: [
             CONSTANTS.ETH_ADDRESS,
@@ -338,7 +349,8 @@ describe('automation test', () => {
           ]
         },
         {
-          connector: 'COMPOUND',
+          connectorName: 'COMPOUND',
+          connectorAddr: compoundConnector.address,
           method: 'borrow',
           args: [
             CONSTANTS.USDC_ADDRESS,
@@ -349,13 +361,23 @@ describe('automation test', () => {
           ] // borrow usdt, note use token id here
         },
         {
-          connector: 'FLASHLOAN',
+          connectorName: 'FLASHLOAN',
+          connectorAddr: flashLoanConnector.address,
           method: 'flashPayback',
           args: [CONSTANTS.USDC_ADDRESS, loan, 0, 0]
         }
       ]
 
       const calldata = encodeFlashcastData(spells)
+      const spells2 = [
+        {
+          connectorName: 'FLASHLOAN',
+          connectorAddr: flashLoanConnector.address,
+          method: 'flashBorrowAndCast',
+          args: [CONSTANTS.USDC_ADDRESS, loan, calldata]
+        }
+      ]
+
       const executor = await makeAnExecutor(
         [
           uniswapConnector.address,
@@ -364,18 +386,15 @@ describe('automation test', () => {
         ],
         loadedFixture
       )
-      const spells2 = [
-        {
-          connector: 'FLASHLOAN',
-          method: 'flashBorrowAndCast',
-          args: [CONSTANTS.USDC_ADDRESS, loan, calldata]
-        }
-      ]
-
+      const balanceBefore = await usdc.balanceOf(smartWallet.address)
       await userOpCast(
         ...encodeSpells(spells2),
         executor,
         loadedFixture
+      )
+      const balanceAfter = await usdc.balanceOf(smartWallet.address)
+      expect(balanceBefore.sub(balanceAfter)).eq(
+        ethers.utils.parseUnits(collateral.toString(), decimal)
       )
     })
   })

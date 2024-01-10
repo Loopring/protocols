@@ -43,29 +43,28 @@ contract FlashLoanConnector is BaseConnector {
         uint amt,
         bytes memory data
     ) external payable {
-        address[] memory connectors = new address[](1);
-        uint256[] memory validUntils = new uint256[](1);
-        validUntils[0] = type(uint256).max;
-        connectors[0] = address(flashLoanPool);
-        // AccountInterface(address(this)).enable(address(flashLoanPool));
+        (address[] memory targets, bytes[] memory callDatas) = abi
+            .decode(data, (address[], bytes[]));
+        // TODO(optimize approval and unapproval process)
+        uint256[] memory validUntils = new uint256[](targets.length);
+        for (uint8 i = 0; i < validUntils.length; ++i) {
+            validUntils[i] = type(uint256).max;
+        }
+
         ApprovalInterface(address(this)).approveExecutor(
             address(flashLoanPool),
-            connectors,
+            targets,
             validUntils
         );
-        (string[] memory _targets, bytes[] memory callDatas) = abi
-            .decode(data, (string[], bytes[]));
 
         bytes memory callData = abi.encodeWithSignature(
-            'cast(address,string[],bytes[])',
-            address(flashLoanPool),
-            _targets,
+            'castFromExecutor(address[],bytes[])',
+            targets,
             callDatas
         );
 
         flashLoanPool.flashLoan(token, amt, callData);
 
-        // AccountInterface(address(this)).disable(address(flashLoanPool));
         ApprovalInterface(address(this)).unApproveExecutor(
             address(flashLoanPool)
         );

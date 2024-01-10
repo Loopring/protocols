@@ -80,13 +80,19 @@ export async function fixtureForAutoMation() {
   const flashLoanConnector = await (
     await ethers.getContractFactory('FlashLoanConnector')
   ).deploy(ownedMemory.address, flashLoanPool.address)
+
+  const usdc = await ethers.getContractAt(
+    'IERC20Metadata',
+    CONSTANTS.USDC_ADDRESS
+  )
   return {
     ...initFixture,
     wethConnector,
     uniswapConnector,
     compoundConnector,
     flashLoanConnector,
-    flashLoanPool
+    flashLoanPool,
+    usdc
   }
 }
 
@@ -245,7 +251,8 @@ export const connectMapping: Record<string, Interface> = {
 }
 
 interface SpellType {
-  connector: string
+  connectorName: string
+  connectorAddr: string
   method: string
   args: any[]
 }
@@ -253,12 +260,12 @@ interface SpellType {
 export const encodeSpells = (
   spells: SpellType[]
 ): [string[], string[]] => {
-  const targets = spells.map((a) => a.connector)
+  const targets = spells.map((a) => a.connectorAddr)
   const calldatas = spells.map((a) => {
-    if (!(a.connector in connectMapping)) {
-      throw new Error(`Couldn't find connector: ${a.connector}`)
+    if (!(a.connectorName in connectMapping)) {
+      throw new Error(`Couldn't find connector: ${a.connectorName}`)
     }
-    return connectMapping[a.connector].encodeFunctionData(
+    return connectMapping[a.connectorName].encodeFunctionData(
       a.method,
       a.args
     )
@@ -268,7 +275,7 @@ export const encodeSpells = (
 
 export function encodeFlashcastData(spells: SpellType[]): string {
   const encodeSpellsData = encodeSpells(spells)
-  const argTypes = ['string[]', 'bytes[]']
+  const argTypes = ['address[]', 'bytes[]']
   return ethers.utils.defaultAbiCoder.encode(argTypes, [
     encodeSpellsData[0],
     encodeSpellsData[1]

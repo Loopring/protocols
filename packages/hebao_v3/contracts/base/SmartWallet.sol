@@ -529,7 +529,7 @@ abstract contract SmartWallet is
         address executor,
         address[] calldata connectors,
         uint[] calldata validUntils
-    ) external onlyFromEntryPoint {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         return
             AutomationLib.approveExecutor(
                 wallet,
@@ -541,7 +541,7 @@ abstract contract SmartWallet is
 
     function unApproveExecutor(
         address executor
-    ) external onlyFromEntryPoint {
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         return AutomationLib.unApproveExecutor(wallet, executor);
     }
 
@@ -550,6 +550,21 @@ abstract contract SmartWallet is
         address[] calldata targets,
         bytes[] calldata datas
     ) external onlyFromEntryPoint {
+        AutomationLib.cast(targets, datas);
+    }
+
+    function castFromExecutor(
+        address[] calldata targets,
+        bytes[] calldata datas
+    ) external {
+        require(
+            AutomationLib._verifyPermission(
+                wallet,
+                msg.sender,
+                targets
+            ),
+            'not executor'
+        );
         AutomationLib.cast(targets, datas);
     }
 }
