@@ -81,6 +81,7 @@ export default {
     taiko6: {
       url: "https://rpc.katla.taiko.xyz/",
       accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 2000000000,
     },
     sepolia: {
       chainId: 11155111,

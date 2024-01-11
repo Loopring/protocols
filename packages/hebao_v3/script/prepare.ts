@@ -17,10 +17,22 @@ async function main() {
     paymasterAddr,
     deployer
   );
-  const token = "0xD69d3e64D71844BBDdA51Cd7f23ED3631E9FAC49";
-  await (await paymaster.addToken(token)).wait();
-  // check success
-  console.log(await paymaster.registeredToken(token));
+  const tokens = [
+    "0xD69d3e64D71844BBDdA51Cd7f23ED3631E9FAC49",
+    "0xae2C46ddb314B9Ba743C6dEE4878F151881333D9",
+  ];
+  for (const token of tokens) {
+    await (await paymaster.addToken(token)).wait();
+    // check success
+    console.log(await paymaster.registeredToken(token));
+  }
+  const operators = ["0xE6FDa200797a5B8116e69812344cE7D2A9F17B0B"];
+  const signerRole = await paymaster.SIGNER();
+  for (const operator of operators) {
+    await (await paymaster.grantRole(signerRole, operator)).wait();
+    // check success
+    console.log(await paymaster.hasRole(signerRole, operator));
+  }
 }
 
 main()
