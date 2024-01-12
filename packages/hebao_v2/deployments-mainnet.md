@@ -2,6 +2,9 @@
 
 ## Ethereum mainnet
 
+### Updated 2024-1-12
+GasEstimator 0x487b9e8031055d291d51c5c83a4d0f030d47199f
+
 ### Updated 2022-10-19
 - deployer: 0xd54f3bDe60B73614905BA3881954d9FeB2476360
 - ERC1271Lib: 0xF5Fa304dc2eE83162f41dFdFaEC56933F1dE3C49

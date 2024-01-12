@@ -73,7 +73,11 @@ export default {
       url: "https://eth-goerli.g.alchemy.com/v2/Vf2BpEUqjAj4fV8pZ6hFXuyNLAFDb0s2",
       accounts: [process.env.PRIVATE_KEY],
     },
-
+    ethereum: {
+      chainId: 1,
+      url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
+      accounts: [process.env.PRIVATE_KEY],
+    },
     taiko: {
       chainId: 167002,
       url: "https://l2rpc.hackathon.taiko.xyz",

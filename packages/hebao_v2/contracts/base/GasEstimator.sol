@@ -2,46 +2,39 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
-import "../iface/ILoopringWalletV2.sol";
 
-import "hardhat/console.sol";
-
-interface WalletInterface{
-function executeMetaTx(
+interface WalletInterface {
+    function executeMetaTx(
         address to,
-        uint    nonce,
+        uint nonce,
         address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
-        uint    gasOverhead,
+        uint gasPrice,
+        uint gasLimit,
+        uint gasOverhead,
         address feeRecipient,
-        bool    requiresSuccess,
-        bytes   calldata data,
-        bytes   memory   signature
-        )
-        external
-        returns (bool);
-
+        bool requiresSuccess,
+        bytes calldata data,
+        bytes memory signature
+    ) external returns (bool);
 }
 
-
-contract GasEstimator{
-
-    bytes32 constant ERROR_STRING_HASH  = keccak256("METATX_INVALID_SIGNATURE");
+contract GasEstimator {
+    bytes32 constant ERROR_STRING_HASH = keccak256("METATX_INVALID_SIGNATURE");
     uint256 constant GAS_OVERHEAD = 50000;
+
     function estimateGas(
         WalletInterface wallet,
         address to,
-        uint    nonce,
+        uint nonce,
         address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
-        uint    gasOverhead,
+        uint gasPrice,
+        uint gasLimit,
+        uint gasOverhead,
         address feeRecipient,
-        bool    requiresSuccess,
-        bytes   calldata data,
-        bytes   memory   signature
-    ) external returns(uint256 estimatedGas) {
+        bool requiresSuccess,
+        bytes calldata data,
+        bytes memory signature
+    ) external returns (uint256 estimatedGas) {
         uint gasLeft = gasleft();
         try
             wallet.executeMetaTx(
@@ -55,17 +48,20 @@ contract GasEstimator{
                 requiresSuccess,
                 data,
                 signature
-            ) {}
-         catch (bytes memory reason) {
+            )
+        {} catch (bytes memory reason) {
             estimatedGas = gasLeft - gasleft();
-              assembly {
-                              reason := add(reason, 0x04)
-                          }
-                        string memory reason_str = abi.decode(reason, (string));
-                    require(ERROR_STRING_HASH==keccak256(bytes(reason_str)), "GAS ESTIMATION ERROR");
+            assembly {
+                reason := add(reason, 0x04)
+            }
+            string memory reason_str = abi.decode(reason, (string));
+            require(
+                ERROR_STRING_HASH == keccak256(bytes(reason_str)),
+                "GAS ESTIMATION ERROR"
+            );
         }
 
         // add gas overhead
-        estimatedGas+= GAS_OVERHEAD;
+        estimatedGas += GAS_OVERHEAD;
     }
 }

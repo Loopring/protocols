@@ -1,5 +1,8 @@
 # Deployment on goerli:
 
+## 20240104
+  GasEstiamtor 0x5f1d7fef3cc6cac6c575bde9b94147ae01776122
+
 ## 20220531:
 
 - deployer: 0xE20cF871f1646d8651ee9dC95AAB1d93160b3467
