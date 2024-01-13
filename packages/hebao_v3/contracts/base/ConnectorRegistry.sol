@@ -11,7 +11,7 @@ contract ConnectorRegistry is AccessControl, Ownable {
 
     mapping(address => bool) public connectors;
 
-    modifier isMananger() {
+    modifier onlyManager() {
         require(hasRole(MANAGER, msg.sender), 'not a manager');
         _;
     }
@@ -21,9 +21,29 @@ contract ConnectorRegistry is AccessControl, Ownable {
         _grantRole(MANAGER, owner());
     }
 
+    function addConnectors(
+        address[] calldata _connectors
+    ) external onlyManager {
+        for (uint i = 0; i < _connectors.length; ++i) {
+            if (!connectors[_connectors[i]]) {
+                connectors[_connectors[i]] = true;
+            }
+        }
+    }
+
+    function removeConnectors(
+        address[] calldata _connectors
+    ) external onlyManager {
+        for (uint i = 0; i < _connectors.length; ++i) {
+            if (connectors[_connectors[i]]) {
+                connectors[_connectors[i]] = false;
+            }
+        }
+    }
+
     /**
      * @dev Check if Connector addresses are enabled.
-     * @param _connectors Array of Connector Names.
+     * @param connectorAddrs Array of Connector Names.
      */
     function isConnectors(
         address[] calldata connectorAddrs

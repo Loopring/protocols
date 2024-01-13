@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import './InheritanceLib.sol';
 import './WalletData.sol';
 import '../../account-abstraction/interfaces/UserOperation.sol';
+import '../../iface/IConnectorRegistry.sol';
 
 library AutomationLib {
     using InheritanceLib for Wallet;
@@ -51,19 +52,25 @@ library AutomationLib {
         address executor
     ) internal view returns (bool) {
         bool isOwner = executor == wallet.owner;
-        uint256 validUntil = wallet.executorsPermission[executor];
-        bool isExecutor = validUntil == 0 ||
-            validUntil > block.timestamp;
+        bool isExecutor = wallet.executorsPermission[executor] >
+            block.timestamp;
         return isExecutor || isOwner;
     }
 
     function cast(
+        address connectorRegistry,
         address[] calldata targets,
         bytes[] calldata datas
     ) internal {
         uint256 _length = targets.length;
         require(_length == datas.length, 'different length');
         // check all targets is valid
+        require(
+            IConnectorRegistry(connectorRegistry).isConnectors(
+                targets
+            ),
+            'valid connector'
+        );
         for (uint i = 0; i < _length; i++) {
             _spell(targets[i], datas[i]);
         }

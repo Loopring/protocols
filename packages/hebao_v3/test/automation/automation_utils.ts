@@ -3,7 +3,6 @@ import { fixture } from '../../test/helper/fixture'
 import { type Wallet, type BigNumberish } from 'ethers'
 import { type Interface } from '@ethersproject/abi'
 import { type TransactionReceipt } from '@ethersproject/providers'
-import { range } from 'lodash'
 import {
   CompoundConnector__factory,
   UniswapConnector__factory,
@@ -59,6 +58,7 @@ export const tokenMapping = {
 // eslint-disable-next-line
 export async function fixtureForAutoMation() {
   const initFixture = await fixture()
+  const { connectorRegistry } = initFixture
   const ownedMemory = await (
     await ethers.getContractFactory('OwnedMemory')
   ).deploy()
@@ -81,6 +81,16 @@ export async function fixtureForAutoMation() {
     await ethers.getContractFactory('FlashLoanConnector')
   ).deploy(ownedMemory.address, flashLoanPool.address)
 
+  await (
+    await connectorRegistry.addConnectors([
+      wethConnector.address,
+      flashLoanConnector.address,
+      uniswapConnector.address,
+      compoundConnector.address
+    ])
+  ).wait()
+
+  // can only be used in forknet test
   const usdc = await ethers.getContractAt(
     'IERC20Metadata',
     CONSTANTS.USDC_ADDRESS
@@ -163,13 +173,11 @@ export const userOpCast = async (
   const { smartWallet, create2, entrypoint, sendUserOp } =
     loadedFixture
   const nonce = await smartWallet.getNonce()
-  const smartWalletSignerAddr = await signer.getAddress()
 
-  const data = smartWallet.interface.encodeFunctionData('cast', [
-    smartWalletSignerAddr,
-    addresses,
-    datas
-  ])
+  const data = smartWallet.interface.encodeFunctionData(
+    'castFromEntryPoint',
+    [addresses, datas]
+  )
   const signedUserOp = await getSignedUserOp(
     data,
     nonce,
@@ -196,12 +204,12 @@ export const makeAnExecutor = async (
     sendUserOp
   } = loadedFixture
   const nonce = await smartWallet.getNonce()
-  const validUntils = range(connectors.length).map(() =>
-    Math.floor(Date.now() / 1000 + 24 * 60 * 60).toString()
-  )
+  const validUntil = Math.floor(
+    Date.now() / 1000 + 24 * 60 * 60
+  ).toString()
   const data = smartWallet.interface.encodeFunctionData(
     'approveExecutor',
-    [executor.address, connectors, validUntils]
+    [executor.address, validUntil]
   )
   const signedUserOp = await getSignedUserOp(
     data,

@@ -52,7 +52,7 @@ abstract contract SmartWallet is
     PriceOracle public immutable priceOracle;
     address public immutable blankOwner;
     IEntryPoint internal immutable _entryPoint;
-    address internal immutable _connectorRegistry;
+    address internal immutable connectorRegistry;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -123,7 +123,7 @@ abstract contract SmartWallet is
         PriceOracle _priceOracle,
         address _blankOwner,
         IEntryPoint entryPointInput,
-        address _connectorRegistry,
+        address _connectorRegistry
     ) {
         isImplementationContract = true;
         _entryPoint = entryPointInput;
@@ -550,7 +550,7 @@ abstract contract SmartWallet is
         address[] calldata targets,
         bytes[] calldata datas
     ) external onlyFromEntryPoint {
-        AutomationLib.cast(targets, datas);
+        AutomationLib.cast(connectorRegistry, targets, datas);
     }
 
     function castFromExecutor(
@@ -558,12 +558,9 @@ abstract contract SmartWallet is
         bytes[] calldata datas
     ) external {
         require(
-            AutomationLib.isExecutorOrOwner(
-                wallet,
-                msg.sender
-            ),
+            AutomationLib.isExecutorOrOwner(wallet, msg.sender),
             'not executor'
         );
-        AutomationLib.cast(targets, datas);
+        AutomationLib.cast(connectorRegistry, targets, datas);
     }
 }

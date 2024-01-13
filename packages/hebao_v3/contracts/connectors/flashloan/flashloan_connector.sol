@@ -13,8 +13,7 @@ import {FlashLoanPoolInterface} from './BalancerFlashloan.sol';
 interface ApprovalInterface {
     function approveExecutor(
         address executor,
-        address[] calldata connectors,
-        uint[] calldata validUntils
+        uint256 validUntil
     ) external;
 
     function unApproveExecutor(address executor) external;
@@ -45,16 +44,9 @@ contract FlashLoanConnector is BaseConnector {
     ) external payable {
         (address[] memory targets, bytes[] memory callDatas) = abi
             .decode(data, (address[], bytes[]));
-        // TODO(optimize approval and unapproval process)
-        uint256[] memory validUntils = new uint256[](targets.length);
-        for (uint8 i = 0; i < validUntils.length; ++i) {
-            validUntils[i] = type(uint256).max;
-        }
-
         ApprovalInterface(address(this)).approveExecutor(
             address(flashLoanPool),
-            targets,
-            validUntils
+            type(uint256).max
         );
 
         bytes memory callData = abi.encodeWithSignature(

@@ -57,9 +57,15 @@ export async function fixture() {
     paymasterOwner
   )
 
+  // TODO(add some pre-registered connectors here)
+  const connectorRegistry = await (
+    await ethers.getContractFactory('ConnectorRegistry')
+  ).deploy()
+
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
+    connectorRegistry.address,
     blankOwner.address
   )
 
@@ -190,6 +196,7 @@ export async function fixture() {
     walletFactory,
     implStorage,
     testTarget,
-    somebody
+    somebody,
+    connectorRegistry
   }
 }

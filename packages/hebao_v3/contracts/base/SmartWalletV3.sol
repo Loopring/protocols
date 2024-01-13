@@ -24,8 +24,16 @@ contract SmartWalletV3 is SmartWallet {
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput
-    ) SmartWallet(_priceOracle, _blankOwner, entryPointInput) {}
+        IEntryPoint entryPointInput,
+        address connectorRegistry
+    )
+        SmartWallet(
+            _priceOracle,
+            _blankOwner,
+            entryPointInput,
+            connectorRegistry
+        )
+    {}
 
     function selfBatchCall(
         bytes[] calldata data

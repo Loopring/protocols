@@ -41,7 +41,7 @@ contract BalancerFlashLoan is
     function receiveFlashLoan(
         IERC20[] memory tokens,
         uint256[] memory amounts,
-        uint256[] memory feeAmounts,
+        uint256[] memory /*feeAmounts*/,
         bytes memory userData
     ) external override {
         // check msg.sender
@@ -51,7 +51,6 @@ contract BalancerFlashLoan is
             CastData memory cd;
             cd.token = tokens[i];
             cd.amount = amounts[i];
-            uint256 feeAmount = feeAmounts[i];
             (cd.target, cd.data) = abi.decode(
                 userData,
                 (address, bytes)

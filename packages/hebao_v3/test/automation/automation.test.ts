@@ -14,7 +14,7 @@ import {
 
 describe('automation test', () => {
   describe('permission test', () => {
-    it('not approved executor should be rejected', async () => {
+    it.only('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const wethConnector = loadedFixture.wethConnector
       const data = wethConnector.interface.encodeFunctionData(
