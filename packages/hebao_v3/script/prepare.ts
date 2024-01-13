@@ -22,16 +22,37 @@ async function main() {
     "0xae2C46ddb314B9Ba743C6dEE4878F151881333D9",
   ];
   for (const token of tokens) {
-    await (await paymaster.addToken(token)).wait();
+    if (await paymaster.registeredToken(token)) {
+      console.log(`token: ${token} is registerd already`);
+    } else {
+      await (await paymaster.addToken(token)).wait();
+      console.log(`token: ${token} is registerd successfully`);
+    }
     // check success
-    console.log(await paymaster.registeredToken(token));
   }
   const operators = ["0xE6FDa200797a5B8116e69812344cE7D2A9F17B0B"];
   const signerRole = await paymaster.SIGNER();
   for (const operator of operators) {
-    await (await paymaster.grantRole(signerRole, operator)).wait();
-    // check success
-    console.log(await paymaster.hasRole(signerRole, operator));
+    if (await paymaster.hasRole(signerRole, operator)) {
+      console.log(`operator ${operator} has permission already`);
+    } else {
+      await (await paymaster.grantRole(signerRole, operator)).wait();
+      console.log(`grant role to ${operator} successfully`);
+    }
+  }
+
+  // prepare transaction fee for paymaster in entrypoint
+  const balance = await paymaster.getDeposit();
+  const minBalance = ethers.utils.parseEther("0.1");
+  if (balance.lt(minBalance)) {
+    console.log(
+      `current balance: ${balance.toString()} is less than minBalance${minBalance.toString()}`
+    );
+    await (await paymaster.deposit({ value: minBalance })).wait();
+  } else {
+    console.log(
+      `current balance: ${balance.toString()} is enough to pay transaction fee`
+    );
   }
 }
 
