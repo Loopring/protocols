@@ -67,7 +67,6 @@ struct Wallet {
     // whitelisted address => effective timestamp
     mapping(address => uint) whitelisted;
     address entryPoint;
-    address[] executors;
-    mapping(address => mapping(address => uint)) executorsPermission;
-    mapping(address => address[]) executorsConnectors;
+    // executor => validUntil
+    mapping(address => uint) executorsPermission;
 }

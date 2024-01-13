@@ -344,40 +344,22 @@ library ApprovalLib {
                 return SIG_VALIDATION_FAILED;
             }
 
-            if (localVar.methodId == SmartWallet.cast.selector) {
-                // use automation when wallet unlocked
+            if (
+                localVar.methodId ==
+                SmartWallet.castFromEntryPoint.selector
+            ) {
+                // automation can be used only when wallet is unlocked
                 require(!wallet.locked, 'wallet is locked');
-                (
-                    address executor,
-                    address[] memory connectors,
-
-                ) = abi.decode(
-                        userOp.callData[4:],
-                        (address, address[], bytes[])
-                    );
+                address executor = localVar.hash.recover(
+                    userOp.signature
+                );
                 if (
-                    localVar.hash.verifySignature(
-                        executor,
-                        userOp.signature
-                    ) &&
-                    AutomationLib._verifyPermission(
-                        wallet,
-                        executor,
-                        connectors
-                    )
+                    AutomationLib.isExecutorOrOwner(wallet, executor)
                 ) {
                     return 0;
                 }
-                if (
-                    localVar.hash.verifySignature(
-                        wallet.owner,
-                        userOp.signature
-                    )
-                ) {
-                    return 0;
-                }
-                return SIG_VALIDATION_FAILED;
             }
+            return SIG_VALIDATION_FAILED;
         }
 
         require(!wallet.locked, 'wallet is locked');

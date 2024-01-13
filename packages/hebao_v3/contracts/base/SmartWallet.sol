@@ -52,6 +52,7 @@ abstract contract SmartWallet is
     PriceOracle public immutable priceOracle;
     address public immutable blankOwner;
     IEntryPoint internal immutable _entryPoint;
+    address internal immutable _connectorRegistry;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -121,10 +122,12 @@ abstract contract SmartWallet is
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput
+        IEntryPoint entryPointInput,
+        address _connectorRegistry,
     ) {
         isImplementationContract = true;
         _entryPoint = entryPointInput;
+        connectorRegistry = _connectorRegistry;
 
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain('LoopringWallet', '2.0.0', address(this))
@@ -519,23 +522,21 @@ abstract contract SmartWallet is
             interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
-    function executorPermission(
+    function isExecutorOrOwner(
         address executor
-    ) external view returns (uint[] memory, address[] memory) {
-        return AutomationLib.executorPermission(wallet, executor);
+    ) external view returns (bool) {
+        return AutomationLib.isExecutorOrOwner(wallet, executor);
     }
 
     function approveExecutor(
         address executor,
-        address[] calldata connectors,
-        uint[] calldata validUntils
+        uint256 validUntil
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         return
             AutomationLib.approveExecutor(
                 wallet,
                 executor,
-                connectors,
-                validUntils
+                validUntil
             );
     }
 
@@ -545,8 +546,7 @@ abstract contract SmartWallet is
         return AutomationLib.unApproveExecutor(wallet, executor);
     }
 
-    function cast(
-        address /*executor*/,
+    function castFromEntryPoint(
         address[] calldata targets,
         bytes[] calldata datas
     ) external onlyFromEntryPoint {
@@ -558,10 +558,9 @@ abstract contract SmartWallet is
         bytes[] calldata datas
     ) external {
         require(
-            AutomationLib._verifyPermission(
+            AutomationLib.isExecutorOrOwner(
                 wallet,
-                msg.sender,
-                targets
+                msg.sender
             ),
             'not executor'
         );

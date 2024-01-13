@@ -46,19 +46,15 @@ library AutomationLib {
         }
     }
 
-    function _verifyPermission(
+    function isExecutorOrOwner(
         Wallet storage wallet,
-        address executor,
-        address[] memory targets
+        address executor
     ) internal view returns (bool) {
-        mapping(address => uint) storage permissionInfo = wallet
-            .executorsPermission[executor];
-        for (uint i = 0; i < targets.length; i++) {
-            if (permissionInfo[targets[i]] < block.timestamp) {
-                return false;
-            }
-        }
-        return true;
+        bool isOwner = executor == wallet.owner;
+        uint256 validUntil = wallet.executorsPermission[executor];
+        bool isExecutor = validUntil == 0 ||
+            validUntil > block.timestamp;
+        return isExecutor || isOwner;
     }
 
     function cast(
@@ -66,59 +62,33 @@ library AutomationLib {
         bytes[] calldata datas
     ) internal {
         uint256 _length = targets.length;
+        require(_length == datas.length, 'different length');
+        // check all targets is valid
         for (uint i = 0; i < _length; i++) {
             _spell(targets[i], datas[i]);
         }
     }
 
-    function executorPermission(
-        Wallet storage wallet,
-        address executor
-    ) internal view returns (uint[] memory, address[] memory) {
-        address[] memory addresses = wallet.executorsConnectors[
-            executor
-        ];
-        uint[] memory validUntils = new uint[](addresses.length);
-        for (uint i = 0; i < addresses.length; i++) {
-            validUntils[i] = wallet.executorsPermission[executor][
-                addresses[i]
-            ];
-        }
-        return (validUntils, addresses);
-    }
-
-    function _unApproveExecutor(
-        Wallet storage wallet,
-        address executor
-    ) private {
-        address[] memory connectors = wallet.executorsConnectors[
-            executor
-        ];
-        for (uint i = 0; i < connectors.length; i++) {
-            wallet.executorsPermission[executor][connectors[i]] = 0;
-        }
-        wallet.executorsConnectors[executor] = new address[](0);
-    }
-
     function approveExecutor(
         Wallet storage wallet,
         address executor,
-        address[] calldata connectors,
-        uint[] calldata validUntils
+        uint256 validUntil
     ) internal {
-        _unApproveExecutor(wallet, executor);
-        wallet.executorsConnectors[executor] = connectors;
-        for (uint i = 0; i < connectors.length; i++) {
-            wallet.executorsPermission[executor][
-                connectors[i]
-            ] = validUntils[i];
-        }
+        require(
+            wallet.executorsPermission[executor] < validUntil,
+            'approve failed'
+        );
+        wallet.executorsPermission[executor] = validUntil;
     }
 
     function unApproveExecutor(
         Wallet storage wallet,
         address executor
     ) internal {
-        _unApproveExecutor(wallet, executor);
+        require(
+            wallet.executorsPermission[executor] > 0,
+            'unapprove failed'
+        );
+        wallet.executorsPermission[executor] = 0;
     }
 }
