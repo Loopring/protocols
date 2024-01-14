@@ -358,8 +358,8 @@ library ApprovalLib {
                 ) {
                     return 0;
                 }
+                return SIG_VALIDATION_FAILED;
             }
-            return SIG_VALIDATION_FAILED;
         }
 
         require(!wallet.locked, 'wallet is locked');

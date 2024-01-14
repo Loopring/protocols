@@ -190,7 +190,6 @@ export const userOpCast = async (
 }
 
 export const makeAnExecutor = async (
-  connectors: string[],
   loadedFixture: Fixture
 ): Promise<Wallet> => {
   const executor = ethers.Wallet.createRandom().connect(

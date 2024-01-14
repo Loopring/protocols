@@ -14,7 +14,7 @@ import {
 
 describe('automation test', () => {
   describe('permission test', () => {
-    it.only('not approved executor should be rejected', async () => {
+    it('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const wethConnector = loadedFixture.wethConnector
       const data = wethConnector.interface.encodeFunctionData(
@@ -37,10 +37,7 @@ describe('automation test', () => {
         )
         .withArgs(0, 'AA24 signature error')
 
-      const executor = await makeAnExecutor(
-        [wethConnector.address],
-        loadedFixture
-      )
+      const executor = await makeAnExecutor(loadedFixture)
 
       await expect(
         userOpCast(
@@ -78,10 +75,7 @@ describe('automation test', () => {
         'TokenInterface',
         CONSTANTS.WETH_ADDRESS
       )
-      const executor = await makeAnExecutor(
-        [wethConnector.address],
-        loadedFixture
-      )
+      const executor = await makeAnExecutor(loadedFixture)
 
       const balance1 = await weth.balanceOf(smartWallet.address)
       const data = wethConnector.interface.encodeFunctionData(
@@ -103,10 +97,7 @@ describe('automation test', () => {
     it('compound connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const { smartWallet, compoundConnector } = loadedFixture
-      const executor = await makeAnExecutor(
-        [compoundConnector.address],
-        loadedFixture
-      )
+      const executor = await makeAnExecutor(loadedFixture)
 
       // USDC-A
       const cTokenAddr = '0x39AA39c021dfbaE8faC545936693aC917d5E7563'
@@ -234,10 +225,7 @@ describe('automation test', () => {
         CONSTANTS.UNI_ADDRESS
       )
       const balance1 = await UNI.balanceOf(smartWallet.address)
-      const executor = await makeAnExecutor(
-        [uniswapConnector.address],
-        loadedFixture
-      )
+      const executor = await makeAnExecutor(loadedFixture)
       await faucetToken(
         CONSTANTS.USDC_ADDRESS,
         smartWallet.address,
@@ -378,14 +366,7 @@ describe('automation test', () => {
         }
       ]
 
-      const executor = await makeAnExecutor(
-        [
-          uniswapConnector.address,
-          compoundConnector.address,
-          flashLoanConnector.address
-        ],
-        loadedFixture
-      )
+      const executor = await makeAnExecutor(loadedFixture)
       const balanceBefore = await usdc.balanceOf(smartWallet.address)
       await userOpCast(
         ...encodeSpells(spells2),
