@@ -25,6 +25,7 @@ contract ConnectorRegistry is AccessControl, Ownable {
         address[] calldata _connectors
     ) external onlyManager {
         for (uint i = 0; i < _connectors.length; ++i) {
+            // allow to add same connectors multiple times
             if (!connectors[_connectors[i]]) {
                 connectors[_connectors[i]] = true;
             }

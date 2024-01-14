@@ -13,6 +13,39 @@ import {
 } from './automation_utils'
 
 describe('automation test', () => {
+    describe('connectorRegistry test', ()=>{
+        it('connector management', async ()=>{
+        const {connectorRegistry, deployer} = await loadFixture(fixtureForAutoMation)
+            const role = await connectorRegistry.MANAGER()
+            // deployer is default manager
+            expect(await connectorRegistry.hasRole(role, deployer.address)).to.be.true
+
+            const mockConnectors = [ethers.constants.AddressZero]
+            expect(await connectorRegistry.isConnectors(mockConnectors)).to.be.false
+            await connectorRegistry.addConnectors(mockConnectors)
+            expect(await connectorRegistry.isConnectors(mockConnectors)).to.be.true
+            await connectorRegistry.removeConnectors(mockConnectors)
+            expect(await connectorRegistry.isConnectors(mockConnectors)).to.be.false
+
+            // add already valid connectors again
+            await expect(connectorRegistry.addConnectors(mockConnectors)).not.to.reverted
+        })
+
+        it('permission test', async ()=>{
+        const {connectorRegistry, somebody} = await loadFixture(fixtureForAutoMation)
+            const role = await connectorRegistry.MANAGER()
+
+            expect(await connectorRegistry.hasRole(role, somebody.address)).to.be.false
+            const mockConnectors = [ethers.constants.AddressZero]
+            // only manager can add new connector
+            await expect(connectorRegistry.connect(somebody).addConnectors(mockConnectors)).to.revertedWith('not a manager')
+            await expect(connectorRegistry.connect(somebody).removeConnectors(mockConnectors)).to.revertedWith('not a manager')
+
+            await connectorRegistry.grantRole(role, somebody.address)
+            expect(await connectorRegistry.hasRole(role, somebody.address)).to.be.true
+            await expect(connectorRegistry.connect(somebody).addConnectors(mockConnectors)).not.to.reverted
+        })
+    })
   describe('permission test', () => {
     it('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
