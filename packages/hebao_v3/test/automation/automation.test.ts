@@ -310,7 +310,7 @@ describe('automation test', () => {
 
       const stETH = await ethers.getContractAt(
         'IERC20Metadata',
-        '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+        CONSTANTS.STETH_ADDRESS
       )
       const stETHBalance = await stETH.balanceOf(smartWallet.address)
       expect(stETHBalance).to.gt(0)
@@ -480,7 +480,72 @@ describe('automation test', () => {
   })
 
   describe('intergration test', () => {
-    it('leverage staking', async () => {})
+    it.only('leverage staking', async () => {
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      const {
+        flashLoanConnector,
+        aaveV3Connector,
+        lidoConnector,
+        smartWallet,
+        deployer
+      } = loadedFixture
+
+      const ratio = 3
+      const collateral = CONSTANTS.ONE_FOR_ETH
+      const total = collateral.mul(ratio)
+      const loan = total.sub(collateral)
+
+      // prepare init eth for smart wallet
+      await deployer.sendTransaction({
+        to: smartWallet.address,
+        value: collateral
+      })
+      const IdOne = '2878734423'
+      const wstETH = CONSTANTS.WSTETH_ADDRESS
+      const spells = [
+        {
+          connectorName: 'LIDO',
+          connectorAddr: lidoConnector.address,
+          method: 'wrapAndStaking',
+          args: [total, 0, IdOne]
+        },
+        {
+          connectorName: 'AAVEV3',
+          connectorAddr: aaveV3Connector.address,
+          method: 'deposit',
+          args: [wstETH, 0, IdOne, 0] // margin trade
+        },
+        {
+          connectorName: 'AAVEV3',
+          connectorAddr: aaveV3Connector.address,
+          method: 'borrow',
+          args: [CONSTANTS.ETH_ADDRESS, loan, 0, 0, 0]
+        },
+        {
+          connectorName: 'FLASHLOAN',
+          connectorAddr: flashLoanConnector.address,
+          method: 'flashPayback',
+          args: [wstETH, loan, 0, 0]
+        }
+      ]
+
+      const calldata = encodeFlashcastData(spells)
+      const spells2 = [
+        {
+          connectorName: 'FLASHLOAN',
+          connectorAddr: flashLoanConnector.address,
+          method: 'flashBorrowAndCast',
+          args: [CONSTANTS.ETH_ADDRESS, loan, calldata]
+        }
+      ]
+
+      const executor = await makeAnExecutor(loadedFixture)
+      await userOpCast(
+        ...encodeSpells(spells2),
+        executor,
+        loadedFixture
+      )
+    })
 
     it('margin trading', async () => {})
   })

@@ -7,7 +7,9 @@ import {
   CompoundConnector__factory,
   UniswapConnector__factory,
   WETHConnector__factory,
-  FlashLoanConnector__factory
+  FlashLoanConnector__factory,
+  LidoConnector__factory,
+  AaveV3Connector__factory
 } from '../../typechain-types'
 
 import {
@@ -31,6 +33,8 @@ export const CONSTANTS = {
   WETH_ADDRESS: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
   WBT_ADDRESS: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   ETH_ADDRESS: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+  STETH_ADDRESS: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+  WSTETH_ADDRESS: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
   ONE_FOR_ETH: ethers.utils.parseEther('1'),
   ONE_FOR_USDC: ethers.utils.parseUnits('1', 6)
 }
@@ -85,13 +89,18 @@ export async function fixtureForAutoMation() {
     await ethers.getContractFactory('LidoConnector')
   ).deploy(ownedMemory.address)
 
+  const aaveV3Connector = await (
+    await ethers.getContractFactory('AaveV3Connector')
+  ).deploy(ownedMemory.address)
+
   await (
     await connectorRegistry.addConnectors([
       wethConnector.address,
       flashLoanConnector.address,
       uniswapConnector.address,
       compoundConnector.address,
-      lidoConnector.address
+      lidoConnector.address,
+      aaveV3Connector.address
     ])
   ).wait()
 
@@ -107,6 +116,7 @@ export async function fixtureForAutoMation() {
     compoundConnector,
     flashLoanConnector,
     lidoConnector,
+    aaveV3Connector,
     flashLoanPool,
     usdc
   }
@@ -260,7 +270,9 @@ export const connectMapping: Record<string, Interface> = {
   COMPOUND: CompoundConnector__factory.createInterface(),
   UNISWAP: UniswapConnector__factory.createInterface(),
   WETH: WETHConnector__factory.createInterface(),
-  FLASHLOAN: FlashLoanConnector__factory.createInterface()
+  FLASHLOAN: FlashLoanConnector__factory.createInterface(),
+  AAVEV3: AaveV3Connector__factory.createInterface(),
+  LIDO: LidoConnector__factory.createInterface()
 }
 
 interface SpellType {
