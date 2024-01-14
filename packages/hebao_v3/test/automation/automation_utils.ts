@@ -81,12 +81,17 @@ export async function fixtureForAutoMation() {
     await ethers.getContractFactory('FlashLoanConnector')
   ).deploy(ownedMemory.address, flashLoanPool.address)
 
+  const lidoConnector = await (
+    await ethers.getContractFactory('LidoConnector')
+  ).deploy(ownedMemory.address)
+
   await (
     await connectorRegistry.addConnectors([
       wethConnector.address,
       flashLoanConnector.address,
       uniswapConnector.address,
-      compoundConnector.address
+      compoundConnector.address,
+      lidoConnector.address
     ])
   ).wait()
 
@@ -101,6 +106,7 @@ export async function fixtureForAutoMation() {
     uniswapConnector,
     compoundConnector,
     flashLoanConnector,
+    lidoConnector,
     flashLoanPool,
     usdc
   }

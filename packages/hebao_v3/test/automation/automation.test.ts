@@ -13,39 +13,62 @@ import {
 } from './automation_utils'
 
 describe('automation test', () => {
-    describe('connectorRegistry test', ()=>{
-        it('connector management', async ()=>{
-        const {connectorRegistry, deployer} = await loadFixture(fixtureForAutoMation)
-            const role = await connectorRegistry.MANAGER()
-            // deployer is default manager
-            expect(await connectorRegistry.hasRole(role, deployer.address)).to.be.true
+  describe('connectorRegistry test', () => {
+    it('connector management', async () => {
+      const { connectorRegistry, deployer } = await loadFixture(
+        fixtureForAutoMation
+      )
+      const role = await connectorRegistry.MANAGER()
+      // deployer is default manager
+      expect(await connectorRegistry.hasRole(role, deployer.address))
+        .to.be.true
 
-            const mockConnectors = [ethers.constants.AddressZero]
-            expect(await connectorRegistry.isConnectors(mockConnectors)).to.be.false
-            await connectorRegistry.addConnectors(mockConnectors)
-            expect(await connectorRegistry.isConnectors(mockConnectors)).to.be.true
-            await connectorRegistry.removeConnectors(mockConnectors)
-            expect(await connectorRegistry.isConnectors(mockConnectors)).to.be.false
+      const mockConnectors = [ethers.constants.AddressZero]
+      expect(await connectorRegistry.isConnectors(mockConnectors)).to
+        .be.false
+      await connectorRegistry.addConnectors(mockConnectors)
+      expect(await connectorRegistry.isConnectors(mockConnectors)).to
+        .be.true
+      await connectorRegistry.removeConnectors(mockConnectors)
+      expect(await connectorRegistry.isConnectors(mockConnectors)).to
+        .be.false
 
-            // add already valid connectors again
-            await expect(connectorRegistry.addConnectors(mockConnectors)).not.to.reverted
-        })
-
-        it('permission test', async ()=>{
-        const {connectorRegistry, somebody} = await loadFixture(fixtureForAutoMation)
-            const role = await connectorRegistry.MANAGER()
-
-            expect(await connectorRegistry.hasRole(role, somebody.address)).to.be.false
-            const mockConnectors = [ethers.constants.AddressZero]
-            // only manager can add new connector
-            await expect(connectorRegistry.connect(somebody).addConnectors(mockConnectors)).to.revertedWith('not a manager')
-            await expect(connectorRegistry.connect(somebody).removeConnectors(mockConnectors)).to.revertedWith('not a manager')
-
-            await connectorRegistry.grantRole(role, somebody.address)
-            expect(await connectorRegistry.hasRole(role, somebody.address)).to.be.true
-            await expect(connectorRegistry.connect(somebody).addConnectors(mockConnectors)).not.to.reverted
-        })
+      // add already valid connectors again
+      await expect(connectorRegistry.addConnectors(mockConnectors))
+        .not.to.reverted
     })
+
+    it('permission test', async () => {
+      const { connectorRegistry, somebody } = await loadFixture(
+        fixtureForAutoMation
+      )
+      const role = await connectorRegistry.MANAGER()
+
+      expect(await connectorRegistry.hasRole(role, somebody.address))
+        .to.be.false
+      const mockConnectors = [ethers.constants.AddressZero]
+      // only manager can add new connector
+      await expect(
+        connectorRegistry
+          .connect(somebody)
+          .addConnectors(mockConnectors)
+      ).to.revertedWith('not a manager')
+      await expect(
+        connectorRegistry
+          .connect(somebody)
+          .removeConnectors(mockConnectors)
+      ).to.revertedWith('not a manager')
+
+      await connectorRegistry.grantRole(role, somebody.address)
+      expect(await connectorRegistry.hasRole(role, somebody.address))
+        .to.be.true
+      await expect(
+        connectorRegistry
+          .connect(somebody)
+          .addConnectors(mockConnectors)
+      ).not.to.reverted
+    })
+  })
   describe('permission test', () => {
     it('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
@@ -248,6 +271,49 @@ describe('automation test', () => {
           loadedFixture
         )
       ).not.to.reverted
+    })
+
+    it('lido connector test', async () => {
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      const { smartWallet, lidoConnector, deployer } = loadedFixture
+      const data = lidoConnector.interface.encodeFunctionData(
+        'deposit',
+        [CONSTANTS.ONE_FOR_ETH, 0, 0]
+      )
+
+      // deposit eth to smartWallet first
+      await deployer.sendTransaction({
+        to: smartWallet.address,
+        value: CONSTANTS.ONE_FOR_ETH
+      })
+
+      const ethBalanceBefore = await ethers.provider.getBalance(
+        smartWallet.address
+      )
+
+      const executor = await makeAnExecutor(loadedFixture)
+      await expect(
+        userOpCast(
+          [lidoConnector.address],
+          [data],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+      const ethBalanceAfter = await ethers.provider.getBalance(
+        smartWallet.address
+      )
+      // check ETH and stETH balance
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).eq(
+        CONSTANTS.ONE_FOR_ETH
+      )
+
+      const stETH = await ethers.getContractAt(
+        'IERC20Metadata',
+        '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84'
+      )
+      const stETHBalance = await stETH.balanceOf(smartWallet.address)
+      expect(stETHBalance).to.gt(0)
     })
 
     it('uniswap connector test', async () => {
