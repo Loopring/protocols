@@ -70,7 +70,11 @@ contract BalancerFlashLoan is
             );
 
             // Return loan
-            cd.token.safeTransfer(vault, cd.amount);
+            if (address(cd.token) == ethAddr) {
+                payable(vault).transfer(cd.amount);
+            } else {
+                cd.token.safeTransfer(vault, cd.amount);
+            }
         }
     }
 

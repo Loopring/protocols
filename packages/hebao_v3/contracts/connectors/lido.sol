@@ -69,7 +69,7 @@ contract LidoConnector is BaseConnector {
     }
 
     // can only get stETH rather than ETH
-    function unwarp(
+    function unwrap(
         uint256 amt,
         uint256 getId,
         uint256 setId

@@ -272,6 +272,60 @@ describe('automation test', () => {
         )
       ).not.to.reverted
     })
+    it('aaveV3 connector test', async () => {
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      const { smartWallet, aaveV3Connector } = loadedFixture
+      const data = aaveV3Connector.interface.encodeFunctionData(
+        'deposit',
+        [
+          CONSTANTS.WSTETH_ADDRESS,
+          CONSTANTS.ONE_FOR_ETH.mul(10),
+          0,
+          0
+        ]
+      )
+      await faucetToken(
+        CONSTANTS.WSTETH_ADDRESS,
+        smartWallet.address,
+        '100'
+      )
+      const wstETH = await ethers.getContractAt(
+        'IERC20Metadata',
+        CONSTANTS.WSTETH_ADDRESS
+      )
+      const wstETHBalanceBefore = await wstETH.balanceOf(
+        smartWallet.address
+      )
+      const executor = await makeAnExecutor(loadedFixture)
+      await expect(
+        userOpCast(
+          [aaveV3Connector.address],
+          [data],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+      const wstETHBalanceAfter = await wstETH.balanceOf(
+        smartWallet.address
+      )
+      expect(wstETHBalanceBefore.sub(wstETHBalanceAfter)).eq(
+        CONSTANTS.ONE_FOR_ETH.mul(10)
+      )
+
+      // borrow weth from aavev3
+      const borrowData = aaveV3Connector.interface.encodeFunctionData(
+        'borrow',
+        [CONSTANTS.WETH_ADDRESS, CONSTANTS.ONE_FOR_ETH, 2, 0, 0]
+      )
+      await expect(
+        userOpCast(
+          [aaveV3Connector.address],
+          [borrowData],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+    })
 
     it('lido connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
@@ -284,7 +338,7 @@ describe('automation test', () => {
       // deposit eth to smartWallet first
       await deployer.sendTransaction({
         to: smartWallet.address,
-        value: CONSTANTS.ONE_FOR_ETH
+        value: CONSTANTS.ONE_FOR_ETH.mul(3)
       })
 
       const ethBalanceBefore = await ethers.provider.getBalance(
@@ -314,6 +368,47 @@ describe('automation test', () => {
       )
       const stETHBalance = await stETH.balanceOf(smartWallet.address)
       expect(stETHBalance).to.gt(0)
+      // wrapAndStaking test
+      const wrapAndStakingData =
+        lidoConnector.interface.encodeFunctionData('wrapAndStaking', [
+          CONSTANTS.ONE_FOR_ETH,
+          0,
+          0
+        ])
+
+      const wstETH = await ethers.getContractAt(
+        'IERC20Metadata',
+        CONSTANTS.WSTETH_ADDRESS
+      )
+      const wstETHBalanceBefore = await wstETH.balanceOf(
+        smartWallet.address
+      )
+      await expect(
+        userOpCast(
+          [lidoConnector.address],
+          [wrapAndStakingData],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+      const wstETHBalanceAfter = await wstETH.balanceOf(
+        smartWallet.address
+      )
+      expect(wstETHBalanceAfter.sub(wstETHBalanceBefore)).gt(0)
+      // unwrap all wstETH
+      const unwrapData = lidoConnector.interface.encodeFunctionData(
+        'unwrap',
+        [ethers.constants.MaxUint256, 0, 0]
+      )
+      await expect(
+        userOpCast(
+          [lidoConnector.address],
+          [unwrapData],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+      expect(await wstETH.balanceOf(smartWallet.address)).eq(0)
     })
 
     it('uniswap connector test', async () => {
@@ -383,7 +478,7 @@ describe('automation test', () => {
   })
 
   describe('flashloan test', () => {
-    it('using balancerv2', async () => {
+    it('margin trading', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const {
         uniswapConnector,
@@ -477,15 +572,13 @@ describe('automation test', () => {
         ethers.utils.parseUnits(collateral.toString(), decimal)
       )
     })
-  })
-
-  describe('intergration test', () => {
-    it.only('leverage staking', async () => {
+    it('leverage staking', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const {
         flashLoanConnector,
         aaveV3Connector,
         lidoConnector,
+        wethConnector,
         smartWallet,
         deployer
       } = loadedFixture
@@ -500,32 +593,37 @@ describe('automation test', () => {
         to: smartWallet.address,
         value: collateral
       })
-      const IdOne = '2878734423'
       const wstETH = CONSTANTS.WSTETH_ADDRESS
       const spells = [
+        {
+          connectorName: 'WETH',
+          connectorAddr: wethConnector.address,
+          method: 'withdraw',
+          args: [loan, 0, 0]
+        },
         {
           connectorName: 'LIDO',
           connectorAddr: lidoConnector.address,
           method: 'wrapAndStaking',
-          args: [total, 0, IdOne]
+          args: [total, 0, 0]
         },
         {
           connectorName: 'AAVEV3',
           connectorAddr: aaveV3Connector.address,
           method: 'deposit',
-          args: [wstETH, 0, IdOne, 0] // margin trade
+          args: [wstETH, ethers.constants.MaxUint256, 0, 0] // margin trade
         },
         {
           connectorName: 'AAVEV3',
           connectorAddr: aaveV3Connector.address,
           method: 'borrow',
-          args: [CONSTANTS.ETH_ADDRESS, loan, 0, 0, 0]
+          args: [CONSTANTS.WETH_ADDRESS, loan, 2, 0, 0]
         },
         {
           connectorName: 'FLASHLOAN',
           connectorAddr: flashLoanConnector.address,
           method: 'flashPayback',
-          args: [wstETH, loan, 0, 0]
+          args: [CONSTANTS.WETH_ADDRESS, loan, 0, 0]
         }
       ]
 
@@ -535,7 +633,7 @@ describe('automation test', () => {
           connectorName: 'FLASHLOAN',
           connectorAddr: flashLoanConnector.address,
           method: 'flashBorrowAndCast',
-          args: [CONSTANTS.ETH_ADDRESS, loan, calldata]
+          args: [CONSTANTS.WETH_ADDRESS, loan, calldata]
         }
       ]
 
@@ -546,7 +644,5 @@ describe('automation test', () => {
         loadedFixture
       )
     })
-
-    it('margin trading', async () => {})
   })
 })
