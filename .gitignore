@@ -6,6 +6,6 @@ transpiled/
 *.log
 ganache_account_keys.txt
 deployedAddresses.json
-yarn.lock
 .idea/
 dist/
+.env
