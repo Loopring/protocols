@@ -62,6 +62,10 @@ library AutomationLib {
         address[] calldata targets,
         bytes[] calldata datas
     ) internal {
+        require(
+            connectorRegistry != address(0),
+            'disabled connector registry'
+        );
         uint256 _length = targets.length;
         require(_length == datas.length, 'different length');
         // check all targets is valid

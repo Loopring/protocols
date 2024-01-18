@@ -65,8 +65,9 @@ export async function fixture() {
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
-    connectorRegistry.address,
-    blankOwner.address
+    blankOwner.address,
+    ethers.constants.AddressZero,
+    connectorRegistry.address
   )
 
   const implStorage = DelayedImplementationManager__factory.connect(

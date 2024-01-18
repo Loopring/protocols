@@ -260,9 +260,9 @@ export async function deploySingle(
 export async function deployWalletImpl(
   deployFactory: LoopringCreate2Deployer,
   entryPointAddr: string,
-  connectorRegistryAddr: string,
   blankOwner: string,
-  priceOracleAddr = ethers.constants.AddressZero
+  priceOracleAddr = ethers.constants.AddressZero,
+  connectorRegistryAddr = ethers.constants.AddressZero
 ): Promise<Contract> {
   const ERC1271Lib = await deploySingle(deployFactory, 'ERC1271Lib')
   const ERC20Lib = await deploySingle(deployFactory, 'ERC20Lib')
