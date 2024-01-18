@@ -28,7 +28,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
 
     uint256 private constant SIGNATURE_OFFSET = 84;
 
-    //calculated cost of the postOp
+    // calculated cost of the postOp
     uint256 private COST_OF_POST = 20000;
     uint8 constant priceDecimal = 8;
     bytes32 public constant SIGNER = keccak256('SIGNER');
@@ -58,8 +58,6 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     receive() external payable {
         revert('eth rejected');
     }
-
-    mapping(address => uint256) public senderNonce;
 
     struct DecodedData {
         address token;
@@ -113,6 +111,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         uint256 requiredPreFund
     )
         internal
+        view
         override
         returns (bytes memory context, uint256 validationData)
     {
@@ -137,7 +136,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         );
 
         uint256 costOfPost = userOp.gasPrice() * COST_OF_POST;
-        // check allowance of user
+        // skip allowance check to allow user to start without any eth to pay for approve
         if (decoded_data.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund +
                 costOfPost) * 10 ** priceDecimal) /
@@ -145,13 +144,8 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             require(
                 balances[ERC20(decoded_data.token)][sender] >=
                     tokenRequiredPreFund ||
-                    (ERC20(decoded_data.token).allowance(
-                        sender,
-                        address(this)
-                    ) >=
-                        tokenRequiredPreFund &&
-                        ERC20(decoded_data.token).balanceOf(sender) >=
-                        tokenRequiredPreFund),
+                    ERC20(decoded_data.token).balanceOf(sender) >=
+                    tokenRequiredPreFund,
                 'LoopringPaymaster: no enough allowance or token balances'
             );
         }
@@ -168,7 +162,6 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 )
             )
         );
-        senderNonce[userOp.getSender()]++;
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (!hasRole(SIGNER, hash.recover(signature))) {

@@ -15,8 +15,7 @@
     "lint-fix": "eslint -f unix . --fix",
     "prettier": "prettier --config ./.prettierrc --write \"**/*.{js,json,md,sol,ts}\"",
     "prettier:check": "prettier --check --config ./.prettierrc \"**/*.{js,json,md,sol,ts}\"",
-    "test": "yarn clean && hardhat test",
-    "test-trade-agent": "yarn clean && TRADE_AGENT=true hardhat test"
+    "test": "yarn clean && hardhat test"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",

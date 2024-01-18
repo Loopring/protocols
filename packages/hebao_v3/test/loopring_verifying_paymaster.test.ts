@@ -8,7 +8,7 @@ import { ethers } from 'hardhat'
 import { fixture } from './helper/fixture'
 import { type PaymasterOption, sendTx } from './helper/utils'
 
-describe('verifingPaymaster test', () => {
+describe('LoopringPaymaster test', () => {
   describe('admin operation success', () => {
     it('adjust paramster params by owner', async () => {
       const { paymaster, somebody, lrcToken } = await loadFixture(
@@ -103,34 +103,12 @@ describe('verifingPaymaster test', () => {
 
       expect(await usdtToken.balanceOf(deployer.address)).to.eq(0)
 
-      // allowance check failed
-      await expect(
-        sendTx(
-          [transferToken],
-          smartWallet,
-          smartWalletOwner,
-          create2,
-          entrypoint,
-          sendUserOp,
-          paymasterOption
-        )
-      )
-        .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(
-          0,
-          'AA33 reverted: LoopringPaymaster: no enough allowance or token balances'
-        )
-      // approve before transfer token
-      await sendTx(
-        [approveToken],
-        smartWallet,
-        smartWalletOwner,
-        create2,
-        entrypoint,
-        sendUserOp
+      // approve token and transfer at the same time
+      const ethBalanceBefore = await ethers.provider.getBalance(
+        smartWallet.address
       )
       await sendTx(
-        [transferToken],
+        [approveToken, transferToken],
         smartWallet,
         smartWalletOwner,
         create2,
@@ -142,6 +120,11 @@ describe('verifingPaymaster test', () => {
       expect(await usdtToken.balanceOf(deployer.address)).to.eq(
         tokenAmount
       )
+      // no any gas used by smart wallet
+      expect(
+        await ethers.provider.getBalance(smartWallet.address)
+      ).to.eq(ethBalanceBefore)
+
       const afterBalance = await usdtToken.balanceOf(
         smartWallet.address
       )
@@ -187,8 +170,6 @@ describe('verifingPaymaster test', () => {
           'AA33 reverted: LoopringPaymaster: unsupported tokens'
         )
     })
-
-    it('replay the same paymasterAndData should fail', async () => {})
 
     it('check valid until', async () => {
       const {
