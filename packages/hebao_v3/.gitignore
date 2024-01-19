@@ -9,3 +9,5 @@ ABI/
 typechain-types/
 libraries.js
 .env
+/coverage
+/coverage.json

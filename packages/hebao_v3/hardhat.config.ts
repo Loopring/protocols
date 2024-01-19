@@ -13,7 +13,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking:
-        process.env.FORK === 'true'
+        process.env.FORK != null
           ? {
               url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03',
               blockNumber: 18482580
@@ -60,26 +60,13 @@ const config: HardhatUserConfig = {
   },
 
   solidity: {
-    compilers: [
-      {
-        version: '0.7.6',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
-      },
-      {
-        version: '0.8.17',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
+    version: '0.8.17',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
       }
-    ]
+    }
   },
 
   gasReporter: {

@@ -122,10 +122,6 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             bytes memory signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         require(
-            unlockBlock[sender] == 0,
-            'LoopringPaymaster: deposit not locked'
-        );
-        require(
             registeredToken[ERC20(decoded_data.token)],
             'LoopringPaymaster: unsupported tokens'
         );
@@ -144,11 +140,12 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 costOfPost) * 10 ** priceDecimal) /
                 decoded_data.valueOfEth;
             require(
-                balances[ERC20(decoded_data.token)][sender] >=
-                    tokenRequiredPreFund ||
+                (unlockBlock[sender] == 0 &&
+                    balances[ERC20(decoded_data.token)][sender] >=
+                    tokenRequiredPreFund) ||
                     ERC20(decoded_data.token).balanceOf(sender) >=
                     tokenRequiredPreFund,
-                'LoopringPaymaster: no enough allowance or token balances'
+                'LoopringPaymaster: no enough available tokens'
             );
         }
         bytes32 hash = ECDSA.toEthSignedMessageHash(

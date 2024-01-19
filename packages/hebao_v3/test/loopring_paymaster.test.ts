@@ -417,7 +417,7 @@ describe('LoopringPaymaster test', () => {
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
         .withArgs(
           0,
-          'AA33 reverted: LoopringPaymaster: deposit not locked'
+          'AA33 reverted: LoopringPaymaster: no enough available tokens'
         )
 
       // only locked fund can be used for gas fee. so lock it again here.
