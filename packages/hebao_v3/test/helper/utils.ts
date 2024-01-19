@@ -485,8 +485,8 @@ export async function sendTx(
   await entrypoint.callStatic
     .simulateValidation(signedUserOp)
     .catch(simulationResultCatch)
-  const recipt = await sendUserOp(signedUserOp)
-  return recipt
+  const receipt = await sendUserOp(signedUserOp)
+  return receipt
 }
 
 export async function createBatchTransactions(

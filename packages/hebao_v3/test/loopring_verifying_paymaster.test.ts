@@ -2,6 +2,7 @@ import {
   loadFixture,
   time
 } from '@nomicfoundation/hardhat-network-helpers'
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 
@@ -137,15 +138,26 @@ describe('LoopringPaymaster test', () => {
       // sendtx for free
       paymasterOption.valueOfEth = 0
 
-      await sendTx(
-        [transferToken],
-        smartWallet,
-        smartWalletOwner,
-        create2,
-        entrypoint,
-        sendUserOp,
-        paymasterOption
+      // eslint-disable-next-line
+      expect(
+        await sendTx(
+          [transferToken],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp,
+          paymasterOption
+        )
       )
+        .to.emit(paymaster, 'PaymasterEvent')
+        .withArgs(
+          anyValue,
+          anyValue,
+          anyValue,
+          anyValue,
+          ethers.constants.Zero
+        )
       // no fee for sending tx
       expect(await usdtToken.balanceOf(smartWallet.address)).to.eq(
         afterBalance.sub(tokenAmount)

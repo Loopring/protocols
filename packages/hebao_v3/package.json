@@ -15,7 +15,7 @@
     "lint-fix": "eslint -f unix . --fix",
     "prettier": "prettier --config ./.prettierrc --write \"**/*.{js,json,md,sol,ts}\"",
     "prettier:check": "prettier --check --config ./.prettierrc \"**/*.{js,json,md,sol,ts}\"",
-    "test-local": "yarn hardhat test $(find ./test -type f -name '*.test.ts' ! -path './test/automation/*')",
+    "test-local": "FORK=false yarn hardhat test $(find ./test -type f -name '*.test.ts' ! -path './test/automation/*')",
     "test-fork": "FORK=true hardhat test $(find ./test/automation -type f -name '*.test.ts')",
     "test": "yarn run test-local && yarn run test-fork"
   },

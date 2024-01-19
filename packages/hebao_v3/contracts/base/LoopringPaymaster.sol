@@ -29,7 +29,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     uint256 private constant SIGNATURE_OFFSET = 84;
 
     // calculated cost of the postOp
-    uint256 private COST_OF_POST = 20000;
+    uint256 private COST_OF_POST = 60000;
     uint8 constant priceDecimal = 8;
     bytes32 public constant SIGNER = keccak256('SIGNER');
 
@@ -41,6 +41,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         bytes32 indexed userOpHash,
         address token,
         uint256 valueOfEth,
+        uint256 actualETHCost,
         uint256 actualTokenCost
     );
 
@@ -135,7 +136,8 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             'LoopringPaymaster: invalid signature length in paymasterAndData'
         );
 
-        uint256 costOfPost = userOp.gasPrice() * COST_OF_POST;
+        // NOTE(cannot use basefee during validation)
+        uint256 costOfPost = userOp.maxFeePerGas * COST_OF_POST;
         // skip allowance check to allow user to start without any eth to pay for approve
         if (decoded_data.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund +
@@ -243,9 +245,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 (bytes32, address, address, uint256, uint256)
             );
         uint256 actualTokenCost;
+        uint256 actualETHCost = actualGasCost + costOfPost;
         if (valueOfEth > 0) {
             actualTokenCost =
-                ((actualGasCost + costOfPost) * 10 ** priceDecimal) /
+                (actualETHCost * 10 ** priceDecimal) /
                 valueOfEth;
 
             if (balances[ERC20(token)][account] >= actualTokenCost) {
@@ -265,6 +268,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             userOpHash,
             token,
             valueOfEth,
+            actualETHCost,
             actualTokenCost
         );
     }
