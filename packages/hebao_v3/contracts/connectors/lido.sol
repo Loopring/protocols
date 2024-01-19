@@ -3,14 +3,12 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import {Address} from '@openzeppelin/contracts/utils/Address.sol';
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
-import './base_connector.sol';
+import "./base_connector.sol";
 
 interface ILido {
-    function submit(
-        address _referral
-    ) external payable returns (uint256);
+    function submit(address _referral) external payable returns (uint256);
 }
 
 interface IWstETH {
@@ -40,16 +38,10 @@ contract LidoConnector is BaseConnector {
      * @param getId ID to retrieve amt.
      * @param setId ID stores the amount of ETH deposited.
      */
-    function deposit(
-        uint256 amt,
-        uint256 getId,
-        uint256 setId
-    ) public payable {
+    function deposit(uint256 amt, uint256 getId, uint256 setId) public payable {
         uint256 _amt = getUint(getId, amt);
 
-        _amt = _amt == type(uint256).max
-            ? address(this).balance
-            : _amt;
+        _amt = _amt == type(uint256).max ? address(this).balance : _amt;
         lidoInterface.submit{value: amt}(treasury);
         setUint(setId, _amt);
     }
@@ -61,24 +53,16 @@ contract LidoConnector is BaseConnector {
         uint256 setId
     ) public payable {
         uint256 _amt = getUint(getId, amt);
-        _amt = _amt == type(uint256).max
-            ? address(this).balance
-            : _amt;
+        _amt = _amt == type(uint256).max ? address(this).balance : _amt;
         Address.sendValue(payable(address(wstETH)), _amt);
         setUint(setId, _amt);
     }
 
     // can only get stETH rather than ETH
-    function unwrap(
-        uint256 amt,
-        uint256 getId,
-        uint256 setId
-    ) public {
+    function unwrap(uint256 amt, uint256 getId, uint256 setId) public {
         uint256 _amt = getUint(getId, amt);
 
-        TokenInterface tokenContract = TokenInterface(
-            address(wstETH)
-        );
+        TokenInterface tokenContract = TokenInterface(address(wstETH));
         _amt = _amt == type(uint256).max
             ? tokenContract.balanceOf(address(this))
             : _amt;

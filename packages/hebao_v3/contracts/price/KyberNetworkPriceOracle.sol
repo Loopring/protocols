@@ -2,19 +2,15 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import '../iface/PriceOracle.sol';
-import '../lib/ERC20.sol';
+import "../iface/PriceOracle.sol";
+import "../lib/ERC20.sol";
 
 abstract contract KyberNetworkProxy {
     function getExpectedRate(
         ERC20 src,
         ERC20 dest,
         uint srcQty
-    )
-        public
-        view
-        virtual
-        returns (uint expectedRate, uint slippageRate);
+    ) public view virtual returns (uint expectedRate, uint slippageRate);
 }
 
 /// @title KyberNetworkPriceOracle

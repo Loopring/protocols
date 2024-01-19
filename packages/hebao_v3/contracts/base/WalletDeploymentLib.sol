@@ -3,8 +3,8 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import '../thirdparty/Create2.sol';
-import '../thirdparty/proxies/WalletProxy.sol';
+import "../thirdparty/Create2.sol";
+import "../thirdparty/proxies/WalletProxy.sol";
 
 /// @title WalletDeploymentLib
 /// @dev Functionality to compute wallet addresses and to deploy wallets
@@ -12,7 +12,7 @@ import '../thirdparty/proxies/WalletProxy.sol';
 contract WalletDeploymentLib {
     address public immutable walletImplementation;
 
-    string public constant WALLET_CREATION = 'WALLET_CREATION';
+    string public constant WALLET_CREATION = "WALLET_CREATION";
 
     constructor(address _walletImplementation) {
         walletImplementation = _walletImplementation;
@@ -30,8 +30,7 @@ contract WalletDeploymentLib {
         address owner,
         uint salt
     ) public pure returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(WALLET_CREATION, owner, salt));
+        return keccak256(abi.encodePacked(WALLET_CREATION, owner, salt));
     }
 
     function _deploy(

@@ -3,9 +3,9 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import './WalletData.sol';
-import './GuardianLib.sol';
-import './ApprovalLib.sol';
+import "./WalletData.sol";
+import "./GuardianLib.sol";
+import "./ApprovalLib.sol";
 
 /// @title LockLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -19,9 +19,7 @@ library LockLib {
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant UNLOCK_TYPEHASH =
-        keccak256(
-            'unlock(address wallet,uint256 validUntil,bytes32 salt)'
-        );
+        keccak256("unlock(address wallet,uint256 validUntil,bytes32 salt)");
 
     function lock(Wallet storage wallet, address entryPoint) public {
         require(
@@ -29,7 +27,7 @@ library LockLib {
                 msg.sender == wallet.owner ||
                 msg.sender == entryPoint ||
                 wallet.isGuardian(msg.sender, false),
-            'NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN'
+            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
         );
         setLock(wallet, msg.sender, true);
     }
@@ -38,11 +36,7 @@ library LockLib {
         setLock(wallet, msg.sender, false);
     }
 
-    function setLock(
-        Wallet storage wallet,
-        address by,
-        bool locked
-    ) internal {
+    function setLock(Wallet storage wallet, address by, bool locked) internal {
         wallet.locked = locked;
         emit WalletLocked(by, locked);
     }
@@ -56,12 +50,7 @@ library LockLib {
         bytes32 approvedHash = EIP712.hashPacked(
             domainSeparator,
             keccak256(
-                abi.encode(
-                    UNLOCK_TYPEHASH,
-                    address(this),
-                    validUntil,
-                    salt
-                )
+                abi.encode(UNLOCK_TYPEHASH, address(this), validUntil, salt)
             )
         );
         return approvedHash;

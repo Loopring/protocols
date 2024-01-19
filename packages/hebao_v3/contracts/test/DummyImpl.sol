@@ -3,8 +3,8 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import '../base/libwallet/WalletData.sol';
-import '../base/libwallet/GuardianLib.sol';
+import "../base/libwallet/WalletData.sol";
+import "../base/libwallet/GuardianLib.sol";
 
 contract DummySmartWallet {
     using GuardianLib for Wallet;
@@ -22,7 +22,7 @@ contract DummySmartWallet {
     }
 
     function emitSomething() public {
-        emit Invoked('hello world');
+        emit Invoked("hello world");
     }
 
     function getGuardians(

@@ -6,9 +6,7 @@ pragma experimental ABIEncoderV2;
 interface IConnectorRegistry {
     function addConnectors(address[] calldata _connectors) external;
 
-    function removeConnectors(
-        address[] calldata _connectors
-    ) external;
+    function removeConnectors(address[] calldata _connectors) external;
 
     function isConnectors(
         address[] calldata connectorAddrs

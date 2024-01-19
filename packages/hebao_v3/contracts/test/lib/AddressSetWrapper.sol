@@ -2,16 +2,12 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import '../../lib/AddressSet.sol';
+import "../../lib/AddressSet.sol";
 
 /// @title AddressSetWrapper
 /// @author Freeman Zhong - <kongliang@loopring.org>
 contract AddressSetWrapper is AddressSet {
-    function add(
-        bytes32 key,
-        address addr,
-        bool maintainList
-    ) external {
+    function add(bytes32 key, address addr, bool maintainList) external {
         addAddressToSet(key, addr, maintainList);
     }
 
@@ -23,10 +19,7 @@ contract AddressSetWrapper is AddressSet {
         removeSet(key);
     }
 
-    function isInSet(
-        bytes32 key,
-        address addr
-    ) external view returns (bool) {
+    function isInSet(bytes32 key, address addr) external view returns (bool) {
         return isAddressInSet(key, addr);
     }
 

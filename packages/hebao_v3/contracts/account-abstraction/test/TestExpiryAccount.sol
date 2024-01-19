@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import '../samples/SimpleAccount.sol';
+import "../samples/SimpleAccount.sol";
 
 /**
  * A test account, for testing expiry.
@@ -17,13 +17,9 @@ contract TestExpiryAccount is SimpleAccount {
     mapping(address => uint48) public ownerUntil;
 
     // solhint-disable-next-line no-empty-blocks
-    constructor(
-        IEntryPoint anEntryPoint
-    ) SimpleAccount(anEntryPoint) {}
+    constructor(IEntryPoint anEntryPoint) SimpleAccount(anEntryPoint) {}
 
-    function initialize(
-        address anOwner
-    ) public virtual override initializer {
+    function initialize(address anOwner) public virtual override initializer {
         super._initialize(anOwner);
         addTemporaryOwner(anOwner, 0, type(uint48).max);
     }
@@ -32,21 +28,15 @@ contract TestExpiryAccount is SimpleAccount {
     // solhint-disable-next-line no-empty-blocks
     function _disableInitializers() internal override {}
 
-    function addTemporaryOwner(
-        address owner,
-        uint48 _after,
-        uint48 _until
-    ) public onlyOwner {
-        require(_until > _after, 'wrong until/after');
+    function addTemporaryOwner(address owner, uint48 _after, uint48 _until) public onlyOwner {
+        require(_until > _after, "wrong until/after");
         ownerAfter[owner] = _after;
         ownerUntil[owner] = _until;
     }
 
     /// implement template method of BaseAccount
-    function _validateSignature(
-        UserOperation calldata userOp,
-        bytes32 userOpHash
-    ) internal view override returns (uint256 validationData) {
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    internal override view returns (uint256 validationData) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address signer = hash.recover(userOp.signature);
         uint48 _until = ownerUntil[signer];

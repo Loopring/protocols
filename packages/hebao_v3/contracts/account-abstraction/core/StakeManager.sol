@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import '../interfaces/IStakeManager.sol';
+import "../interfaces/IStakeManager.sol";
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable not-rely-on-time */
@@ -11,29 +11,24 @@ import '../interfaces/IStakeManager.sol';
  * stake is value locked for at least "unstakeDelay" by a paymaster.
  */
 abstract contract StakeManager is IStakeManager {
+
     /// maps paymaster to their deposits and stakes
     mapping(address => DepositInfo) public deposits;
 
     /// @inheritdoc IStakeManager
-    function getDepositInfo(
-        address account
-    ) public view returns (DepositInfo memory info) {
+    function getDepositInfo(address account) public view returns (DepositInfo memory info) {
         return deposits[account];
     }
 
     // internal method to return just the stake info
-    function _getStakeInfo(
-        address addr
-    ) internal view returns (StakeInfo memory info) {
+    function _getStakeInfo(address addr) internal view returns (StakeInfo memory info) {
         DepositInfo storage depositInfo = deposits[addr];
         info.stake = depositInfo.stake;
         info.unstakeDelaySec = depositInfo.unstakeDelaySec;
     }
 
     /// return the deposit (for gas payment) of the account
-    function balanceOf(
-        address account
-    ) public view returns (uint256) {
+    function balanceOf(address account) public view returns (uint256) {
         return deposits[account].deposit;
     }
 
@@ -41,13 +36,10 @@ abstract contract StakeManager is IStakeManager {
         depositTo(msg.sender);
     }
 
-    function _incrementDeposit(
-        address account,
-        uint256 amount
-    ) internal {
+    function _incrementDeposit(address account, uint256 amount) internal {
         DepositInfo storage info = deposits[account];
         uint256 newAmount = info.deposit + amount;
-        require(newAmount <= type(uint112).max, 'deposit overflow');
+        require(newAmount <= type(uint112).max, "deposit overflow");
         info.deposit = uint112(newAmount);
     }
 
@@ -67,14 +59,11 @@ abstract contract StakeManager is IStakeManager {
      */
     function addStake(uint32 unstakeDelaySec) public payable {
         DepositInfo storage info = deposits[msg.sender];
-        require(unstakeDelaySec > 0, 'must specify unstake delay');
-        require(
-            unstakeDelaySec >= info.unstakeDelaySec,
-            'cannot decrease unstake time'
-        );
+        require(unstakeDelaySec > 0, "must specify unstake delay");
+        require(unstakeDelaySec >= info.unstakeDelaySec, "cannot decrease unstake time");
         uint256 stake = info.stake + msg.value;
-        require(stake > 0, 'no stake specified');
-        require(stake <= type(uint112).max, 'stake overflow');
+        require(stake > 0, "no stake specified");
+        require(stake <= type(uint112).max, "stake overflow");
         deposits[msg.sender] = DepositInfo(
             info.deposit,
             true,
@@ -91,14 +80,14 @@ abstract contract StakeManager is IStakeManager {
      */
     function unlockStake() external {
         DepositInfo storage info = deposits[msg.sender];
-        require(info.unstakeDelaySec != 0, 'not staked');
-        require(info.staked, 'already unstaking');
-        uint48 withdrawTime = uint48(block.timestamp) +
-            info.unstakeDelaySec;
+        require(info.unstakeDelaySec != 0, "not staked");
+        require(info.staked, "already unstaking");
+        uint48 withdrawTime = uint48(block.timestamp) + info.unstakeDelaySec;
         info.withdrawTime = withdrawTime;
         info.staked = false;
         emit StakeUnlocked(msg.sender, withdrawTime);
     }
+
 
     /**
      * withdraw from the (unlocked) stake.
@@ -108,21 +97,15 @@ abstract contract StakeManager is IStakeManager {
     function withdrawStake(address payable withdrawAddress) external {
         DepositInfo storage info = deposits[msg.sender];
         uint256 stake = info.stake;
-        require(stake > 0, 'No stake to withdraw');
-        require(
-            info.withdrawTime > 0,
-            'must call unlockStake() first'
-        );
-        require(
-            info.withdrawTime <= block.timestamp,
-            'Stake withdrawal is not due'
-        );
+        require(stake > 0, "No stake to withdraw");
+        require(info.withdrawTime > 0, "must call unlockStake() first");
+        require(info.withdrawTime <= block.timestamp, "Stake withdrawal is not due");
         info.unstakeDelaySec = 0;
         info.withdrawTime = 0;
         info.stake = 0;
         emit StakeWithdrawn(msg.sender, withdrawAddress, stake);
-        (bool success, ) = withdrawAddress.call{value: stake}('');
-        require(success, 'failed to withdraw stake');
+        (bool success,) = withdrawAddress.call{value : stake}("");
+        require(success, "failed to withdraw stake");
     }
 
     /**
@@ -130,20 +113,12 @@ abstract contract StakeManager is IStakeManager {
      * @param withdrawAddress the address to send withdrawn value.
      * @param withdrawAmount the amount to withdraw.
      */
-    function withdrawTo(
-        address payable withdrawAddress,
-        uint256 withdrawAmount
-    ) external {
+    function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount) external {
         DepositInfo storage info = deposits[msg.sender];
-        require(
-            withdrawAmount <= info.deposit,
-            'Withdraw amount too large'
-        );
+        require(withdrawAmount <= info.deposit, "Withdraw amount too large");
         info.deposit = uint112(info.deposit - withdrawAmount);
         emit Withdrawn(msg.sender, withdrawAddress, withdrawAmount);
-        (bool success, ) = withdrawAddress.call{
-            value: withdrawAmount
-        }('');
-        require(success, 'failed to withdraw');
+        (bool success,) = withdrawAddress.call{value : withdrawAmount}("");
+        require(success, "failed to withdraw");
     }
 }

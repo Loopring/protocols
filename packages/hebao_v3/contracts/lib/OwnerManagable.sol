@@ -2,24 +2,24 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import './AddressSet.sol';
-import './Claimable.sol';
+import "./AddressSet.sol";
+import "./Claimable.sol";
 
 contract OwnerManagable is Claimable, AddressSet {
-    bytes32 internal constant MANAGER = keccak256('__MANAGED__');
+    bytes32 internal constant MANAGER = keccak256("__MANAGED__");
 
     event ManagerAdded(address indexed manager);
     event ManagerRemoved(address indexed manager);
 
     modifier onlyManager() {
-        require(isManager(msg.sender), 'NOT_MANAGER');
+        require(isManager(msg.sender), "NOT_MANAGER");
         _;
     }
 
     modifier onlyOwnerOrManager() {
         require(
             msg.sender == owner || isManager(msg.sender),
-            'NOT_OWNER_OR_MANAGER'
+            "NOT_OWNER_OR_MANAGER"
         );
         _;
     }

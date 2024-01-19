@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import '../lib/MathUint.sol';
+import "../lib/MathUint.sol";
 
 /**
  * @title ERC20Basic
@@ -12,20 +12,11 @@ import '../lib/MathUint.sol';
 abstract contract ERC20Basic {
     function totalSupply() public view virtual returns (uint);
 
-    function balanceOf(
-        address who
-    ) public view virtual returns (uint);
+    function balanceOf(address who) public view virtual returns (uint);
 
-    function transfer(
-        address to,
-        uint value
-    ) public virtual returns (bool);
+    function transfer(address to, uint value) public virtual returns (bool);
 
-    event Transfer(
-        address indexed from,
-        address indexed to,
-        uint value
-    );
+    event Transfer(address indexed from, address indexed to, uint value);
 }
 
 /**
@@ -85,13 +76,7 @@ contract BasicToken is ERC20Basic {
     /**
      * @dev total number of tokens in existence
      */
-    function totalSupply()
-        public
-        view
-        virtual
-        override
-        returns (uint)
-    {
+    function totalSupply() public view virtual override returns (uint) {
         return totalSupply_;
     }
 
@@ -107,7 +92,7 @@ contract BasicToken is ERC20Basic {
         // require(_to != address(0), "ZERO_ADDRESS");
         require(
             _value <= balances[msg.sender],
-            'TRANSFER_INSUFFICIENT_BALANCE'
+            "TRANSFER_INSUFFICIENT_BALANCE"
         );
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -144,16 +129,9 @@ abstract contract AbsERC20 is ERC20Basic {
         uint value
     ) public virtual returns (bool);
 
-    function approve(
-        address spender,
-        uint value
-    ) public virtual returns (bool);
+    function approve(address spender, uint value) public virtual returns (bool);
 
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint value
-    );
+    event Approval(address indexed owner, address indexed spender, uint value);
 }
 
 /**
@@ -180,19 +158,14 @@ contract StandardToken is AbsERC20, BasicToken {
         uint _value
     ) public override returns (bool) {
         // require(_to != address(0), "ZERO_ADDRESS");
-        require(
-            _value <= balances[_from],
-            'TRANSFERFROM_INSUFFICIENT_BALANCE'
-        );
+        require(_value <= balances[_from], "TRANSFERFROM_INSUFFICIENT_BALANCE");
         require(
             _value <= allowed[_from][msg.sender],
-            'TRANSFERFROM_INSUFFICIENT_ALLOWANCE'
+            "TRANSFERFROM_INSUFFICIENT_ALLOWANCE"
         );
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(
-            _value
-        );
+        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
         emit Transfer(_from, _to, _value);
         return true;
     }
@@ -243,13 +216,10 @@ contract StandardToken is AbsERC20, BasicToken {
         address _spender,
         uint _addedValue
     ) public returns (bool) {
-        allowed[msg.sender][_spender] = allowed[msg.sender][_spender]
-            .add(_addedValue);
-        emit Approval(
-            msg.sender,
-            _spender,
-            allowed[msg.sender][_spender]
+        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(
+            _addedValue
         );
+        emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 
@@ -271,15 +241,9 @@ contract StandardToken is AbsERC20, BasicToken {
         if (_subtractedValue > oldValue) {
             allowed[msg.sender][_spender] = 0;
         } else {
-            allowed[msg.sender][_spender] = oldValue.sub(
-                _subtractedValue
-            );
+            allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
         }
-        emit Approval(
-            msg.sender,
-            _spender,
-            allowed[msg.sender][_spender]
-        );
+        emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 }
@@ -287,17 +251,14 @@ contract StandardToken is AbsERC20, BasicToken {
 contract LRCToken is StandardToken {
     using SafeMath for uint;
 
-    string public name = 'New Loopring token on ethereum';
-    string public symbol = 'LRC';
+    string public name = "New Loopring token on ethereum";
+    string public symbol = "LRC";
     uint8 public decimals = 18;
 
     event Burn(address indexed burner, uint value);
 
     function burn(uint _value) public returns (bool) {
-        require(
-            _value <= balances[msg.sender],
-            'BURN_INSUFFICIENT_BALANCE'
-        );
+        require(_value <= balances[msg.sender], "BURN_INSUFFICIENT_BALANCE");
 
         address burner = msg.sender;
         balances[burner] = balances[burner].sub(_value);
@@ -307,24 +268,16 @@ contract LRCToken is StandardToken {
         return true;
     }
 
-    function burnFrom(
-        address _owner,
-        uint _value
-    ) public returns (bool) {
-        require(_owner != address(0), 'ZERO_ADDRESS');
-        require(
-            _value <= balances[_owner],
-            'BURNFROM_INSUFFICIENT_BALANCE'
-        );
+    function burnFrom(address _owner, uint _value) public returns (bool) {
+        require(_owner != address(0), "ZERO_ADDRESS");
+        require(_value <= balances[_owner], "BURNFROM_INSUFFICIENT_BALANCE");
         require(
             _value <= allowed[_owner][msg.sender],
-            'BURNFROM_INSUFFICIENT_ALLOWANCE'
+            "BURNFROM_INSUFFICIENT_ALLOWANCE"
         );
 
         balances[_owner] = balances[_owner].sub(_value);
-        allowed[_owner][msg.sender] = allowed[_owner][msg.sender].sub(
-            _value
-        );
+        allowed[_owner][msg.sender] = allowed[_owner][msg.sender].sub(_value);
         totalSupply_ = totalSupply_.sub(_value);
 
         emit Burn(_owner, _value);
@@ -339,8 +292,8 @@ contract LRCToken is StandardToken {
         uint _totalSupply,
         address _firstHolder
     ) {
-        require(_totalSupply > 0, 'INVALID_VALUE');
-        require(_firstHolder != address(0), 'ZERO_ADDRESS');
+        require(_totalSupply > 0, "INVALID_VALUE");
+        require(_firstHolder != address(0), "ZERO_ADDRESS");
         checkSymbolAndName(_symbol, _name);
 
         name = _name;
@@ -357,7 +310,7 @@ contract LRCToken is StandardToken {
         string memory _name
     ) internal pure {
         bytes memory s = bytes(_symbol);
-        require(s.length >= 3 && s.length <= 8, 'INVALID_SIZE');
+        require(s.length >= 3 && s.length <= 8, "INVALID_SIZE");
         for (uint i = 0; i < s.length; i++) {
             // make sure symbol contains only [A-Za-z._]
             require(
@@ -365,16 +318,13 @@ contract LRCToken is StandardToken {
                     (s[i] == 0x5F) ||
                     (s[i] >= 0x41 && s[i] <= 0x5A) ||
                     (s[i] >= 0x61 && s[i] <= 0x7A),
-                'INVALID_VALUE'
+                "INVALID_VALUE"
             );
         }
         bytes memory n = bytes(_name);
-        require(
-            n.length >= s.length && n.length <= 128,
-            'INVALID_SIZE'
-        );
+        require(n.length >= s.length && n.length <= 128, "INVALID_SIZE");
         for (uint i = 0; i < n.length; i++) {
-            require(n[i] >= 0x20 && n[i] <= 0x7E, 'INVALID_VALUE');
+            require(n[i] >= 0x20 && n[i] <= 0x7E, "INVALID_VALUE");
         }
     }
 }

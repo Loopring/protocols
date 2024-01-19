@@ -23,17 +23,15 @@ contract Ownable {
 
     /// @dev Throws if called by any account other than the owner.
     modifier onlyOwner() {
-        require(msg.sender == owner, 'UNAUTHORIZED');
+        require(msg.sender == owner, "UNAUTHORIZED");
         _;
     }
 
     /// @dev Allows the current owner to transfer control of the contract to a
     ///      new owner.
     /// @param newOwner The address to transfer ownership to.
-    function transferOwnership(
-        address newOwner
-    ) public virtual onlyOwner {
-        require(newOwner != address(0), 'ZERO_ADDRESS');
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "ZERO_ADDRESS");
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }

@@ -230,9 +230,7 @@ library BytesUtil {
         return tempBytes32;
     }
 
-    function fastSHA256(
-        bytes memory data
-    ) internal view returns (bytes32) {
+    function fastSHA256(bytes memory data) internal view returns (bytes32) {
         bytes32[] memory result = new bytes32[](1);
         bool success;
         assembly {
@@ -246,7 +244,7 @@ library BytesUtil {
                 32
             )
         }
-        require(success, 'SHA256_FAILED');
+        require(success, "SHA256_FAILED");
         return result[0];
     }
 }

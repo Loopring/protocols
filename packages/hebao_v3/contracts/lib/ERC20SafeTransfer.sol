@@ -11,12 +11,7 @@ library ERC20SafeTransfer {
         address to,
         uint value
     ) internal {
-        safeTransferWithGasLimitAndVerify(
-            token,
-            to,
-            value,
-            gasleft()
-        );
+        safeTransferWithGasLimitAndVerify(token, to, value, gasleft());
     }
 
     function safeTransfer(
@@ -35,7 +30,7 @@ library ERC20SafeTransfer {
     ) internal {
         require(
             safeTransferWithGasLimit(token, to, value, gasLimit),
-            'TRANSFER_FAILURE'
+            "TRANSFER_FAILURE"
         );
     }
 
@@ -80,14 +75,7 @@ library ERC20SafeTransfer {
         address to,
         uint value
     ) internal returns (bool) {
-        return
-            safeTransferFromWithGasLimit(
-                token,
-                from,
-                to,
-                value,
-                gasleft()
-            );
+        return safeTransferFromWithGasLimit(token, from, to, value, gasleft());
     }
 
     function safeTransferFromWithGasLimitAndVerify(
@@ -104,7 +92,7 @@ library ERC20SafeTransfer {
             value,
             gasLimit
         );
-        require(result, 'TRANSFER_FAILURE');
+        require(result, "TRANSFER_FAILURE");
     }
 
     function safeTransferFromWithGasLimit(
@@ -129,9 +117,7 @@ library ERC20SafeTransfer {
         return checkReturnValue(success);
     }
 
-    function checkReturnValue(
-        bool success
-    ) internal pure returns (bool) {
+    function checkReturnValue(bool success) internal pure returns (bool) {
         // A transfer/transferFrom is successful when 'call' is successful and depending on the token:
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)

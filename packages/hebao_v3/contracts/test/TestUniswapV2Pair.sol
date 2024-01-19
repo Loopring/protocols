@@ -26,10 +26,7 @@ contract TestUniswapV2Pair {
         _blockTimestampLast = blockTimestampLast;
     }
 
-    function setReserves(
-        uint112 _reserve0,
-        uint112 _reserve1
-    ) public {
+    function setReserves(uint112 _reserve0, uint112 _reserve1) public {
         reserve0 = _reserve0;
         reserve1 = _reserve1;
         blockTimestampLast = uint32(block.timestamp);

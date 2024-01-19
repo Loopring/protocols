@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import './IFlashLoanRecipient.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IFlashLoanRecipient.sol";
 
 interface IBalancerVault {
     function flashLoan(

@@ -2,17 +2,17 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import '../thirdparty/proxies/Proxy.sol';
+import "../thirdparty/proxies/Proxy.sol";
 
 /// @title SimpleProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract SimpleProxy is Proxy {
     bytes32 private constant implementationPosition =
-        keccak256('org.loopring.protocol.simple.proxy');
+        keccak256("org.loopring.protocol.simple.proxy");
 
     function setImplementation(address _implementation) public {
         address _impl = implementation();
-        require(_impl == address(0), 'INITIALIZED_ALREADY');
+        require(_impl == address(0), "INITIALIZED_ALREADY");
 
         bytes32 position = implementationPosition;
         assembly {

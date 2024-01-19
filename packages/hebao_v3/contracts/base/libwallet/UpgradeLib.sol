@@ -3,9 +3,9 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import './ApprovalLib.sol';
-import './WalletData.sol';
-import '../../lib/EIP712.sol';
+import "./ApprovalLib.sol";
+import "./WalletData.sol";
+import "../../lib/EIP712.sol";
 
 /// @title UpgradeLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -18,11 +18,11 @@ library UpgradeLib {
 
     bytes32 public constant CHANGE_MASTER_COPY_TYPEHASH =
         keccak256(
-            'changeMasterCopy(address wallet,uint256 validUntil,address masterCopy,bytes32 salt)'
+            "changeMasterCopy(address wallet,uint256 validUntil,address masterCopy,bytes32 salt)"
         );
 
     function changeMasterCopy(address newMasterCopy) external {
-        require(newMasterCopy != address(0), 'INVALID_MASTER_COPY');
+        require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
 
         emit ChangedMasterCopy(newMasterCopy);
     }

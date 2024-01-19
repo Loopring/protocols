@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 interface TokenInterface {
     function approve(address, uint256) external;
@@ -28,10 +28,7 @@ contract DSMath {
         z = SafeMath.add(x, y);
     }
 
-    function sub(
-        uint x,
-        uint y
-    ) internal pure virtual returns (uint z) {
+    function sub(uint x, uint y) internal pure virtual returns (uint z) {
         z = SafeMath.sub(x, y);
     }
 
@@ -61,11 +58,11 @@ contract DSMath {
 
     function toInt(uint x) internal pure returns (int y) {
         y = int(x);
-        require(y >= 0, 'int-overflow');
+        require(y >= 0, "int-overflow");
     }
 
     function toUint(int256 x) internal pure returns (uint256) {
-        require(x >= 0, 'int-overflow');
+        require(x >= 0, "int-overflow");
         return uint256(x);
     }
 
@@ -87,10 +84,7 @@ contract BaseConnector is DSMath {
         instaMemory = MemoryInterface(_instaMemory);
     }
 
-    function getUint(
-        uint getId,
-        uint val
-    ) internal returns (uint returnVal) {
+    function getUint(uint getId, uint val) internal returns (uint returnVal) {
         returnVal = getId == 0 ? val : instaMemory.getUint(getId);
     }
 
@@ -104,14 +98,8 @@ contract BaseConnector is DSMath {
     function changeEthAddress(
         address buy,
         address sell
-    )
-        internal
-        pure
-        returns (TokenInterface _buy, TokenInterface _sell)
-    {
-        _buy = buy == ethAddr
-            ? TokenInterface(wethAddr)
-            : TokenInterface(buy);
+    ) internal pure returns (TokenInterface _buy, TokenInterface _sell) {
+        _buy = buy == ethAddr ? TokenInterface(wethAddr) : TokenInterface(buy);
         _sell = sell == ethAddr
             ? TokenInterface(wethAddr)
             : TokenInterface(sell);

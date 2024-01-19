@@ -3,22 +3,22 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import {SmartWallet} from './SmartWallet.sol';
-import '../account-abstraction/core/BaseAccount.sol';
-import '../account-abstraction/interfaces/IEntryPoint.sol';
-import '../iface/PriceOracle.sol';
-import './libwallet/WalletData.sol';
-import './libwallet/GuardianLib.sol';
-import './libwallet/RecoverLib.sol';
-import './libwallet/QuotaLib.sol';
-import './libwallet/RecoverLib.sol';
-import '../lib/EIP712.sol';
-import './libwallet/UpgradeLib.sol';
-import './libwallet/WhitelistLib.sol';
-import './libwallet/ApprovalLib.sol';
-import './libwallet/ERC20Lib.sol';
-import './libwallet/AutomationLib.sol';
-import '../lib/SignatureUtil.sol';
+import {SmartWallet} from "./SmartWallet.sol";
+import "../account-abstraction/core/BaseAccount.sol";
+import "../account-abstraction/interfaces/IEntryPoint.sol";
+import "../iface/PriceOracle.sol";
+import "./libwallet/WalletData.sol";
+import "./libwallet/GuardianLib.sol";
+import "./libwallet/RecoverLib.sol";
+import "./libwallet/QuotaLib.sol";
+import "./libwallet/RecoverLib.sol";
+import "../lib/EIP712.sol";
+import "./libwallet/UpgradeLib.sol";
+import "./libwallet/WhitelistLib.sol";
+import "./libwallet/ApprovalLib.sol";
+import "./libwallet/ERC20Lib.sol";
+import "./libwallet/AutomationLib.sol";
+import "../lib/SignatureUtil.sol";
 
 contract SmartWalletV3 is SmartWallet {
     constructor(
@@ -40,7 +40,7 @@ contract SmartWalletV3 is SmartWallet {
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         for (uint i = 0; i < data.length; i++) {
             (bool success, ) = address(this).call(data[i]);
-            require(success, 'BATCHED_CALL_FAILED');
+            require(success, "BATCHED_CALL_FAILED");
         }
     }
 

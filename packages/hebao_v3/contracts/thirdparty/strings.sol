@@ -68,9 +68,7 @@ library strings {
      * @param self The string to make a slice from.
      * @return A newly allocated slice containing the entire string.
      */
-    function toSlice(
-        string memory self
-    ) internal pure returns (slice memory) {
+    function toSlice(string memory self) internal pure returns (slice memory) {
         uint ptr;
         assembly {
             ptr := add(self, 0x20)
@@ -88,9 +86,7 @@ library strings {
         if (self == 0) return 0;
         if (uint256(self) & 0xffffffffffffffffffffffffffffffff == 0) {
             ret += 16;
-            self = bytes32(
-                uint(self) / 0x100000000000000000000000000000000
-            );
+            self = bytes32(uint(self) / 0x100000000000000000000000000000000);
         }
         if (uint256(self) & 0xffffffffffffffff == 0) {
             ret += 8;
@@ -117,9 +113,7 @@ library strings {
      * @return A new slice containing the value of the input argument up to the
      *         first null.
      */
-    function toSliceB32(
-        bytes32 self
-    ) internal pure returns (slice memory ret) {
+    function toSliceB32(bytes32 self) internal pure returns (slice memory ret) {
         // Allocate space for `self` in memory, copy it there, and point ret at it
         assembly {
             let ptr := mload(0x40)
@@ -135,9 +129,7 @@ library strings {
      * @param self The slice to copy.
      * @return A new slice containing the same data as `self`.
      */
-    function copy(
-        slice memory self
-    ) internal pure returns (slice memory) {
+    function copy(slice memory self) internal pure returns (slice memory) {
         return slice(self._len, self._ptr);
     }
 
@@ -146,9 +138,7 @@ library strings {
      * @param self The slice to copy.
      * @return A newly allocated string containing the slice's text.
      */
-    function toString(
-        slice memory self
-    ) internal pure returns (string memory) {
+    function toString(slice memory self) internal pure returns (string memory) {
         string memory ret = new string(self._len);
         uint retptr;
         assembly {
@@ -370,9 +360,7 @@ library strings {
      * @param self The slice to hash.
      * @return The hash of the slice.
      */
-    function keccak(
-        slice memory self
-    ) internal pure returns (bytes32 ret) {
+    function keccak(slice memory self) internal pure returns (bytes32 ret) {
         assembly {
             ret := keccak256(mload(add(self, 32)), mload(self))
         }
@@ -526,9 +514,7 @@ library strings {
 
         if (needlelen <= selflen) {
             if (needlelen <= 32) {
-                bytes32 mask = bytes32(
-                    ~(2 ** (8 * (32 - needlelen)) - 1)
-                );
+                bytes32 mask = bytes32(~(2 ** (8 * (32 - needlelen)) - 1));
 
                 bytes32 needledata;
                 assembly {
@@ -581,9 +567,7 @@ library strings {
 
         if (needlelen <= selflen) {
             if (needlelen <= 32) {
-                bytes32 mask = bytes32(
-                    ~(2 ** (8 * (32 - needlelen)) - 1)
-                );
+                bytes32 mask = bytes32(~(2 ** (8 * (32 - needlelen)) - 1));
 
                 bytes32 needledata;
                 assembly {
@@ -636,12 +620,7 @@ library strings {
         slice memory self,
         slice memory needle
     ) internal pure returns (slice memory) {
-        uint ptr = findPtr(
-            self._len,
-            self._ptr,
-            needle._len,
-            needle._ptr
-        );
+        uint ptr = findPtr(self._len, self._ptr, needle._len, needle._ptr);
         self._len -= ptr - self._ptr;
         self._ptr = ptr;
         return self;
@@ -659,12 +638,7 @@ library strings {
         slice memory self,
         slice memory needle
     ) internal pure returns (slice memory) {
-        uint ptr = rfindPtr(
-            self._len,
-            self._ptr,
-            needle._len,
-            needle._ptr
-        );
+        uint ptr = rfindPtr(self._len, self._ptr, needle._len, needle._ptr);
         self._len = ptr - self._ptr;
         return self;
     }
@@ -684,12 +658,7 @@ library strings {
         slice memory needle,
         slice memory token
     ) internal pure returns (slice memory) {
-        uint ptr = findPtr(
-            self._len,
-            self._ptr,
-            needle._len,
-            needle._ptr
-        );
+        uint ptr = findPtr(self._len, self._ptr, needle._len, needle._ptr);
         token._ptr = self._ptr;
         token._len = ptr - self._ptr;
         if (ptr == self._ptr + self._len) {
@@ -733,12 +702,7 @@ library strings {
         slice memory needle,
         slice memory token
     ) internal pure returns (slice memory) {
-        uint ptr = rfindPtr(
-            self._len,
-            self._ptr,
-            needle._len,
-            needle._ptr
-        );
+        uint ptr = rfindPtr(self._len, self._ptr, needle._len, needle._ptr);
         token._ptr = ptr;
         token._len = self._len - (ptr - self._ptr);
         if (ptr == self._ptr) {
@@ -776,12 +740,8 @@ library strings {
         slice memory self,
         slice memory needle
     ) internal pure returns (uint cnt) {
-        uint ptr = findPtr(
-            self._len,
-            self._ptr,
-            needle._len,
-            needle._ptr
-        ) + needle._len;
+        uint ptr = findPtr(self._len, self._ptr, needle._len, needle._ptr) +
+            needle._len;
         while (ptr <= self._ptr + self._len) {
             cnt++;
             ptr =
@@ -806,12 +766,8 @@ library strings {
         slice memory needle
     ) internal pure returns (bool) {
         return
-            rfindPtr(
-                self._len,
-                self._ptr,
-                needle._len,
-                needle._ptr
-            ) != self._ptr;
+            rfindPtr(self._len, self._ptr, needle._len, needle._ptr) !=
+            self._ptr;
     }
 
     /*
@@ -847,11 +803,10 @@ library strings {
         slice memory self,
         slice[] memory parts
     ) internal pure returns (string memory) {
-        if (parts.length == 0) return '';
+        if (parts.length == 0) return "";
 
         uint length = self._len * (parts.length - 1);
-        for (uint i = 0; i < parts.length; i++)
-            length += parts[i]._len;
+        for (uint i = 0; i < parts.length; i++) length += parts[i]._len;
 
         string memory ret = new string(length);
         uint retptr;

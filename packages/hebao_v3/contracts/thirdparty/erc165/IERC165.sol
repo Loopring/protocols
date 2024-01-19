@@ -20,7 +20,5 @@ interface IERC165 {
      *
      * This function call must use less than 30 000 gas.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) external view returns (bool);
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }

@@ -88,9 +88,7 @@ contract OwnedMemory is Memory {
      * @dev Get Stored Address.
      * @param _id Storage ID.
      */
-    function getBroadcastAddr(
-        uint _id
-    ) public view returns (address _addr) {
+    function getBroadcastAddr(uint _id) public view returns (address _addr) {
         _addr = maddr[broadcastAddr][_id];
     }
 
@@ -99,10 +97,7 @@ contract OwnedMemory is Memory {
      * @param _id Storage ID.
      * @param _addr Address data to store.
      */
-    function setBroadcastAddr(
-        uint _id,
-        address _addr
-    ) public isMaster {
+    function setBroadcastAddr(uint _id, address _addr) public isMaster {
         maddr[broadcastAddr][_id] = _addr;
     }
 }

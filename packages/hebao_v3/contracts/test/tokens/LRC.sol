@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import '../DummyToken.sol';
+import "../DummyToken.sol";
 
 contract LRC is DummyToken {
-    constructor() DummyToken('LRC_TEST', 'LRC', 18, 10 ** 27) {}
+    constructor() DummyToken("LRC_TEST", "LRC", 18, 10 ** 27) {}
 }

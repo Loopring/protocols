@@ -3,11 +3,11 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import './IFlashLoanRecipient.sol';
-import './IVault.sol';
-import '@openzeppelin/contracts/utils/Address.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./IFlashLoanRecipient.sol";
+import "./IVault.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 interface FlashLoanPoolInterface {
     function flashLoan(
@@ -17,10 +17,7 @@ interface FlashLoanPoolInterface {
     ) external;
 }
 
-contract BalancerFlashLoan is
-    IFlashLoanRecipient,
-    FlashLoanPoolInterface
-{
+contract BalancerFlashLoan is IFlashLoanRecipient, FlashLoanPoolInterface {
     address public immutable vault;
     address public constant ethAddr =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -51,10 +48,7 @@ contract BalancerFlashLoan is
             CastData memory cd;
             cd.token = tokens[i];
             cd.amount = amounts[i];
-            (cd.target, cd.data) = abi.decode(
-                userData,
-                (address, bytes)
-            );
+            (cd.target, cd.data) = abi.decode(userData, (address, bytes));
 
             if (address(cd.token) == ethAddr) {
                 payable(cd.target).transfer(cd.amount);
@@ -66,7 +60,7 @@ contract BalancerFlashLoan is
             Address.functionCall(
                 cd.target,
                 cd.data,
-                'flashloan-fallback-failed'
+                "flashloan-fallback-failed"
             );
 
             // Return loan

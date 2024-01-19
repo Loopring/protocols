@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+pragma solidity >= 0.6.12;
 
-import {ModexpInverse, ModexpSqrt} from './ModExp.sol';
-import {BNPairingPrecompileCostEstimator} from './BNPairingPrecompileCostEstimator.sol';
+import { ModexpInverse, ModexpSqrt } from "./ModExp.sol";
+import {
+    BNPairingPrecompileCostEstimator
+} from "./BNPairingPrecompileCostEstimator.sol";
 
 /**
     @title  Boneh–Lynn–Shacham (BLS) signature scheme on Barreto-Naehrig 254 bit curve (BN-254)
@@ -37,32 +39,33 @@ library BLS {
     uint256 private constant MASK24 = 0xffffffffffffffffffffffffffffffffffffffffffffffff;
 
     // estimator address
-    //    address private constant COST_ESTIMATOR_ADDRESS =  new 0x22E4a5251C1F02de8369Dd6f192033F6CB7531A4;
+//    address private constant COST_ESTIMATOR_ADDRESS =  new 0x22E4a5251C1F02de8369Dd6f192033F6CB7531A4;
 
     function verifySingle(
         uint256[2] memory signature,
         uint256[4] memory pubkey,
         uint256[2] memory message
     ) internal view returns (bool, bool) {
-        uint256[12] memory input = [
-            signature[0],
-            signature[1],
-            N_G2_X1,
-            N_G2_X0,
-            N_G2_Y1,
-            N_G2_Y0,
-            message[0],
-            message[1],
-            pubkey[1],
-            pubkey[0],
-            pubkey[3],
-            pubkey[2]
-        ];
+        uint256[12] memory input =
+            [
+                signature[0],
+                signature[1],
+                N_G2_X1,
+                N_G2_X0,
+                N_G2_Y1,
+                N_G2_Y0,
+                message[0],
+                message[1],
+                pubkey[1],
+                pubkey[0],
+                pubkey[3],
+                pubkey[2]
+            ];
         uint256[1] memory out;
         uint256 precompileGasCost = gasleft();
-        //            BNPairingPrecompileCostEstimator(COST_ESTIMATOR_ADDRESS).getGasCost(
-        //                2
-        //            );
+//            BNPairingPrecompileCostEstimator(COST_ESTIMATOR_ADDRESS).getGasCost(
+//                2
+//            );
         bool callSuccess;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
@@ -87,10 +90,10 @@ library BLS {
         uint256[2][] memory messages
     ) internal view returns (bool checkResult, bool callSuccess) {
         uint256 size = pubkeys.length;
-        require(size > 0, 'BLS: number of public key is zero');
+        require(size > 0, "BLS: number of public key is zero");
         require(
             size == messages.length,
-            'BLS: number of public keys and messages must be equal'
+            "BLS: number of public keys and messages must be equal"
         );
         uint256 inputSize = (size + 1) * 6;
         uint256[] memory input = new uint256[](inputSize);
@@ -112,7 +115,7 @@ library BLS {
 
         // prettier-ignore
         uint256 precompileGasCost = gasleft();
-        //        uint256 precompileGasCost = BNPairingPrecompileCostEstimator(COST_ESTIMATOR_ADDRESS).getGasCost(size + 1);
+//        uint256 precompileGasCost = BNPairingPrecompileCostEstimator(COST_ESTIMATOR_ADDRESS).getGasCost(size + 1);
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             callSuccess := staticcall(
@@ -133,10 +136,11 @@ library BLS {
     /**
     @notice Fouque-Tibouchi Hash to Curve
      */
-    function hashToPoint(
-        bytes32 domain,
-        bytes memory message
-    ) internal view returns (uint256[2] memory) {
+    function hashToPoint(bytes32 domain, bytes memory message)
+        internal
+        view
+        returns (uint256[2] memory)
+    {
         uint256[2] memory u = hashToField(domain, message);
         uint256[2] memory p0 = mapToPoint(u[0]);
         uint256[2] memory p1 = mapToPoint(u[1]);
@@ -148,27 +152,22 @@ library BLS {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(
-                sub(gas(), 2000),
-                6,
-                bnAddInput,
-                128,
-                p0,
-                64
-            )
+            success := staticcall(sub(gas(), 2000), 6, bnAddInput, 128, p0, 64)
             switch success
-            case 0 {
-                invalid()
-            }
+                case 0 {
+                    invalid()
+                }
         }
-        require(success, 'BLS: bn add call failed');
+        require(success, "BLS: bn add call failed");
         return p0;
     }
 
-    function mapToPoint(
-        uint256 _x
-    ) internal pure returns (uint256[2] memory p) {
-        require(_x < N, 'mapToPointFT: invalid field element');
+    function mapToPoint(uint256 _x)
+        internal
+        pure
+        returns (uint256[2] memory p)
+    {
+        require(_x < N, "mapToPointFT: invalid field element");
         uint256 x = _x;
 
         (, bool decision) = sqrt(x);
@@ -222,16 +221,18 @@ library BLS {
         a1 = mulmod(a1, x, N);
         a1 = addmod(a1, 3, N);
         (a1, found) = sqrt(a1);
-        require(found, 'BLS: bad ft mapping implementation');
+        require(found, "BLS: bad ft mapping implementation");
         if (!decision) {
             a1 = N - a1;
         }
         return [x, a1];
     }
 
-    function isValidSignature(
-        uint256[2] memory signature
-    ) internal pure returns (bool) {
+    function isValidSignature(uint256[2] memory signature)
+        internal
+        pure
+        returns (bool)
+    {
         if ((signature[0] >= N) || (signature[1] >= N)) {
             return false;
         } else {
@@ -239,9 +240,11 @@ library BLS {
         }
     }
 
-    function isOnCurveG1(
-        uint256[2] memory point
-    ) internal pure returns (bool _isOnCurve) {
+    function isOnCurveG1(uint256[2] memory point)
+        internal
+        pure
+        returns (bool _isOnCurve)
+    {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             let t0 := mload(point)
@@ -254,9 +257,11 @@ library BLS {
         }
     }
 
-    function isOnCurveG2(
-        uint256[4] memory point
-    ) internal pure returns (bool _isOnCurve) {
+    function isOnCurveG2(uint256[4] memory point)
+        internal
+        pure
+        returns (bool _isOnCurve)
+    {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             // x0, x1
@@ -291,11 +296,7 @@ library BLS {
             t2 := mload(add(point, 64))
             t3 := mload(add(point, 96))
             // y ^ 2
-            t4 := mulmod(
-                addmod(t2, t3, N),
-                addmod(t2, sub(N, t3), N),
-                N
-            )
+            t4 := mulmod(addmod(t2, t3, N), addmod(t2, sub(N, t3), N), N)
             t3 := mulmod(shl(1, t2), t3, N)
 
             // y ^ 2 == x ^ 3 + b
@@ -303,9 +304,7 @@ library BLS {
         }
     }
 
-    function sqrt(
-        uint256 xx
-    ) internal pure returns (uint256 x, bool hasRoot) {
+    function sqrt(uint256 xx) internal pure returns (uint256 x, bool hasRoot) {
         x = ModexpSqrt.run(xx);
         hasRoot = mulmod(x, x, N) == xx;
     }
@@ -314,10 +313,11 @@ library BLS {
         return ModexpInverse.run(a);
     }
 
-    function hashToField(
-        bytes32 domain,
-        bytes memory messages
-    ) internal pure returns (uint256[2] memory) {
+    function hashToField(bytes32 domain, bytes memory messages)
+        internal
+        pure
+        returns (uint256[2] memory)
+    {
         bytes memory _msg = expandMsgTo96(domain, messages);
         uint256 u0;
         uint256 u1;
@@ -339,10 +339,11 @@ library BLS {
         return [a0, a1];
     }
 
-    function expandMsgTo96(
-        bytes32 domain,
-        bytes memory message
-    ) internal pure returns (bytes memory) {
+    function expandMsgTo96(bytes32 domain, bytes memory message)
+        internal
+        pure
+        returns (bytes memory)
+    {
         // zero<64>|msg<var>|lib_str<2>|I2OSP(0, 1)<1>|dst<var>|dst_len<1>
         uint256 t0 = message.length;
         bytes memory msg0 = new bytes(32 + t0 + 64 + 4);

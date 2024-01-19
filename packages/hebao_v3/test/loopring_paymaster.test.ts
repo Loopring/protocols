@@ -31,15 +31,6 @@ describe('LoopringPaymaster test', () => {
       ).to.revertedWith('unregistered already')
       expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .false
-      // change entrypoint
-      const fakeEntrypoint = ethers.constants.AddressZero
-      await expect(
-        paymaster.changeEntryPoint(fakeEntrypoint)
-      ).to.revertedWith('INVALID ENTRYPOINT')
-      const newEntrypoint = await (
-        await ethers.getContractFactory('EntryPoint')
-      ).deploy()
-      await paymaster.changeEntryPoint(newEntrypoint.address)
     })
 
     it('roles management', async () => {

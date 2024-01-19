@@ -2,10 +2,10 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import '../iface/PriceOracle.sol';
-import '../lib/MathUint.sol';
-import '../thirdparty/uniswap2/IUniswapV2Factory.sol';
-import '../thirdparty/uniswap2/IUniswapV2Pair.sol';
+import "../iface/PriceOracle.sol";
+import "../lib/MathUint.sol";
+import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
+import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
 
 /// @title Uniswap2PriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
@@ -18,7 +18,7 @@ contract UniswapV2PriceOracle is PriceOracle {
     constructor(IUniswapV2Factory _factory, address _wethAddress) {
         factory = _factory;
         wethAddress = _wethAddress;
-        require(_wethAddress != address(0), 'INVALID_WETH_ADDRESS');
+        require(_wethAddress != address(0), "INVALID_WETH_ADDRESS");
     }
 
     function tokenValue(
@@ -26,8 +26,7 @@ contract UniswapV2PriceOracle is PriceOracle {
         uint amount
     ) public view override returns (uint) {
         if (amount == 0) return 0;
-        if (token == address(0) || token == wethAddress)
-            return amount;
+        if (token == address(0) || token == wethAddress) return amount;
 
         address pair = factory.getPair(token, wethAddress);
         if (pair == address(0)) {

@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import './base_connector.sol';
+import "./base_connector.sol";
 
 interface IUniswapV2Router02 {
     function factory() external pure returns (address);
@@ -87,9 +87,7 @@ interface IUniswapV2Factory {
 
 contract UniswapConnector is BaseConnector {
     IUniswapV2Router02 internal constant router =
-        IUniswapV2Router02(
-            0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
-        );
+        IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
 
     function deposit(
@@ -166,10 +164,10 @@ contract UniswapConnector is BaseConnector {
         uint256 setId
     ) external payable {
         uint _buyAmt = getUint(getId, buyAmt);
-        (
-            TokenInterface _buyAddr,
-            TokenInterface _sellAddr
-        ) = changeEthAddress(buyAddr, sellAddr);
+        (TokenInterface _buyAddr, TokenInterface _sellAddr) = changeEthAddress(
+            buyAddr,
+            sellAddr
+        );
         address[] memory paths = getPaths(
             address(_buyAddr),
             address(_sellAddr)
@@ -182,7 +180,7 @@ contract UniswapConnector is BaseConnector {
 
         checkPair(paths);
         uint _expectedAmt = getExpectedSellAmt(paths, _buyAmt);
-        require(_slippageAmt >= _expectedAmt, 'Too much slippage');
+        require(_slippageAmt >= _expectedAmt, "Too much slippage");
 
         bool isEth = address(_sellAddr) == wethAddr;
         convertEthToWeth(isEth, _sellAddr, _expectedAmt);
@@ -221,10 +219,10 @@ contract UniswapConnector is BaseConnector {
         uint256 setId
     ) external payable {
         uint _sellAmt = getUint(getId, sellAmt);
-        (
-            TokenInterface _buyAddr,
-            TokenInterface _sellAddr
-        ) = changeEthAddress(buyAddr, sellAddr);
+        (TokenInterface _buyAddr, TokenInterface _sellAddr) = changeEthAddress(
+            buyAddr,
+            sellAddr
+        );
         address[] memory paths = getPaths(
             address(_buyAddr),
             address(_sellAddr)
@@ -243,7 +241,7 @@ contract UniswapConnector is BaseConnector {
 
         checkPair(paths);
         uint _expectedAmt = getExpectedBuyAmt(paths, _sellAmt);
-        require(_slippageAmt <= _expectedAmt, 'Too much slippage');
+        require(_slippageAmt <= _expectedAmt, "Too much slippage");
 
         bool isEth = address(_sellAddr) == wethAddr;
         convertEthToWeth(isEth, _sellAddr, _sellAmt);
@@ -280,10 +278,10 @@ contract UniswapConnector is BaseConnector {
         uint unitAmt,
         uint slippage
     ) internal returns (uint _amtA, uint _amtB, uint _liquidity) {
-        (
-            TokenInterface _tokenA,
-            TokenInterface _tokenB
-        ) = changeEthAddress(tokenA, tokenB);
+        (TokenInterface _tokenA, TokenInterface _tokenB) = changeEthAddress(
+            tokenA,
+            tokenB
+        );
 
         _amtA = _amt == type(uint).max
             ? getTokenBal(TokenInterface(tokenA))
@@ -323,13 +321,15 @@ contract UniswapConnector is BaseConnector {
         uint unitAmtA,
         uint unitAmtB
     ) internal returns (uint _amtA, uint _amtB, uint _uniAmt) {
-        (
-            TokenInterface _tokenA,
-            TokenInterface _tokenB
-        ) = changeEthAddress(tokenA, tokenB);
-        address exchangeAddr = IUniswapV2Factory(router.factory())
-            .getPair(address(_tokenA), address(_tokenB));
-        require(exchangeAddr != address(0), 'pair-not-found.');
+        (TokenInterface _tokenA, TokenInterface _tokenB) = changeEthAddress(
+            tokenA,
+            tokenB
+        );
+        address exchangeAddr = IUniswapV2Factory(router.factory()).getPair(
+            address(_tokenA),
+            address(_tokenB)
+        );
+        require(exchangeAddr != address(0), "pair-not-found.");
 
         TokenInterface uniToken = TokenInterface(exchangeAddr);
         _uniAmt = _amt == type(uint).max
@@ -385,7 +385,7 @@ contract UniswapConnector is BaseConnector {
             paths[0],
             paths[1]
         );
-        require(pair != address(0), 'No-exchange-address');
+        require(pair != address(0), "No-exchange-address");
     }
 
     function getPaths(

@@ -3,10 +3,10 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import './InheritanceLib.sol';
-import './WalletData.sol';
-import '../../account-abstraction/interfaces/UserOperation.sol';
-import '../../iface/IConnectorRegistry.sol';
+import "./InheritanceLib.sol";
+import "./WalletData.sol";
+import "../../account-abstraction/interfaces/UserOperation.sol";
+import "../../iface/IConnectorRegistry.sol";
 
 library AutomationLib {
     using InheritanceLib for Wallet;
@@ -15,7 +15,8 @@ library AutomationLib {
         address _target,
         bytes memory _data
     ) private returns (bytes memory response) {
-        require(_target != address(0), 'target-invalid');
+        require(_target != address(0), "target-invalid");
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             let succeeded := delegatecall(
                 gas(),
@@ -30,10 +31,7 @@ library AutomationLib {
             response := mload(0x40)
             mstore(
                 0x40,
-                add(
-                    response,
-                    and(add(add(size, 0x20), 0x1f), not(0x1f))
-                )
+                add(response, and(add(add(size, 0x20), 0x1f), not(0x1f)))
             )
             mstore(response, size)
             returndatacopy(add(response, 0x20), 0, size)
@@ -53,6 +51,7 @@ library AutomationLib {
     ) internal view returns (bool) {
         bool isOwner = executor == wallet.owner;
         bool isExecutor = wallet.executorsPermission[executor] >
+            // solhint-disable-next-line not-rely-on-time
             block.timestamp;
         return isExecutor || isOwner;
     }
@@ -62,18 +61,13 @@ library AutomationLib {
         address[] calldata targets,
         bytes[] calldata datas
     ) internal {
-        require(
-            connectorRegistry != address(0),
-            'disabled connector registry'
-        );
+        require(connectorRegistry != address(0), "disabled connector registry");
         uint256 _length = targets.length;
-        require(_length == datas.length, 'different length');
+        require(_length == datas.length, "different length");
         // check all targets is valid
         require(
-            IConnectorRegistry(connectorRegistry).isConnectors(
-                targets
-            ),
-            'valid connector'
+            IConnectorRegistry(connectorRegistry).isConnectors(targets),
+            "valid connector"
         );
         for (uint i = 0; i < _length; i++) {
             _spell(targets[i], datas[i]);
@@ -87,7 +81,7 @@ library AutomationLib {
     ) internal {
         require(
             wallet.executorsPermission[executor] < validUntil,
-            'approve failed'
+            "approve failed"
         );
         wallet.executorsPermission[executor] = validUntil;
     }
@@ -96,10 +90,7 @@ library AutomationLib {
         Wallet storage wallet,
         address executor
     ) internal {
-        require(
-            wallet.executorsPermission[executor] > 0,
-            'unapprove failed'
-        );
+        require(wallet.executorsPermission[executor] > 0, "unapprove failed");
         wallet.executorsPermission[executor] = 0;
     }
 }

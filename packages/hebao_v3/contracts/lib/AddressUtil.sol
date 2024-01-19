@@ -22,9 +22,7 @@ library AddressUtil {
             0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
     }
 
-    function toPayable(
-        address addr
-    ) internal pure returns (address payable) {
+    function toPayable(address addr) internal pure returns (address payable) {
         return payable(addr);
     }
 
@@ -40,9 +38,7 @@ library AddressUtil {
         }
         address payable recipient = to.toPayable();
         /* solium-disable-next-line */
-        (success, ) = recipient.call{value: amount, gas: gasLimit}(
-            ''
-        );
+        (success, ) = recipient.call{value: amount, gas: gasLimit}("");
     }
 
     // Works like address.transfer but with a customizable gas limit
@@ -53,7 +49,7 @@ library AddressUtil {
         uint gasLimit
     ) internal returns (bool success) {
         success = to.sendETH(amount, gasLimit);
-        require(success, 'TRANSFER_FAILURE');
+        require(success, "TRANSFER_FAILURE");
     }
 
     // Works like call but is slightly more efficient when data

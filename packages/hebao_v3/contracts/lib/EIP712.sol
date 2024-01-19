@@ -12,14 +12,12 @@ library EIP712 {
 
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
         keccak256(
-            'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
 
-    string internal constant EIP191_HEADER = '\x19\x01';
+    string internal constant EIP191_HEADER = "\x19\x01";
 
-    function hash(
-        Domain memory domain
-    ) internal view returns (bytes32) {
+    function hash(Domain memory domain) internal view returns (bytes32) {
         uint _chainid;
         assembly {
             _chainid := chainid()
@@ -43,11 +41,7 @@ library EIP712 {
     ) internal pure returns (bytes32) {
         return
             keccak256(
-                abi.encodePacked(
-                    EIP191_HEADER,
-                    domainSeparator,
-                    dataHash
-                )
+                abi.encodePacked(EIP191_HEADER, domainSeparator, dataHash)
             );
     }
 }

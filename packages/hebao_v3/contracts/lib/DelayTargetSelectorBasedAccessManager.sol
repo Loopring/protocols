@@ -2,8 +2,8 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import './Claimable.sol';
-import '../thirdparty/BytesUtil.sol';
+import "./Claimable.sol";
+import "../thirdparty/BytesUtil.sol";
 
 /// @title  SelectorBasedAccessManager
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -20,10 +20,7 @@ contract DelayTargetSelectorBasedAccessManager is Claimable {
     mapping(address => mapping(bytes4 => bool)) public permissions;
 
     modifier withAccess(bytes4 selector) {
-        require(
-            hasAccessTo(msg.sender, selector),
-            'PERMISSION_DENIED'
-        );
+        require(hasAccessTo(msg.sender, selector), "PERMISSION_DENIED");
         _;
     }
 
@@ -34,10 +31,7 @@ contract DelayTargetSelectorBasedAccessManager is Claimable {
         bytes4 selector,
         bool granted
     ) external onlyOwner {
-        require(
-            permissions[user][selector] != granted,
-            'INVALID_VALUE'
-        );
+        require(permissions[user][selector] != granted, "INVALID_VALUE");
         permissions[user][selector] = granted;
         emit PermissionUpdate(user, selector, granted);
     }
@@ -49,17 +43,17 @@ contract DelayTargetSelectorBasedAccessManager is Claimable {
     }
 
     function setTarget(address _target) public onlyOwner {
-        require(_target != address(0), 'ZERO_ADDRESS');
+        require(_target != address(0), "ZERO_ADDRESS");
         target = _target;
     }
 
     function transact(
         bytes memory data
     ) public payable withAccess(data.toBytes4(0)) {
-        require(target != address(0), 'ZERO_ADDRESS');
-        (bool success, bytes memory returnData) = target.call{
-            value: msg.value
-        }(data);
+        require(target != address(0), "ZERO_ADDRESS");
+        (bool success, bytes memory returnData) = target.call{value: msg.value}(
+            data
+        );
 
         if (!success) {
             assembly {

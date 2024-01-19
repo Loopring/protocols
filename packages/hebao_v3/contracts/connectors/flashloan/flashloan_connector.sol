@@ -3,18 +3,15 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import {Address} from '@openzeppelin/contracts/utils/Address.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import '../base_connector.sol';
-import {FlashLoanPoolInterface} from './BalancerFlashloan.sol';
+import "../base_connector.sol";
+import {FlashLoanPoolInterface} from "./BalancerFlashloan.sol";
 
 interface ApprovalInterface {
-    function approveExecutor(
-        address executor,
-        uint256 validUntil
-    ) external;
+    function approveExecutor(address executor, uint256 validUntil) external;
 
     function unApproveExecutor(address executor) external;
 }
@@ -42,15 +39,17 @@ contract FlashLoanConnector is BaseConnector {
         uint amt,
         bytes memory data
     ) external payable {
-        (address[] memory targets, bytes[] memory callDatas) = abi
-            .decode(data, (address[], bytes[]));
+        (address[] memory targets, bytes[] memory callDatas) = abi.decode(
+            data,
+            (address[], bytes[])
+        );
         ApprovalInterface(address(this)).approveExecutor(
             address(flashLoanPool),
             type(uint256).max
         );
 
         bytes memory callData = abi.encodeWithSignature(
-            'castFromExecutor(address[],bytes[])',
+            "castFromExecutor(address[],bytes[])",
             targets,
             callDatas
         );

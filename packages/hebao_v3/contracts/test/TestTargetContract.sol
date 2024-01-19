@@ -21,7 +21,7 @@ contract TestTargetContract {
     }
 
     function functionRevert(uint _value) external {
-        require(false, 'IMMEDIATE_REVERT');
+        require(false, "IMMEDIATE_REVERT");
         value = _value;
     }
 }

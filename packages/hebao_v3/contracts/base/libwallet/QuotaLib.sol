@@ -3,12 +3,12 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import './WalletData.sol';
-import '../../iface/PriceOracle.sol';
-import '../../lib/MathUint.sol';
-import '../../thirdparty/SafeCast.sol';
-import './ApprovalLib.sol';
-import '../../lib/EIP712.sol';
+import "./WalletData.sol";
+import "../../iface/PriceOracle.sol";
+import "../../lib/MathUint.sol";
+import "../../thirdparty/SafeCast.sol";
+import "./ApprovalLib.sol";
+import "../../lib/EIP712.sol";
 
 /// @title QuotaLib
 /// @dev This store maintains daily spending quota for each wallet.
@@ -24,7 +24,7 @@ library QuotaLib {
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
         keccak256(
-            'changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota,bytes32 salt)'
+            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota,bytes32 salt)"
         );
 
     event QuotaScheduled(
@@ -33,21 +33,11 @@ library QuotaLib {
         uint64 pendingUntil
     );
 
-    function changeDailyQuota(
-        Wallet storage wallet,
-        uint newQuota
-    ) public {
-        setQuota(
-            wallet,
-            newQuota,
-            block.timestamp.add(QUOTA_PENDING_PERIOD)
-        );
+    function changeDailyQuota(Wallet storage wallet, uint newQuota) public {
+        setQuota(wallet, newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
     }
 
-    function changeDailyQuotaWA(
-        Wallet storage wallet,
-        uint newQuota
-    ) public {
+    function changeDailyQuotaWA(Wallet storage wallet, uint newQuota) public {
         setQuota(wallet, newQuota, 0);
     }
 
@@ -69,7 +59,7 @@ library QuotaLib {
                 );
 
             if (value > 0) {
-                require(available >= value, 'QUOTA_EXCEEDED');
+                require(available >= value, "QUOTA_EXCEEDED");
                 _addToSpent(wallet, q, value);
             }
         }
@@ -81,7 +71,7 @@ library QuotaLib {
         uint newQuota,
         uint effectiveTime
     ) internal {
-        require(newQuota <= MAX_QUOTA, 'INVALID_VALUE');
+        require(newQuota <= MAX_QUOTA, "INVALID_VALUE");
         if (newQuota == MAX_QUOTA) {
             newQuota = 0;
         }
@@ -89,8 +79,7 @@ library QuotaLib {
         uint __currentQuota = currentQuota(wallet);
         // Always allow the quota to be changed immediately when the quota doesn't increase
         if (
-            (__currentQuota >= newQuota && newQuota != 0) ||
-            __currentQuota == 0
+            (__currentQuota >= newQuota && newQuota != 0) || __currentQuota == 0
         ) {
             effectiveTime = 0;
         }
@@ -100,34 +89,22 @@ library QuotaLib {
         quota.pendingQuota = newQuota.toUint128();
         quota.pendingUntil = effectiveTime.toUint64();
 
-        emit QuotaScheduled(
-            address(this),
-            newQuota,
-            quota.pendingUntil
-        );
+        emit QuotaScheduled(address(this), newQuota, quota.pendingUntil);
     }
 
     // Returns 0 to indiciate unlimited quota
-    function currentQuota(
-        Wallet storage wallet
-    ) internal view returns (uint) {
+    function currentQuota(Wallet storage wallet) internal view returns (uint) {
         return _currentQuota(wallet.quota);
     }
 
     // Returns 0 to indiciate unlimited quota
     function pendingQuota(
         Wallet storage wallet
-    )
-        internal
-        view
-        returns (uint __pendingQuota, uint __pendingUntil)
-    {
+    ) internal view returns (uint __pendingQuota, uint __pendingUntil) {
         return _pendingQuota(wallet.quota);
     }
 
-    function spentQuota(
-        Wallet storage wallet
-    ) internal view returns (uint) {
+    function spentQuota(Wallet storage wallet) internal view returns (uint) {
         return _spentQuota(wallet.quota);
     }
 
@@ -146,22 +123,14 @@ library QuotaLib {
 
     // --- Internal functions ---
 
-    function _currentQuota(
-        Quota memory q
-    ) private view returns (uint) {
+    function _currentQuota(Quota memory q) private view returns (uint) {
         return
-            q.pendingUntil <= block.timestamp
-                ? q.pendingQuota
-                : q.currentQuota;
+            q.pendingUntil <= block.timestamp ? q.pendingQuota : q.currentQuota;
     }
 
     function _pendingQuota(
         Quota memory q
-    )
-        private
-        view
-        returns (uint __pendingQuota, uint __pendingUntil)
-    {
+    ) private view returns (uint __pendingQuota, uint __pendingUntil) {
         if (q.pendingUntil > 0 && q.pendingUntil > block.timestamp) {
             __pendingQuota = q.pendingQuota;
             __pendingUntil = q.pendingUntil;
@@ -169,9 +138,7 @@ library QuotaLib {
     }
 
     function _spentQuota(Quota memory q) private view returns (uint) {
-        uint timeSinceLastSpent = block.timestamp.sub(
-            q.spentTimestamp
-        );
+        uint timeSinceLastSpent = block.timestamp.sub(q.spentTimestamp);
         if (timeSinceLastSpent < 1 days) {
             return
                 uint(q.spentAmount).sub(
@@ -182,9 +149,7 @@ library QuotaLib {
         }
     }
 
-    function _availableQuota(
-        Quota memory q
-    ) private view returns (uint) {
+    function _availableQuota(Quota memory q) private view returns (uint) {
         uint quota = _currentQuota(q);
         if (quota == 0) {
             return MAX_QUOTA;

@@ -3,16 +3,16 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/access/AccessControl.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract ConnectorRegistry is AccessControl, Ownable {
-    bytes32 public constant MANAGER = keccak256('MANAGER');
+    bytes32 public constant MANAGER = keccak256("MANAGER");
 
     mapping(address => bool) public connectors;
 
     modifier onlyManager() {
-        require(hasRole(MANAGER, msg.sender), 'not a manager');
+        require(hasRole(MANAGER, msg.sender), "not a manager");
         _;
     }
 

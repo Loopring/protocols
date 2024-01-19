@@ -8,7 +8,7 @@ pragma experimental ABIEncoderV2;
  * @dev Lending & Borrowing.
  */
 
-import './base_connector.sol';
+import "./base_connector.sol";
 
 interface CTokenInterface {
     function mint(uint mintAmount) external returns (uint);
@@ -25,23 +25,15 @@ interface CTokenInterface {
         address cTokenCollateral
     ) external returns (uint);
 
-    function borrowBalanceCurrent(
-        address account
-    ) external returns (uint);
-    function redeemUnderlying(
-        uint redeemAmount
-    ) external returns (uint);
+    function borrowBalanceCurrent(address account) external returns (uint);
+    function redeemUnderlying(uint redeemAmount) external returns (uint);
     function exchangeRateCurrent() external returns (uint);
 
-    function balanceOf(
-        address owner
-    ) external view returns (uint256 balance);
+    function balanceOf(address owner) external view returns (uint256 balance);
 
     function isCToken() external view returns (bool);
     function underlying() external view returns (address);
-    function borrowBalanceStored(
-        address account
-    ) external view returns (uint);
+    function borrowBalanceStored(address account) external view returns (uint);
     function exchangeRateStored() external view returns (uint);
 }
 
@@ -59,9 +51,7 @@ interface ComptrollerInterface {
     function enterMarkets(
         address[] calldata cTokens
     ) external returns (uint[] memory);
-    function exitMarket(
-        address cTokenAddress
-    ) external returns (uint);
+    function exitMarket(address cTokenAddress) external returns (uint);
     function getAssetsIn(
         address account
     ) external view returns (address[] memory);
@@ -76,9 +66,7 @@ contract CompoundConnector is BaseConnector {
      * @dev Compound Comptroller
      */
     ComptrollerInterface internal constant troller =
-        ComptrollerInterface(
-            0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B
-        );
+        ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
 
@@ -102,14 +90,12 @@ contract CompoundConnector is BaseConnector {
 
         require(
             token != address(0) && cToken != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         enterMarket(cToken);
         if (token == ethAddr) {
-            _amt = _amt == type(uint).max
-                ? address(this).balance
-                : _amt;
+            _amt = _amt == type(uint).max ? address(this).balance : _amt;
             CETHInterface(cToken).mint{value: _amt}();
         } else {
             TokenInterface tokenContract = TokenInterface(token);
@@ -117,10 +103,7 @@ contract CompoundConnector is BaseConnector {
                 ? tokenContract.balanceOf(address(this))
                 : _amt;
             tokenContract.approve(cToken, _amt);
-            require(
-                CTokenInterface(cToken).mint(_amt) == 0,
-                'deposit-failed'
-            );
+            require(CTokenInterface(cToken).mint(_amt) == 0, "deposit-failed");
         }
         setUint(setId, _amt);
     }
@@ -145,7 +128,7 @@ contract CompoundConnector is BaseConnector {
 
         require(
             token != address(0) && cToken != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         CTokenInterface cTokenContract = CTokenInterface(cToken);
@@ -158,7 +141,7 @@ contract CompoundConnector is BaseConnector {
                 cTokenContract.redeem(
                     cTokenContract.balanceOf(address(this))
                 ) == 0,
-                'full-withdraw-failed'
+                "full-withdraw-failed"
             );
             uint finalBal = token == ethAddr
                 ? address(this).balance
@@ -167,7 +150,7 @@ contract CompoundConnector is BaseConnector {
         } else {
             require(
                 cTokenContract.redeemUnderlying(_amt) == 0,
-                'withdraw-failed'
+                "withdraw-failed"
             );
         }
         setUint(setId, _amt);
@@ -193,14 +176,11 @@ contract CompoundConnector is BaseConnector {
 
         require(
             token != address(0) && cToken != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         enterMarket(cToken);
-        require(
-            CTokenInterface(cToken).borrow(_amt) == 0,
-            'borrow-failed'
-        );
+        require(CTokenInterface(cToken).borrow(_amt) == 0, "borrow-failed");
         setUint(setId, _amt);
     }
 
@@ -224,7 +204,7 @@ contract CompoundConnector is BaseConnector {
 
         require(
             token != address(0) && cToken != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         CTokenInterface cTokenContract = CTokenInterface(cToken);
@@ -233,19 +213,16 @@ contract CompoundConnector is BaseConnector {
             : _amt;
 
         if (token == ethAddr) {
-            require(address(this).balance >= _amt, 'not-enough-eth');
+            require(address(this).balance >= _amt, "not-enough-eth");
             CETHInterface(cToken).repayBorrow{value: _amt}();
         } else {
             TokenInterface tokenContract = TokenInterface(token);
             require(
                 tokenContract.balanceOf(address(this)) >= _amt,
-                'not-enough-token'
+                "not-enough-token"
             );
             tokenContract.approve(cToken, _amt);
-            require(
-                cTokenContract.repayBorrow(_amt) == 0,
-                'repay-failed.'
-            );
+            require(cTokenContract.repayBorrow(_amt) == 0, "repay-failed.");
         }
         setUint(setId, _amt);
     }
@@ -270,7 +247,7 @@ contract CompoundConnector is BaseConnector {
 
         require(
             token != address(0) && cToken != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         enterMarket(cToken);
@@ -279,9 +256,7 @@ contract CompoundConnector is BaseConnector {
         uint initialBal = ctokenContract.balanceOf(address(this));
 
         if (token == ethAddr) {
-            _amt = _amt == type(uint).max
-                ? address(this).balance
-                : _amt;
+            _amt = _amt == type(uint).max ? address(this).balance : _amt;
             CETHInterface(cToken).mint{value: _amt}();
         } else {
             TokenInterface tokenContract = TokenInterface(token);
@@ -289,10 +264,7 @@ contract CompoundConnector is BaseConnector {
                 ? tokenContract.balanceOf(address(this))
                 : _amt;
             tokenContract.approve(cToken, _amt);
-            require(
-                ctokenContract.mint(_amt) == 0,
-                'deposit-ctoken-failed.'
-            );
+            require(ctokenContract.mint(_amt) == 0, "deposit-ctoken-failed.");
         }
 
         uint _cAmt;
@@ -324,7 +296,7 @@ contract CompoundConnector is BaseConnector {
         uint _cAmt = getUint(getId, cTokenAmt);
         require(
             token != address(0) && cToken != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         CTokenInterface cTokenContract = CTokenInterface(cToken);
@@ -338,10 +310,7 @@ contract CompoundConnector is BaseConnector {
             uint initialBal = token != ethAddr
                 ? tokenContract.balanceOf(address(this))
                 : address(this).balance;
-            require(
-                cTokenContract.redeem(_cAmt) == 0,
-                'redeem-failed'
-            );
+            require(cTokenContract.redeem(_cAmt) == 0, "redeem-failed");
             uint finalBal = token != ethAddr
                 ? tokenContract.balanceOf(address(this))
                 : address(this).balance;
@@ -377,27 +346,25 @@ contract CompoundConnector is BaseConnector {
         uint _amt = getUint(getId, amt);
         require(
             tokenToPay != address(0) && cTokenPay != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
         require(
             tokenInReturn != address(0) && cTokenColl != address(0),
-            'invalid token/ctoken address'
+            "invalid token/ctoken address"
         );
 
         CTokenInterface cTokenContract = CTokenInterface(cTokenPay);
 
         {
-            (, , uint shortfal) = troller.getAccountLiquidity(
-                borrower
-            );
-            require(shortfal != 0, 'account-cannot-be-liquidated');
+            (, , uint shortfal) = troller.getAccountLiquidity(borrower);
+            require(shortfal != 0, "account-cannot-be-liquidated");
             _amt = _amt == type(uint).max
                 ? cTokenContract.borrowBalanceCurrent(borrower)
                 : _amt;
         }
 
         if (tokenToPay == ethAddr) {
-            require(address(this).balance >= _amt, 'not-enought-eth');
+            require(address(this).balance >= _amt, "not-enought-eth");
             CETHInterface(cTokenPay).liquidateBorrow{value: _amt}(
                 borrower,
                 cTokenColl
@@ -406,16 +373,12 @@ contract CompoundConnector is BaseConnector {
             TokenInterface tokenContract = TokenInterface(tokenToPay);
             require(
                 tokenContract.balanceOf(address(this)) >= _amt,
-                'not-enough-token'
+                "not-enough-token"
             );
             tokenContract.approve(cTokenPay, _amt);
             require(
-                cTokenContract.liquidateBorrow(
-                    borrower,
-                    _amt,
-                    cTokenColl
-                ) == 0,
-                'liquidate-failed'
+                cTokenContract.liquidateBorrow(borrower, _amt, cTokenColl) == 0,
+                "liquidate-failed"
             );
         }
         setUint(setId, _amt);

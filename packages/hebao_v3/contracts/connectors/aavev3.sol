@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import './base_connector.sol';
+import "./base_connector.sol";
 
 interface AaveInterface {
     function supply(
@@ -97,17 +97,13 @@ contract AaveV3Connector is BaseConnector {
      * @dev Aave Pool Provider
      */
     AavePoolProviderInterface internal constant aaveProvider =
-        AavePoolProviderInterface(
-            0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e
-        );
+        AavePoolProviderInterface(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
 
     /**
      * @dev Aave Pool Data Provider
      */
     AaveDataProviderInterface internal constant aaveData =
-        AaveDataProviderInterface(
-            0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3
-        );
+        AaveDataProviderInterface(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
 
     /**
      * @dev Aave Referral Code
@@ -121,9 +117,7 @@ contract AaveV3Connector is BaseConnector {
      * @param token token address of the asset.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      */
 
-    function getIsColl(
-        address token
-    ) internal view returns (bool isCol) {
+    function getIsColl(address token) internal view returns (bool isCol) {
         (, , , , , , , , isCol) = aaveData.getUserReserveData(
             token,
             address(this)
@@ -139,17 +133,8 @@ contract AaveV3Connector is BaseConnector {
         address token,
         uint256 rateMode
     ) internal view returns (uint256) {
-        (
-            ,
-            uint256 stableDebt,
-            uint256 variableDebt,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = aaveData.getUserReserveData(token, address(this));
+        (, uint256 stableDebt, uint256 variableDebt, , , , , , ) = aaveData
+            .getUserReserveData(token, address(this));
         return rateMode == 1 ? stableDebt : variableDebt;
     }
 
@@ -177,9 +162,7 @@ contract AaveV3Connector is BaseConnector {
         TokenInterface tokenContract = TokenInterface(_token);
 
         if (isEth) {
-            _amt = _amt == type(uint256).max
-                ? address(this).balance
-                : _amt;
+            _amt = _amt == type(uint256).max ? address(this).balance : _amt;
             convertEthToWeth(isEth, tokenContract, _amt);
         } else {
             _amt = _amt == type(uint256).max
@@ -254,13 +237,7 @@ contract AaveV3Connector is BaseConnector {
         bool isEth = token == ethAddr;
         address _token = isEth ? wethAddr : token;
 
-        aave.borrow(
-            _token,
-            _amt,
-            rateMode,
-            referralCode,
-            address(this)
-        );
+        aave.borrow(_token, _amt, rateMode, referralCode, address(this));
         convertWethToEth(isEth, TokenInterface(_token), _amt);
 
         setUint(setId, _amt);
