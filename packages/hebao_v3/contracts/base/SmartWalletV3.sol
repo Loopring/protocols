@@ -19,6 +19,7 @@ import "./libwallet/ApprovalLib.sol";
 import "./libwallet/ERC20Lib.sol";
 import "./libwallet/AutomationLib.sol";
 import "../lib/SignatureUtil.sol";
+import "../lib/LoopringErrors.sol";
 
 contract SmartWalletV3 is SmartWallet {
     constructor(
@@ -40,7 +41,7 @@ contract SmartWalletV3 is SmartWallet {
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         for (uint i = 0; i < data.length; i++) {
             (bool success, ) = address(this).call(data[i]);
-            require(success, "BATCHED_CALL_FAILED");
+            _require(success, Errors.BATCHED_CALL_FAILED);
         }
     }
 

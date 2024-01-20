@@ -150,7 +150,7 @@ library ApprovalLib {
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
-                        QuotaLib.sigRequirement,
+                        QuotaLib.SIG_REQUIREMENT,
                         approval
                     );
                 }
@@ -167,7 +167,7 @@ library ApprovalLib {
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
-                        WhitelistLib.sigRequirement,
+                        WhitelistLib.SIG_REQUIREMENT,
                         approval
                     );
                 }
@@ -244,7 +244,7 @@ library ApprovalLib {
                     );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
-                        LockLib.sigRequirement,
+                        LockLib.SIG_REQUIREMENT,
                         approval
                     );
                 }
@@ -261,7 +261,7 @@ library ApprovalLib {
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
-                        UpgradeLib.sigRequirement,
+                        UpgradeLib.SIG_REQUIREMENT,
                         approval
                     );
                 }
@@ -278,7 +278,7 @@ library ApprovalLib {
                     );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
-                        RecoverLib.sigRequirement,
+                        RecoverLib.SIG_REQUIREMENT,
                         approval
                     );
                     if (

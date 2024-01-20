@@ -14,7 +14,7 @@ library WhitelistLib {
     using WhitelistLib for Wallet;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
-    SigRequirement public constant sigRequirement =
+    SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant ADD_TO_WHITELIST_TYPEHASH =

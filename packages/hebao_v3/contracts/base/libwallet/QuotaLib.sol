@@ -9,6 +9,8 @@ import "../../lib/MathUint.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/LoopringErrors.sol";
+
 
 /// @title QuotaLib
 /// @dev This store maintains daily spending quota for each wallet.
@@ -19,7 +21,7 @@ library QuotaLib {
 
     uint128 public constant MAX_QUOTA = type(uint128).max;
     uint public constant QUOTA_PENDING_PERIOD = 1 days;
-    SigRequirement public constant sigRequirement =
+    SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
@@ -59,7 +61,7 @@ library QuotaLib {
                 );
 
             if (value > 0) {
-                require(available >= value, "QUOTA_EXCEEDED");
+                _require(available >= value, Errors.QUOTA_EXCEEDED);
                 _addToSpent(wallet, q, value);
             }
         }
@@ -71,7 +73,7 @@ library QuotaLib {
         uint newQuota,
         uint effectiveTime
     ) internal {
-        require(newQuota <= MAX_QUOTA, "INVALID_VALUE");
+        _require(newQuota <= MAX_QUOTA, Errors.INVALID_QUOTA);
         if (newQuota == MAX_QUOTA) {
             newQuota = 0;
         }

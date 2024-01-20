@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./ApprovalLib.sol";
 import "./WalletData.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/LoopringErrors.sol";
 
 /// @title UpgradeLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -13,7 +14,7 @@ library UpgradeLib {
     using ApprovalLib for Wallet;
 
     event ChangedMasterCopy(address masterCopy);
-    SigRequirement public constant sigRequirement =
+    SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant CHANGE_MASTER_COPY_TYPEHASH =
@@ -22,7 +23,7 @@ library UpgradeLib {
         );
 
     function changeMasterCopy(address newMasterCopy) external {
-        require(newMasterCopy != address(0), "INVALID_MASTER_COPY");
+        _require(newMasterCopy != address(0), Errors.INVALID_MASTER_COPY);
 
         emit ChangedMasterCopy(newMasterCopy);
     }

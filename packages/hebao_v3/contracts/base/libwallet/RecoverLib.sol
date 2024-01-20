@@ -8,6 +8,7 @@ import "./GuardianLib.sol";
 import "./LockLib.sol";
 import "./Utils.sol";
 import "./ApprovalLib.sol";
+import "../../lib/LoopringErrors.sol";
 
 /// @title RecoverLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -17,7 +18,7 @@ library RecoverLib {
     using Utils for address;
 
     event Recovered(address newOwner);
-    SigRequirement public constant sigRequirement =
+    SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_NOT_ALLOWED;
 
     bytes32 public constant RECOVER_TYPEHASH =
@@ -33,17 +34,17 @@ library RecoverLib {
         address newOwner,
         address[] calldata newGuardians
     ) external {
-        require(wallet.owner != newOwner, "IS_SAME_OWNER");
-        require(newOwner.isValidWalletOwner(), "INVALID_NEW_WALLET_OWNER");
+        _require(wallet.owner != newOwner, Errors.IS_SAME_OWNER);
+        _require(newOwner.isValidWalletOwner(), Errors.INVALID_NEW_WALLET_OWNER);
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);
 
         if (newGuardians.length > 0) {
             for (uint i = 0; i < newGuardians.length; i++) {
-                require(
+                _require(
                     newGuardians[i] != newOwner,
-                    "INVALID_NEW_WALLET_GUARDIAN"
+                    Errors.INVALID_NEW_WALLET_GUARDIAN
                 );
             }
             wallet.removeAllGuardians();

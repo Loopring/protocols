@@ -8,6 +8,7 @@ import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/SafeCast.sol";
 import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/LoopringErrors.sol";
 
 /// @title GuardianModule
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -44,7 +45,7 @@ library GuardianLib {
     ) external {
         address guardian = address(0);
         for (uint i = 0; i < _guardians.length; i++) {
-            require(_guardians[i] > guardian, "INVALID_ORDERING");
+            _require(_guardians[i] > guardian, Errors.INVALID_ORDERING);
             guardian = _guardians[i];
             _addGuardian(wallet, guardian, 0, true);
         }
@@ -115,14 +116,14 @@ library GuardianLib {
 
         // Calculate total group sizes
         Guardian[] memory allGuardians = guardians(wallet, false);
-        require(allGuardians.length > 0, "NO_GUARDIANS");
+        _require(allGuardians.length > 0, Errors.NO_GUARDIANS);
 
         address lastSigner;
         bool walletOwnerSigned = false;
         address owner = wallet.owner;
         for (uint i = 0; i < signers.length; i++) {
             // Check for duplicates
-            require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
+            _require(signers[i] > lastSigner, Errors.INVALID_SIGNERS_ORDER);
             lastSigner = signers[i];
 
             if (signers[i] == owner) {
@@ -135,28 +136,28 @@ library GuardianLib {
                         break;
                     }
                 }
-                require(_isGuardian, "SIGNER_NOT_GUARDIAN");
+                _require(_isGuardian, Errors.SIGNER_NOT_GUARDIAN);
             }
         }
 
         if (requirement == SigRequirement.OWNER_OR_ANY_GUARDIAN) {
             return signers.length == 1;
         } else if (requirement == SigRequirement.ANY_GUARDIAN) {
-            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
+            _require(!walletOwnerSigned, Errors.WALLET_OWNER_SIGNATURE_NOT_ALLOWED);
             return signers.length == 1;
         }
 
         // Check owner requirements
         if (requirement == SigRequirement.MAJORITY_OWNER_REQUIRED) {
-            require(walletOwnerSigned, "WALLET_OWNER_SIGNATURE_REQUIRED");
+            _require(walletOwnerSigned, Errors.WALLET_OWNER_SIGNATURE_REQUIRED);
         } else if (requirement == SigRequirement.MAJORITY_OWNER_NOT_ALLOWED) {
-            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
+            _require(!walletOwnerSigned, Errors.WALLET_OWNER_SIGNATURE_NOT_ALLOWED);
         }
 
         uint numExtendedSigners = allGuardians.length;
         if (walletOwnerSigned) {
             numExtendedSigners += 1;
-            require(signers.length > 1, "NO_GUARDIAN_SIGNED_BESIDES_OWNER");
+            _require(signers.length > 1, Errors.NO_GUARDIAN_SIGNED_BESIDES_OWNER);
         }
 
         return signers.length >= (numExtendedSigners >> 1) + 1;
@@ -235,9 +236,9 @@ library GuardianLib {
         uint validSince,
         bool alwaysOverride
     ) internal returns (uint) {
-        require(validSince >= block.timestamp, "INVALID_VALID_SINCE");
-        require(addr != address(0), "ZERO_ADDRESS");
-        require(addr != address(this), "INVALID_ADDRESS");
+        _require(validSince >= block.timestamp, Errors.INVALID_VALID_SINCE);
+        _require(addr != address(0), Errors.ZERO_ADDRESS);
+        _require(addr != address(this), Errors.INVALID_GUARDIAN_ADDRESS);
 
         uint pos = wallet.guardianIdx[addr];
 
@@ -276,7 +277,7 @@ library GuardianLib {
             return validSince;
         }
 
-        require(_isAdded(g), "UNEXPECTED_RESULT");
+        _require(_isAdded(g), Errors.UNEXPECTED_RESULT);
         return 0;
     }
 
@@ -286,11 +287,11 @@ library GuardianLib {
         uint validUntil,
         bool alwaysOverride
     ) internal returns (uint) {
-        require(validUntil >= block.timestamp, "INVALID_VALID_UNTIL");
-        require(addr != address(0), "ZERO_ADDRESS");
+        _require(validUntil >= block.timestamp, Errors.INVALID_VALID_UNTIL);
+        _require(addr != address(0), Errors.INVALID_GUARDIAN_ADDRESS);
 
         uint pos = wallet.guardianIdx[addr];
-        require(pos > 0, "GUARDIAN_NOT_EXISTS");
+        _require(pos > 0, Errors.GUARDIAN_NOT_EXISTS);
 
         Guardian memory g = wallet.guardians[pos - 1];
 
@@ -313,7 +314,7 @@ library GuardianLib {
             return validUntil;
         }
 
-        require(_isRemoved(g), "UNEXPECTED_RESULT");
+        _require(_isRemoved(g), Errors.UNEXPECTED_RESULT);
         return 0;
     }
 
@@ -326,8 +327,8 @@ library GuardianLib {
         bool alwaysOverride
     ) internal {
         uint _numGuardians = numGuardians(wallet, true);
-        require(_numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-        require(guardian != wallet.owner, "GUARDIAN_CAN_NOT_BE_OWNER");
+        _require(_numGuardians < MAX_GUARDIANS, Errors.TOO_MANY_GUARDIANS);
+        _require(guardian != wallet.owner, Errors.GUARDIAN_CAN_NOT_BE_OWNER);
 
         uint validSince = block.timestamp + 1;
         if (_numGuardians >= 2) {

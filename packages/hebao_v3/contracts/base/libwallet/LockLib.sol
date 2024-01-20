@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./WalletData.sol";
 import "./GuardianLib.sol";
 import "./ApprovalLib.sol";
+import "../../lib/LoopringErrors.sol";
 
 /// @title LockLib
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -15,19 +16,19 @@ library LockLib {
 
     event WalletLocked(address by, bool locked);
 
-    SigRequirement public constant sigRequirement =
+    SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant UNLOCK_TYPEHASH =
         keccak256("unlock(address wallet,uint256 validUntil,bytes32 salt)");
 
     function lock(Wallet storage wallet, address entryPoint) public {
-        require(
+        _require(
             msg.sender == address(this) ||
                 msg.sender == wallet.owner ||
                 msg.sender == entryPoint ||
                 wallet.isGuardian(msg.sender, false),
-            "NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN"
+            Errors.NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN
         );
         setLock(wallet, msg.sender, true);
     }

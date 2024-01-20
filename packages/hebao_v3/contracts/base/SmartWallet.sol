@@ -25,6 +25,8 @@ import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
+import "../lib/LoopringErrors.sol";
+
 
 /// @title SmartWallet
 /// @dev Main smart wallet contract
@@ -69,34 +71,34 @@ abstract contract SmartWallet is
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
     modifier disableInImplementationContract() {
-        require(
+        _require(
             !isImplementationContract,
-            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+            Errors.DISALLOWED_ON_IMPLEMENTATION_CONTRACT
         );
         _;
     }
 
     modifier canTransferOwnership() {
-        require(
+        _require(
             msg.sender == blankOwner && wallet.owner == blankOwner,
-            "NOT_ALLOWED_TO_SET_OWNER"
+            Errors.NOT_ALLOWED_TO_SET_OWNER
         );
         _;
     }
 
     modifier onlyFromEntryPoint() {
-        require(msg.sender == address(entryPoint()), "account: not EntryPoint");
+        _require(msg.sender == address(entryPoint()), Errors.ONLY_FROM_ENTRYPOINT);
         wallet.touchLastActiveWhenRequired();
         _;
     }
 
     // Require the function call went through EntryPoint or wallet self or owner
     modifier onlyFromEntryPointOrWalletOrOwnerWhenUnlocked() {
-        require(
+        _require(
             msg.sender == address(this) ||
                 ((msg.sender == address(entryPoint()) ||
                     msg.sender == wallet.owner) && !wallet.locked),
-            "account: not Owner, Self or EntryPoint or it is locked"
+                    Errors.NOT_OWNER_SELF_OR_ENTRYPOINT_OR_LOCKED
         );
         wallet.touchLastActiveWhenRequired();
         _;
@@ -143,8 +145,8 @@ abstract contract SmartWallet is
         address feeToken,
         uint feeAmount
     ) external override disableInImplementationContract {
-        require(wallet.owner == address(0), "INITIALIZED_ALREADY");
-        require(owner != address(0), "INVALID_OWNER");
+        _require(wallet.owner == address(0), Errors.INITIALIZED_ALREADY);
+        _require(owner != address(0), Errors.INVALID_OWNER);
 
         wallet.owner = owner;
         wallet.creationTimestamp = uint64(block.timestamp);
@@ -178,7 +180,7 @@ abstract contract SmartWallet is
     // Owner
     //
     function transferOwnership(address _owner) external canTransferOwnership {
-        require(_owner != address(0), "INVALID_OWNER");
+        _require(_owner != address(0), Errors.INVALID_OWNER);
         wallet.owner = _owner;
     }
 
@@ -213,8 +215,8 @@ abstract contract SmartWallet is
     function changeEntryPoint(
         address newEntryPoint
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        require(newEntryPoint != address(0), "INVALID ENTRYPOINT");
-        require(address(entryPoint()) != newEntryPoint, "SAME ENTRYPOINT");
+        _require(newEntryPoint != address(0), Errors.ZERO_ADDRESS);
+        _require(address(entryPoint()) != newEntryPoint, Errors.INVALID_SAME_ENTRYPOINT);
         wallet.entryPoint = newEntryPoint;
     }
 
@@ -283,10 +285,10 @@ abstract contract SmartWallet is
         address[] calldata newGuardians
     ) external {
         // allow inherit from inheritor or entrypoint
-        require(
+        _require(
             msg.sender == address(entryPoint()) ||
                 msg.sender == wallet.inheritor,
-            "account: not EntryPoint or inheritor"
+            Errors.NOT_ENTRYPOINT_OR_INHERITOR
         );
         wallet.inherit(newOwner, newGuardians);
     }
@@ -505,9 +507,9 @@ abstract contract SmartWallet is
         address[] calldata targets,
         bytes[] calldata datas
     ) external {
-        require(
+        _require(
             AutomationLib.isExecutorOrOwner(wallet, msg.sender),
-            "not executor"
+            Errors.NOT_EXECUTOR
         );
         AutomationLib.cast(connectorRegistry, targets, datas);
     }
