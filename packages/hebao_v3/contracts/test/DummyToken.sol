@@ -2,12 +2,12 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../lib/MathUint.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./LRCToken.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyToken is LRCToken {
-    using MathUint for uint;
+    using SafeMath for uint;
 
     constructor(
         string memory _name,

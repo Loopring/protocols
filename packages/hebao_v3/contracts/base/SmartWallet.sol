@@ -8,9 +8,8 @@ import "../account-abstraction/interfaces/IEntryPoint.sol";
 import "../account-abstraction/core/BaseAccount.sol";
 
 import "../lib/EIP712.sol";
-import "../lib/ERC20.sol";
 import "../lib/ERC1271.sol";
-import "../lib/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../thirdparty/erc165/IERC165.sol";
 import "../thirdparty/erc1155/ERC1155Holder.sol";
 import "../thirdparty/erc721/ERC721Holder.sol";

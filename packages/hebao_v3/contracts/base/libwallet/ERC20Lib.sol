@@ -3,9 +3,9 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../../thirdparty/SafeERC20.sol";
-import "../../lib/ERC20.sol";
-import "../../lib/MathUint.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../../lib/AddressUtil.sol";
 import "../../iface/PriceOracle.sol";
 import "../../thirdparty/BytesUtil.sol";
@@ -19,10 +19,10 @@ import "../../lib/EIP712.sol";
 library ERC20Lib {
     using AddressUtil for address;
     using BytesUtil for bytes;
-    using MathUint for uint;
     using WhitelistLib for Wallet;
     using QuotaLib for Wallet;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
@@ -159,7 +159,7 @@ library ERC20Lib {
         if (token == address(0)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
-            ERC20(token).safeTransfer(to, amount);
+            IERC20(token).safeTransfer(to, amount);
         }
     }
 
@@ -181,15 +181,15 @@ library ERC20Lib {
         uint amount
     ) private returns (uint additionalAllowance) {
         // Current allowance
-        uint allowance = ERC20(token).allowance(address(this), spender);
+        uint allowance = IERC20(token).allowance(address(this), spender);
 
         if (amount != allowance) {
             // First reset the approved amount if needed
             if (allowance > 0) {
-                ERC20(token).safeApprove(spender, 0);
+                IERC20(token).safeApprove(spender, 0);
             }
             // Now approve the requested amount
-            ERC20(token).safeApprove(spender, amount);
+            IERC20(token).safeApprove(spender, amount);
         }
 
         // If we increased the allowance, calculate by how much

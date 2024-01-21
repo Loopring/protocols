@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "../../iface/PriceOracle.sol";
-import "../../lib/MathUint.sol";
-import "../../thirdparty/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/LoopringErrors.sol";
@@ -15,8 +15,8 @@ import "../../lib/LoopringErrors.sol";
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
 library QuotaLib {
-    using MathUint for uint;
     using SafeCast for uint;
+    using SafeMath for uint;
 
     uint128 public constant MAX_QUOTA = type(uint128).max;
     uint public constant QUOTA_PENDING_PERIOD = 1 days;

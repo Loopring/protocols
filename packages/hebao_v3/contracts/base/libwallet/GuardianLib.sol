@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../thirdparty/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/LoopringErrors.sol";

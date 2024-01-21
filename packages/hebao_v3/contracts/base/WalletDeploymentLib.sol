@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
-import "../thirdparty/Create2.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
 import "../thirdparty/proxies/WalletProxy.sol";
 
 /// @title WalletDeploymentLib
@@ -36,8 +36,9 @@ contract WalletDeploymentLib {
     function _deploy(
         address owner,
         uint salt
-    ) internal returns (address payable wallet) {
+    ) internal returns (address wallet) {
         wallet = Create2.deploy(
+            0,
             computeWalletSalt(owner, salt),
             getWalletCode()
         );
@@ -51,7 +52,7 @@ contract WalletDeploymentLib {
         return
             Create2.computeAddress(
                 computeWalletSalt(owner, salt),
-                getWalletCode(),
+                keccak256(getWalletCode()),
                 deployer
             );
     }

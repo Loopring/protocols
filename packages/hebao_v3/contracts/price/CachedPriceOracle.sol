@@ -3,13 +3,13 @@
 pragma solidity ^0.8.17;
 
 import "../iface/PriceOracle.sol";
-import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
-import "../thirdparty/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /// @title CachedPriceOracle
 contract CachedPriceOracle is PriceOracle, OwnerManagable {
-    using MathUint for uint;
+    using SafeMath for uint;
     using SafeCast for uint;
 
     uint public constant EXPIRY_PERIOD = 7 days;
@@ -25,7 +25,7 @@ contract CachedPriceOracle is PriceOracle, OwnerManagable {
         uint32 timestamp;
     }
 
-    mapping(address => TokenPrice) prices;
+    mapping(address => TokenPrice) private prices;
 
     constructor(PriceOracle _oracle) {
         oracle = _oracle;

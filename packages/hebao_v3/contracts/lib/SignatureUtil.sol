@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../thirdparty/BytesUtil.sol";
 import "./AddressUtil.sol";
 import "./ERC1271.sol";
-import "./MathUint.sol";
 
 /// @title SignatureUtil
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -14,7 +13,6 @@ import "./MathUint.sol";
 ///      the signature's type.
 library SignatureUtil {
     using BytesUtil for bytes;
-    using MathUint for uint;
     using AddressUtil for address;
 
     enum SignatureType {

@@ -3,12 +3,9 @@
 pragma solidity ^0.8.17;
 
 import "../iface/PriceOracle.sol";
-import "../lib/MathUint.sol";
 
 /// @title AggregationalPriceOracle
 contract AggregationalPriceOracle is PriceOracle {
-    using MathUint for uint;
-
     address[] public oracles;
 
     constructor(address[] memory _oracles) {
@@ -25,7 +22,7 @@ contract AggregationalPriceOracle is PriceOracle {
             uint value = PriceOracle(oracles[i]).tokenValue(token, amount);
             if (value > 0) {
                 count += 1;
-                total = total.add(value);
+                total = total + value;
             }
         }
         return count == 0 ? 0 : total / count;

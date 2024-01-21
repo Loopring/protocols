@@ -8,6 +8,7 @@ contract LoopringCreate2Deployer is DelayTargetSelectorBasedAccessManager {
 
     function deploy(bytes memory code, uint256 salt) public {
         address addr;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             addr := create2(0, add(code, 0x20), mload(code), salt)
             if iszero(extcodesize(addr)) {

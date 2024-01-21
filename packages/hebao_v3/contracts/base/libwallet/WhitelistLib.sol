@@ -4,14 +4,14 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
-import "../../lib/MathUint.sol";
 import "./ApprovalLib.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /// @title WhitelistLib
 /// @dev This store maintains a wallet's whitelisted addresses.
 library WhitelistLib {
-    using MathUint for uint;
     using WhitelistLib for Wallet;
+    using SafeMath for uint;
 
     uint public constant WHITELIST_PENDING_PERIOD = 1 days;
     SigRequirement public constant SIG_REQUIREMENT =

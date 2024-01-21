@@ -5,8 +5,8 @@ pragma solidity ^0.8.12;
 /* solhint-disable no-inline-assembly */
 
 import "../account-abstraction/core/BasePaymaster.sol";
-import "../thirdparty/SafeERC20.sol";
-import "../lib/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -22,7 +22,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract LoopringPaymaster is BasePaymaster, AccessControl {
     using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
 
@@ -33,8 +33,8 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     uint8 private constant PRICE_DECIMAL = 8;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
-    mapping(ERC20 => bool) public registeredToken;
-    mapping(ERC20 => mapping(address => uint256)) public balances;
+    mapping(address => bool) public registeredToken;
+    mapping(address => mapping(address => uint256)) public balances;
     mapping(address => uint256) public unlockBlock;
 
     event PaymasterEvent(
@@ -120,7 +120,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             bytes memory signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         require(
-            registeredToken[ERC20(decodedData.token)],
+            registeredToken[decodedData.token],
             "LoopringPaymaster: unsupported tokens"
         );
         //ECDSA library supports both 64 and 65-byte long signatures.
@@ -138,9 +138,9 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 10 ** PRICE_DECIMAL) / decodedData.valueOfEth;
             require(
                 (unlockBlock[sender] == 0 &&
-                    balances[ERC20(decodedData.token)][sender] >=
+                    balances[decodedData.token][sender] >=
                     tokenRequiredPreFund) ||
-                    ERC20(decodedData.token).balanceOf(sender) >=
+                    IERC20(decodedData.token).balanceOf(sender) >=
                     tokenRequiredPreFund,
                 "LoopringPaymaster: no enough available tokens"
             );
@@ -239,17 +239,17 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 (actualETHCost * 10 ** PRICE_DECIMAL) /
                 valueOfEth;
 
-            if (balances[ERC20(token)][account] >= actualTokenCost) {
-                balances[ERC20(token)][account] -= actualTokenCost;
+            if (balances[token][account] >= actualTokenCost) {
+                balances[token][account] -= actualTokenCost;
             } else {
                 // attempt to pay with tokens:
-                ERC20(token).safeTransferFrom(
+                IERC20(token).safeTransferFrom(
                     account,
                     address(this),
                     actualTokenCost
                 );
             }
-            balances[ERC20(token)][owner()] += actualTokenCost;
+            balances[token][owner()] += actualTokenCost;
         }
 
         emit PaymasterEvent(
@@ -267,12 +267,12 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     /**
      * owner of the paymaster should add supported tokens
      */
-    function addToken(ERC20 token) external onlyOwner {
+    function addToken(address token) external onlyOwner {
         require(!registeredToken[token], "registered already");
         registeredToken[token] = true;
     }
 
-    function removeToken(ERC20 token) external onlyOwner {
+    function removeToken(address token) external onlyOwner {
         require(registeredToken[token], "unregistered already");
         registeredToken[token] = false;
     }
@@ -288,12 +288,12 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      * @param amount the amount of token to deposit.
      */
     function addDepositFor(
-        ERC20 token,
+        address token,
         address account,
         uint256 amount
     ) external {
         //(sender must have approval for the paymaster)
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         require(registeredToken[token], "LoopringPaymaster: unsupported token");
         balances[token][account] += amount;
         if (msg.sender == account) {
@@ -302,7 +302,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     }
 
     function depositInfo(
-        ERC20 token,
+        address token,
         address account
     ) public view returns (uint256 amount, uint256 _unlockBlock) {
         amount = balances[token][account];
@@ -333,7 +333,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      * @param amount amount to withdraw
      */
     function withdrawTokensTo(
-        ERC20 token,
+        address token,
         address target,
         uint256 amount
     ) public {
@@ -343,6 +343,6 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             "LoopringPaymaster: must unlockTokenDeposit"
         );
         balances[token][msg.sender] -= amount;
-        token.safeTransfer(target, amount);
+        IERC20(token).safeTransfer(target, amount);
     }
 }
