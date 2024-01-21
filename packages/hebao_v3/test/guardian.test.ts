@@ -189,7 +189,7 @@ describe('guardian test', () => {
         [smartWalletOwner, guardians[0]],
         walletFactory
       )
-    ).to.revertedWith('GUARDIAN_CAN_NOT_BE_OWNER')
+    ).to.revertedWith('LRC#418')
 
     const wallet = await createRandomWallet(
       smartWalletOwner,
@@ -199,7 +199,7 @@ describe('guardian test', () => {
 
     await expect(
       wallet.addGuardian(smartWalletOwner.address)
-    ).to.rejectedWith('GUARDIAN_CAN_NOT_BE_OWNER')
+    ).to.rejectedWith('LRC#418')
   })
 
   it('guardian can be smartwallet', async () => {
@@ -383,7 +383,7 @@ describe('guardian test', () => {
 
       await expect(sendUserOp(signedUserOp))
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(0, 'AA23 reverted: NO_GUARDIANS')
+        .withArgs(0, 'AA23 reverted: LRC#400')
 
       // approveTokenWA test
       {
@@ -410,7 +410,7 @@ describe('guardian test', () => {
         )
         await expect(sendUserOp(signedUserOp))
           .to.revertedWithCustomError(entrypoint, 'FailedOp')
-          .withArgs(0, 'AA23 reverted: NO_GUARDIANS')
+          .withArgs(0, 'AA23 reverted: LRC#400')
       }
     })
   })

@@ -5,6 +5,7 @@ import {
 import { expect } from 'chai'
 import { Wallet } from 'ethers'
 import { ethers } from 'hardhat'
+import { ErrorCodes } from './helper/error_codes'
 
 import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
@@ -455,7 +456,7 @@ describe('quota test', () => {
           '0x',
           false
         )
-      ).to.rejectedWith('QUOTA_EXCEEDED')
+      ).to.rejectedWith(`LRC#${ErrorCodes.QUOTA_EXCEEDED}`)
 
       // will success send to whitelisted address
       await expect(

@@ -6,6 +6,7 @@ import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
 import { evInfo, evRevertInfo, getErrorMessage } from './helper/utils'
+import { ErrorCodes } from './helper/error_codes'
 
 describe('recover test', () => {
   it('recover success', async () => {
@@ -127,7 +128,7 @@ describe('recover test', () => {
     const revertInfo = await evRevertInfo(entrypoint, recipt)
     // is same owner
     expect(getErrorMessage(revertInfo[0].revertReason)).to.eq(
-      'IS_SAME_OWNER'
+      `LRC#${ErrorCodes.IS_SAME_OWNER}`
     )
     // fee charged even if userop execution failed
     expect(postDeposit).to.lt(preDeposit)
@@ -138,7 +139,7 @@ describe('recover test', () => {
     const newOwner = ethers.Wallet.createRandom()
     await expect(
       smartWallet.recover(newOwner.address, [])
-    ).to.rejectedWith('account: not EntryPoint')
+    ).to.rejectedWith(`${ErrorCodes.ONLY_FROM_ENTRYPOINT}`)
   })
   it('will fail when recover from execute', async () => {})
   it('recover success even if wallet is locked', async () => {

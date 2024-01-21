@@ -12,6 +12,7 @@ import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
 import { createSmartWallet, sendTx } from './helper/utils'
+import { ErrorCodes } from './helper/error_codes'
 
 describe('lock test', () => {
   it('basic success testcase', async () => {
@@ -77,7 +78,9 @@ describe('lock test', () => {
       // others cannot lock wallet
       await expect(
         smartWallet.connect(deployer).lock()
-      ).to.revertedWith('NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN')
+      ).to.revertedWith(
+        `LRC#${ErrorCodes.NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN}`
+      )
     })
 
     it('lock success directly from entrypoint', async () => {
@@ -160,7 +163,7 @@ describe('lock test', () => {
     it('cannot unlock directly from wallet owner', async () => {
       const { smartWallet } = await loadFixture(fixture)
       await expect(smartWallet.unlock()).to.rejectedWith(
-        'account: not EntryPoint'
+        `${ErrorCodes.ONLY_FROM_ENTRYPOINT}`
       )
     })
 
