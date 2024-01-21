@@ -40,6 +40,7 @@ contract SmartWalletV3 is SmartWallet {
         bytes[] calldata data
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         for (uint i = 0; i < data.length; i++) {
+            // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = address(this).call(data[i]);
             _require(success, Errors.BATCHED_CALL_FAILED);
         }
@@ -81,7 +82,7 @@ contract SmartWalletV3 is SmartWallet {
                 wallet,
                 userOp,
                 userOpHash,
-                DOMAIN_SEPARATOR
+                domainSeparator
             );
     }
 }

@@ -29,8 +29,8 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     uint256 private constant SIGNATURE_OFFSET = 84;
 
     // calculated cost of the postOp
-    uint256 private COST_OF_POST = 60000;
-    uint8 constant priceDecimal = 8;
+    uint256 private constant COST_OF_POST = 60000;
+    uint8 private constant PRICE_DECIMAL = 8;
     bytes32 public constant SIGNER = keccak256("SIGNER");
 
     mapping(ERC20 => bool) public registeredToken;
@@ -116,11 +116,11 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     {
         address sender = userOp.getSender();
         (
-            DecodedData memory decoded_data,
+            DecodedData memory decodedData,
             bytes memory signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
         require(
-            registeredToken[ERC20(decoded_data.token)],
+            registeredToken[ERC20(decodedData.token)],
             "LoopringPaymaster: unsupported tokens"
         );
         //ECDSA library supports both 64 and 65-byte long signatures.
@@ -133,14 +133,14 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         // NOTE(cannot use basefee during validation)
         uint256 costOfPost = userOp.maxFeePerGas * COST_OF_POST;
         // skip allowance check to allow user to start without any eth to pay for approve
-        if (decoded_data.valueOfEth > 0) {
+        if (decodedData.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
-                10 ** priceDecimal) / decoded_data.valueOfEth;
+                10 ** PRICE_DECIMAL) / decodedData.valueOfEth;
             require(
                 (unlockBlock[sender] == 0 &&
-                    balances[ERC20(decoded_data.token)][sender] >=
+                    balances[ERC20(decodedData.token)][sender] >=
                     tokenRequiredPreFund) ||
-                    ERC20(decoded_data.token).balanceOf(sender) >=
+                    ERC20(decodedData.token).balanceOf(sender) >=
                     tokenRequiredPreFund,
                 "LoopringPaymaster: no enough available tokens"
             );
@@ -150,10 +150,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 userOp,
                 keccak256(
                     abi.encodePacked(
-                        decoded_data.token,
-                        decoded_data.validUntil,
-                        // decoded_data.validAfter,
-                        decoded_data.valueOfEth
+                        decodedData.token,
+                        decodedData.validUntil,
+                        // decodedData.validAfter,
+                        decodedData.valueOfEth
                     )
                 )
             )
@@ -165,8 +165,8 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
                 "",
                 _packValidationData(
                     true,
-                    decoded_data.validUntil,
-                    uint48(0) /*decoded_data.validAfter*/
+                    decodedData.validUntil,
+                    uint48(0) /*decodedData.validAfter*/
                 )
             );
         }
@@ -177,14 +177,14 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             abi.encode(
                 userOpHash,
                 sender,
-                decoded_data.token,
+                decodedData.token,
                 costOfPost,
-                decoded_data.valueOfEth
+                decodedData.valueOfEth
             ),
             _packValidationData(
                 false,
-                decoded_data.validUntil,
-                uint48(0) /*decoded_data.validAfter*/
+                decodedData.validUntil,
+                uint48(0) /*decodedData.validAfter*/
             )
         );
     }
@@ -235,7 +235,9 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         uint256 actualTokenCost;
         uint256 actualETHCost = actualGasCost + costOfPost;
         if (valueOfEth > 0) {
-            actualTokenCost = (actualETHCost * 10 ** priceDecimal) / valueOfEth;
+            actualTokenCost =
+                (actualETHCost * 10 ** PRICE_DECIMAL) /
+                valueOfEth;
 
             if (balances[ERC20(token)][account] >= actualTokenCost) {
                 balances[ERC20(token)][account] -= actualTokenCost;

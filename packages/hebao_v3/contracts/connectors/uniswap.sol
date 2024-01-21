@@ -7,7 +7,6 @@ import "./base_connector.sol";
 
 interface IUniswapV2Router02 {
     function factory() external pure returns (address);
-    function WETH() external pure returns (address);
 
     function addLiquidity(
         address tokenA,
@@ -86,7 +85,7 @@ interface IUniswapV2Factory {
 }
 
 contract UniswapConnector is BaseConnector {
-    IUniswapV2Router02 internal constant router =
+    IUniswapV2Router02 internal constant ROUTER =
         IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
 
@@ -182,11 +181,11 @@ contract UniswapConnector is BaseConnector {
         uint _expectedAmt = getExpectedSellAmt(paths, _buyAmt);
         require(_slippageAmt >= _expectedAmt, "Too much slippage");
 
-        bool isEth = address(_sellAddr) == wethAddr;
+        bool isEth = address(_sellAddr) == WETH_ADDR;
         convertEthToWeth(isEth, _sellAddr, _expectedAmt);
-        _sellAddr.approve(address(router), _expectedAmt);
+        _sellAddr.approve(address(ROUTER), _expectedAmt);
 
-        uint _sellAmt = router.swapTokensForExactTokens(
+        uint _sellAmt = ROUTER.swapTokensForExactTokens(
             _buyAmt,
             _expectedAmt,
             paths,
@@ -194,7 +193,7 @@ contract UniswapConnector is BaseConnector {
             block.timestamp + 1
         )[0];
 
-        isEth = address(_buyAddr) == wethAddr;
+        isEth = address(_buyAddr) == WETH_ADDR;
         convertWethToEth(isEth, _buyAddr, _buyAmt);
 
         setUint(setId, _sellAmt);
@@ -229,7 +228,7 @@ contract UniswapConnector is BaseConnector {
         );
 
         if (_sellAmt == type(uint).max) {
-            _sellAmt = sellAddr == ethAddr
+            _sellAmt = sellAddr == ETH_ADDR
                 ? address(this).balance
                 : _sellAddr.balanceOf(address(this));
         }
@@ -243,11 +242,11 @@ contract UniswapConnector is BaseConnector {
         uint _expectedAmt = getExpectedBuyAmt(paths, _sellAmt);
         require(_slippageAmt <= _expectedAmt, "Too much slippage");
 
-        bool isEth = address(_sellAddr) == wethAddr;
+        bool isEth = address(_sellAddr) == WETH_ADDR;
         convertEthToWeth(isEth, _sellAddr, _sellAmt);
-        _sellAddr.approve(address(router), _sellAmt);
+        _sellAddr.approve(address(ROUTER), _sellAmt);
 
-        uint _buyAmt = router.swapExactTokensForTokens(
+        uint _buyAmt = ROUTER.swapExactTokensForTokens(
             _sellAmt,
             _expectedAmt,
             paths,
@@ -255,7 +254,7 @@ contract UniswapConnector is BaseConnector {
             block.timestamp + 1
         )[1];
 
-        isEth = address(_buyAddr) == wethAddr;
+        isEth = address(_buyAddr) == WETH_ADDR;
         convertWethToEth(isEth, _buyAddr, _buyAmt);
 
         setUint(setId, _buyAmt);
@@ -291,18 +290,18 @@ contract UniswapConnector is BaseConnector {
             wmul(unitAmt, convertTo18(_tokenA.decimals(), _amtA))
         );
 
-        bool isEth = address(_tokenA) == wethAddr;
+        bool isEth = address(_tokenA) == WETH_ADDR;
         convertEthToWeth(isEth, _tokenA, _amtA);
 
-        isEth = address(_tokenB) == wethAddr;
+        isEth = address(_tokenB) == WETH_ADDR;
         convertEthToWeth(isEth, _tokenB, _amtB);
 
-        _tokenA.approve(address(router), _amtA);
-        _tokenA.approve(address(router), _amtB);
+        _tokenA.approve(address(ROUTER), _amtA);
+        _tokenA.approve(address(ROUTER), _amtB);
 
         uint minAmtA = getMinAmount(_tokenA, _amtA, slippage);
         uint minAmtB = getMinAmount(_tokenB, _amtB, slippage);
-        (_amtA, _amtB, _liquidity) = router.addLiquidity(
+        (_amtA, _amtB, _liquidity) = ROUTER.addLiquidity(
             address(_tokenA),
             address(_tokenB),
             _amtA,
@@ -325,7 +324,7 @@ contract UniswapConnector is BaseConnector {
             tokenA,
             tokenB
         );
-        address exchangeAddr = IUniswapV2Factory(router.factory()).getPair(
+        address exchangeAddr = IUniswapV2Factory(ROUTER.factory()).getPair(
             address(_tokenA),
             address(_tokenB)
         );
@@ -335,7 +334,7 @@ contract UniswapConnector is BaseConnector {
         _uniAmt = _amt == type(uint).max
             ? uniToken.balanceOf(address(this))
             : _amt;
-        uniToken.approve(address(router), _uniAmt);
+        uniToken.approve(address(ROUTER), _uniAmt);
 
         {
             uint minAmtA = convert18ToDec(
@@ -346,7 +345,7 @@ contract UniswapConnector is BaseConnector {
                 _tokenB.decimals(),
                 wmul(unitAmtB, _uniAmt)
             );
-            (_amtA, _amtB) = router.removeLiquidity(
+            (_amtA, _amtB) = ROUTER.removeLiquidity(
                 address(_tokenA),
                 address(_tokenB),
                 _uniAmt,
@@ -357,10 +356,10 @@ contract UniswapConnector is BaseConnector {
             );
         }
 
-        bool isEth = address(_tokenA) == wethAddr;
+        bool isEth = address(_tokenA) == WETH_ADDR;
         convertWethToEth(isEth, _tokenA, _amtA);
 
-        isEth = address(_tokenB) == wethAddr;
+        isEth = address(_tokenB) == WETH_ADDR;
         convertWethToEth(isEth, _tokenB, _amtB);
     }
 
@@ -368,7 +367,7 @@ contract UniswapConnector is BaseConnector {
         address[] memory paths,
         uint sellAmt
     ) internal view returns (uint buyAmt) {
-        uint[] memory amts = router.getAmountsOut(sellAmt, paths);
+        uint[] memory amts = ROUTER.getAmountsOut(sellAmt, paths);
         buyAmt = amts[1];
     }
 
@@ -376,12 +375,12 @@ contract UniswapConnector is BaseConnector {
         address[] memory paths,
         uint buyAmt
     ) internal view returns (uint sellAmt) {
-        uint[] memory amts = router.getAmountsIn(buyAmt, paths);
+        uint[] memory amts = ROUTER.getAmountsIn(buyAmt, paths);
         sellAmt = amts[0];
     }
 
     function checkPair(address[] memory paths) internal view {
-        address pair = IUniswapV2Factory(router.factory()).getPair(
+        address pair = IUniswapV2Factory(ROUTER.factory()).getPair(
             paths[0],
             paths[1]
         );

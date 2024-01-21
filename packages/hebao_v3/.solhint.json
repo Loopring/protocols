@@ -6,6 +6,7 @@
     "compiler-version": ["error", "^0.8.12"],
     "func-visibility": ["warn", { "ignoreConstructors": true }],
     "no-global-import": "off",
+    "no-empty-blocks": ["off", { "ignoreConstructors": true }],
     "not-rely-on-time": "off"
   }
 }

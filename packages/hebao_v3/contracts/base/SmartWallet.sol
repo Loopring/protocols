@@ -27,7 +27,6 @@ import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
 import "../lib/LoopringErrors.sol";
 
-
 /// @title SmartWallet
 /// @dev Main smart wallet contract
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -50,7 +49,7 @@ abstract contract SmartWallet is
     using UpgradeLib for Wallet;
     using AutomationLib for Wallet;
 
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable domainSeparator;
     PriceOracle public immutable priceOracle;
     address public immutable blankOwner;
     IEntryPoint internal immutable _entryPoint;
@@ -87,7 +86,10 @@ abstract contract SmartWallet is
     }
 
     modifier onlyFromEntryPoint() {
-        _require(msg.sender == address(entryPoint()), Errors.ONLY_FROM_ENTRYPOINT);
+        _require(
+            msg.sender == address(entryPoint()),
+            Errors.ONLY_FROM_ENTRYPOINT
+        );
         wallet.touchLastActiveWhenRequired();
         _;
     }
@@ -98,7 +100,7 @@ abstract contract SmartWallet is
             msg.sender == address(this) ||
                 ((msg.sender == address(entryPoint()) ||
                     msg.sender == wallet.owner) && !wallet.locked),
-                    Errors.NOT_OWNER_SELF_OR_ENTRYPOINT_OR_LOCKED
+            Errors.NOT_OWNER_SELF_OR_ENTRYPOINT_OR_LOCKED
         );
         wallet.touchLastActiveWhenRequired();
         _;
@@ -122,7 +124,7 @@ abstract contract SmartWallet is
         _entryPoint = entryPointInput;
         connectorRegistry = _connectorRegistry;
 
-        DOMAIN_SEPARATOR = EIP712.hash(
+        domainSeparator = EIP712.hash(
             EIP712.Domain("LoopringWallet", "2.0.0", address(this))
         );
 
@@ -216,7 +218,10 @@ abstract contract SmartWallet is
         address newEntryPoint
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
         _require(newEntryPoint != address(0), Errors.ZERO_ADDRESS);
-        _require(address(entryPoint()) != newEntryPoint, Errors.INVALID_SAME_ENTRYPOINT);
+        _require(
+            address(entryPoint()) != newEntryPoint,
+            Errors.INVALID_SAME_ENTRYPOINT
+        );
         wallet.entryPoint = newEntryPoint;
     }
 

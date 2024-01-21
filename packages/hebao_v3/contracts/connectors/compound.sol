@@ -65,7 +65,7 @@ contract CompoundConnector is BaseConnector {
     /**
      * @dev Compound Comptroller
      */
-    ComptrollerInterface internal constant troller =
+    ComptrollerInterface internal constant COMP_TROLLER =
         ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
@@ -94,7 +94,7 @@ contract CompoundConnector is BaseConnector {
         );
 
         enterMarket(cToken);
-        if (token == ethAddr) {
+        if (token == ETH_ADDR) {
             _amt = _amt == type(uint).max ? address(this).balance : _amt;
             CETHInterface(cToken).mint{value: _amt}();
         } else {
@@ -134,7 +134,7 @@ contract CompoundConnector is BaseConnector {
         CTokenInterface cTokenContract = CTokenInterface(cToken);
         if (_amt == type(uint).max) {
             TokenInterface tokenContract = TokenInterface(token);
-            uint initialBal = token == ethAddr
+            uint initialBal = token == ETH_ADDR
                 ? address(this).balance
                 : tokenContract.balanceOf(address(this));
             require(
@@ -143,7 +143,7 @@ contract CompoundConnector is BaseConnector {
                 ) == 0,
                 "full-withdraw-failed"
             );
-            uint finalBal = token == ethAddr
+            uint finalBal = token == ETH_ADDR
                 ? address(this).balance
                 : tokenContract.balanceOf(address(this));
             _amt = finalBal - initialBal;
@@ -212,7 +212,7 @@ contract CompoundConnector is BaseConnector {
             ? cTokenContract.borrowBalanceCurrent(address(this))
             : _amt;
 
-        if (token == ethAddr) {
+        if (token == ETH_ADDR) {
             require(address(this).balance >= _amt, "not-enough-eth");
             CETHInterface(cToken).repayBorrow{value: _amt}();
         } else {
@@ -255,7 +255,7 @@ contract CompoundConnector is BaseConnector {
         CTokenInterface ctokenContract = CTokenInterface(cToken);
         uint initialBal = ctokenContract.balanceOf(address(this));
 
-        if (token == ethAddr) {
+        if (token == ETH_ADDR) {
             _amt = _amt == type(uint).max ? address(this).balance : _amt;
             CETHInterface(cToken).mint{value: _amt}();
         } else {
@@ -307,11 +307,11 @@ contract CompoundConnector is BaseConnector {
 
         uint withdrawAmt;
         {
-            uint initialBal = token != ethAddr
+            uint initialBal = token != ETH_ADDR
                 ? tokenContract.balanceOf(address(this))
                 : address(this).balance;
             require(cTokenContract.redeem(_cAmt) == 0, "redeem-failed");
-            uint finalBal = token != ethAddr
+            uint finalBal = token != ETH_ADDR
                 ? tokenContract.balanceOf(address(this))
                 : address(this).balance;
 
@@ -356,14 +356,14 @@ contract CompoundConnector is BaseConnector {
         CTokenInterface cTokenContract = CTokenInterface(cTokenPay);
 
         {
-            (, , uint shortfal) = troller.getAccountLiquidity(borrower);
+            (, , uint shortfal) = COMP_TROLLER.getAccountLiquidity(borrower);
             require(shortfal != 0, "account-cannot-be-liquidated");
             _amt = _amt == type(uint).max
                 ? cTokenContract.borrowBalanceCurrent(borrower)
                 : _amt;
         }
 
-        if (tokenToPay == ethAddr) {
+        if (tokenToPay == ETH_ADDR) {
             require(address(this).balance >= _amt, "not-enought-eth");
             CETHInterface(cTokenPay).liquidateBorrow{value: _amt}(
                 borrower,
@@ -388,7 +388,7 @@ contract CompoundConnector is BaseConnector {
      * @dev enter compound market
      */
     function enterMarket(address cToken) internal {
-        address[] memory markets = troller.getAssetsIn(address(this));
+        address[] memory markets = COMP_TROLLER.getAssetsIn(address(this));
         bool isEntered = false;
         for (uint i = 0; i < markets.length; i++) {
             if (markets[i] == cToken) {
@@ -398,7 +398,7 @@ contract CompoundConnector is BaseConnector {
         if (!isEntered) {
             address[] memory toEnter = new address[](1);
             toEnter[0] = cToken;
-            troller.enterMarkets(toEnter);
+            COMP_TROLLER.enterMarkets(toEnter);
         }
     }
 }

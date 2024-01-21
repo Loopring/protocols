@@ -35,7 +35,10 @@ library RecoverLib {
         address[] calldata newGuardians
     ) external {
         _require(wallet.owner != newOwner, Errors.IS_SAME_OWNER);
-        _require(newOwner.isValidWalletOwner(), Errors.INVALID_NEW_WALLET_OWNER);
+        _require(
+            newOwner.isValidWalletOwner(),
+            Errors.INVALID_NEW_WALLET_OWNER
+        );
 
         wallet.owner = newOwner;
         wallet.setLock(address(this), false);

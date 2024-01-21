@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IFlashLoanRecipient.sol";
 import "./IVault.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "../../lib/LoopringErrors.sol";
 
 interface FlashLoanPoolInterface {
     function flashLoan(
@@ -19,8 +20,6 @@ interface FlashLoanPoolInterface {
 
 contract BalancerFlashLoan is IFlashLoanRecipient, FlashLoanPoolInterface {
     address public immutable vault;
-    address public constant ethAddr =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     using SafeERC20 for IERC20;
 
@@ -42,19 +41,16 @@ contract BalancerFlashLoan is IFlashLoanRecipient, FlashLoanPoolInterface {
         bytes memory userData
     ) external override {
         // check msg.sender
-        require(msg.sender == vault);
+        _require(msg.sender == vault, Errors.NOT_FROM_BALANCER_VAULT);
 
         for (uint256 i = 0; i < tokens.length; ++i) {
             CastData memory cd;
             cd.token = tokens[i];
+            _require(address(cd.token) != address(0), Errors.ZERO_TOKEN);
             cd.amount = amounts[i];
             (cd.target, cd.data) = abi.decode(userData, (address, bytes));
 
-            if (address(cd.token) == ethAddr) {
-                payable(cd.target).transfer(cd.amount);
-            } else {
-                cd.token.safeTransfer(cd.target, cd.amount);
-            }
+            cd.token.safeTransfer(cd.target, cd.amount);
 
             // execute from smartwallet
             Address.functionCall(
@@ -64,11 +60,7 @@ contract BalancerFlashLoan is IFlashLoanRecipient, FlashLoanPoolInterface {
             );
 
             // Return loan
-            if (address(cd.token) == ethAddr) {
-                payable(vault).transfer(cd.amount);
-            } else {
-                cd.token.safeTransfer(vault, cd.amount);
-            }
+            cd.token.safeTransfer(vault, cd.amount);
         }
     }
 

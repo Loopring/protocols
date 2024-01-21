@@ -14,7 +14,6 @@
 
 pragma solidity ^0.8.17;
 
-
 // modified the codes from https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/interfaces/contracts/solidity-utils/helpers/BalancerErrors.sol
 
 // solhint-disable
@@ -32,11 +31,7 @@ function _require(bool condition, uint256 errorCode) pure {
  * @dev Reverts if `condition` is false, with a revert reason containing `errorCode`. Only codes up to 999 are
  * supported.
  */
-function _require(
-    bool condition,
-    uint256 errorCode,
-    bytes3 prefix
-) pure {
+function _require(bool condition, uint256 errorCode, bytes3 prefix) pure {
     if (!condition) _revert(errorCode, prefix);
 }
 
@@ -85,7 +80,13 @@ function _revert(uint256 errorCode, bytes3 prefix) pure {
         // array).
         let formattedPrefix := shl(24, add(0x23, shl(8, prefixUint)))
 
-        let revertReason := shl(200, add(formattedPrefix, add(add(units, shl(8, tenths)), shl(16, hundreds))))
+        let revertReason := shl(
+            200,
+            add(
+                formattedPrefix,
+                add(add(units, shl(8, tenths)), shl(16, hundreds))
+            )
+        )
 
         // We can now encode the reason in memory, which can be safely overwritten as we're about to revert. The encoded
         // message will have the following layout:
@@ -93,9 +94,15 @@ function _revert(uint256 errorCode, bytes3 prefix) pure {
 
         // The Solidity revert reason identifier is 0x08c739a0, the function selector of the Error(string) function. We
         // also write zeroes to the next 28 bytes of memory, but those are about to be overwritten.
-        mstore(0x0, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(
+            0x0,
+            0x08c379a000000000000000000000000000000000000000000000000000000000
+        )
         // Next is the offset to the location of the string, which will be placed immediately after (20 bytes away).
-        mstore(0x04, 0x0000000000000000000000000000000000000000000000000000000000000020)
+        mstore(
+            0x04,
+            0x0000000000000000000000000000000000000000000000000000000000000020
+        )
         // The string length is fixed: 7 characters.
         mstore(0x24, 7)
         // Finally, the string itself is stored.
@@ -115,6 +122,8 @@ library Errors {
     uint256 internal constant INPUT_LENGTH_MISMATCH = 103;
     uint256 internal constant ZERO_ADDRESS = 104;
     uint256 internal constant INVALID_VALID_SINCE = 105;
+    uint256 internal constant ZERO_TOKEN = 106;
+    uint256 internal constant MASTER_COPY_ZERO_ADDRESS = 107;
 
     // Shared pools
     uint256 internal constant MIN_TOKENS = 200;
@@ -141,10 +150,10 @@ library Errors {
     uint256 internal constant INVALID_SAME_ENTRYPOINT = 307;
     uint256 internal constant NOT_ENTRYPOINT_OR_INHERITOR = 308;
     uint256 internal constant NOT_EXECUTOR = 309;
-    uint256 internal constant UNHANDLED_JOIN_KIND = 310;
-    uint256 internal constant ZERO_INVARIANT = 311;
-    uint256 internal constant ORACLE_INVALID_SECONDS_QUERY = 312;
-    uint256 internal constant ORACLE_NOT_INITIALIZED = 313;
+    uint256 internal constant OFFICIALGUARDIAN_CALL_FAILED = 310;
+    uint256 internal constant NOT_FROM_BALANCER_VAULT = 311;
+    uint256 internal constant INVALID_SAME_MASTER_COPY = 312;
+    uint256 internal constant MEMORY_NOT_MASTER = 313;
     uint256 internal constant ORACLE_QUERY_TOO_OLD = 314;
     uint256 internal constant ORACLE_INVALID_INDEX = 315;
     uint256 internal constant ORACLE_BAD_SECS = 316;

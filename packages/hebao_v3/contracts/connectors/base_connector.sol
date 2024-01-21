@@ -21,8 +21,8 @@ interface MemoryInterface {
 }
 
 contract DSMath {
-    uint constant WAD = 10 ** 18;
-    uint constant RAY = 10 ** 27;
+    uint public constant WAD = 10 ** 18;
+    uint public constant RAY = 10 ** 27;
 
     function add(uint x, uint y) internal pure returns (uint z) {
         z = SafeMath.add(x, y);
@@ -72,13 +72,13 @@ contract DSMath {
 }
 
 contract BaseConnector is DSMath {
-    address internal constant ethAddr =
+    address internal constant ETH_ADDR =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    address internal constant wethAddr =
+    address internal constant WETH_ADDR =
         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    MemoryInterface immutable instaMemory;
+    MemoryInterface public immutable instaMemory;
 
     constructor(address _instaMemory) {
         instaMemory = MemoryInterface(_instaMemory);
@@ -99,9 +99,11 @@ contract BaseConnector is DSMath {
         address buy,
         address sell
     ) internal pure returns (TokenInterface _buy, TokenInterface _sell) {
-        _buy = buy == ethAddr ? TokenInterface(wethAddr) : TokenInterface(buy);
-        _sell = sell == ethAddr
-            ? TokenInterface(wethAddr)
+        _buy = buy == ETH_ADDR
+            ? TokenInterface(WETH_ADDR)
+            : TokenInterface(buy);
+        _sell = sell == ETH_ADDR
+            ? TokenInterface(WETH_ADDR)
             : TokenInterface(sell);
     }
 
@@ -141,7 +143,7 @@ contract BaseConnector is DSMath {
     function getTokenBal(
         TokenInterface token
     ) internal view returns (uint _amt) {
-        _amt = address(token) == ethAddr
+        _amt = address(token) == ETH_ADDR
             ? address(this).balance
             : token.balanceOf(address(this));
     }

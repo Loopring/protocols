@@ -22,13 +22,13 @@ interface IWstETH {
  */
 
 contract LidoConnector is BaseConnector {
-    ILido internal constant lidoInterface =
+    ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
-    IWstETH internal constant wstETH =
+    IWstETH internal constant WSTETH =
         IWstETH(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
 
-    address internal constant treasury =
+    address internal constant TREASURY =
         0x28849D2b63fA8D361e5fc15cB8aBB13019884d09; // Instadapp's treasury address
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
     /**
@@ -42,7 +42,7 @@ contract LidoConnector is BaseConnector {
         uint256 _amt = getUint(getId, amt);
 
         _amt = _amt == type(uint256).max ? address(this).balance : _amt;
-        lidoInterface.submit{value: amt}(treasury);
+        LIDO.submit{value: amt}(TREASURY);
         setUint(setId, _amt);
     }
 
@@ -54,7 +54,7 @@ contract LidoConnector is BaseConnector {
     ) public payable {
         uint256 _amt = getUint(getId, amt);
         _amt = _amt == type(uint256).max ? address(this).balance : _amt;
-        Address.sendValue(payable(address(wstETH)), _amt);
+        Address.sendValue(payable(address(WSTETH)), _amt);
         setUint(setId, _amt);
     }
 
@@ -62,12 +62,12 @@ contract LidoConnector is BaseConnector {
     function unwrap(uint256 amt, uint256 getId, uint256 setId) public {
         uint256 _amt = getUint(getId, amt);
 
-        TokenInterface tokenContract = TokenInterface(address(wstETH));
+        TokenInterface tokenContract = TokenInterface(address(WSTETH));
         _amt = _amt == type(uint256).max
             ? tokenContract.balanceOf(address(this))
             : _amt;
 
-        wstETH.unwrap(_amt);
+        WSTETH.unwrap(_amt);
 
         setUint(setId, _amt);
     }

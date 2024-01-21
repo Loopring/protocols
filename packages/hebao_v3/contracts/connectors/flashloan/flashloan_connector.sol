@@ -19,7 +19,7 @@ interface ApprovalInterface {
 contract FlashLoanConnector is BaseConnector {
     using SafeERC20 for IERC20;
 
-    FlashLoanPoolInterface immutable flashLoanPool;
+    FlashLoanPoolInterface public immutable flashLoanPool;
 
     constructor(
         address _instaMemory,
@@ -78,7 +78,7 @@ contract FlashLoanConnector is BaseConnector {
 
         IERC20 tokenContract = IERC20(token);
 
-        if (token == ethAddr) {
+        if (token == ETH_ADDR) {
             Address.sendValue(payable(address(flashLoanPool)), _amt);
         } else {
             tokenContract.safeTransfer(address(flashLoanPool), _amt);

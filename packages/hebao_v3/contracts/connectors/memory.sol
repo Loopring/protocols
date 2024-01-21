@@ -3,6 +3,8 @@
 pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
+import "../lib/LoopringErrors.sol";
+
 /**
  * @title OwnedMemory.
  * @dev Store Data For Cast Function.
@@ -73,14 +75,14 @@ contract Memory {
 
 contract OwnedMemory is Memory {
     address public master;
-    address public constant broadcastAddr = address(0);
+    address public constant BROADCAST_ADDR = address(0);
 
     constructor() {
         master = msg.sender;
     }
 
     modifier isMaster() {
-        require(msg.sender == master);
+        _require(msg.sender == master, Errors.MEMORY_NOT_MASTER);
         _;
     }
 
@@ -89,7 +91,7 @@ contract OwnedMemory is Memory {
      * @param _id Storage ID.
      */
     function getBroadcastAddr(uint _id) public view returns (address _addr) {
-        _addr = maddr[broadcastAddr][_id];
+        _addr = maddr[BROADCAST_ADDR][_id];
     }
 
     /**
@@ -98,6 +100,6 @@ contract OwnedMemory is Memory {
      * @param _addr Address data to store.
      */
     function setBroadcastAddr(uint _id, address _addr) public isMaster {
-        maddr[broadcastAddr][_id] = _addr;
+        maddr[BROADCAST_ADDR][_id] = _addr;
     }
 }

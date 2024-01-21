@@ -11,7 +11,6 @@ import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/LoopringErrors.sol";
 
-
 /// @title QuotaLib
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.

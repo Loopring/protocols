@@ -143,7 +143,10 @@ library GuardianLib {
         if (requirement == SigRequirement.OWNER_OR_ANY_GUARDIAN) {
             return signers.length == 1;
         } else if (requirement == SigRequirement.ANY_GUARDIAN) {
-            _require(!walletOwnerSigned, Errors.WALLET_OWNER_SIGNATURE_NOT_ALLOWED);
+            _require(
+                !walletOwnerSigned,
+                Errors.WALLET_OWNER_SIGNATURE_NOT_ALLOWED
+            );
             return signers.length == 1;
         }
 
@@ -151,13 +154,19 @@ library GuardianLib {
         if (requirement == SigRequirement.MAJORITY_OWNER_REQUIRED) {
             _require(walletOwnerSigned, Errors.WALLET_OWNER_SIGNATURE_REQUIRED);
         } else if (requirement == SigRequirement.MAJORITY_OWNER_NOT_ALLOWED) {
-            _require(!walletOwnerSigned, Errors.WALLET_OWNER_SIGNATURE_NOT_ALLOWED);
+            _require(
+                !walletOwnerSigned,
+                Errors.WALLET_OWNER_SIGNATURE_NOT_ALLOWED
+            );
         }
 
         uint numExtendedSigners = allGuardians.length;
         if (walletOwnerSigned) {
             numExtendedSigners += 1;
-            _require(signers.length > 1, Errors.NO_GUARDIAN_SIGNED_BESIDES_OWNER);
+            _require(
+                signers.length > 1,
+                Errors.NO_GUARDIAN_SIGNED_BESIDES_OWNER
+            );
         }
 
         return signers.length >= (numExtendedSigners >> 1) + 1;
@@ -185,6 +194,7 @@ library GuardianLib {
                 index++;
             }
         }
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             mstore(_guardians, index)
         }

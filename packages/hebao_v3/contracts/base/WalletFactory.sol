@@ -23,7 +23,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
     event OperatorRemoved(address indexed operator);
     event OperatorAdded(address indexed operator);
 
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable domainSeparator;
 
     bytes32 public constant CREATE_WALLET_TYPEHASH =
         keccak256(
@@ -97,7 +97,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
     constructor(
         address _walletImplementation
     ) WalletDeploymentLib(_walletImplementation) {
-        DOMAIN_SEPARATOR = EIP712.hash(
+        domainSeparator = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
         );
     }
@@ -190,7 +190,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
             )
         );
 
-        bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, dataHash);
+        bytes32 signHash = EIP712.hashPacked(domainSeparator, dataHash);
         require(
             signHash.verifySignature(config.owner, config.signature),
             "INVALID_SIGNATURE"

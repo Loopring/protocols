@@ -73,6 +73,7 @@ library SignatureUtil {
         // we jump 32 (0x20) as the first slot of bytes contains the length
         // we jump 65 (0x41) per signature
         // for v we load 32 bytes ending with v (the first 31 come from s) then apply a mask
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             r := mload(add(signature, 0x20))
             s := mload(add(signature, 0x40))
@@ -109,6 +110,7 @@ library SignatureUtil {
         bool trimmed = false;
         if (signature.length == 66) {
             // Strip off the last byte of the signature by updating the length
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 mstore(signature, 65)
             }
@@ -126,6 +128,7 @@ library SignatureUtil {
 
         if (trimmed) {
             // Restore the signature length
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 mstore(signature, 66)
             }

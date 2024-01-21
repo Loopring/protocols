@@ -96,19 +96,19 @@ contract AaveV3Connector is BaseConnector {
     /**
      * @dev Aave Pool Provider
      */
-    AavePoolProviderInterface internal constant aaveProvider =
+    AavePoolProviderInterface internal constant AAVE_PROVIDER =
         AavePoolProviderInterface(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
 
     /**
      * @dev Aave Pool Data Provider
      */
-    AaveDataProviderInterface internal constant aaveData =
+    AaveDataProviderInterface internal constant AAVE_DATA =
         AaveDataProviderInterface(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
 
     /**
      * @dev Aave Referral Code
      */
-    uint16 internal constant referralCode = 3228;
+    uint16 internal constant REFERRAL_CODE = 3228;
 
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
 
@@ -118,7 +118,7 @@ contract AaveV3Connector is BaseConnector {
      */
 
     function getIsColl(address token) internal view returns (bool isCol) {
-        (, , , , , , , , isCol) = aaveData.getUserReserveData(
+        (, , , , , , , , isCol) = AAVE_DATA.getUserReserveData(
             token,
             address(this)
         );
@@ -133,7 +133,7 @@ contract AaveV3Connector is BaseConnector {
         address token,
         uint256 rateMode
     ) internal view returns (uint256) {
-        (, uint256 stableDebt, uint256 variableDebt, , , , , , ) = aaveData
+        (, uint256 stableDebt, uint256 variableDebt, , , , , , ) = AAVE_DATA
             .getUserReserveData(token, address(this));
         return rateMode == 1 ? stableDebt : variableDebt;
     }
@@ -154,10 +154,10 @@ contract AaveV3Connector is BaseConnector {
     ) external payable {
         uint256 _amt = getUint(getId, amt);
 
-        AaveInterface aave = AaveInterface(aaveProvider.getPool());
+        AaveInterface aave = AaveInterface(AAVE_PROVIDER.getPool());
 
-        bool isEth = token == ethAddr;
-        address _token = isEth ? wethAddr : token;
+        bool isEth = token == ETH_ADDR;
+        address _token = isEth ? WETH_ADDR : token;
 
         TokenInterface tokenContract = TokenInterface(_token);
 
@@ -172,7 +172,7 @@ contract AaveV3Connector is BaseConnector {
 
         tokenContract.approve(address(aave), _amt);
 
-        aave.supply(_token, _amt, address(this), referralCode);
+        aave.supply(_token, _amt, address(this), REFERRAL_CODE);
 
         if (!getIsColl(_token)) {
             aave.setUserUseReserveAsCollateral(_token, true);
@@ -197,9 +197,9 @@ contract AaveV3Connector is BaseConnector {
     ) external payable {
         uint256 _amt = getUint(getId, amt);
 
-        AaveInterface aave = AaveInterface(aaveProvider.getPool());
-        bool isEth = token == ethAddr;
-        address _token = isEth ? wethAddr : token;
+        AaveInterface aave = AaveInterface(AAVE_PROVIDER.getPool());
+        bool isEth = token == ETH_ADDR;
+        address _token = isEth ? WETH_ADDR : token;
 
         TokenInterface tokenContract = TokenInterface(_token);
 
@@ -232,12 +232,12 @@ contract AaveV3Connector is BaseConnector {
     ) external payable {
         uint256 _amt = getUint(getId, amt);
 
-        AaveInterface aave = AaveInterface(aaveProvider.getPool());
+        AaveInterface aave = AaveInterface(AAVE_PROVIDER.getPool());
 
-        bool isEth = token == ethAddr;
-        address _token = isEth ? wethAddr : token;
+        bool isEth = token == ETH_ADDR;
+        address _token = isEth ? WETH_ADDR : token;
 
-        aave.borrow(_token, _amt, rateMode, referralCode, address(this));
+        aave.borrow(_token, _amt, rateMode, REFERRAL_CODE, address(this));
         convertWethToEth(isEth, TokenInterface(_token), _amt);
 
         setUint(setId, _amt);
@@ -261,10 +261,10 @@ contract AaveV3Connector is BaseConnector {
     ) external payable {
         uint256 _amt = getUint(getId, amt);
 
-        AaveInterface aave = AaveInterface(aaveProvider.getPool());
+        AaveInterface aave = AaveInterface(AAVE_PROVIDER.getPool());
 
-        bool isEth = token == ethAddr;
-        address _token = isEth ? wethAddr : token;
+        bool isEth = token == ETH_ADDR;
+        address _token = isEth ? WETH_ADDR : token;
 
         TokenInterface tokenContract = TokenInterface(_token);
 
