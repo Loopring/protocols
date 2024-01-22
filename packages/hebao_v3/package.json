@@ -6,9 +6,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "clean": "rimraf ./cache && rimraf ./artifacts",
+    "clean": "hardhat clean",
     "compile": "yarn clean && hardhat compile",
-    "size": "hardhat size-contracts",
     "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
     "lint:sol": "solhint -f unix \"contracts/**/*.sol\" --max-warnings 0",
     "lint:ts": "eslint -f unix .",
@@ -20,7 +19,7 @@
     "test-local": "yarn test-local-aa && yarn test-local-smartwallet",
     "test-fork": "FORK=1 hardhat test $(find ./test/automation -type f -name '*.test.ts') --parallel",
     "test": "yarn run test-local && yarn run test-fork",
-    "coverage": "COVERAGE=1 FORK=1 hardhat coverage"
+    "coverage": "yarn clean && COVERAGE=1 FORK=1 hardhat coverage"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",

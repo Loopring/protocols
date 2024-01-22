@@ -12,14 +12,14 @@
   },
   "hardhat": {
     "LoopringCreate2Deployer": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "EntryPoint": "0xe476723707BD60a4dDf40be96F030E63b5C41e11",
-    "LoopringPaymaster": "0xfA62B78944FBB2FbAbe864b5A1e9FcE2e8cD2eBD",
-    "SmartWalletImpl": "0xC0aa703A81e3B077177749C8C45b2696a60b6aa4",
-    "DelayedImplementationManager": "0xd7B5455B8f329047bA83c22021cf6017Df3bD0fd",
-    "ForwardProxy": "0x73Ee4b82759c4C51F1A2557cd9234c5140B04cF8",
-    "WalletFactory": "0x5B593Ce707878d5442534b02e7A37C7dd58C8308",
-    "SmartWallet": "0xf5da381D54EcD9f842B66D69E4480121B9be31CB",
-    "USDT": "0xF347dbD43bFCFaeeE8F44998EC66B48fDDdEb365"
+    "EntryPoint": "0x67fC9E8D89f6599b65920496A0c41111a179617e",
+    "LoopringPaymaster": "0xE4c25F6816BCC6D160C080b0B456893e2F7659Dd",
+    "SmartWalletImpl": "0xD1585aB8FA51894acF4ece9bBcdB9D3cc6ec7Eb6",
+    "DelayedImplementationManager": "0xc4C1b2f57D424d1D7a48b768be91a23B8c72b3b0",
+    "ForwardProxy": "0xDfB46FdF9E35f75454B9D6FF187ea1e956f54126",
+    "WalletFactory": "0x75182bf345e3B78b6FFd4020035E627249e29Ba9",
+    "SmartWallet": "0x207088EB181359Fb963a6AE7F645969DAF812CcF",
+    "USDT": "0xa7517f4e2f844CB90d99B898cEC0487E4DFCf99c"
   },
   "sepolia": {
     "LoopringCreate2Deployer": "0x100f3f74125c8c724c7c0ee81e4dd5626830dd9a",

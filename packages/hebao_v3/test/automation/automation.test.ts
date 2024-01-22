@@ -315,12 +315,52 @@ describe('automation test', () => {
       // borrow weth from aavev3
       const borrowData = aaveV3Connector.interface.encodeFunctionData(
         'borrow',
-        [CONSTANTS.WETH_ADDRESS, CONSTANTS.ONE_FOR_ETH, 2, 0, 0]
+        [CONSTANTS.USDC_ADDRESS, CONSTANTS.ONE_FOR_USDC, 2, 0, 0]
       )
       await expect(
         userOpCast(
           [aaveV3Connector.address],
           [borrowData],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+
+      // payback all debts
+      // need some weth token to pay for interests
+      await faucetToken(
+        CONSTANTS.USDC_ADDRESS,
+        smartWallet.address,
+        '10'
+      )
+      const paybackData =
+        aaveV3Connector.interface.encodeFunctionData('payback', [
+          CONSTANTS.USDC_ADDRESS,
+          ethers.constants.MaxUint256,
+          2,
+          0,
+          0
+        ])
+      await expect(
+        userOpCast(
+          [aaveV3Connector.address],
+          [paybackData],
+          executor,
+          loadedFixture
+        )
+      ).not.to.reverted
+      // withdraw
+      const withdrawData =
+        aaveV3Connector.interface.encodeFunctionData('withdraw', [
+          CONSTANTS.WSTETH_ADDRESS,
+          ethers.constants.MaxUint256,
+          0,
+          0
+        ])
+      await expect(
+        userOpCast(
+          [aaveV3Connector.address],
+          [withdrawData],
           executor,
           loadedFixture
         )

@@ -15,18 +15,19 @@ const config: HardhatUserConfig = {
       forking:
         process.env.FORK != null
           ? {
+              // url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
               url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03',
               blockNumber: 18482580
             }
           : undefined
     },
     ethereum: {
-      url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03',
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [privateKey]
     },
 
     goerli: {
-      url: 'https://goerli.infura.io/v3/b7c22d73c16e4c0ea3f88dadbdffbe03',
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [privateKey]
     },
 
@@ -39,7 +40,7 @@ const config: HardhatUserConfig = {
       accounts: [privateKey]
     },
     sepolia: {
-      url: 'https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB',
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [privateKey]
     },
 

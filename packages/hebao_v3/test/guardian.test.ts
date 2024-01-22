@@ -19,7 +19,11 @@ import {
 import { fillAndMultiSign } from './helper/AASigner'
 import { ActionType } from './helper/LoopringGuardianAPI'
 import { fixture } from './helper/fixture'
-import { createSmartWallet, getBlockTimestamp } from './helper/utils'
+import {
+  createSmartWallet,
+  getBlockTimestamp,
+  sendTx
+} from './helper/utils'
 
 describe('guardian test', () => {
   const three_days = 3 * 3600 * 24
@@ -411,6 +415,29 @@ describe('guardian test', () => {
         await expect(sendUserOp(signedUserOp))
           .to.revertedWithCustomError(entrypoint, 'FailedOp')
           .withArgs(0, 'AA23 reverted: LRC#400')
+      }
+      // approveToken test
+      {
+        const toAddr = ethers.constants.AddressZero
+        const amount = 100
+        const approve = await wallet.populateTransaction.approveToken(
+          usdtToken.address,
+          toAddr,
+          amount,
+          false
+        )
+        await expect(
+          sendTx(
+            [approve],
+            wallet,
+            smartWalletOwner,
+            create2,
+            entrypoint,
+            sendUserOp,
+            undefined,
+            false
+          )
+        ).not.to.reverted
       }
     })
   })
