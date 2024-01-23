@@ -24,12 +24,12 @@
   "sepolia": {
     "LoopringCreate2Deployer": "0x100f3f74125c8c724c7c0ee81e4dd5626830dd9a",
     "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-    "LoopringPaymaster": "0xA494d9c241d854d49168d1EF31238899d5f6BE52",
-    "SmartWalletImpl": "0x982B18eBec272eD532Db8911524f718E0b5dfA58",
-    "DelayedImplementationManager": "0x66A23B59cF3A08BA155eD0b41E17315d7865ab98",
-    "ForwardProxy": "0xeEAB35Ec2d775cEC1E228FB854ed4Ac3f850B0b4",
-    "WalletFactory": "0x8e18b65FC6DD963d14B120dE7a7DedE183421f3e",
-    "SmartWallet": "0x2966695d67212db8367643218C7Ab52fB99de56F",
-    "USDT": "0x45191CFe4a75EB76Bf2DC8c8e42dFb96ac6BB740"
+    "LoopringPaymaster": "0x45006b87a034fdB751b940FA3Ec55C243f6FbbF2",
+    "SmartWalletImpl": "0xaa4706c8E3bd1ec1F2Ca3234100624058AaaDfF8",
+    "DelayedImplementationManager": "0xD7aDEF9dB43b22Ca2c9Be79b440749135b8AEeF0",
+    "ForwardProxy": "0xEa089CF04E0bA72e11686eC791604C3D8a87E455",
+    "WalletFactory": "0x8Bd86790734f0a45F9e93722faCF4a4079B8898e",
+    "SmartWallet": "0xE01E3610717b9446fA244e579efA79bbB5d98Db9",
+    "USDT": "0xbb39a16E032a8F5cC8fe4E0043fD8C72f87755A2"
   }
 }
