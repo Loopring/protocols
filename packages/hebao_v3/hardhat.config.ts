@@ -1,11 +1,10 @@
 // import '@nomicfoundation/hardhat-toolbox'
-import "@nomicfoundation/hardhat-chai-matchers";
-import "@nomiclabs/hardhat-ethers";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
+import '@nomicfoundation/hardhat-chai-matchers'
+import '@nomiclabs/hardhat-ethers'
+import 'hardhat-gas-reporter'
+import 'solidity-coverage'
 import { type HardhatUserConfig } from 'hardhat/config'
-import "@nomicfoundation/hardhat-verify";
-
+import '@nomicfoundation/hardhat-verify'
 
 import * as dotenv from 'dotenv'
 

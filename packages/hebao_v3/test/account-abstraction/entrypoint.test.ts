@@ -173,9 +173,8 @@ describe('EntryPoint', function () {
       it('should succeed to stake again', async () => {
         const { stake } = await entryPoint.getDepositInfo(addr)
         await entryPoint.addStake(2, { value: ONE_ETH })
-        const { stake: stakeAfter } = await entryPoint.getDepositInfo(
-          addr
-        )
+        const { stake: stakeAfter } =
+          await entryPoint.getDepositInfo(addr)
         expect(stakeAfter).to.eq(stake.add(ONE_ETH))
       })
       it('should fail to withdraw before unlock', async () => {
@@ -1710,12 +1709,10 @@ describe('EntryPoint', function () {
 
         // extract signature from userOps, and create aggregated signature
         // (not really required with the test aggregator, but should work with any aggregator
-        const sigOp1 = await aggregator.validateUserOpSignature(
-          userOp1
-        )
-        const sigOp2 = await aggregator.validateUserOpSignature(
-          userOp2
-        )
+        const sigOp1 =
+          await aggregator.validateUserOpSignature(userOp1)
+        const sigOp2 =
+          await aggregator.validateUserOpSignature(userOp2)
         userOp1.signature = sigOp1
         userOp2.signature = sigOp2
         const aggSig = await aggregator.aggregateSignatures([

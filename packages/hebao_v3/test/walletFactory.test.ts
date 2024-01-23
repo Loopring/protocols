@@ -92,9 +92,8 @@ describe('walletFactory', () => {
     })
 
     it('can create wallet only by operator', async () => {
-      const { smartWalletOwner, walletFactory } = await loadFixture(
-        fixture
-      )
+      const { smartWalletOwner, walletFactory } =
+        await loadFixture(fixture)
       const [, account2] = await ethers.getSigners()
       const account2Addr = await account2.getAddress()
       // create wallet

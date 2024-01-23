@@ -53,10 +53,10 @@
     "eslint-plugin-promise": "^6.1.1",
     "ethers": "^5.4.7",
     "hardhat-gas-reporter": "^1.0.8",
-    "prettier": "^2.4.1",
+    "prettier": "^3.2.4",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "rimraf": "^3.0.2",
-    "solhint": "^3.6.2",
+    "solhint": "^4.1.1",
     "solhint-community": "^3.7.0",
     "solhint-plugin-prettier": "^0.1.0",
     "solidity-coverage": "^0.8.0",
@@ -65,7 +65,6 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@chainlink/contracts": "^0.6.1",
     "@openzeppelin/contracts": "^4.8.1",
     "glob": "^7.1.6",
     "hardhat": "2.14.0",

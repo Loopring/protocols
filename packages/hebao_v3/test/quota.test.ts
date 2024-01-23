@@ -27,9 +27,10 @@ describe('quota test', () => {
       sendUserOp
     } = await loadFixture(fixture)
     const quotaAmount = ethers.utils.parseEther('20')
-    const tx = await smartWallet.populateTransaction.changeDailyQuota(
-      quotaAmount
-    )
+    const tx =
+      await smartWallet.populateTransaction.changeDailyQuota(
+        quotaAmount
+      )
     await sendTx(
       [tx],
       smartWallet,

@@ -69,9 +69,8 @@ describe('EntryPoint with VerifyingPaymaster', function () {
         MOCK_SIG
       ])
       console.log(paymasterAndData)
-      const res = await paymaster.parsePaymasterAndData(
-        paymasterAndData
-      )
+      const res =
+        await paymaster.parsePaymasterAndData(paymasterAndData)
       expect(res.validUntil).to.be.equal(
         ethers.BigNumber.from(MOCK_VALID_UNTIL)
       )

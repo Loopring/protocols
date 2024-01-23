@@ -12,9 +12,8 @@ import { type PaymasterOption, sendTx } from './helper/utils'
 describe('LoopringPaymaster test', () => {
   describe('admin operation success', () => {
     it('adjust paramster params by owner', async () => {
-      const { paymaster, somebody, lrcToken } = await loadFixture(
-        fixture
-      )
+      const { paymaster, somebody, lrcToken } =
+        await loadFixture(fixture)
 
       await expect(
         paymaster.connect(somebody).addToken(lrcToken.address)
@@ -34,9 +33,8 @@ describe('LoopringPaymaster test', () => {
     })
 
     it('roles management', async () => {
-      const { paymaster, paymasterOwner: owner } = await loadFixture(
-        fixture
-      )
+      const { paymaster, paymasterOwner: owner } =
+        await loadFixture(fixture)
       // expect owner to be admin
       expect(
         await paymaster.hasRole(paymaster.SIGNER(), owner.address)
@@ -257,13 +255,11 @@ describe('LoopringPaymaster test', () => {
 
       // withdraw eth to deployer
       const withdrawer = deployer.address
-      const balanceBefore = await ethers.provider.getBalance(
-        withdrawer
-      )
+      const balanceBefore =
+        await ethers.provider.getBalance(withdrawer)
       await paymaster.withdrawTo(withdrawer, depositAmountAfter)
-      const balanceAfter = await ethers.provider.getBalance(
-        withdrawer
-      )
+      const balanceAfter =
+        await ethers.provider.getBalance(withdrawer)
       expect(balanceAfter.sub(balanceBefore)).eq(depositAmountAfter)
     })
 
@@ -278,13 +274,11 @@ describe('LoopringPaymaster test', () => {
       // advance time after unlock
       await time.increase(unstakeDelaySec)
       const withdrawer = deployer.address
-      const balanceBefore = await ethers.provider.getBalance(
-        withdrawer
-      )
+      const balanceBefore =
+        await ethers.provider.getBalance(withdrawer)
       await paymaster.withdrawStake(withdrawer)
-      const balanceAfter = await ethers.provider.getBalance(
-        withdrawer
-      )
+      const balanceAfter =
+        await ethers.provider.getBalance(withdrawer)
       expect(balanceAfter.sub(balanceBefore)).eq(amount)
     })
 
@@ -299,9 +293,8 @@ describe('LoopringPaymaster test', () => {
 
   describe('gas tank', () => {
     it('deposit and withdraw for user', async () => {
-      const { deployer, paymaster, lrcToken } = await loadFixture(
-        fixture
-      )
+      const { deployer, paymaster, lrcToken } =
+        await loadFixture(fixture)
       const amount = ethers.utils.parseUnits(
         '1000',
         await lrcToken.decimals()

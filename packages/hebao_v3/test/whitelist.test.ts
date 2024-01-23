@@ -16,9 +16,8 @@ describe('whitelist test', () => {
     const whiteListedAddr = '0x' + '11'.repeat(20)
     const { smartWallet } = await loadFixture(fixture)
     const tx = await smartWallet.addToWhitelist(whiteListedAddr)
-    const effectiveTime = await smartWallet.getWhitelistEffectiveTime(
-      whiteListedAddr
-    )
+    const effectiveTime =
+      await smartWallet.getWhitelistEffectiveTime(whiteListedAddr)
     const blockTime = await getBlockTimestamp(tx.blockNumber!)
     expect(effectiveTime.toNumber()).to.equal(blockTime + 3600 * 24)
 
@@ -73,9 +72,8 @@ describe('whitelist test', () => {
     )
 
     const recipt = await sendUserOp(signedUserOp)
-    const effectiveTime = await smartWallet.getWhitelistEffectiveTime(
-      addr
-    )
+    const effectiveTime =
+      await smartWallet.getWhitelistEffectiveTime(addr)
     const blockTime = await getBlockTimestamp(recipt.blockNumber)
     expect(effectiveTime.toNumber()).to.equal(blockTime)
 

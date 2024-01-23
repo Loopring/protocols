@@ -189,9 +189,8 @@ describe('wallet', () => {
       await usdtToken.setBalance(smartWallet.address, initTokenAmount)
       const tokenAmount = ethers.utils.parseUnits('100', 6)
       {
-        const usdtTokenBalanceBefore = await usdtToken.balanceOf(
-          receiver
-        )
+        const usdtTokenBalanceBefore =
+          await usdtToken.balanceOf(receiver)
         await smartWallet.transferToken(
           usdtToken.address,
           receiver,
@@ -199,9 +198,8 @@ describe('wallet', () => {
           '0x',
           false
         )
-        const usdtTokenBalanceAfter = await usdtToken.balanceOf(
-          receiver
-        )
+        const usdtTokenBalanceAfter =
+          await usdtToken.balanceOf(receiver)
         expect(
           usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)
         ).to.eq(tokenAmount)
@@ -209,9 +207,8 @@ describe('wallet', () => {
 
       // transfer token with approval(guardians is the same as before so that multisig is still valid)
       {
-        const usdtTokenBalanceBefore = await usdtToken.balanceOf(
-          receiver
-        )
+        const usdtTokenBalanceBefore =
+          await usdtToken.balanceOf(receiver)
         const callData = smartWallet.interface.encodeFunctionData(
           'transferTokenWA',
           [usdtToken.address, receiver, tokenAmount, '0x']
@@ -237,9 +234,8 @@ describe('wallet', () => {
           entrypoint
         )
         await sendUserOp(signedUserOp)
-        const usdtTokenBalanceAfter = await usdtToken.balanceOf(
-          receiver
-        )
+        const usdtTokenBalanceAfter =
+          await usdtToken.balanceOf(receiver)
         expect(
           usdtTokenBalanceAfter.sub(usdtTokenBalanceBefore)
         ).to.eq(tokenAmount)

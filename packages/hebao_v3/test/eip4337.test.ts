@@ -223,9 +223,8 @@ describe('eip4337 test', () => {
       .catch(simulationResultCatch)
   })
   it('transfer token from wallet owner', async () => {
-    const { smartWallet, deployer, usdtToken } = await loadFixture(
-      fixture
-    )
+    const { smartWallet, deployer, usdtToken } =
+      await loadFixture(fixture)
     const initTokenAmount = ethers.utils.parseUnits('1000', 6)
     await usdtToken.setBalance(smartWallet.address, initTokenAmount)
     const receiver = deployer.address

@@ -64,9 +64,8 @@ describe('lock test', () => {
   })
   describe('lock test', () => {
     it('lock success from guardian', async () => {
-      const { smartWallet, deployer, guardians } = await loadFixture(
-        fixture
-      )
+      const { smartWallet, deployer, guardians } =
+        await loadFixture(fixture)
       await setBalance(
         guardians[0].address,
         ethers.utils.parseEther('100')

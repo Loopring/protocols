@@ -79,9 +79,8 @@ describe('guardian test', () => {
 
   it('first two guardian additions should be effective immediately', async () => {
     const guardian1 = '0x' + '12'.repeat(20)
-    const { smartWalletOwner, walletFactory } = await loadFixture(
-      fixture
-    )
+    const { smartWalletOwner, walletFactory } =
+      await loadFixture(fixture)
     const wallet = await createRandomWallet(
       smartWalletOwner,
       [],
@@ -158,9 +157,8 @@ describe('guardian test', () => {
     )
   })
   it('guardian deletion will be effective in 3 days', async () => {
-    const { smartWallet: wallet, guardians } = await loadFixture(
-      fixture
-    )
+    const { smartWallet: wallet, guardians } =
+      await loadFixture(fixture)
     const guardian1 = guardians[0].address
     // await wallet.addGuardian(guardian1);
     const tx1 = await wallet.removeGuardian(guardian1)

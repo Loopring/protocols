@@ -136,9 +136,8 @@ describe('bls account', function () {
       entrypoint
     )
     const requestHash = await blsAgg.getUserOpHash(userOp1)
-    const solPoint: BigNumber[] = await blsAgg.userOpToMessage(
-      userOp1
-    )
+    const solPoint: BigNumber[] =
+      await blsAgg.userOpToMessage(userOp1)
     const messagePoint = hashToPoint(requestHash, BLS_DOMAIN)
     expect(
       `1 ${solPoint[0].toString()} ${solPoint[1].toString()}`

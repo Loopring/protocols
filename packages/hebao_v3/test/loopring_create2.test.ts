@@ -37,9 +37,8 @@ describe('loopring create test', () => {
   })
 
   it('deploy complex contract', async () => {
-    const { deployFactory, salt, deployer } = await loadFixture(
-      fixture
-    )
+    const { deployFactory, salt, deployer } =
+      await loadFixture(fixture)
     const contract = await ethers.getContractFactory('WalletFactory')
     const deployableCode = contract.getDeployTransaction(
       ethers.constants.AddressZero
@@ -67,9 +66,8 @@ describe('loopring create test', () => {
   })
 
   it('transfer ownership', async () => {
-    const { deployFactory, deployer, other } = await loadFixture(
-      fixture
-    )
+    const { deployFactory, deployer, other } =
+      await loadFixture(fixture)
     expect(await deployFactory.owner()).to.eq(deployer.address)
     await deployFactory.transferOwnership(other.address)
     await deployFactory.connect(other).claimOwnership()
@@ -77,9 +75,8 @@ describe('loopring create test', () => {
   })
 
   it('permission checks', async () => {
-    const { deployFactory, deployer, other } = await loadFixture(
-      fixture
-    )
+    const { deployFactory, deployer, other } =
+      await loadFixture(fixture)
     const bytes4 = '0x12345678'
     expect(await deployFactory.hasAccessTo(deployer.address, bytes4))
       .to.be.true
