@@ -5,17 +5,32 @@ import {
   LoopringPaymaster__factory,
   USDT__factory
 } from './../typechain-types'
+import deploymentJson from '../deployments/deployments.json'
+import * as hre from 'hardhat'
+
+interface DeploymentType {
+  EntryPoint: string
+  LoopringPaymaster: string
+  SmartWallet: string
+  USDT: string
+}
 
 async function main(): Promise<void> {
   // some addresses
   // official entrypoint
-  const entryPointAddr = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
+  if (!(hre.network.name in deploymentJson)) {
+    throw new Error(`unsupported network ${hre.network.name}`)
+  }
+  const deployment = (
+    deploymentJson as Record<string, DeploymentType>
+  )[hre.network.name]
+  const entryPointAddr = deployment.EntryPoint
   // loopring paymaster
-  const paymasterAddr = '0xC71B4d08B838e8525CA07Ac3d0C763152a3448A1'
+  const paymasterAddr = deployment.LoopringPaymaster
   // loopring smart wallet
-  const smartWalletAddr = '0x44e7527ab6cFeB896e53e1F45B6177E81FC985a8'
+  const smartWalletAddr = deployment.SmartWallet
   // fake tokens
-  const usdtTokenAddr = '0x116C55AFEaB4f16CcC5e91B563D450A4aE14CA15'
+  const usdtTokenAddr = deployment.USDT
 
   const signers = await ethers.getSigners()
   const deployer = signers[0]
@@ -31,14 +46,21 @@ async function main(): Promise<void> {
     entryPointAddr,
     deployer
   )
-  const ethAmount = ethers.utils.parseEther('0.01')
-  const minAmount = ethers.utils.parseEther('0.001')
+  const ethAmount = ethers.utils.parseEther('0.2')
+  const minAmount = ethers.utils.parseEther('0.05')
   const paymaster = LoopringPaymaster__factory.connect(
     paymasterAddr,
     paymasterOwner
   )
-  // usdt is supported
-  await (await paymaster.addToken(usdtTokenAddr)).wait()
+  const tokens = [usdtTokenAddr]
+  // make sure usdt token is supported in paymaster
+  for (const token of tokens) {
+    if (await paymaster.registeredToken(token)) {
+      console.log(`token: ${token} is registerd already`)
+    } else {
+      await (await paymaster.addToken(token)).wait()
+    }
+  }
 
   // prepare tokens for paymaster and smartwallet
   if ((await entryPoint.balanceOf(paymasterAddr)).lt(minAmount)) {
@@ -47,7 +69,10 @@ async function main(): Promise<void> {
         value: ethAmount
       })
     ).wait()
+  } else {
+    console.log('paymaster has enough eth in entrypoint already')
   }
+
   const smartWallet = SmartWalletV3__factory.connect(
     smartWalletAddr,
     smartWalletOwner
@@ -62,6 +87,8 @@ async function main(): Promise<void> {
           value: ethAmount
         })
     ).wait()
+  } else {
+    console.log('smart wallet has enough eth in entrypoint already')
   }
   const usdtToken = USDT__factory.connect(usdtTokenAddr, deployer)
   const tokenAmount = ethers.utils.parseUnits('100000', 6)
@@ -69,27 +96,38 @@ async function main(): Promise<void> {
   const { amount: depositedTokenAmount } =
     await paymaster.depositInfo(usdtTokenAddr, smartWalletAddr)
   if (depositedTokenAmount.lt(minTokenAmount)) {
-    if (
-      (await usdtToken.balanceOf(deployer.address)).lt(tokenAmount)
-    ) {
-      await (
-        await usdtToken.setBalance(
-          deployer.address,
-          tokenAmount.mul(3)
-        )
-      ).wait()
-    }
+    // if (
+    // (await usdtToken.balanceOf(deployer.address)).lt(tokenAmount)
+    // ) {
+    // await (
+    // await usdtToken.setBalance(
+    // deployer.address,
+    // tokenAmount.mul(3)
+    // )
+    // ).wait()
+    // }
     // two options, one is deposit for user, the other is mint tokens to user
-    await (
-      await paymaster
-        .connect(deployer)
-        .addDepositFor(usdtTokenAddr, smartWalletAddr, tokenAmount)
-    ).wait()
+    // await (
+    // await paymaster
+    // .connect(deployer)
+    // .addDepositFor(usdtTokenAddr, smartWalletAddr, tokenAmount)
+    // ).wait()
 
     // prepare tokens for smartwallet
-    // await (await usdtToken.setBalance(smartWallet.address, tokenAmount)).wait()
+    await (
+      await usdtToken.setBalance(smartWallet.address, tokenAmount)
+    ).wait()
     // approve tokens to paymaster
-    // await (await smartWallet.approveToken(usdtTokenAddr, paymasterAddr, tokenAmount, false)).wait()
+    await (
+      await smartWallet.approveToken(
+        usdtTokenAddr,
+        paymasterAddr,
+        tokenAmount,
+        false
+      )
+    ).wait()
+  } else {
+    console.log('smart wallet has enough usdt in paymaster already')
   }
 }
 
