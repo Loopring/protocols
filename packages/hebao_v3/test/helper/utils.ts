@@ -26,7 +26,7 @@ import {
   keccak256
 } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
-// import * as hre from 'hardhat'
+import * as hre from 'hardhat'
 
 import {
   type EntryPoint,
@@ -228,6 +228,7 @@ export async function deploySingle(
     salt,
     ethers.utils.keccak256(deployableCode)
   )
+  const forTest = hre.network.name === 'hardhat'
   // check if it is deployed already
   if ((await ethers.provider.getCode(deployedAddress)) === '0x') {
     const gasLimit = await deployFactory.estimateGas.deploy(
@@ -238,21 +239,33 @@ export async function deploySingle(
       gasLimit
     })
     await tx.wait()
-  }
+    if (!forTest) {
+      console.log(contractName, 'deployed address: ', deployedAddress)
+    }
+  } else {
+    if (!forTest) {
+      console.log(
+        contractName,
+        ' is deployed already at: ',
+        deployedAddress
+      )
+    }
 
-  // NOTE(may throw error when contract code verification too quickly.)
-  // if (
-  // hre.network.name === 'goerli' ||
-  // hre.network.name === 'sepolia' ||
-  // hre.network.name === 'ethereum'
-  // ) {
-  // await hre.run('verify:verify', {
-  // contract: verifiedContract,
-  // address: deployedAddress,
-  // constructorArguments: args,
-  // libraries
-  // })
-  // }
+    // NOTE(may throw error when contract code verification too quickly.)
+    // so only verify contract after it is deployed already for several minutes
+    if (
+      hre.network.name === 'goerli' ||
+      hre.network.name === 'sepolia' ||
+      hre.network.name === 'ethereum'
+    ) {
+      await hre.run('verify:verify', {
+        contract: verifiedContract,
+        address: deployedAddress,
+        constructorArguments: args,
+        libraries
+      })
+    }
+  }
 
   return contract.attach(deployedAddress)
 }
