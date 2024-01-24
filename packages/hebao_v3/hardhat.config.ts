@@ -1,4 +1,3 @@
-// import '@nomicfoundation/hardhat-toolbox'
 import '@nomicfoundation/hardhat-chai-matchers'
 import '@nomiclabs/hardhat-ethers'
 import 'hardhat-gas-reporter'
@@ -42,6 +41,11 @@ const config: HardhatUserConfig = {
     taiko2: {
       url: 'https://l2rpc.a2.taiko.xyz/',
       accounts: [privateKey]
+    },
+    taiko6: {
+      url: 'https://rpc.katla.taiko.xyz/',
+      accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 2000000000
     },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,

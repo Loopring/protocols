@@ -52,13 +52,29 @@ async function main(): Promise<void> {
     paymasterAddr,
     paymasterOwner
   )
-  const tokens = [usdtTokenAddr]
+  const tokens = [
+    usdtTokenAddr,
+    '0xaE404C050c3Da571AfefCFF5B6a64af451584000', // LRC
+    '0x1FEa9801725853622C33a23a86251e7c81898b25' // USDT
+  ]
   // make sure usdt token is supported in paymaster
   for (const token of tokens) {
     if (await paymaster.registeredToken(token)) {
       console.log(`token: ${token} is registerd already`)
     } else {
       await (await paymaster.addToken(token)).wait()
+      console.log(`token: ${token} is registerd successfully`)
+    }
+    // check success
+  }
+  const operators = ['0xE6FDa200797a5B8116e69812344cE7D2A9F17B0B']
+  const signerRole = await paymaster.SIGNER()
+  for (const operator of operators) {
+    if (await paymaster.hasRole(signerRole, operator)) {
+      console.log(`operator ${operator} has permission already`)
+    } else {
+      await (await paymaster.grantRole(signerRole, operator)).wait()
+      console.log(`grant role to ${operator} successfully`)
     }
   }
 
