@@ -25,6 +25,8 @@ import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
+import "./libwallet/AutomationLib.sol";
+
 
 /// @title SmartWallet
 /// @dev Main smart wallet contract
@@ -46,6 +48,7 @@ abstract contract SmartWallet is
     using QuotaLib for Wallet;
     using RecoverLib for Wallet;
     using UpgradeLib for Wallet;
+    using AutomationLib for Wallet;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
     PriceOracle public immutable priceOracle;
@@ -476,5 +479,32 @@ abstract contract SmartWallet is
             interfaceId == type(IERC165).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
+    function executorPermission(address executor) external view returns (uint[] memory, address[] memory) {
+        return AutomationLib.executorPermission(wallet, executor);
+    }
+
+    function approveExecutor(address executor, address[] calldata connectors, uint[] calldata validUntils) onlyFromEntryPoint external {
+        return AutomationLib.approveExecutor(wallet, executor, connectors, validUntils);
+    }
+
+    function addExecutorConnectors(address executor, address[] calldata connectors, uint[] calldata validUntils) onlyFromEntryPoint external {
+        return AutomationLib.addExecutorConnectors(wallet, executor, connectors, validUntils);
+    }
+
+    function unApproveExecutor(address executor) onlyFromEntryPoint external {
+        return AutomationLib.unApproveExecutor(wallet, executor);
+    }
+
+    function cast(
+        address,
+        address[] calldata targets,
+        bytes[] calldata datas
+    )
+    onlyFromEntryPoint
+    external
+    {   
+        AutomationLib.cast(targets, datas);
     }
 }

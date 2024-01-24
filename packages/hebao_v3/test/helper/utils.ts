@@ -652,6 +652,19 @@ export async function deployWalletImpl(
     undefined,
     new Map([["GuardianLib", GuardianLib.address]])
   );
+  const ApprovalLib = await deploySingle(
+    deployFactory,
+    "ApprovalLib",
+    undefined,
+    new Map([
+      ["ERC20Lib", ERC20Lib.address],
+      ["GuardianLib", GuardianLib.address],
+      ["LockLib", LockLib.address],
+      ["RecoverLib", RecoverLib.address],
+      ["UpgradeLib", UpgradeLib.address],
+      ["WhitelistLib", WhitelistLib.address]
+    ])
+  );
 
   const smartWallet = await deploySingle(
     deployFactory,
@@ -667,8 +680,9 @@ export async function deployWalletImpl(
       ["RecoverLib", RecoverLib.address],
       ["UpgradeLib", UpgradeLib.address],
       ["WhitelistLib", WhitelistLib.address],
+      ["ApprovalLib", ApprovalLib.address],
     ])
-  );
+  )
   return smartWallet;
 }
 

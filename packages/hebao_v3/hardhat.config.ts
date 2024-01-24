@@ -7,6 +7,10 @@ dotenv.config();
 
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-etherscan-abi";
+import "hardhat-contract-sizer";
+import "hardhat-change-network";
+
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -31,12 +35,20 @@ function loadTestAccounts() {
 
   return accounts;
 }
-
 export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       accounts: loadTestAccounts(),
+      ...(process.env.TRADE_AGENT === "true"
+        ? {
+            forking: {
+              url: "https://mainnet.infura.io/v3/cbc2ebb75911420fa3ac63026264e70a",
+              blockNumber: 18482580,
+            },
+            chainId: 1,
+          }
+        : {}),
     },
 
     optimistic: {
@@ -152,5 +164,15 @@ export default {
   etherscan: {
     // Your API key for Etherscan
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+    only: [":SmartWalletV3$"],
+  },
+  paths: {
+    tests: process.env.TRADE_AGENT === "true" ? "./testTradeAgent" : "./test",
   },
 };

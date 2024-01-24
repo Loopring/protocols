@@ -38,6 +38,16 @@ struct Guardian {
     uint64 timestamp; // validSince if status = ADD; validUntil if adding = REMOVE;
 }
 
+// struct ExecutorsPermission {
+//     address[] connectors; 
+//     mapping(address => uint) connectorsPermission;
+// }
+struct AutomationPermission {
+    address[] executors; 
+    mapping(address => mapping(address => uint)) executorsPermission;
+    mapping(address => address[]) executorsConnectors;
+}
+
 struct Wallet {
     address owner;
     uint64 creationTimestamp;
@@ -54,5 +64,9 @@ struct Wallet {
     Quota quota;
     // whitelisted address => effective timestamp
     mapping(address => uint) whitelisted;
+    
+    address[] executors; 
+    mapping(address => mapping(address => uint)) executorsPermission;
+    mapping(address => address[]) executorsConnectors;
     address entryPoint;
 }
