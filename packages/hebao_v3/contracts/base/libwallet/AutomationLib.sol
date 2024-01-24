@@ -11,6 +11,14 @@ import "../../iface/IConnectorRegistry.sol";
 library AutomationLib {
     using InheritanceLib for Wallet;
 
+    event AutomationApproveExecutor(
+        address wallet,
+        address executor,
+        uint validUntils
+    );
+
+    event AutomationUnapproveExecutor(address wallet, address executor);
+
     function _spell(
         address _target,
         bytes memory _data
@@ -84,6 +92,11 @@ library AutomationLib {
             "approve failed"
         );
         wallet.executorsPermission[executor] = validUntil;
+        emit AutomationApproveExecutor(
+            address(this),
+            executor,
+            validUntil
+        );
     }
 
     function unApproveExecutor(
@@ -92,5 +105,6 @@ library AutomationLib {
     ) internal {
         require(wallet.executorsPermission[executor] > 0, "unapprove failed");
         wallet.executorsPermission[executor] = 0;
+        emit AutomationUnapproveExecutor(address(this), executor);
     }
 }
