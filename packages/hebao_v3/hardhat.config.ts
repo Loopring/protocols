@@ -1,5 +1,6 @@
 import '@nomicfoundation/hardhat-chai-matchers'
 import '@nomiclabs/hardhat-ethers'
+import '@typechain/hardhat'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 import { type HardhatUserConfig } from 'hardhat/config'

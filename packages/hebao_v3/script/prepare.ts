@@ -3,6 +3,7 @@ import {
   EntryPoint__factory,
   SmartWalletV3__factory,
   LoopringPaymaster__factory,
+  WalletFactory__factory,
   USDT__factory
 } from './../typechain-types'
 import deploymentJson from '../deployments/deployments.json'
@@ -12,6 +13,7 @@ interface DeploymentType {
   EntryPoint: string
   LoopringPaymaster: string
   SmartWallet: string
+  WalletFactory: string
   USDT: string
 }
 
@@ -32,8 +34,7 @@ async function main(): Promise<void> {
   // fake tokens
   const usdtTokenAddr = deployment.USDT
 
-  const signers = await ethers.getSigners()
-  const deployer = signers[0]
+  const deployer = (await ethers.getSigners())[0]
   const smartWalletOwner = new ethers.Wallet(
     process.env.TEST_ACCOUNT_PRIVATE_KEY ?? deployer.address,
     ethers.provider
@@ -67,13 +68,33 @@ async function main(): Promise<void> {
     }
     // check success
   }
-  const operators = ['0xf6c53560e79857ce12dde54782d487b743b70717']
+
+  // signer for paymaster
+  const signers = ['0xf6c53560e79857ce12dde54782d487b743b70717']
   const signerRole = await paymaster.SIGNER()
+  for (const signer of signers) {
+    if (await paymaster.hasRole(signerRole, signer)) {
+      console.log(`operator ${signer} has permission already`)
+    } else {
+      await (await paymaster.grantRole(signerRole, signer)).wait()
+      console.log(`grant role to ${signer} successfully`)
+    }
+  }
+
+  // add operator for wallet factory
+  const operators = [
+    '0x3435259218bf656186F123B6d9129BF8D19c2941',
+    '0xd465F61eB0c067e648B81e43f97af8cCD54b3D17'
+  ]
+  const walletFactory = WalletFactory__factory.connect(
+    deployment.WalletFactory,
+    deployer
+  )
   for (const operator of operators) {
-    if (await paymaster.hasRole(signerRole, operator)) {
+    if (await walletFactory.isOperator(operator)) {
       console.log(`operator ${operator} has permission already`)
     } else {
-      await (await paymaster.grantRole(signerRole, operator)).wait()
+      await (await walletFactory.addOperator(operator)).wait()
       console.log(`grant role to ${operator} successfully`)
     }
   }
