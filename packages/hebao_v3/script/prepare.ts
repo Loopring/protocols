@@ -67,7 +67,7 @@ async function main(): Promise<void> {
     }
     // check success
   }
-  const operators = ['0xE6FDa200797a5B8116e69812344cE7D2A9F17B0B']
+  const operators = ['0xf6c53560e79857ce12dde54782d487b743b70717']
   const signerRole = await paymaster.SIGNER()
   for (const operator of operators) {
     if (await paymaster.hasRole(signerRole, operator)) {
@@ -111,24 +111,32 @@ async function main(): Promise<void> {
   const minTokenAmount = ethers.utils.parseUnits('100', 6)
   const { amount: depositedTokenAmount } =
     await paymaster.depositInfo(usdtTokenAddr, smartWalletAddr)
+  // two options, one is deposit for user, the other is mint tokens to user
   if (depositedTokenAmount.lt(minTokenAmount)) {
-    // if (
-    // (await usdtToken.balanceOf(deployer.address)).lt(tokenAmount)
-    // ) {
-    // await (
-    // await usdtToken.setBalance(
-    // deployer.address,
-    // tokenAmount.mul(3)
-    // )
-    // ).wait()
-    // }
-    // two options, one is deposit for user, the other is mint tokens to user
-    // await (
-    // await paymaster
-    // .connect(deployer)
-    // .addDepositFor(usdtTokenAddr, smartWalletAddr, tokenAmount)
-    // ).wait()
+    if (
+      (await usdtToken.balanceOf(deployer.address)).lt(tokenAmount)
+    ) {
+      await (
+        await usdtToken.setBalance(deployer.address, tokenAmount)
+      ).wait()
+      // deployer approve tokens to paymaster
+      await (
+        await usdtToken
+          .connect(deployer)
+          .approve(paymasterAddr, tokenAmount)
+      ).wait()
+    }
+    await (
+      await paymaster
+        .connect(deployer)
+        .addDepositFor(usdtTokenAddr, smartWalletAddr, tokenAmount)
+    ).wait()
+  } else {
+    console.log('smart wallet has enough usdt in paymaster already')
+  }
 
+  const usdtBalance = await usdtToken.balanceOf(smartWallet.address)
+  if (usdtBalance.lt(minTokenAmount)) {
     // prepare tokens for smartwallet
     await (
       await usdtToken.setBalance(smartWallet.address, tokenAmount)
@@ -143,7 +151,7 @@ async function main(): Promise<void> {
       )
     ).wait()
   } else {
-    console.log('smart wallet has enough usdt in paymaster already')
+    console.log('smart wallet has enough usdt already')
   }
 }
 
