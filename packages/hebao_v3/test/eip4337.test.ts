@@ -13,6 +13,7 @@ import {
   sortSignersAndSignatures,
   getCurrentQuota,
   createSmartWallet,
+  simulationResultCatch,
 } from "./helper/utils";
 import {
   fillAndSign,
@@ -51,6 +52,31 @@ describe("eip4337 test", () => {
     );
     return signedUserOp;
   }
+
+  it("empty calldata", async () => {
+    const {
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      deployer,
+      sendUserOp,
+      entrypoint,
+    } = await loadFixture(fixture);
+    const tx = { to: smartWallet.address, data: "0x" };
+    const nonce = (await smartWallet.nonce()).add(1);
+    const signedUserOp = await getSignedUserOp(
+      tx,
+      nonce,
+      smartWallet,
+      smartWalletOwner,
+      create2,
+      entrypoint
+    );
+    await entrypoint.callStatic
+      .simulateValidation(signedUserOp)
+      .catch(simulationResultCatch);
+    await sendUserOp(signedUserOp);
+  });
 
   it("invalid nonce", async () => {
     const {

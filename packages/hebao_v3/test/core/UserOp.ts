@@ -7,6 +7,11 @@ import {
 import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { AddressZero, callDataCost, rethrow } from "./testutils";
 import {
+  packUserOp,
+  getUserOpHash,
+  fillUserOpDefaults,
+} from "../helper/AASigner";
+import {
   ecsign,
   toRpcSig,
   keccak256 as keccak256_buffer,
@@ -28,107 +33,6 @@ function encode(
       : typevalue.val
   );
   return defaultAbiCoder.encode(types, values);
-}
-
-// export function packUserOp(op: UserOperation, hashBytes = true): string {
-//   if ( !hashBytes || true ) {
-//     return packUserOp1(op, hashBytes)
-//   }
-//
-//   const opEncoding = Object.values(testUtil.interface.functions).find(func => func.name == 'packUserOp')!.inputs[0]
-//   let packed = defaultAbiCoder.encode([opEncoding], [{...op, signature:'0x'}])
-//   packed = '0x'+packed.slice(64+2) //skip first dword (length)
-//   packed = packed.slice(0,packed.length-64) //remove signature (the zero-length)
-//   return packed
-// }
-
-export function packUserOp(op: UserOperation, forSignature = true): string {
-  if (forSignature) {
-    // lighter signature scheme (must match UserOperation#pack): do encode a zero-length signature, but strip afterwards the appended zero-length value
-    const userOpType = {
-      components: [
-        { type: "address", name: "sender" },
-        { type: "uint256", name: "nonce" },
-        { type: "bytes", name: "initCode" },
-        { type: "bytes", name: "callData" },
-        { type: "uint256", name: "callGasLimit" },
-        { type: "uint256", name: "verificationGasLimit" },
-        { type: "uint256", name: "preVerificationGas" },
-        { type: "uint256", name: "maxFeePerGas" },
-        { type: "uint256", name: "maxPriorityFeePerGas" },
-        { type: "bytes", name: "paymasterAndData" },
-        { type: "bytes", name: "signature" },
-      ],
-      name: "userOp",
-      type: "tuple",
-    };
-    let encoded = defaultAbiCoder.encode(
-      [userOpType as any],
-      [{ ...op, signature: "0x" }]
-    );
-    // remove leading word (total length) and trailing word (zero-length signature)
-    encoded = "0x" + encoded.slice(66, encoded.length - 64);
-    return encoded;
-  }
-  const typevalues = [
-    { type: "address", val: op.sender },
-    { type: "uint256", val: op.nonce },
-    { type: "bytes", val: op.initCode },
-    { type: "bytes", val: op.callData },
-    { type: "uint256", val: op.callGasLimit },
-    { type: "uint256", val: op.verificationGasLimit },
-    { type: "uint256", val: op.preVerificationGas },
-    { type: "uint256", val: op.maxFeePerGas },
-    { type: "uint256", val: op.maxPriorityFeePerGas },
-    { type: "bytes", val: op.paymasterAndData },
-  ];
-  if (!forSignature) {
-    // for the purpose of calculating gas cost, also hash signature
-    typevalues.push({ type: "bytes", val: op.signature });
-  }
-  return encode(typevalues, forSignature);
-}
-
-export function packUserOp1(op: UserOperation): string {
-  return defaultAbiCoder.encode(
-    [
-      "address", // sender
-      "uint256", // nonce
-      "bytes32", // initCode
-      "bytes32", // callData
-      "uint256", // callGasLimit
-      "uint", // verificationGasLimit
-      "uint", // preVerificationGas
-      "uint256", // maxFeePerGas
-      "uint256", // maxPriorityFeePerGas
-      "bytes32", // paymasterAndData
-    ],
-    [
-      op.sender,
-      op.nonce,
-      keccak256(op.initCode),
-      keccak256(op.callData),
-      op.callGasLimit,
-      op.verificationGasLimit,
-      op.preVerificationGas,
-      op.maxFeePerGas,
-      op.maxPriorityFeePerGas,
-      keccak256(op.paymasterAndData),
-    ]
-  );
-}
-
-export function getUserOpHash(
-  op: UserOperation,
-  entryPoint: string,
-  chainId: number
-): string {
-  const userOpHash = keccak256(packUserOp(op, true));
-  const enc = defaultAbiCoder.encode(
-    ["bytes32", "address", "uint256"],
-    [userOpHash, entryPoint, chainId]
-  );
-  return keccak256(enc);
 }
 
 export const DefaultsForUserOp: UserOperation = {
@@ -168,23 +72,6 @@ export function signUserOp(
     ...op,
     signature: signedMessage1,
   };
-}
-
-export function fillUserOpDefaults(
-  op: Partial<UserOperation>,
-  defaults = DefaultsForUserOp
-): UserOperation {
-  const partial: any = { ...op };
-  // we want "item:undefined" to be used from defaults, and not override defaults, so we must explicitly
-  // remove those so "merge" will succeed.
-  for (const key in partial) {
-    if (partial[key] == null) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete partial[key];
-    }
-  }
-  const filled = { ...defaults, ...partial };
-  return filled;
 }
 
 // helper to fill structure:
@@ -299,3 +186,5 @@ export async function fillAndSign(
     signature: await signer.signMessage(message),
   };
 }
+
+export { packUserOp, getUserOpHash, fillUserOpDefaults };

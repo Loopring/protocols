@@ -32,6 +32,13 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     mapping(ERC20 => mapping(address => uint256)) public balances;
     mapping(address => uint256) public unlockBlock;
 
+    event PaymasterEvent(
+        bytes32 indexed userOpHash,
+        address token,
+        uint256 valueOfEth,
+        uint256 actualTokenCost
+    );
+
     constructor(
         IEntryPoint _entryPoint,
         address _owner
@@ -83,7 +90,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
      */
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 /*userOpHash*/,
+        bytes32 userOpHash,
         uint256 requiredPreFund
     )
         external
@@ -156,6 +163,7 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
         // by the external service prior to signing it.
         return (
             abi.encode(
+                userOpHash,
                 sender,
                 decoded_data.token,
                 costOfPost,
@@ -184,14 +192,17 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
     ) internal override {
         (mode);
         (
+            bytes32 userOpHash,
             address account,
             address payable token,
             uint256 costOfPost,
             uint256 valueOfEth
-        ) = abi.decode(context, (address, address, uint256, uint256));
+        ) = abi.decode(context, (bytes32, address, address, uint256, uint256));
+        uint256 actualTokenCost;
         if (valueOfEth > 0) {
-            uint256 actualTokenCost = ((actualGasCost + costOfPost) *
-                10 ** priceDecimal) / valueOfEth;
+            actualTokenCost =
+                ((actualGasCost + costOfPost) * 10 ** priceDecimal) /
+                valueOfEth;
 
             if (balances[ERC20(token)][account] >= actualTokenCost) {
                 balances[ERC20(token)][account] -= actualTokenCost;
@@ -205,6 +216,8 @@ contract VerifyingPaymaster is BasePaymaster, AccessControl {
             }
             balances[ERC20(token)][owner()] += actualTokenCost;
         }
+
+        emit PaymasterEvent(userOpHash, token, valueOfEth, actualTokenCost);
     }
 
     ////////////////////////////////////

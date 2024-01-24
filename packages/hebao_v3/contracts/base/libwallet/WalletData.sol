@@ -68,4 +68,5 @@ struct Wallet {
     address[] executors; 
     mapping(address => mapping(address => uint)) executorsPermission;
     mapping(address => address[]) executorsConnectors;
+    address entryPoint;
 }

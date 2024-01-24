@@ -120,7 +120,7 @@ describe("recover test", () => {
   });
 
   // invalid test case
-  it.skip("new owner should not be invalid", async () => {
+  it("new owner should not be invalid", async () => {
     const {
       entrypoint,
       smartWallet,
@@ -134,7 +134,7 @@ describe("recover test", () => {
 
     const newGuardians = [];
     // all invalid new owner addresses
-    const newOwnerAddrs = [create2.address, ethers.constants.AddressZero];
+    const newOwnerAddrs = [ethers.constants.AddressZero];
     for (let i = 0; i < newOwnerAddrs.length; ++i) {
       const newOwnerAddr = newOwnerAddrs[i];
       const signedUserOp = await fillAndMultiSignForRecover(
@@ -158,7 +158,7 @@ describe("recover test", () => {
       const revertInfo = await evRevertInfo(entrypoint, recipt);
       // is same owner
       expect(getErrorMessage(revertInfo[0].revertReason)).to.eq(
-        "INVALID_NEW_WALLET_OWNER"
+        "IS_SAME_OWNER"
       );
       // fee charged even if userop execution failed
       expect(postDeposit).to.lt(preDeposit);

@@ -105,6 +105,9 @@ abstract contract SmartWallet is
 
     /// @inheritdoc BaseAccount
     function entryPoint() public view virtual override returns (IEntryPoint) {
+        if (wallet.entryPoint != address(0)) {
+            return IEntryPoint(wallet.entryPoint);
+        }
         return _entryPoint;
     }
 
@@ -206,6 +209,17 @@ abstract contract SmartWallet is
 
     function getMasterCopy() public view returns (address) {
         return masterCopy;
+    }
+
+    //
+    // change entrypoint
+    //
+    function changeEntryPoint(
+        address newEntryPoint
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        require(newEntryPoint != address(0), "INVALID ENTRYPOINT");
+        require(address(entryPoint()) != newEntryPoint, "SAME ENTRYPOINT");
+        wallet.entryPoint = newEntryPoint;
     }
 
     //

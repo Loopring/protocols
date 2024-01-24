@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import * as hre from "hardhat";
 import { Contract, Wallet, Signer, BigNumber, BigNumberish } from "ethers";
 import BN from "bn.js";
 import { signCreateWallet } from "../test/helper/signatureUtils";
@@ -75,6 +76,17 @@ export async function deploySingle(
     const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit });
     await tx.wait();
     console.log(contractName, "deployed address: ", deployedAddress);
+  }
+
+  if (
+    hre.network.name == "goerli" ||
+    hre.network.name == "sepolia" ||
+    hre.network.name == "ethereum"
+  ) {
+    await hre.run("verify:verify", {
+      address: deployedAddress,
+      constructorArguments: args,
+    });
   }
 
   return contract.attach(deployedAddress);

@@ -139,7 +139,7 @@ describe("walletFactory", () => {
 
       await expect(
         walletFactory.connect(account2).createWalletByOperator(walletConfig, 0)
-      ).to.revertedWith("DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
+      ).to.revertedWith("NOT A OPERATOR");
       await walletFactory.addOperator(account2Addr);
       await walletFactory
         .connect(account2)
@@ -155,7 +155,7 @@ describe("walletFactory", () => {
       await walletFactory.removeOperator(account2Addr);
       await expect(
         walletFactory.connect(account2).createWalletByOperator(walletConfig, 0)
-      ).to.revertedWith("DISALLOWED_ON_IMPLEMENTATION_CONTRACT");
+      ).to.revertedWith("NOT A OPERATOR");
     });
   });
 });

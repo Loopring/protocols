@@ -90,6 +90,11 @@ export default {
       url: "https://l2rpc.a2.taiko.xyz/",
       accounts: [process.env.PRIVATE_KEY],
     },
+    taiko6: {
+      url: "https://rpc.katla.taiko.xyz/",
+      accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 2000000000,
+    },
     sepolia: {
       chainId: 11155111,
       url: "https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB",
@@ -158,7 +163,7 @@ export default {
 
   etherscan: {
     // Your API key for Etherscan
-    apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI",
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   contractSizer: {
     alphaSort: true,

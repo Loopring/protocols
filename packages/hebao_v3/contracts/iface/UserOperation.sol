@@ -30,6 +30,19 @@ struct UserOperation {
     bytes signature;
 }
 
+/**
+ * keccak function over calldata.
+ * @dev copy calldata into memory, do keccak and drop allocated memory. Strangely, this is more efficient than letting solidity do it.
+ */
+function calldataKeccak(bytes calldata data) pure returns (bytes32 ret) {
+    assembly {
+        let mem := mload(0x40)
+        let len := data.length
+        calldatacopy(mem, data.offset, len)
+        ret := keccak256(mem, len)
+    }
+}
+
 library UserOperationLib {
     function getSender(
         UserOperation calldata userOp
@@ -58,22 +71,37 @@ library UserOperationLib {
         }
     }
 
+    /**
+     * Pack the user operation data into bytes for hashing.
+     * @param userOp - The user operation data.
+     */
     function pack(
         UserOperation calldata userOp
     ) internal pure returns (bytes memory ret) {
-        //lighter signature scheme. must match UserOp.ts#packUserOp
-        bytes calldata sig = userOp.signature;
-        // copy directly the userOp from calldata up to (but not including) the signature.
-        // this encoding depends on the ABI encoding of calldata, but is much lighter to copy
-        // than referencing each field separately.
-        assembly {
-            let ofs := userOp
-            let len := sub(sub(sig.offset, ofs), 32)
-            ret := mload(0x40)
-            mstore(0x40, add(ret, add(len, 32)))
-            mstore(ret, len)
-            calldatacopy(add(ret, 32), ofs, len)
-        }
+        address sender = getSender(userOp);
+        uint256 nonce = userOp.nonce;
+        bytes32 hashInitCode = calldataKeccak(userOp.initCode);
+        bytes32 hashCallData = calldataKeccak(userOp.callData);
+        uint256 callGasLimit = userOp.callGasLimit;
+        uint256 verificationGasLimit = userOp.verificationGasLimit;
+        uint256 preVerificationGas = userOp.preVerificationGas;
+        uint256 maxFeePerGas = userOp.maxFeePerGas;
+        uint256 maxPriorityFeePerGas = userOp.maxPriorityFeePerGas;
+        bytes32 hashPaymasterAndData = calldataKeccak(userOp.paymasterAndData);
+
+        return
+            abi.encode(
+                sender,
+                nonce,
+                hashInitCode,
+                hashCallData,
+                callGasLimit,
+                verificationGasLimit,
+                preVerificationGas,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                hashPaymasterAndData
+            );
     }
 
     function hash(
