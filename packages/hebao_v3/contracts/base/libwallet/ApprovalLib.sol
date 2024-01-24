@@ -78,7 +78,7 @@ library ApprovalLib {
         return SIG_VALIDATION_FAILED;
     }
 
-    function _validateSignature(
+    function validateSignature(
         Wallet storage wallet,
         UserOperation calldata userOp,
         bytes32 userOpHash,
@@ -300,10 +300,12 @@ library ApprovalLib {
             return SIG_VALIDATION_FAILED;
         }
 
+        require(!wallet.locked, "wallet is locked");
+
         if (methodId == SmartWallet.cast.selector) {
             (address executor, address[] memory connectors, bytes[] memory datas) = abi
                 .decode(userOp.callData[4:], (address, address[], bytes[]));
-            if (hash.verifySignature(executor, userOp.signature) && AutomationLib._verifyPermission(wallet, executor, connectors)
+            if (hash.verifySignature(executor, userOp.signature) && AutomationLib.verifyPermission(wallet, executor, connectors)
             ) {
                 return 0;
             }
@@ -312,8 +314,6 @@ library ApprovalLib {
             }
             return SIG_VALIDATION_FAILED;
         }
-
-        require(!wallet.locked, "wallet is locked");
 
         if (!hash.verifySignature(wallet.owner, userOp.signature))
             return SIG_VALIDATION_FAILED;

@@ -351,7 +351,7 @@ describe("trade agent test", () => {
     return executor;
   };
 
-  it("mainnet fork test", async () => {
+  it("eth mainnet fork test", async () => {
     
     const KRAKEN_ADDRESS = "0xDA9dfA130Df4dE4673b89022EE50ff26f6EA73Cf";
     const RANDOM_ADDRESS = ethers.Wallet.createRandom().address;
@@ -421,7 +421,7 @@ describe("trade agent test", () => {
 
   describe("excute from owner", () => {
     
-    it.only("excute from owner should not be rejected", async () => {
+    it("excute from owner should not be rejected", async () => {
       const loadedFixture = await loadFixture(fixture);
       const wETHConnector = await getVerifiedContractAt(CONSTANTS.WETH_CONNECTOR_ADDRESS);
       const data = (
@@ -579,6 +579,30 @@ describe("trade agent test", () => {
     expect(msg2).undefined;
     const balance2: BigNumber = await wETH.balanceOf(smartWallet.address);
     expect(balance2.sub(balance1)).eq(CONSTANTS.ONE_FOR_ETH);
+  });
+
+  it("cant cast when wallet is locked", async () => {
+    const loadedFixture = await loadFixture(fixture);
+    const { smartWallet, entrypoint, smartWalletOwner } =
+      loadedFixture;
+    const wETH = await getVerifiedContractAt(CONSTANTS.WETH_ADDRESS);
+    const executor = await makeAnExecutor(
+      [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+      loadedFixture
+    );
+    await (await smartWallet.lock()).wait()
+    await wETH.balanceOf(smartWallet.address);
+    const wETHConnector = await getVerifiedContractAt(CONSTANTS.WETH_CONNECTOR_ADDRESS);
+    const data2 = (
+      await wETHConnector.populateTransaction.deposit(CONSTANTS.ONE_FOR_ETH, 0, 0)
+    ).data;
+    expect(userOpCast(
+      [CONSTANTS.WETH_CONNECTOR_ADDRESS],
+      [data2],
+      executor,
+      loadedFixture
+    )).to.revertedWithCustomError(entrypoint, "FailedOp")
+      .withArgs(0, ethers.constants.AddressZero, "wallet is locked");
   });
 
   it("UniswapV2 Connector", async () => {

@@ -475,6 +475,10 @@ abstract contract SmartWallet is
         return AutomationLib.approveExecutor(wallet, executor, connectors, validUntils);
     }
 
+    function addExecutorConnectors(address executor, address[] calldata connectors, uint[] calldata validUntils) onlyFromEntryPoint external {
+        return AutomationLib.addExecutorConnectors(wallet, executor, connectors, validUntils);
+    }
+
     function unApproveExecutor(address executor) onlyFromEntryPoint external {
         return AutomationLib.unApproveExecutor(wallet, executor);
     }

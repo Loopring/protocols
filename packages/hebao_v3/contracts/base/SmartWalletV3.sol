@@ -92,7 +92,7 @@ contract SmartWalletV3 is SmartWallet {
         bytes32 userOpHash,
         address
     ) internal virtual override returns (uint256 sigTimeRange) {
-        return ApprovalLib._validateSignature(wallet, userOp, userOpHash,DOMAIN_SEPARATOR);
+        return ApprovalLib.validateSignature(wallet, userOp, userOpHash, DOMAIN_SEPARATOR);
     }
 
 }

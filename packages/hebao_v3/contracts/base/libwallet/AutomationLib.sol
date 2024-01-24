@@ -8,8 +8,27 @@ import "./WalletData.sol";
 import "../../iface/UserOperation.sol";
 
 library AutomationLib {
-  using InheritanceLib for Wallet;
+    using InheritanceLib for Wallet;
     
+    event AutomationApproveExecutor (
+      address wallet,
+      address executor,
+      address[] connectors,
+      uint[]  validUntils
+    );
+
+    event AutomationAddExecutorConnectors (
+      address wallet,
+      address executor,
+      address[] connectors,
+      uint[]  validUntils
+    );
+
+    event AutomationUnapproveExecutor (
+      address wallet,
+      address executor
+    );
+
     function _spell(address _target, bytes memory _data) private returns (bytes memory response) {
         require(_target != address(0), "target-invalid");
         assembly {
@@ -30,7 +49,7 @@ library AutomationLib {
         }
     }
 
-    function _verifyPermission(Wallet storage wallet, address executor, address[] memory targets) internal view returns (bool) {
+    function verifyPermission(Wallet storage wallet, address executor, address[] memory targets) internal view returns (bool) {
       mapping(address => uint) storage permissionInfo = wallet.executorsPermission[executor];
       for (uint i = 0; i < targets.length; i++){
         if (permissionInfo[targets[i]] < block.timestamp) {
@@ -52,12 +71,12 @@ library AutomationLib {
     }
     
     function executorPermission(Wallet storage wallet, address executor) internal view returns (uint[] memory, address[] memory) {
-      address[] memory addresses = wallet.executorsConnectors[executor];
-      uint[] memory validUntils = new uint[](addresses.length);
-      for (uint i = 0; i < addresses.length; i++) {
-        validUntils[i] = wallet.executorsPermission[executor][addresses[i]];
+      address[] memory connectors = wallet.executorsConnectors[executor];
+      uint[] memory validUntils = new uint[](connectors.length);
+      for (uint i = 0; i < connectors.length; i++) {
+        validUntils[i] = wallet.executorsPermission[executor][connectors[i]];
       }
-      return (validUntils, addresses);
+      return (validUntils, connectors);
     }
 
     function _unApproveExecutor(Wallet storage wallet, address executor) private {
@@ -74,9 +93,20 @@ library AutomationLib {
       for (uint i = 0; i < connectors.length; i++) {
         wallet.executorsPermission[executor][connectors[i]] = validUntils[i];
       }
+      emit AutomationApproveExecutor(address(this), executor, connectors, validUntils);
+    }
+
+    function addExecutorConnectors(Wallet storage wallet, address executor, address[] calldata connectors, uint[] calldata validUntils) internal {
+      for (uint i = 0; i < connectors.length; i++) {
+        require(wallet.executorsPermission[executor][connectors[i]] == 0); // To ensure the new list of connectors does not include any connectors from the old list.
+        wallet.executorsConnectors[executor].push(connectors[i]);
+        wallet.executorsPermission[executor][connectors[i]] = validUntils[i];
+      }
+      emit AutomationAddExecutorConnectors(address(this), executor, connectors, validUntils);
     }
 
     function unApproveExecutor(Wallet storage wallet, address executor) internal {
       _unApproveExecutor(wallet, executor);
+      emit AutomationUnapproveExecutor(address(this), executor);
     }
 }
