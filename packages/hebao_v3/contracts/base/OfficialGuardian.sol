@@ -5,6 +5,7 @@ pragma solidity ^0.8.17;
 import "../lib/ERC1271.sol";
 import "../lib/OwnerManagable.sol";
 import "../lib/SignatureUtil.sol";
+import "../lib/LoopringErrors.sol";
 
 /// @title OfficialGuardian
 /// @author Freeman Zhong - <kongliang@loopring.org>
@@ -32,7 +33,8 @@ contract OfficialGuardian is OwnerManagable, ERC1271 {
         uint value,
         bytes calldata data
     ) external onlyManager returns (bool success, bytes memory returnData) {
-        // solium-disable-next-line security/no-call-value
+        // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = target.call{value: value}(data);
+        _require(success, Errors.OFFICIALGUARDIAN_CALL_FAILED);
     }
 }

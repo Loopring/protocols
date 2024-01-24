@@ -2,7 +2,7 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "../thirdparty/proxies/Proxy.sol";
+import "@openzeppelin/contracts/proxy/Proxy.sol";
 import "./DelayedImplementationManager.sol";
 
 /**
@@ -17,7 +17,7 @@ contract ForwardProxy is Proxy {
         implManager = DelayedImplementationManager(_implManager);
     }
 
-    function implementation() public view override returns (address) {
+    function _implementation() internal view override returns (address) {
         return implManager.currImpl();
     }
 }

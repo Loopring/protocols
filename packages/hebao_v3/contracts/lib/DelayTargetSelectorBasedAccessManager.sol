@@ -56,6 +56,7 @@ contract DelayTargetSelectorBasedAccessManager is Claimable {
         );
 
         if (!success) {
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 revert(add(returnData, 32), mload(returnData))
             }

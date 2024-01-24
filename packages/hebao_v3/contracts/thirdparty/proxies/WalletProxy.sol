@@ -2,6 +2,8 @@
 // Taken from: https://github.com/gnosis/safe-contracts/blob/development/contracts/proxies/GnosisSafeProxy.sol
 pragma solidity ^0.8.17;
 
+import "../../lib/LoopringErrors.sol";
+
 /// @title IProxy - Helper interface to access masterCopy of the Proxy on-chain
 /// @author Richard Meissner - <richard@gnosis.io>
 interface IProxy {
@@ -21,16 +23,14 @@ contract WalletProxy {
     /// @dev Constructor function sets address of master copy contract.
     /// @param _masterCopy Master copy address.
     constructor(address _masterCopy) {
-        require(
-            _masterCopy != address(0),
-            "Invalid master copy address provided"
-        );
+        _require(_masterCopy != address(0), Errors.MASTER_COPY_ZERO_ADDRESS);
+        _require(_masterCopy != masterCopy, Errors.INVALID_SAME_MASTER_COPY);
         masterCopy = _masterCopy;
     }
 
     /// @dev Fallback function forwards all transactions and returns all received return data.
     fallback() external payable {
-        // solium-disable-next-line security/no-inline-assembly
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             let _masterCopy := and(
                 sload(0),

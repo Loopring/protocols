@@ -18,18 +18,13 @@ library EIP712 {
     string internal constant EIP191_HEADER = "\x19\x01";
 
     function hash(Domain memory domain) internal view returns (bytes32) {
-        uint _chainid;
-        assembly {
-            _chainid := chainid()
-        }
-
         return
             keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH,
                     keccak256(bytes(domain.name)),
                     keccak256(bytes(domain.version)),
-                    _chainid,
+                    block.chainid,
                     domain.verifyingContract
                 )
             );

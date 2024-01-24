@@ -17,7 +17,7 @@ library ERC1271Lib {
     // valid.
     function isValidSignature(
         Wallet storage wallet,
-        bytes4 ERC1271_MAGICVALUE,
+        bytes4 erc1271MagicValue,
         bytes32 signHash,
         bytes memory signature
     ) public view returns (bytes4 magicValue) {
@@ -26,7 +26,7 @@ library ERC1271Lib {
         }
 
         if (signHash.verifySignature(wallet.owner, signature)) {
-            return ERC1271_MAGICVALUE;
+            return erc1271MagicValue;
         } else {
             return 0;
         }

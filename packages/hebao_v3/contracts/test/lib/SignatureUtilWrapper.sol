@@ -6,12 +6,13 @@ pragma experimental ABIEncoderV2;
 import "../../lib/ERC1271.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /// @title AddressSetWrapper
 /// @author Freeman Zhong - <kongliang@loopring.org>
 contract SignatureUtilWrapper {
     using BytesUtil for bytes;
-    using MathUint for uint;
+    using SafeMath for uint;
 
     function verifySignature(
         bytes32 signHash,

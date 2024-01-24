@@ -61,6 +61,7 @@ library AddressUtil {
         bytes memory data
     ) internal returns (bool success, bytes memory returnData) {
         if (to != address(0)) {
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 // Do the call
                 success := call(
@@ -93,6 +94,7 @@ library AddressUtil {
         bool success;
         (success, returnData) = fastCall(to, gasLimit, value, data);
         if (!success) {
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 revert(add(returnData, 32), mload(returnData))
             }

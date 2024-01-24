@@ -1,187 +1,69 @@
-import { ethers } from "hardhat";
-import * as typ from "./solidityTypes";
-import { Wallet, Signer, BigNumber, BigNumberish } from "ethers";
-import BN from "bn.js";
-import { signCreateWallet } from "./signatureUtils";
-import { Contract } from "ethers";
 import {
-  EntryPoint,
-  SmartWallet,
-  SmartWalletV3,
-  EntryPoint__factory,
-  SmartWallet__factory,
-  WalletFactory,
-  WalletFactory__factory,
-  WalletProxy__factory,
-  LoopringCreate2Deployer,
-  VerifyingPaymaster,
-} from "../../typechain-types";
-import { TransactionResponse } from "@ethersproject/abstract-provider";
-import { Deferrable, resolveProperties } from "@ethersproject/properties";
+  type Event,
+  type ContractReceipt
+} from '@ethersproject/contracts'
+import { type BytesLike } from '@ethersproject/bytes'
 import {
-  BaseProvider,
-  Provider,
-  TransactionRequest,
-  TransactionReceipt,
-} from "@ethersproject/providers";
+  type Deferrable,
+  resolveProperties
+} from '@ethersproject/properties'
 import {
-  hexConcat,
-  defaultAbiCoder,
+  type BaseProvider,
+  type TransactionReceipt,
+  type TransactionRequest
+} from '@ethersproject/providers'
+import {
+  type Contract,
+  BigNumber,
+  type BigNumberish,
+  type Signer,
+  type Wallet
+} from 'ethers'
+import {
   arrayify,
-  keccak256,
-  getCreate2Address,
-  hexZeroPad,
-  hexlify,
-  Interface,
-} from "ethers/lib/utils";
-import { BytesLike, hexValue } from "@ethersproject/bytes";
-import { UserOperation, SendUserOp, fillAndSign } from "./AASigner";
+  defaultAbiCoder,
+  hexConcat,
+  keccak256
+} from 'ethers/lib/utils'
+import { ethers } from 'hardhat'
+import * as hre from 'hardhat'
 
-let counter = 0;
+import {
+  type EntryPoint,
+  type LoopringCreate2Deployer,
+  type LoopringPaymaster,
+  type SmartWalletV3,
+  type WalletFactory
+} from '../../typechain-types'
 
-// create non-random account, so gas calculations are deterministic
-export function createAccountOwner(): Wallet {
-  const privateKey = keccak256(
-    Buffer.from(arrayify(BigNumber.from(++counter)))
-  );
-  return new ethers.Wallet(privateKey, ethers.provider);
-}
-
-export function callDataCost(data: string): number {
-  return ethers.utils
-    .arrayify(data)
-    .map((x) => (x === 0 ? 4 : 16))
-    .reduce((sum, x) => sum + x);
-}
+import {
+  fillAndSign,
+  type SendUserOp,
+  type UserOperation
+} from './AASigner'
+import { signCreateWallet } from './signatureUtils'
+import type * as typ from './solidityTypes'
 
 export interface WalletConfig {
-  accountOwner: typ.address;
-  guardians: typ.address[];
-  quota: typ.uint;
-  inheritor: typ.address;
+  accountOwner: typ.address
+  guardians: typ.address[]
+  quota: typ.uint
+  inheritor: typ.address
 }
 
-export async function createRandomAccount(
-  accountOwner: Wallet,
-  entryPoint: EntryPoint,
-  walletFactory: WalletFactory
-) {
-  const guardians: Wallet[] = [];
-  for (let i = 0; i < 2; i++) {
-    guardians.push(
-      await ethers.Wallet.createRandom().connect(entryPoint.provider)
-    );
-  }
-  const walletConfig = await createRandomWalletConfig(
-    accountOwner.address,
-    undefined,
-    guardians
-  );
-
-  const { proxy: account } = await createAccount(
-    accountOwner,
-    walletConfig,
-    entryPoint.address,
-    walletFactory
-  );
-
-  return { account, guardians };
-}
-
-// Deploys an implementation and a proxy pointing to this implementation
-export async function createAccount(
-  ethersSigner: Signer,
-  walletConfig: WalletConfig,
-  entryPoint: string,
-  _factory: WalletFactory
-): Promise<{
-  proxy: SmartWallet;
-  accountFactory: WalletFactory;
-  implementation: string;
-}> {
-  const accountFactory = _factory;
-  const implementation = await accountFactory.accountImplementation();
-  const salt = ethers.utils.randomBytes(32);
-  await accountFactory.createAccount(
-    walletConfig.accountOwner,
-    walletConfig.guardians,
-    walletConfig.quota,
-    walletConfig.inheritor,
-    salt
-  );
-  const accountAddress = await accountFactory.getAddress(
-    walletConfig.accountOwner,
-    walletConfig.guardians,
-    walletConfig.quota,
-    walletConfig.inheritor,
-    salt
-  );
-  const proxy = SmartWallet__factory.connect(accountAddress, ethersSigner);
-  return {
-    implementation,
-    accountFactory,
-    proxy,
-  };
-}
-
-export async function createAccountV2(
-  ethersSigner: Signer,
-  walletConfig: WalletConfig,
-  entryPoint: string,
-  implementation: string,
-  accountFactory: LoopringCreate2Deployer
-) {
-  // const implementation = await accountFactory.accountImplementation();
-  const salt = ethers.utils.randomBytes(32);
-  await accountFactory.deploy(
-    getWalletCode(implementation, walletConfig),
-    salt
-  );
-  const accountAddress = calculateWalletAddress(
-    implementation,
-    walletConfig,
-    salt,
-    accountFactory.address
-  );
-  const proxy = SmartWallet__factory.connect(accountAddress, ethersSigner);
-  return {
-    implementation,
-    accountFactory,
-    proxy,
-  };
-}
-
-// helper function to create the initCode to deploy the account, using our account factory.
-export function getAccountInitCode(
-  walletConfig: WalletConfig,
-  factory: WalletFactory,
-  salt: BigNumberish
-): BytesLike {
-  return hexConcat([
-    factory.address,
-    factory.interface.encodeFunctionData("createAccount", [
-      walletConfig.accountOwner,
-      walletConfig.guardians,
-      walletConfig.quota,
-      walletConfig.inheritor,
-      salt,
-    ]),
-  ]);
-}
-
-function getPaymasterHash(userOp: UserOperation) {
+function getPaymasterHash(userOp: UserOperation): string {
   return keccak256(
     defaultAbiCoder.encode(
       [
-        "address",
-        "uint256",
-        "bytes32",
-        "bytes32",
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint256",
+        'address',
+        'uint256',
+        'bytes32',
+        'bytes32',
+        'uint256',
+        'uint256',
+        'uint256',
+        'uint256',
+        'uint256'
       ],
       [
         userOp.sender,
@@ -192,10 +74,10 @@ function getPaymasterHash(userOp: UserOperation) {
         userOp.verificationGasLimit,
         userOp.preVerificationGas,
         userOp.maxFeePerGas,
-        userOp.maxPriorityFeePerGas,
+        userOp.maxPriorityFeePerGas
       ]
     )
-  );
+  )
 }
 
 export async function getPaymasterData(
@@ -204,16 +86,19 @@ export async function getPaymasterData(
   paymasterOwner: Signer,
   token: string,
   valueOfEth: BigNumberish
-) {
-  const message = arrayify(getPaymasterHash(userOp));
-  const signature = await paymasterOwner.signMessage(message);
+): Promise<string> {
+  const message = arrayify(getPaymasterHash(userOp))
+  const signature = await paymasterOwner.signMessage(message)
 
   const enc =
     payMasterAddress.toLowerCase() +
     defaultAbiCoder
-      .encode(["address", "uint256", "bytes"], [token, valueOfEth, signature])
-      .substring(2);
-  return enc;
+      .encode(
+        ['address', 'uint256', 'bytes'],
+        [token, valueOfEth, signature]
+      )
+      .substring(2)
+  return enc
 }
 
 export async function getPaymasterAndData(
@@ -223,155 +108,13 @@ export async function getPaymasterAndData(
   usdcToken: string,
   valueOfEth: BigNumberish,
   validUntil: BigNumberish
-) {
-  const sig = await paymasterOwner.signMessage(arrayify(hash));
+): Promise<string> {
+  const sig = await paymasterOwner.signMessage(arrayify(hash))
   const paymasterCalldata = ethers.utils.defaultAbiCoder.encode(
-    ["address", "uint256", "uint256", "bytes"],
-    [usdcToken, valueOfEth, validUntil, sig]
-  );
-  return hexConcat([payMasterAddress, paymasterCalldata]);
-}
-
-export function getWalletCode(
-  implementationAddress: string,
-  walletConfig: WalletConfig
-) {
-  // const ownerAddress = await this.signer.getAddress();
-  const initializeCall = new Interface(
-    SmartWallet__factory.abi
-  ).encodeFunctionData("initialize", [
-    walletConfig.accountOwner,
-    walletConfig.guardians,
-    walletConfig.quota,
-    walletConfig.inheritor,
-  ]);
-  return new WalletProxy__factory().getDeployTransaction(
-    implementationAddress,
-    initializeCall
-  ).data!;
-}
-
-/**
- * calculate wallet address by owner address
- * @param walletLogicAddress the wallet logic contract address
- * @param salt the salt number,default is 0
- * @returns
- */
-export function calculateWalletAddress(
-  walletLogicAddress: string,
-  walletConfig: WalletConfig,
-  salt: BigNumberish,
-  create2Factory: string
-) {
-  const initCodeWithArgs = getWalletCode(walletLogicAddress, walletConfig);
-  const initCodeHash = keccak256(initCodeWithArgs);
-  const walletAddress = getCreate2Address(
-    create2Factory,
-    hexZeroPad(hexlify(salt), 32),
-    initCodeHash
-  );
-  return walletAddress;
-}
-
-export function computeRequiredPreFund(
-  userOp: UserOperation,
-  usePaymaster = false
-) {
-  // get required fund
-  const requiredGas = BigNumber.from(userOp.verificationGasLimit)
-    .mul(usePaymaster ? 3 : 1)
-    .add(userOp.callGasLimit)
-    .add(userOp.preVerificationGas);
-
-  const requiredPrefund = requiredGas.mul(userOp.maxFeePerGas);
-  return requiredPrefund;
-}
-
-export async function activateCreate2WalletOp(
-  walletLogicAddress: string,
-  walletFactory: LoopringCreate2Deployer,
-  walletConfig: WalletConfig,
-  callData?: BytesLike,
-  salt?: BytesLike
-) {
-  salt = salt ?? ethers.utils.randomBytes(32);
-  const walletAddress = calculateWalletAddress(
-    walletLogicAddress,
-    walletConfig,
-    salt,
-    walletFactory.address
-  );
-  let initCode: BytesLike | undefined;
-  const size = await walletFactory?.provider
-    .getCode(walletAddress)
-    .then((x) => x.length);
-  if (size == 2) {
-    const walletInitCodeWithArgs = walletFactory.interface.encodeFunctionData(
-      "deploy",
-      [getWalletCode(walletLogicAddress, walletConfig), salt]
-    );
-    initCode = hexConcat([walletFactory.address, walletInitCodeWithArgs]);
-  }
-  return {
-    sender: walletAddress,
-    initCode,
-    callData: callData ?? "0x",
-    nonce: 0,
-  };
-}
-
-export async function activateWalletOp(
-  walletFactory: WalletFactory,
-  walletConfig: WalletConfig,
-  callData?: BytesLike,
-  _salt?: BigNumberish
-) {
-  // userOperation.paymasterAndData = payMasterAddress;
-  // userOperation.maxFeePerGas = maxFeePerGas;
-  // userOperation.maxPriorityFeePerGas = maxPriorityFeePerGas;
-
-  const salt = _salt ?? ethers.utils.randomBytes(32);
-  const walletLogicAddress = await walletFactory.accountImplementation();
-  const walletAddress = calculateWalletAddress(
-    walletLogicAddress,
-    walletConfig,
-    salt,
-    walletFactory.address
-  );
-  let initCode: BytesLike | undefined;
-  const size = await walletFactory?.provider
-    .getCode(walletAddress)
-    .then((x) => x.length);
-  if (size == 2) {
-    initCode = getAccountInitCode(walletConfig, walletFactory, salt);
-  }
-  return {
-    sender: walletAddress,
-    initCode,
-    callData: callData ?? "0x",
-    nonce: 0,
-  };
-}
-
-export async function createRandomWalletConfig(
-  owner?: string,
-  quota?: number,
-  guardians = []
-) {
-  // const guardians = [];
-
-  if (!guardians.length) {
-    for (let i = 0; i < 3; i++) {
-      guardians.push(await ethers.Wallet.createRandom());
-    }
-  }
-  const walletConfig = {
-    accountOwner: owner ?? (await ethers.Wallet.createRandom().address),
-    guardians: guardians.map((g) => g.address.toLowerCase()).sort(),
-    quota: quota ?? 0,
-    inheritor: await ethers.Wallet.createRandom().address,
-  };
-  return walletConfig;
+    ['address', 'uint48', 'uint256', 'bytes'],
+    [usdcToken, validUntil, valueOfEth, sig]
+  )
+  return hexConcat([payMasterAddress, paymasterCalldata])
 }
 
 /**
@@ -379,297 +122,225 @@ export async function createRandomWalletConfig(
  * usage: entryPoint.simulationResult(..).catch(simulationResultCatch)
  */
 export function simulationResultCatch(e: any): any {
-  if (e.errorName !== "ValidationResult") {
-    throw e;
+  if (e.errorName !== 'ValidationResult') {
+    throw e
   }
-  return e.errorArgs;
+  return e.errorArgs
 }
 
-export function getCallData(
-  tx: Partial<{ to: string; data?: BytesLike; value?: BigNumberish }>
-) {
-  const execFromEntryPoint =
-    SmartWallet__factory.createInterface().encodeFunctionData("callContract", [
-      tx.to,
-      tx.value ?? 0,
-      tx.data ?? "0x",
-      false,
-    ]);
-  return execFromEntryPoint;
-}
-
-export function getBatchCallData(
-  txs: Partial<{ to: string; data?: BytesLike }>[]
-) {
-  const dest = txs.map((tx) => tx.to);
-  const datas = txs.map((tx) => tx.data ?? "0x");
-  return SmartWallet__factory.createInterface().encodeFunctionData(
-    "selfBatchCall",
-    [datas]
-  );
-}
-
-export async function createTransaction(
-  transaction: Deferrable<TransactionRequest>,
-  ethersProvider: BaseProvider,
-  wallet: SmartWallet,
-  initCode?: BytesLike
-) {
-  const tx: TransactionRequest = await resolveProperties(transaction);
-
-  const execFromEntryPoint = await wallet.populateTransaction.callContract(
-    tx.to!,
-    tx.value ?? 0,
-    tx.data ?? "0x",
-    false
-  );
-
-  let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = tx;
-  // gasPrice is legacy, and overrides eip1559 values:
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  if (gasPrice) {
-    maxPriorityFeePerGas = gasPrice;
-    maxFeePerGas = gasPrice;
-  }
-  return {
-    sender: wallet.address,
-    initCode,
-    nonce: initCode == null ? tx.nonce : 100, // TODO fix it
-    callData: execFromEntryPoint.data!,
-    callGasLimit: execFromEntryPoint.gasLimit,
-    maxPriorityFeePerGas,
-    maxFeePerGas,
-  };
-}
-
-export async function createBatchTransactions(
-  transactions: Deferrable<TransactionRequest>[],
-  ethersProvider: BaseProvider,
-  wallet: SmartWalletV3,
-  useExecuteApi: boolean,
-  initCode?: BytesLike
-) {
-  const txs: TransactionRequest[] = await Promise.all(
-    transactions.map((tx) => resolveProperties(tx))
-  );
-
-  let execFromEntryPoint;
-  if (txs.length == 1) {
-    const tx = txs[0];
-    if (useExecuteApi) {
-      execFromEntryPoint = await wallet.populateTransaction.callContract(
-        tx.to!,
-        tx.value ?? 0,
-        tx.data ?? "0x",
-        false
-      );
-    } else {
-      execFromEntryPoint = tx;
-    }
-  } else {
-    let datas = txs.map((tx) => tx.data ?? "0x");
-
-    if (useExecuteApi) {
-      const wrappedTxs = await Promise.all(
-        txs.map((tx) =>
-          wallet.populateTransaction.callContract(
-            tx.to,
-            tx.value ?? 0,
-            tx.data ?? "0x",
-            false
-          )
-        )
-      );
-      datas = wrappedTxs.map((wtx) => wtx.data);
-    } else {
-      datas = txs.map((tx) => tx.data ?? "0x");
-    }
-    execFromEntryPoint = await wallet.populateTransaction.selfBatchCall(datas);
-  }
-
-  let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } = execFromEntryPoint;
-  // gasPrice is legacy, and overrides eip1559 values:
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  if (gasPrice) {
-    maxPriorityFeePerGas = gasPrice;
-    maxFeePerGas = gasPrice;
-  }
-  const nonce = await wallet.nonce();
-  return {
-    sender: wallet.address,
-    initCode,
-    // increase nonce
-    nonce: nonce.add(1),
-    callData: execFromEntryPoint.data!,
-    callGasLimit: execFromEntryPoint.gasLimit,
-    maxPriorityFeePerGas,
-    maxFeePerGas,
-  };
-}
-
-export async function evInfo(entryPoint: EntryPoint, rcpt: TransactionReceipt) {
+export async function evInfo(
+  entryPoint: EntryPoint,
+  rcpt: TransactionReceipt
+): Promise<
+  Array<{
+    nonce: BigNumber
+    gasUsed: BigNumber
+    actualGasCost: BigNumber
+    actualGasUsed: BigNumber
+  }>
+> {
   // TODO: checking only latest block...
-  const block = rcpt.blockNumber;
+  const block = rcpt.blockNumber
   const ev = await entryPoint.queryFilter(
     entryPoint.filters.UserOperationEvent(),
     block
-  );
+  )
   // if (ev.length === 0) return {}
   return ev.map((event) => {
-    const { nonce, actualGasUsed, actualGasCost } = event.args;
+    const { nonce, actualGasUsed, actualGasCost } = event.args
     return {
       nonce,
       gasUsed: rcpt.gasUsed,
       actualGasUsed,
-      actualGasCost,
-    };
-  });
+      actualGasCost
+    }
+  })
 }
 
 export async function evRevertInfo(
   entryPoint: EntryPoint,
   rcpt: TransactionReceipt
-) {
+): Promise<
+  Array<{
+    nonce: BigNumber
+    gasUsed: BigNumber
+    revertReason: string
+  }>
+> {
   // TODO: checking only latest block...
-  const block = rcpt.blockNumber;
+  const block = rcpt.blockNumber
   const ev = await entryPoint.queryFilter(
     entryPoint.filters.UserOperationRevertReason(),
     block
-  );
+  )
   // if (ev.length === 0) return {}
   return ev.map((event) => {
-    const { nonce, revertReason } = event.args;
+    const { nonce, revertReason } = event.args
     return {
       nonce,
       gasUsed: rcpt.gasUsed,
-      revertReason,
-    };
-  });
+      revertReason
+    }
+  })
 }
 
-export async function create2Deploy(
-  deployFactory: LoopringCreate2Deployer,
-  contractName: string,
-  args?: any[],
-  libs?: Map<string, any>
-) {
-  // use same salt for all deployments:
-  const salt = ethers.utils.formatBytes32String("0x5");
+export function computeRequiredPreFund(
+  userOp: UserOperation,
+  usePaymaster = false
+): BigNumber {
+  // get required fund
+  const requiredGas = BigNumber.from(userOp.verificationGasLimit)
+    .mul(usePaymaster ? 3 : 1)
+    .add(userOp.callGasLimit)
+    .add(userOp.preVerificationGas)
 
-  const libraries = {}; // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
-  libs && libs.forEach((value, key) => (libraries[key] = value));
-
-  const contract = await ethers.getContractFactory(contractName, { libraries });
-
-  let deployableCode = contract.bytecode;
-  if (args && args.length > 0) {
-    deployableCode = ethers.utils.hexConcat([
-      deployableCode,
-      contract.interface.encodeDeploy(args),
-    ]);
-  }
-
-  const deployedAddress = ethers.utils.getCreate2Address(
-    deployFactory.address,
-    salt,
-    ethers.utils.keccak256(deployableCode)
-  );
-  // check if it is deployed already
-  if ((await ethers.provider.getCode(deployedAddress)) != "0x") {
-  } else {
-    const gasLimit = await deployFactory.estimateGas.deploy(
-      deployableCode,
-      salt
-    );
-    const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit });
-    await tx.wait();
-  }
-
-  return contract.attach(deployedAddress);
+  const requiredPrefund = requiredGas.mul(userOp.maxFeePerGas)
+  return requiredPrefund
 }
 
 export async function deploySingle(
-  deployFactory: LoopringCreate2Deployer,
+  deployFactory: Contract,
   contractName: string,
   args?: any[],
-  libs?: Map<string, any>
-) {
+  libs?: Map<string, any>,
+  verifiedContract?: string
+): Promise<Contract> {
   // use same salt for all deployments:
-  const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+  const salt = ethers.utils.formatBytes32String('0x5')
 
-  const libraries = {}; // libs ? Object.fromEntries(libs) : {}; // requires lib: ["es2019"]
-  libs && libs.forEach((value, key) => (libraries[key] = value));
+  const libraries: Record<string, string> = {}
+  libs?.forEach((value, key) => (libraries[key] = value))
 
-  const contract = await ethers.getContractFactory(contractName, { libraries });
+  const contract = await ethers.getContractFactory(contractName, {
+    libraries
+  })
 
-  let deployableCode = contract.bytecode;
-  if (args && args.length > 0) {
+  let deployableCode = contract.bytecode
+  if (args != null && args.length > 0) {
     deployableCode = ethers.utils.hexConcat([
       deployableCode,
-      contract.interface.encodeDeploy(args),
-    ]);
+      contract.interface.encodeDeploy(args)
+    ])
   }
 
   const deployedAddress = ethers.utils.getCreate2Address(
     deployFactory.address,
     salt,
     ethers.utils.keccak256(deployableCode)
-  );
-  const gasLimit = await deployFactory.estimateGas.deploy(deployableCode, salt);
-  const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit });
-  await tx.wait();
+  )
+  const forTest = hre.network.name === 'hardhat'
+  // check if it is deployed already
+  if ((await ethers.provider.getCode(deployedAddress)) === '0x') {
+    const gasLimit = await deployFactory.estimateGas.deploy(
+      deployableCode,
+      salt
+    )
+    const tx = await deployFactory.deploy(deployableCode, salt, {
+      gasLimit
+    })
+    await tx.wait()
+    if (!forTest) {
+      console.log(contractName, 'deployed address: ', deployedAddress)
+    }
+  } else {
+    if (!forTest) {
+      console.log(
+        contractName,
+        ' is deployed already at: ',
+        deployedAddress
+      )
+    }
 
-  return contract.attach(deployedAddress);
+    // NOTE(may throw error when contract code verification too quickly.)
+    // so only verify contract after it is deployed already for several minutes
+    if (
+      hre.network.name === 'goerli' ||
+      hre.network.name === 'sepolia' ||
+      hre.network.name === 'ethereum'
+    ) {
+      await hre.run('verify:verify', {
+        contract: verifiedContract,
+        address: deployedAddress,
+        constructorArguments: args,
+        libraries
+      })
+    }
+  }
+
+  return contract.attach(deployedAddress)
 }
 
 export async function deployWalletImpl(
   deployFactory: LoopringCreate2Deployer,
   entryPointAddr: string,
   blankOwner: string,
-  priceOracleAddr = ethers.constants.AddressZero
-) {
-  const ERC1271Lib = await deploySingle(deployFactory, "ERC1271Lib");
-  const ERC20Lib = await deploySingle(deployFactory, "ERC20Lib");
-  const GuardianLib = await deploySingle(deployFactory, "GuardianLib");
+  priceOracleAddr = ethers.constants.AddressZero,
+  connectorRegistryAddr = ethers.constants.AddressZero
+): Promise<Contract> {
+  const ERC1271Lib = await deploySingle(deployFactory, 'ERC1271Lib')
+  const ERC20Lib = await deploySingle(deployFactory, 'ERC20Lib')
+  const GuardianLib = await deploySingle(deployFactory, 'GuardianLib')
   const InheritanceLib = await deploySingle(
     deployFactory,
-    "InheritanceLib",
+    'InheritanceLib',
     undefined,
-    new Map([["GuardianLib", GuardianLib.address]])
-  );
-  const QuotaLib = await deploySingle(deployFactory, "QuotaLib");
-  const UpgradeLib = await deploySingle(deployFactory, "UpgradeLib");
-  const WhitelistLib = await deploySingle(deployFactory, "WhitelistLib");
+    new Map([['GuardianLib', GuardianLib.address]])
+  )
+  const QuotaLib = await deploySingle(deployFactory, 'QuotaLib')
+  const UpgradeLib = await deploySingle(deployFactory, 'UpgradeLib')
+  const WhitelistLib = await deploySingle(
+    deployFactory,
+    'WhitelistLib'
+  )
   const LockLib = await deploySingle(
     deployFactory,
-    "LockLib",
+    'LockLib',
     undefined,
-    new Map([["GuardianLib", GuardianLib.address]])
-  );
+    new Map([['GuardianLib', GuardianLib.address]])
+  )
   const RecoverLib = await deploySingle(
     deployFactory,
-    "RecoverLib",
+    'RecoverLib',
     undefined,
-    new Map([["GuardianLib", GuardianLib.address]])
-  );
+    new Map([['GuardianLib', GuardianLib.address]])
+  )
+  const ApprovalLib = await deploySingle(
+    deployFactory,
+    'ApprovalLib',
+    undefined,
+    new Map([
+      ['ERC20Lib', ERC20Lib.address],
+      ['GuardianLib', GuardianLib.address],
+      ['LockLib', LockLib.address],
+      ['RecoverLib', RecoverLib.address],
+      ['UpgradeLib', UpgradeLib.address],
+      ['WhitelistLib', WhitelistLib.address]
+    ])
+  )
 
   const smartWallet = await deploySingle(
     deployFactory,
-    "SmartWalletV3",
-    [priceOracleAddr, blankOwner, entryPointAddr],
+    'SmartWalletV3',
+    [
+      priceOracleAddr,
+      blankOwner,
+      entryPointAddr,
+      connectorRegistryAddr
+    ],
     new Map([
-      ["ERC1271Lib", ERC1271Lib.address],
-      ["ERC20Lib", ERC20Lib.address],
-      ["GuardianLib", GuardianLib.address],
-      ["InheritanceLib", InheritanceLib.address],
-      ["LockLib", LockLib.address],
-      ["QuotaLib", QuotaLib.address],
-      ["RecoverLib", RecoverLib.address],
-      ["UpgradeLib", UpgradeLib.address],
-      ["WhitelistLib", WhitelistLib.address],
+      ['ERC1271Lib', ERC1271Lib.address],
+      ['ERC20Lib', ERC20Lib.address],
+      ['GuardianLib', GuardianLib.address],
+      ['InheritanceLib', InheritanceLib.address],
+      ['LockLib', LockLib.address],
+      ['QuotaLib', QuotaLib.address],
+      ['RecoverLib', RecoverLib.address],
+      ['UpgradeLib', UpgradeLib.address],
+      ['WhitelistLib', WhitelistLib.address],
+      ['ApprovalLib', ApprovalLib.address]
     ])
-  );
-  return smartWallet;
+  )
+  return smartWallet
 }
 
 export async function createSmartWallet(
@@ -677,24 +348,22 @@ export async function createSmartWallet(
   guardians: string[],
   walletFactory: WalletFactory,
   salt: string
-) {
-  const feeRecipient = ethers.constants.AddressZero;
-  const { chainId } = await ethers.provider.getNetwork();
+): Promise<ContractReceipt> {
+  const feeRecipient = ethers.constants.AddressZero
+  const { chainId } = await ethers.provider.getNetwork()
   // create smart wallet
-  const signature = signCreateWallet(
+  const signature = await signCreateWallet(
     walletFactory.address,
-    owner.address,
+    owner,
     guardians,
-    new BN(0),
+    BigNumber.from(0),
     ethers.constants.AddressZero,
     feeRecipient,
     ethers.constants.AddressZero,
-    new BN(0),
+    BigNumber.from(0),
     salt,
-    owner.privateKey.slice(2),
     chainId
-  );
-  // console.log("signature:", signature);
+  )
 
   const walletConfig: any = {
     owner: owner.address,
@@ -705,68 +374,62 @@ export async function createSmartWallet(
     feeToken: ethers.constants.AddressZero,
     maxFeeAmount: 0,
     salt,
-    signature: Buffer.from(signature.txSignature.slice(2), "hex"),
-  };
+    signature
+  }
 
-  const tx = await walletFactory.createWallet(walletConfig, 0);
-  return tx.wait();
+  const tx = await walletFactory.createWallet(walletConfig, 0)
+  return tx.wait()
 }
 
 export interface PaymasterOption {
-  paymaster: VerifyingPaymaster;
-  payToken: Contract;
-  paymasterOwner: Signer;
-  valueOfEth: BigNumberish;
-  validUntil: BigNumberish;
+  paymaster: LoopringPaymaster
+  payToken: Contract
+  paymasterOwner: Signer
+  valueOfEth: BigNumberish
+  validUntil: BigNumberish
 }
 
-async function getEthBalance(smartWallet: SmartWalletV3) {
-  const ethBalance = await ethers.provider.getBalance(smartWallet.address);
-  const depositBalance = await smartWallet.getDeposit();
-  const totalBalance = ethBalance.add(depositBalance);
-  return totalBalance;
-}
-
-export async function sendTx(
-  txs: Deferrable<TransactionRequest>[],
+export async function generateSignedUserOp(
+  txs: Array<Deferrable<TransactionRequest>>,
   smartWallet: SmartWalletV3,
   smartWalletOwner: Signer,
   contractFactory: Contract,
   entrypoint: EntryPoint,
-  sendUserOp: SendUserOp,
   paymasterOption?: PaymasterOption,
   useExecuteApi = true
-) {
+): Promise<UserOperation> {
   const ethSent = txs.reduce(
     (acc, tx) => acc.add(BigNumber.from(tx.value ?? 0)),
     BigNumber.from(0)
-  );
+  )
   const partialUserOp = await createBatchTransactions(
     txs,
     ethers.provider,
     smartWallet,
-    useExecuteApi
-  );
+    useExecuteApi // wrap raw calldata with callcontract api
+  )
   // first call to fill userop
   let signedUserOp = await fillAndSign(
     partialUserOp,
     smartWalletOwner,
     contractFactory.address,
     entrypoint
-  );
+  )
 
   // handle paymaster
-  if (paymasterOption) {
-    const paymaster = paymasterOption.paymaster;
-    const payToken = paymasterOption.payToken;
-    const valueOfEth = paymasterOption.valueOfEth;
-    const validUntil = paymasterOption.validUntil;
-    const packedData = ethers.utils.solidityPack(
-      ["address", "uint256", "uint256"],
-      [payToken.address, valueOfEth, validUntil]
-    );
+  if (paymasterOption != null) {
+    const paymaster = paymasterOption.paymaster
+    const payToken = paymasterOption.payToken
+    const valueOfEth = paymasterOption.valueOfEth
+    const validUntil = paymasterOption.validUntil
 
-    const hash = await paymaster.getHash(signedUserOp, packedData);
+    const hash = await paymaster.getHash(
+      signedUserOp,
+      ethers.utils.solidityKeccak256(
+        ['address', 'uint48', 'uint256'],
+        [payToken.address, validUntil, valueOfEth]
+      )
+    )
 
     const paymasterAndData = await getPaymasterAndData(
       paymaster.address,
@@ -775,72 +438,188 @@ export async function sendTx(
       payToken.address,
       valueOfEth,
       validUntil
-    );
-    signedUserOp.paymasterAndData = paymasterAndData;
+    )
+    signedUserOp.paymasterAndData = paymasterAndData
     signedUserOp = await fillAndSign(
       signedUserOp,
       smartWalletOwner,
       contractFactory.address,
       entrypoint
-    );
+    )
   }
 
-  return await sendUserOp(signedUserOp);
+  // prepare gas before send userop
+  const requiredPrefund = computeRequiredPreFund(
+    signedUserOp,
+    paymasterOption !== undefined
+  ).add(ethSent)
+  // only consider deposited balance in entrypoint contract when using paymaster
+  const currentBalance =
+    paymasterOption != null
+      ? await entrypoint.balanceOf(paymasterOption.paymaster.address)
+      : await getEthBalance(smartWallet)
+
+  if (requiredPrefund.gt(currentBalance)) {
+    const missingValue = requiredPrefund.sub(currentBalance)
+    const payer =
+      paymasterOption != null
+        ? paymasterOption.paymaster.address
+        : smartWallet.address
+    await (
+      await entrypoint.depositTo(payer, {
+        value: missingValue
+      })
+    ).wait()
+  }
+  return signedUserOp
 }
 
-export function sortSignersAndSignatures(
-  signers: string[],
-  signatures: Buffer[]
-) {
-  const sigMap = new Map();
-  signers.forEach(function (signer, i) {
-    sigMap.set(signer, signatures[i]);
-  });
+export async function sendTx(
+  txs: Array<Deferrable<TransactionRequest>>,
+  smartWallet: SmartWalletV3,
+  smartWalletOwner: Signer,
+  contractFactory: Contract,
+  entrypoint: EntryPoint,
+  sendUserOp: SendUserOp,
+  paymasterOption?: PaymasterOption,
+  useExecuteApi = true
+): Promise<ContractReceipt> {
+  const signedUserOp = await generateSignedUserOp(
+    txs,
+    smartWallet,
+    smartWalletOwner,
+    contractFactory,
+    entrypoint,
+    paymasterOption,
+    useExecuteApi
+  )
 
-  const sortedSigners = signers.sort((a, b) => {
-    const numA = parseInt(a.slice(2, 10), 16);
-    const numB = parseInt(b.slice(2, 10), 16);
-    return numA - numB;
-  });
-  const sortedSignatures = sortedSigners.map((s) => sigMap.get(s));
-  return { sortedSigners, sortedSignatures };
+  // get details if throw error
+  await entrypoint.callStatic
+    .simulateValidation(signedUserOp)
+    .catch(simulationResultCatch)
+  const receipt = await sendUserOp(signedUserOp)
+  return receipt
 }
 
+export async function createBatchTransactions(
+  transactions: Array<Deferrable<TransactionRequest>>,
+  ethersProvider: BaseProvider,
+  wallet: SmartWalletV3,
+  useExecuteApi: boolean,
+  initCode?: BytesLike
+): Promise<Partial<UserOperation>> {
+  const txs: TransactionRequest[] = await Promise.all(
+    transactions.map(async (tx) => resolveProperties(tx))
+  )
+
+  let execFromEntryPoint
+  if (txs.length === 1) {
+    const tx = txs[0]
+    if (useExecuteApi) {
+      execFromEntryPoint =
+        await wallet.populateTransaction.callContract(
+          tx.to!,
+          tx.value ?? 0,
+          tx.data ?? '0x',
+          false
+        )
+    } else {
+      execFromEntryPoint = tx
+    }
+  } else {
+    let datas: BytesLike[] = txs.map((tx) => tx.data ?? '0x')
+
+    if (useExecuteApi) {
+      const wrappedTxs = await Promise.all(
+        txs.map(async (tx) =>
+          wallet.populateTransaction.callContract(
+            tx.to!,
+            tx.value ?? 0,
+            tx.data ?? '0x',
+            false
+          )
+        )
+      )
+      datas = wrappedTxs.map((wtx) => wtx.data!)
+    } else {
+      datas = txs.map((tx) => tx.data ?? '0x')
+    }
+    execFromEntryPoint =
+      await wallet.populateTransaction.selfBatchCall(datas)
+  }
+
+  let { gasPrice, maxPriorityFeePerGas, maxFeePerGas } =
+    execFromEntryPoint
+  // gasPrice is legacy, and overrides eip1559 values:
+
+  if (gasPrice !== undefined) {
+    maxPriorityFeePerGas = gasPrice
+    maxFeePerGas = gasPrice
+  }
+  const nonce = await wallet.getNonce()
+  return {
+    sender: wallet.address,
+    initCode,
+    nonce,
+    callData: execFromEntryPoint.data!,
+    callGasLimit: execFromEntryPoint.gasLimit,
+    maxPriorityFeePerGas,
+    maxFeePerGas
+  }
+}
+
+async function getEthBalance(
+  smartWallet: SmartWalletV3
+): Promise<BigNumber> {
+  const ethBalance = await ethers.provider.getBalance(
+    smartWallet.address
+  )
+  const depositBalance = await smartWallet.getDeposit()
+  const totalBalance = ethBalance.add(depositBalance)
+  return totalBalance
+}
+
+// eslint-disable-next-line
 export function getErrorMessage(revertReason: string) {
   return ethers.utils.defaultAbiCoder.decode(
-    ["string"],
-    "0x" + revertReason.slice(10)
-  )[0];
+    ['string'],
+    '0x' + revertReason.slice(10)
+  )[0]
 }
 
-export async function getBlockTimestamp(blockNumber: number) {
-  const block = await ethers.provider.getBlock(blockNumber);
-  return block.timestamp;
+export async function getBlockTimestamp(
+  blockNumber: number
+): Promise<number> {
+  const block = await ethers.provider.getBlock(blockNumber)
+  return block.timestamp
 }
 
-export async function getCurrentQuota(quotaInfo: any, blockNumber: number) {
-  const blockTime = await getBlockTimestamp(blockNumber);
-  const pendingUntil = quotaInfo.pendingUntil.toNumber();
+export async function getCurrentQuota(
+  quotaInfo: any,
+  blockNumber: number
+): Promise<number> {
+  const blockTime = await getBlockTimestamp(blockNumber)
+  const pendingUntil = quotaInfo.pendingUntil.toNumber()
 
   return pendingUntil <= blockTime
     ? quotaInfo.pendingQuota
-    : quotaInfo.currentQuota;
+    : quotaInfo.currentQuota
 }
 
 export async function getFirstEvent(
   contract: Contract,
   fromBlock: number,
   eventName: string
-) {
+): Promise<Event> {
   const events = await contract.queryFilter(
     { address: contract.address },
     fromBlock
-  );
-  // console.log("events:", events);
+  )
 
   for (const e of events) {
-    if (e.event === eventName) return e;
+    if (e.event === eventName) return e
   }
 
-  return undefined;
+  throw new Error()
 }

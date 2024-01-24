@@ -40,6 +40,7 @@ contract DelayedImplementationManager is Ownable {
             nextImpl = address(0);
         } else {
             require(_daysToDelay >= 1, "INVALID_DAYS");
+            // solhint-disable-next-line not-rely-on-time
             uint _nextEffectiveTime = block.timestamp + _daysToDelay * 1 days;
             nextImpl = _nextImpl;
             nextEffectiveTime = _nextEffectiveTime;
@@ -52,6 +53,7 @@ contract DelayedImplementationManager is Ownable {
      */
     function executeUpgrade() public {
         require(
+            // solhint-disable-next-line not-rely-on-time
             nextImpl != address(0) && block.timestamp >= nextEffectiveTime,
             "NOT_IN_EFFECT"
         );

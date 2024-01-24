@@ -5,26 +5,27 @@ pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "../../iface/PriceOracle.sol";
-import "../../lib/MathUint.sol";
-import "../../thirdparty/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
+import "../../lib/LoopringErrors.sol";
 
 /// @title QuotaLib
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
 library QuotaLib {
-    using MathUint for uint;
     using SafeCast for uint;
+    using SafeMath for uint;
 
     uint128 public constant MAX_QUOTA = type(uint128).max;
     uint public constant QUOTA_PENDING_PERIOD = 1 days;
-    SigRequirement public constant sigRequirement =
+    SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
     bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
         keccak256(
-            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
+            "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota,bytes32 salt)"
         );
 
     event QuotaScheduled(
@@ -59,7 +60,7 @@ library QuotaLib {
                 );
 
             if (value > 0) {
-                require(available >= value, "QUOTA_EXCEEDED");
+                _require(available >= value, Errors.QUOTA_EXCEEDED);
                 _addToSpent(wallet, q, value);
             }
         }
@@ -71,7 +72,7 @@ library QuotaLib {
         uint newQuota,
         uint effectiveTime
     ) internal {
-        require(newQuota <= MAX_QUOTA, "INVALID_VALUE");
+        _require(newQuota <= MAX_QUOTA, Errors.INVALID_QUOTA);
         if (newQuota == MAX_QUOTA) {
             newQuota = 0;
         }
@@ -178,7 +179,8 @@ library QuotaLib {
     function encodeApprovalForChangeDailyQuota(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil
+        uint256 validUntil,
+        bytes32 salt
     ) internal view returns (bytes32) {
         uint256 newQuota = abi.decode(data, (uint));
         bytes32 approvedHash = EIP712.hashPacked(
@@ -188,7 +190,8 @@ library QuotaLib {
                     CHANGE_DAILY_QUOTE_TYPEHASH,
                     address(this),
                     validUntil,
-                    newQuota
+                    newQuota,
+                    salt
                 )
             )
         );

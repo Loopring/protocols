@@ -4,13 +4,12 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
-import "../iface/IEntryPoint.sol";
-import "../core/BaseAccount.sol";
+import "../account-abstraction/interfaces/IEntryPoint.sol";
+import "../account-abstraction/core/BaseAccount.sol";
 
 import "../lib/EIP712.sol";
-import "../lib/ERC20.sol";
 import "../lib/ERC1271.sol";
-import "../lib/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../thirdparty/erc165/IERC165.sol";
 import "../thirdparty/erc1155/ERC1155Holder.sol";
 import "../thirdparty/erc721/ERC721Holder.sol";
@@ -25,6 +24,7 @@ import "./libwallet/WhitelistLib.sol";
 import "./libwallet/QuotaLib.sol";
 import "./libwallet/RecoverLib.sol";
 import "./libwallet/UpgradeLib.sol";
+import "../lib/LoopringErrors.sol";
 
 /// @title SmartWallet
 /// @dev Main smart wallet contract
@@ -46,11 +46,13 @@ abstract contract SmartWallet is
     using QuotaLib for Wallet;
     using RecoverLib for Wallet;
     using UpgradeLib for Wallet;
+    using AutomationLib for Wallet;
 
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable domainSeparator;
     PriceOracle public immutable priceOracle;
     address public immutable blankOwner;
     IEntryPoint internal immutable _entryPoint;
+    address internal immutable connectorRegistry;
 
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
@@ -67,34 +69,37 @@ abstract contract SmartWallet is
     /// @dev We need to make sure the implemenation contract cannot be initialized
     ///      and used to do delegate calls to arbitrary contracts.
     modifier disableInImplementationContract() {
-        require(
+        _require(
             !isImplementationContract,
-            "DISALLOWED_ON_IMPLEMENTATION_CONTRACT"
+            Errors.DISALLOWED_ON_IMPLEMENTATION_CONTRACT
         );
         _;
     }
 
     modifier canTransferOwnership() {
-        require(
+        _require(
             msg.sender == blankOwner && wallet.owner == blankOwner,
-            "NOT_ALLOWED_TO_SET_OWNER"
+            Errors.NOT_ALLOWED_TO_SET_OWNER
         );
         _;
     }
 
     modifier onlyFromEntryPoint() {
-        require(msg.sender == address(entryPoint()), "account: not EntryPoint");
+        _require(
+            msg.sender == address(entryPoint()),
+            Errors.ONLY_FROM_ENTRYPOINT
+        );
         wallet.touchLastActiveWhenRequired();
         _;
     }
 
     // Require the function call went through EntryPoint or wallet self or owner
     modifier onlyFromEntryPointOrWalletOrOwnerWhenUnlocked() {
-        require(
+        _require(
             msg.sender == address(this) ||
                 ((msg.sender == address(entryPoint()) ||
                     msg.sender == wallet.owner) && !wallet.locked),
-            "account: not Owner, Self or EntryPoint or it is locked"
+            Errors.NOT_OWNER_SELF_OR_ENTRYPOINT_OR_LOCKED
         );
         wallet.touchLastActiveWhenRequired();
         _;
@@ -108,20 +113,17 @@ abstract contract SmartWallet is
         return _entryPoint;
     }
 
-    /// @inheritdoc BaseAccount
-    function nonce() public view virtual override returns (uint256) {
-        return wallet.nonce;
-    }
-
     constructor(
         PriceOracle _priceOracle,
         address _blankOwner,
-        IEntryPoint entryPointInput
+        IEntryPoint entryPointInput,
+        address _connectorRegistry
     ) {
         isImplementationContract = true;
         _entryPoint = entryPointInput;
+        connectorRegistry = _connectorRegistry;
 
-        DOMAIN_SEPARATOR = EIP712.hash(
+        domainSeparator = EIP712.hash(
             EIP712.Domain("LoopringWallet", "2.0.0", address(this))
         );
 
@@ -144,8 +146,8 @@ abstract contract SmartWallet is
         address feeToken,
         uint feeAmount
     ) external override disableInImplementationContract {
-        require(wallet.owner == address(0), "INITIALIZED_ALREADY");
-        require(owner != address(0), "INVALID_OWNER");
+        _require(wallet.owner == address(0), Errors.INITIALIZED_ALREADY);
+        _require(owner != address(0), Errors.INVALID_OWNER);
 
         wallet.owner = owner;
         wallet.creationTimestamp = uint64(block.timestamp);
@@ -179,7 +181,7 @@ abstract contract SmartWallet is
     // Owner
     //
     function transferOwnership(address _owner) external canTransferOwnership {
-        require(_owner != address(0), "INVALID_OWNER");
+        _require(_owner != address(0), Errors.INVALID_OWNER);
         wallet.owner = _owner;
     }
 
@@ -214,8 +216,11 @@ abstract contract SmartWallet is
     function changeEntryPoint(
         address newEntryPoint
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        require(newEntryPoint != address(0), "INVALID ENTRYPOINT");
-        require(address(entryPoint()) != newEntryPoint, "SAME ENTRYPOINT");
+        _require(newEntryPoint != address(0), Errors.ZERO_ADDRESS);
+        _require(
+            address(entryPoint()) != newEntryPoint,
+            Errors.INVALID_SAME_ENTRYPOINT
+        );
         wallet.entryPoint = newEntryPoint;
     }
 
@@ -284,10 +289,10 @@ abstract contract SmartWallet is
         address[] calldata newGuardians
     ) external {
         // allow inherit from inheritor or entrypoint
-        require(
+        _require(
             msg.sender == address(entryPoint()) ||
                 msg.sender == wallet.inheritor,
-            "account: not EntryPoint or inheritor"
+            Errors.NOT_ENTRYPOINT_OR_INHERITOR
         );
         wallet.inherit(newOwner, newGuardians);
     }
@@ -476,5 +481,40 @@ abstract contract SmartWallet is
             interfaceId == type(IERC165).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
+    function isExecutorOrOwner(address executor) external view returns (bool) {
+        return AutomationLib.isExecutorOrOwner(wallet, executor);
+    }
+
+    function approveExecutor(
+        address executor,
+        uint256 validUntil
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        return AutomationLib.approveExecutor(wallet, executor, validUntil);
+    }
+
+    function unApproveExecutor(
+        address executor
+    ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        return AutomationLib.unApproveExecutor(wallet, executor);
+    }
+
+    function castFromEntryPoint(
+        address[] calldata targets,
+        bytes[] calldata datas
+    ) external onlyFromEntryPoint {
+        AutomationLib.cast(connectorRegistry, targets, datas);
+    }
+
+    function castFromExecutor(
+        address[] calldata targets,
+        bytes[] calldata datas
+    ) external {
+        _require(
+            AutomationLib.isExecutorOrOwner(wallet, msg.sender),
+            Errors.NOT_EXECUTOR
+        );
+        AutomationLib.cast(connectorRegistry, targets, datas);
     }
 }

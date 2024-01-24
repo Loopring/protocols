@@ -1,156 +1,93 @@
-import { HardhatUserConfig } from "hardhat/types";
-import { task } from "hardhat/config";
+import '@nomicfoundation/hardhat-chai-matchers'
+import '@nomiclabs/hardhat-ethers'
+import '@typechain/hardhat'
+import 'hardhat-gas-reporter'
+import 'solidity-coverage'
+import { type HardhatUserConfig } from 'hardhat/config'
+import '@nomicfoundation/hardhat-verify'
 
-import * as dotenv from "dotenv";
+import * as dotenv from 'dotenv'
 
-dotenv.config();
+dotenv.config()
 
-import "hardhat-gas-reporter";
-import "@nomicfoundation/hardhat-toolbox";
+const privateKey = process.env.PRIVATE_KEY as string
 
-task("accounts", "Prints the list of accounts", async (args, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(await account.address);
-  }
-});
-
-function loadTestAccounts() {
-  const fs = require("fs");
-  const accountKeys = JSON.parse(
-    fs.readFileSync("./test_account_keys.json", "ascii")
-  ).private_keys;
-  const accounts = [];
-  for (const addr in accountKeys) {
-    accounts.push({
-      privateKey: accountKeys[addr],
-      balance: "1" + "0".repeat(24),
-    });
-  }
-
-  return accounts;
-}
-
-export default {
-  defaultNetwork: "hardhat",
+const config: HardhatUserConfig = {
+  defaultNetwork: 'hardhat',
   networks: {
     hardhat: {
-      accounts: loadTestAccounts(),
-    },
-
-    optimistic: {
-      chainId: 420,
-      url: "http://127.0.0.1:8545",
-      gas: 6700000,
-      accounts: {
-        mnemonic: "test test test test test test test test test test test junk",
-      },
+      forking:
+        process.env.FORK != null
+          ? {
+              // url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+              url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03',
+              blockNumber: 18482580
+            }
+          : undefined
     },
     ethereum: {
-      chainId: 1,
-      url: "https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03",
-    },
-
-    // HttpNetworkConfig
-    ganache: {
-      chainId: 31337,
-      url: "http://localhost:8545",
-      gas: "auto",
-      gasPrice: "auto",
-      gasMultiplier: 1,
-      timeout: 20000,
-      httpHeaders: undefined,
-      accounts: loadTestAccounts().map((item) => item.privateKey),
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [privateKey]
     },
 
     goerli: {
-      chainId: 5,
-      url: "https://goerli.infura.io/v3/b7c22d73c16e4c0ea3f88dadbdffbe03",
-      accounts: [process.env.PRIVATE_KEY],
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [privateKey]
     },
 
     taiko: {
-      url: "https://l2rpc.hackathon.taiko.xyz",
-      accounts: [process.env.PRIVATE_KEY],
+      url: 'https://l2rpc.hackathon.taiko.xyz',
+      accounts: [privateKey]
     },
     taiko2: {
-      url: "https://l2rpc.a2.taiko.xyz/",
-      accounts: [process.env.PRIVATE_KEY],
+      url: 'https://l2rpc.a2.taiko.xyz/',
+      accounts: [privateKey]
     },
     taiko6: {
-      url: "https://rpc.katla.taiko.xyz/",
+      url: 'https://rpc.katla.taiko.xyz/',
       accounts: [process.env.PRIVATE_KEY],
-      gasPrice: 2000000000,
+      gasPrice: 2000000000
     },
     sepolia: {
-      chainId: 11155111,
-      url: "https://eth-sepolia.g.alchemy.com/v2/SNFvRbyJF_p1iea94S-Piy5fqNhALSVB",
-      accounts: [process.env.PRIVATE_KEY],
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [privateKey]
     },
 
     bsctestnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      chainId: 97,
-      gasPrice: 20000000000,
-      accounts: loadTestAccounts().map((item) => item.privateKey),
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      accounts: [privateKey]
     },
 
     arbitrum_test: {
-      chainId: 421611,
-      url: "https://rinkeby.arbitrum.io/rpc",
-      gas: "auto",
-      gasPrice: "auto",
-      gasMultiplier: 1,
-      timeout: 60000,
-      httpHeaders: undefined,
-      accounts: loadTestAccounts()
-        .map((item) => item.privateKey)
-        .slice(),
+      url: 'https://rinkeby.arbitrum.io/rpc',
+      accounts: [privateKey]
     },
 
     arbitrum_one: {
-      chainId: 42161,
-      url: "https://arb1.arbitrum.io/rpc",
-      gas: "auto",
-      gasPrice: "auto",
-      gasMultiplier: 1,
-      timeout: 20000,
-      httpHeaders: undefined,
-      accounts: [],
-    },
+      url: 'https://arb1.arbitrum.io/rpc',
+      accounts: [privateKey]
+    }
   },
 
   solidity: {
-    compilers: [
-      {
-        version: "0.7.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.8.17",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-    ],
+    version: '0.8.17',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
   },
 
   gasReporter: {
-    currency: "USD",
-    gasPrice: 100,
+    currency: 'USD',
+    gasPrice: 100
   },
 
   etherscan: {
     // Your API key for Etherscan
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
-};
+    apiKey: process.env.ETHERSCAN_API_KEY
+  }
+}
+
+export default config

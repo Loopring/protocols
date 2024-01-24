@@ -14,7 +14,9 @@ enum SigRequirement {
 struct Approval {
     address[] signers;
     bytes[] signatures;
-    uint256 validUntil;
+    uint48 validUntil;
+    // uint48 validAfter;
+    bytes32 salt;
 }
 
 // Optimized to fit into 64 bytes (2 slots)
@@ -38,6 +40,16 @@ struct Guardian {
     uint64 timestamp; // validSince if status = ADD; validUntil if adding = REMOVE;
 }
 
+// struct ExecutorsPermission {
+//     address[] connectors;
+//     mapping(address => uint) connectorsPermission;
+// }
+struct AutomationPermission {
+    address[] executors;
+    mapping(address => mapping(address => uint)) executorsPermission;
+    mapping(address => address[]) executorsConnectors;
+}
+
 struct Wallet {
     address owner;
     uint64 creationTimestamp;
@@ -55,4 +67,6 @@ struct Wallet {
     // whitelisted address => effective timestamp
     mapping(address => uint) whitelisted;
     address entryPoint;
+    // executor => validUntil
+    mapping(address => uint) executorsPermission;
 }
