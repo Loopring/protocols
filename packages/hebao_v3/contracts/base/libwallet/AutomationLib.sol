@@ -103,7 +103,6 @@ library AutomationLib {
         Wallet storage wallet,
         address executor
     ) internal {
-        require(wallet.executorsPermission[executor] > 0, "unapprove failed");
         wallet.executorsPermission[executor] = 0;
         emit AutomationUnapproveExecutor(address(this), executor);
     }
