@@ -16,7 +16,7 @@ struct Approval {
     bytes[] signatures;
     uint48 validUntil;
     // uint48 validAfter;
-    bytes32 salt;
+    // bytes32 salt;
 }
 
 // Optimized to fit into 64 bytes (2 slots)

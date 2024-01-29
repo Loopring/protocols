@@ -19,7 +19,7 @@ library WhitelistLib {
 
     bytes32 public constant ADD_TO_WHITELIST_TYPEHASH =
         keccak256(
-            "addToWhitelist(address wallet,uint256 validUntil,address addr,bytes32 salt)"
+            "addToWhitelist(address wallet,uint256 validUntil,address addr)"
         );
 
     event Whitelisted(address addr, bool whitelisted, uint effectiveTime);
@@ -73,8 +73,7 @@ library WhitelistLib {
     function encodeApprovalForAddToWhitelist(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 salt
+        uint256 validUntil
     ) external view returns (bytes32) {
         address addr = abi.decode(data, (address));
         bytes32 approvedHash = EIP712.hashPacked(
@@ -84,8 +83,7 @@ library WhitelistLib {
                     ADD_TO_WHITELIST_TYPEHASH,
                     address(this),
                     validUntil,
-                    addr,
-                    salt
+                    addr
                 )
             )
         );

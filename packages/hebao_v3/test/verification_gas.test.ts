@@ -1,4 +1,3 @@
-import { type BytesLike } from '@ethersproject/bytes'
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { BigNumber, type BigNumberish, type Wallet } from 'ethers'
@@ -30,8 +29,8 @@ describe('verification gaslimit test', () => {
     to: string,
     amount: BigNumberish,
     validUntil: number,
-    chainId: number,
-    salt: BytesLike
+    chainId: number
+    // salt: BytesLike
   ): Promise<Approval> {
     // use typedData hash instead
     const types = {
@@ -40,8 +39,8 @@ describe('verification gaslimit test', () => {
         { name: 'validUntil', type: 'uint256' },
         { name: 'token', type: 'address' },
         { name: 'to', type: 'address' },
-        { name: 'amount', type: 'uint256' },
-        { name: 'salt', type: 'bytes32' }
+        { name: 'amount', type: 'uint256' }
+        // { name: 'salt', type: 'bytes32' }
       ]
     }
 
@@ -60,8 +59,8 @@ describe('verification gaslimit test', () => {
         wallet: smartWalletAddr,
         token,
         to,
-        amount,
-        salt
+        amount
+        // salt
       }
     }
 
@@ -91,8 +90,8 @@ describe('verification gaslimit test', () => {
     const approval = {
       signers: sortedSigners as string[],
       signatures: sortedSignatures as string[],
-      validUntil,
-      salt
+      validUntil
+      // salt
     }
     return approval
   }
@@ -162,7 +161,7 @@ describe('verification gaslimit test', () => {
   ): string {
     const signature = ethers.utils.defaultAbiCoder.encode(
       [
-        'tuple(address[] signers,bytes[] signatures,uint256 validUntil,bytes32 salt)',
+        'tuple(address[] signers,bytes[] signatures,uint256 validUntil)',
         'bytes'
       ],
       [approval, ownerSignature]
@@ -210,8 +209,8 @@ describe('verification gaslimit test', () => {
       receiver,
       tokenAmount,
       validUntil,
-      chainId,
-      ethers.utils.randomBytes(32)
+      chainId
+      // ethers.utils.randomBytes(32)
     )
     const gasPriceData = await getEIP1559GasPrice()
 

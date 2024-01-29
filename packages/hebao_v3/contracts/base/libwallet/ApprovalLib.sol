@@ -94,8 +94,7 @@ library ApprovalLib {
                         .encodeApprovalForAddGuardian(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -111,8 +110,7 @@ library ApprovalLib {
                         .encodeApprovalForRemoveGuardian(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -128,8 +126,7 @@ library ApprovalLib {
                         .encodeApprovalForResetGuardians(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -145,8 +142,7 @@ library ApprovalLib {
                         .encodeApprovalForChangeDailyQuota(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -162,8 +158,7 @@ library ApprovalLib {
                         .encodeApprovalForAddToWhitelist(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -177,8 +172,7 @@ library ApprovalLib {
                         .encodeApprovalForTransferToken(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -192,8 +186,7 @@ library ApprovalLib {
                         .encodeApprovalForCallContract(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -207,8 +200,7 @@ library ApprovalLib {
                         .encodeApprovalForApproveToken(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -225,8 +217,7 @@ library ApprovalLib {
                         .encodeApprovalForApproveThenCallContract(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -239,8 +230,7 @@ library ApprovalLib {
                     bytes32 approvedHash = LockLib.encodeApprovalForUnlock(
                         data,
                         domainSeparator,
-                        approval.validUntil,
-                        approval.salt
+                        approval.validUntil
                     );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -256,8 +246,7 @@ library ApprovalLib {
                         .encodeApprovalForChangeMasterCopy(
                             data,
                             domainSeparator,
-                            approval.validUntil,
-                            approval.salt
+                            approval.validUntil
                         );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,
@@ -273,8 +262,7 @@ library ApprovalLib {
                         newOwner,
                         newGuardians,
                         domainSeparator,
-                        approval.validUntil,
-                        approval.salt
+                        approval.validUntil
                     );
                     localVar.sigTimeRange = wallet.verifyApproval(
                         approvedHash,

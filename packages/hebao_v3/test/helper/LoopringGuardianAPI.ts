@@ -30,7 +30,7 @@ export enum ActionType {
 export interface ApprovalOption {
   validUntil: BigNumberish
   // validAfter: BigNumberish
-  salt: BytesLike
+  // salt: BytesLike
   action_type: ActionType
 }
 
@@ -38,7 +38,7 @@ export interface Approval {
   signers: string[]
   signatures: string[]
   validUntil: BigNumberish
-  salt: BytesLike
+  // salt: BytesLike
 }
 
 export async function signTypedData(
@@ -49,7 +49,7 @@ export async function signTypedData(
   initValue: {
     wallet: string
     validUntil: BigNumberish
-    salt: BytesLike
+    // salt: BytesLike
   }
 ): Promise<string> {
   let message: any
@@ -65,8 +65,8 @@ export async function signTypedData(
           { name: 'validUntil', type: 'uint256' },
           { name: 'token', type: 'address' },
           { name: 'to', type: 'address' },
-          { name: 'amount', type: 'uint256' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'amount', type: 'uint256' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -95,8 +95,8 @@ export async function signTypedData(
           { name: 'token', type: 'address' },
           { name: 'to', type: 'address' },
           { name: 'amount', type: 'uint256' },
-          { name: 'logdata', type: 'bytes' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'logdata', type: 'bytes' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
 
@@ -125,8 +125,8 @@ export async function signTypedData(
           { name: 'validUntil', type: 'uint256' },
           { name: 'to', type: 'address' },
           { name: 'value', type: 'uint256' },
-          { name: 'data', type: 'bytes' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'data', type: 'bytes' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -155,8 +155,8 @@ export async function signTypedData(
           { name: 'to', type: 'address' },
           { name: 'amount', type: 'uint256' },
           { name: 'value', type: 'uint256' },
-          { name: 'data', type: 'bytes' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'data', type: 'bytes' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -180,8 +180,8 @@ export async function signTypedData(
         addGuardian: [
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
-          { name: 'guardian', type: 'address' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'guardian', type: 'address' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -201,8 +201,8 @@ export async function signTypedData(
         removeGuardian: [
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
-          { name: 'guardian', type: 'address' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'guardian', type: 'address' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -222,8 +222,8 @@ export async function signTypedData(
         resetGuardians: [
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
-          { name: 'guardians', type: 'address[]' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'guardians', type: 'address[]' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -243,8 +243,8 @@ export async function signTypedData(
         addToWhitelist: [
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
-          { name: 'addr', type: 'address' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'addr', type: 'address' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -264,8 +264,8 @@ export async function signTypedData(
         changeDailyQuota: [
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
-          { name: 'newQuota', type: 'uint256' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'newQuota', type: 'uint256' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -285,8 +285,8 @@ export async function signTypedData(
         changeMasterCopy: [
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
-          { name: 'masterCopy', type: 'address' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'masterCopy', type: 'address' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -310,8 +310,8 @@ export async function signTypedData(
           { name: 'wallet', type: 'address' },
           { name: 'validUntil', type: 'uint256' },
           { name: 'newOwner', type: 'address' },
-          { name: 'newGuardians', type: 'address[]' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'newGuardians', type: 'address[]' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {
@@ -330,8 +330,8 @@ export async function signTypedData(
       const types = {
         unlock: [
           { name: 'wallet', type: 'address' },
-          { name: 'validUntil', type: 'uint256' },
-          { name: 'salt', type: 'bytes32' }
+          { name: 'validUntil', type: 'uint256' }
+          // { name: 'salt', type: 'bytes32' }
         ]
       }
       message = {

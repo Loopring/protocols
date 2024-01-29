@@ -33,19 +33,19 @@ library ERC20Lib {
 
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH =
         keccak256(
-            "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata,bytes32 salt)"
+            "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
         );
     bytes32 public constant APPROVE_TOKEN_TYPEHASH =
         keccak256(
-            "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes32 salt)"
+            "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
         );
     bytes32 public constant CALL_CONTRACT_TYPEHASH =
         keccak256(
-            "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data,bytes32 salt)"
+            "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
         );
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH =
         keccak256(
-            "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data,bytes32 salt)"
+            "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
         );
 
     function transferToken(
@@ -236,8 +236,7 @@ library ERC20Lib {
     function encodeApprovalForTransferToken(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 salt
+        uint256 validUntil
     ) external view returns (bytes32) {
         (address token, address to, uint amount, bytes memory logdata) = abi
             .decode(data, (address, address, uint, bytes));
@@ -251,8 +250,7 @@ library ERC20Lib {
                     token,
                     to,
                     amount,
-                    keccak256(logdata),
-                    salt
+                    keccak256(logdata)
                 )
             )
         );
@@ -262,8 +260,7 @@ library ERC20Lib {
     function encodeApprovalForApproveToken(
         bytes memory data,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 salt
+        uint256 validUntil
     ) external view returns (bytes32) {
         (address token, address to, uint256 amount) = abi.decode(
             data,
@@ -278,8 +275,7 @@ library ERC20Lib {
                     validUntil,
                     token,
                     to,
-                    amount,
-                    salt
+                    amount
                 )
             )
         );
@@ -289,8 +285,7 @@ library ERC20Lib {
     function encodeApprovalForCallContract(
         bytes memory callData,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 salt
+        uint256 validUntil
     ) external view returns (bytes32) {
         (address to, uint256 value, bytes memory data) = abi.decode(
             callData,
@@ -305,8 +300,7 @@ library ERC20Lib {
                     validUntil,
                     to,
                     value,
-                    keccak256(data),
-                    salt
+                    keccak256(data)
                 )
             )
         );
@@ -324,8 +318,7 @@ library ERC20Lib {
     function encodeApprovalForApproveThenCallContract(
         bytes memory callData,
         bytes32 domainSeparator,
-        uint256 validUntil,
-        bytes32 salt
+        uint256 validUntil
     ) external view returns (bytes32) {
         ApprovalThenCallData memory approvalThenCallData;
         (
@@ -346,8 +339,7 @@ library ERC20Lib {
                     approvalThenCallData.to,
                     approvalThenCallData.amount,
                     approvalThenCallData.value,
-                    keccak256(approvalThenCallData.data),
-                    salt
+                    keccak256(approvalThenCallData.data)
                 )
             )
         );

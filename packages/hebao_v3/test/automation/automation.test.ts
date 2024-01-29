@@ -121,31 +121,26 @@ describe('automation test', () => {
         )
         .withArgs(0, 'AA24 signature error')
     })
-    it("cant cast when wallet is locked", async () => {
+    it('cant cast when wallet is locked', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const { smartWallet, wethConnector, entrypoint } = loadedFixture
-      const weth = await ethers.getContractAt(
-        'TokenInterface',
-        CONSTANTS.WETH_ADDRESS
-      )
       const executor = await makeAnExecutor(loadedFixture)
       await (await smartWallet.lock()).wait()
 
-
-      const balance1 = await weth.balanceOf(smartWallet.address)
       const data = wethConnector.interface.encodeFunctionData(
         'deposit',
         [CONSTANTS.ONE_FOR_ETH, 0, 0]
       )
-      expect(
+      await expect(
         userOpCast(
           [wethConnector.address],
           [data],
           executor,
           loadedFixture
         )
-      ).to.revertedWithCustomError(entrypoint, "FailedOp")
-      .withArgs(0, "wallet is locked");
+      )
+        .to.revertedWithCustomError(entrypoint, 'FailedOp')
+        .withArgs(0, 'wallet is locked')
     })
   })
 

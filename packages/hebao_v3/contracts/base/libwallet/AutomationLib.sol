@@ -92,11 +92,7 @@ library AutomationLib {
             "approve failed"
         );
         wallet.executorsPermission[executor] = validUntil;
-        emit AutomationApproveExecutor(
-            address(this),
-            executor,
-            validUntil
-        );
+        emit AutomationApproveExecutor(address(this), executor, validUntil);
     }
 
     function unApproveExecutor(
