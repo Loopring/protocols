@@ -15,7 +15,8 @@ import {
 import {
   type SendUserOp,
   type UserOperation,
-  fillAndSign
+  fillUserOp,
+  getUserOpHash
 } from '../../test/helper/AASigner'
 
 import {
@@ -134,21 +135,34 @@ const getSignedUserOp = async (
   callData: string,
   nonce: BigNumberish,
   smartWalletAddr: string,
-  smartWalletOwner: Wallet,
+  signer: Wallet,
   create2Addr: string,
-  entrypoint: EntryPoint
+  entrypoint: EntryPoint,
+  byExecutor: boolean
 ): Promise<UserOperation> => {
   const partialUserOp: Partial<UserOperation> = {
     sender: smartWalletAddr,
     nonce,
     callData
   }
-  const signedUserOp = await fillAndSign(
-    partialUserOp,
-    smartWalletOwner,
-    create2Addr,
-    entrypoint
+  const provider = entrypoint.provider
+  const op2 = await fillUserOp(partialUserOp, create2Addr, entrypoint)
+  const { chainId } = await provider!.getNetwork()
+  const message = ethers.utils.arrayify(
+    getUserOpHash(op2, entrypoint.address, chainId)
   )
+
+  const rawSignature = await signer.signMessage(message)
+  const signature = byExecutor
+    ? ethers.utils.defaultAbiCoder.encode(
+        ['address', 'bytes'],
+        [signer.address, rawSignature]
+      )
+    : rawSignature
+  const signedUserOp = {
+    ...op2,
+    signature
+  }
   return signedUserOp
 }
 
@@ -200,7 +214,8 @@ export const userOpCast = async (
     smartWallet.address,
     signer,
     create2.address,
-    entrypoint
+    entrypoint,
+    true
   )
   return await sendUserOp(signedUserOp)
 }
@@ -232,7 +247,8 @@ export const makeAnExecutor = async (
     smartWallet.address,
     smartWalletOwner,
     create2.address,
-    entrypoint
+    entrypoint,
+    false
   )
   await sendUserOp(signedUserOp)
 
@@ -261,7 +277,8 @@ export const unApproveExecutor = async (
     smartWallet.address,
     smartWalletOwner,
     create2.address,
-    entrypoint
+    entrypoint,
+    false
   )
   return sendUserOp(signedUserOp)
 }

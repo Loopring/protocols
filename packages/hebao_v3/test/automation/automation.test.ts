@@ -140,7 +140,7 @@ describe('automation test', () => {
         )
       )
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(0, 'wallet is locked')
+        .withArgs(0, 'AA23 reverted: wallet is locked')
     })
   })
 

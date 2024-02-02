@@ -301,8 +301,14 @@ library ApprovalLib {
             if (localVar.methodId == SmartWallet.castFromEntryPoint.selector) {
                 // automation can be used only when wallet is unlocked
                 require(!wallet.locked, "wallet is locked");
-                address executor = localVar.hash.recover(userOp.signature);
-                if (AutomationLib.isExecutorOrOwner(wallet, executor)) {
+                (address executor, bytes memory executorSignature) = abi.decode(
+                    userOp.signature,
+                    (address, bytes)
+                );
+                if (
+                    AutomationLib.isExecutorOrOwner(wallet, executor) &&
+                    localVar.hash.verifySignature(executor, executorSignature)
+                ) {
                     return 0;
                 }
                 return SIG_VALIDATION_FAILED;
