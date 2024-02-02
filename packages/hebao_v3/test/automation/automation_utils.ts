@@ -135,7 +135,7 @@ const getSignedUserOp = async (
   callData: string,
   nonce: BigNumberish,
   smartWalletAddr: string,
-  signer: Wallet,
+  signer: { wallet: Wallet; contract?: string },
   create2Addr: string,
   entrypoint: EntryPoint,
   byExecutor: boolean
@@ -152,11 +152,11 @@ const getSignedUserOp = async (
     getUserOpHash(op2, entrypoint.address, chainId)
   )
 
-  const rawSignature = await signer.signMessage(message)
+  const rawSignature = await signer.wallet.signMessage(message)
   const signature = byExecutor
     ? ethers.utils.defaultAbiCoder.encode(
         ['address', 'bytes'],
-        [signer.address, rawSignature]
+        [signer.contract ?? signer.wallet.address, rawSignature]
       )
     : rawSignature
   const signedUserOp = {
@@ -197,7 +197,7 @@ export const faucetToken = async (
 export const userOpCast = async (
   addresses: string[],
   datas: string[],
-  signer: Wallet,
+  signer: { wallet: Wallet; contract?: string },
   loadedFixture: Fixture
 ): Promise<TransactionReceipt> => {
   const { smartWallet, create2, entrypoint, sendUserOp } =
@@ -220,12 +220,10 @@ export const userOpCast = async (
   return await sendUserOp(signedUserOp)
 }
 
-export const makeAnExecutor = async (
-  loadedFixture: Fixture
-): Promise<Wallet> => {
-  const executor = ethers.Wallet.createRandom().connect(
-    ethers.provider
-  )
+export const approveExecutor = async (
+  loadedFixture: Fixture,
+  executorAddr: string
+): Promise<void> => {
   const {
     smartWallet,
     smartWalletOwner,
@@ -239,19 +237,27 @@ export const makeAnExecutor = async (
   ).toString()
   const data = smartWallet.interface.encodeFunctionData(
     'approveExecutor',
-    [executor.address, validUntil]
+    [executorAddr, validUntil]
   )
   const signedUserOp = await getSignedUserOp(
     data,
     nonce,
     smartWallet.address,
-    smartWalletOwner,
+    { wallet: smartWalletOwner },
     create2.address,
     entrypoint,
     false
   )
   await sendUserOp(signedUserOp)
+}
 
+export const makeAnExecutor = async (
+  loadedFixture: Fixture
+): Promise<Wallet> => {
+  const executor = ethers.Wallet.createRandom().connect(
+    ethers.provider
+  )
+  await approveExecutor(loadedFixture, executor.address)
   return executor
 }
 
@@ -275,7 +281,7 @@ export const unApproveExecutor = async (
     data,
     nonce,
     smartWallet.address,
-    smartWalletOwner,
+    { wallet: smartWalletOwner },
     create2.address,
     entrypoint,
     false

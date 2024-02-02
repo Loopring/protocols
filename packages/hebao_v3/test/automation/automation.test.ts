@@ -9,7 +9,8 @@ import {
   makeAnExecutor,
   unApproveExecutor,
   encodeSpells,
-  encodeFlashcastData
+  encodeFlashcastData,
+  approveExecutor
 } from './automation_utils'
 
 describe('automation test', () => {
@@ -72,6 +73,7 @@ describe('automation test', () => {
   describe('permission test', () => {
     it('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
+      const { smartWallet } = loadedFixture
       const wethConnector = loadedFixture.wethConnector
       const data = wethConnector.interface.encodeFunctionData(
         'deposit',
@@ -83,7 +85,7 @@ describe('automation test', () => {
         userOpCast(
           [wethConnector.address],
           [data],
-          someone,
+          { wallet: someone },
           loadedFixture
         )
       )
@@ -99,9 +101,20 @@ describe('automation test', () => {
         userOpCast(
           [wethConnector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
+      ).not.to.reverted
+
+      // prepare eth for executor
+      await loadedFixture.deployer.sendTransaction({
+        to: executor.address,
+        value: CONSTANTS.ONE_FOR_ETH
+      })
+      await expect(
+        smartWallet
+          .connect(executor)
+          .castFromExecutor([wethConnector.address], [data])
       ).not.to.reverted
 
       // cannot automation after unapprove
@@ -111,7 +124,7 @@ describe('automation test', () => {
         userOpCast(
           [wethConnector.address],
           [data],
-          executor,
+          { wallet: someone },
           loadedFixture
         )
       )
@@ -121,6 +134,41 @@ describe('automation test', () => {
         )
         .withArgs(0, 'AA24 signature error')
     })
+    it('use contract as a executor', async () => {
+      // create a official guardian
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      // prepare a contract as executor
+      const someone = ethers.Wallet.createRandom().connect(
+        ethers.provider
+      )
+      await loadedFixture.deployer.sendTransaction({
+        to: someone.address,
+        value: CONSTANTS.ONE_FOR_ETH
+      })
+      const officialGuardian = await (
+        await ethers.getContractFactory('OfficialGuardian')
+      ).deploy()
+      await officialGuardian
+        .connect(loadedFixture.deployer)
+        .addManager(someone.address)
+      // smartwallet approve the officialGuardian first
+      await approveExecutor(loadedFixture, officialGuardian.address)
+
+      const wethConnector = loadedFixture.wethConnector
+      const data = wethConnector.interface.encodeFunctionData(
+        'deposit',
+        [CONSTANTS.ONE_FOR_ETH, 0, 0]
+      )
+      await expect(
+        userOpCast(
+          [wethConnector.address],
+          [data],
+          { wallet: someone, contract: officialGuardian.address },
+          loadedFixture
+        )
+      ).not.to.reverted
+    })
+    it('executor call directly', async () => {})
     it('cant cast when wallet is locked', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const { smartWallet, wethConnector, entrypoint } = loadedFixture
@@ -135,7 +183,7 @@ describe('automation test', () => {
         userOpCast(
           [wethConnector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       )
@@ -163,7 +211,7 @@ describe('automation test', () => {
         userOpCast(
           [wethConnector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -206,7 +254,7 @@ describe('automation test', () => {
           userOpCast(
             [compoundConnector.address],
             [data],
-            executor,
+            { wallet: executor },
             loadedFixture
           )
         ).not.to.reverted
@@ -245,7 +293,7 @@ describe('automation test', () => {
           userOpCast(
             [compoundConnector.address],
             [data],
-            executor,
+            { wallet: executor },
             loadedFixture
           )
         ).not.to.reverted
@@ -272,7 +320,7 @@ describe('automation test', () => {
           userOpCast(
             [compoundConnector.address],
             [data2],
-            executor,
+            { wallet: executor },
             loadedFixture
           )
         ).not.to.reverted
@@ -288,7 +336,7 @@ describe('automation test', () => {
         userOpCast(
           [compoundConnector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -322,7 +370,7 @@ describe('automation test', () => {
         userOpCast(
           [aaveV3Connector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -342,7 +390,7 @@ describe('automation test', () => {
         userOpCast(
           [aaveV3Connector.address],
           [borrowData],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -366,7 +414,7 @@ describe('automation test', () => {
         userOpCast(
           [aaveV3Connector.address],
           [paybackData],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -382,7 +430,7 @@ describe('automation test', () => {
         userOpCast(
           [aaveV3Connector.address],
           [withdrawData],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -411,7 +459,7 @@ describe('automation test', () => {
         userOpCast(
           [lidoConnector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -448,7 +496,7 @@ describe('automation test', () => {
         userOpCast(
           [lidoConnector.address],
           [wrapAndStakingData],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -465,7 +513,7 @@ describe('automation test', () => {
         userOpCast(
           [lidoConnector.address],
           [unwrapData],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -503,7 +551,7 @@ describe('automation test', () => {
         userOpCast(
           [uniswapConnector.address],
           [data2],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -526,7 +574,7 @@ describe('automation test', () => {
         userOpCast(
           [uniswapConnector.address],
           [data],
-          executor,
+          { wallet: executor },
           loadedFixture
         )
       ).not.to.reverted
@@ -625,7 +673,7 @@ describe('automation test', () => {
       const balanceBefore = await usdc.balanceOf(smartWallet.address)
       await userOpCast(
         ...encodeSpells(spells2),
-        executor,
+        { wallet: executor },
         loadedFixture
       )
       const balanceAfter = await usdc.balanceOf(smartWallet.address)
@@ -701,7 +749,7 @@ describe('automation test', () => {
       const executor = await makeAnExecutor(loadedFixture)
       await userOpCast(
         ...encodeSpells(spells2),
-        executor,
+        { wallet: executor },
         loadedFixture
       )
     })
