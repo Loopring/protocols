@@ -494,7 +494,7 @@ library GuardianLib {
                     RESET_GUARDIANS_TYPEHASH,
                     address(this),
                     validUntil,
-                    newGuardians
+                    keccak256(abi.encodePacked(newGuardians))
                 )
             )
         );

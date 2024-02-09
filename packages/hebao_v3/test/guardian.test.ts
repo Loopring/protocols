@@ -340,7 +340,96 @@ describe('guardian test', () => {
       const blockTime = await getBlockTimestamp(receipt.blockNumber)
       expect(addEvent.effectiveTime.toNumber()).to.equal(blockTime)
     })
-    it('remove guardian test', async () => {})
+    it('reset guardian test', async () => {
+      const {
+        sendUserOp,
+        smartWalletOwner,
+        guardians,
+        create2,
+        entrypoint,
+        smartWallet,
+        smartWalletImpl
+      } = await loadFixture(fixture)
+      const newGuardians: Wallet[] = []
+      for (let i = 0; i < 2; i++) {
+        newGuardians.push(
+          ethers.Wallet.createRandom().connect(ethers.provider)
+        )
+      }
+      newGuardians.sort((a, b) =>
+        a.address.toLowerCase() < b.address.toLowerCase() ? -1 : 1
+      )
+      const newGuardianAddrs = newGuardians.map((g) => g.address)
+
+      const callData = smartWallet.interface.encodeFunctionData(
+        'resetGuardiansWA',
+        [newGuardianAddrs]
+      )
+
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ResetGuardians
+      }
+      const signedUserOp = await fillAndMultiSign(
+        callData,
+        smartWallet,
+        smartWalletOwner,
+        [{ signer: smartWalletOwner }, { signer: guardians[0] }],
+        create2.address,
+        smartWalletImpl.address,
+        approvalOption,
+        entrypoint
+      )
+      await sendUserOp(signedUserOp)
+      await time.increase(three_days)
+      // check all old guardians and new guardians
+      for (const newGuardianAddr of newGuardianAddrs) {
+        expect(await smartWallet.isGuardian(newGuardianAddr, false))
+          .to.be.true
+      }
+
+      for (const guardian of guardians) {
+        expect(await smartWallet.isGuardian(guardian.address, false))
+          .to.be.false
+      }
+    })
+    it('remove guardian test', async () => {
+      const {
+        sendUserOp,
+        smartWalletOwner,
+        guardians,
+        create2,
+        entrypoint,
+        smartWallet,
+        smartWalletImpl
+      } = await loadFixture(fixture)
+      const removedGuardian = guardians[1].address
+      const callData = smartWallet.interface.encodeFunctionData(
+        'removeGuardianWA',
+        [removedGuardian]
+      )
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.RemoveGuardian
+      }
+      const signedUserOp = await fillAndMultiSign(
+        callData,
+        smartWallet,
+        smartWalletOwner,
+        [{ signer: smartWalletOwner }, { signer: guardians[0] }],
+        create2.address,
+        smartWalletImpl.address,
+        approvalOption,
+        entrypoint
+      )
+
+      await sendUserOp(signedUserOp)
+      await time.increase(three_days)
+      expect(await smartWallet.isGuardian(removedGuardian, false)).to
+        .be.false
+    })
   })
   describe('wallet test when no guardians', () => {
     it('wa operation', async () => {
