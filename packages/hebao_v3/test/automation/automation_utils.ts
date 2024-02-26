@@ -33,6 +33,7 @@ export const CONSTANTS = {
   cUSDT_ADDRESS: '0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9',
   WETH_ADDRESS: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
   WBT_ADDRESS: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+  DAI_ADDRESS: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   ETH_ADDRESS: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
   STETH_ADDRESS: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
   WSTETH_ADDRESS: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
@@ -73,6 +74,9 @@ export async function fixtureForAutoMation() {
   const uniswapConnector = await (
     await ethers.getContractFactory('UniswapConnector')
   ).deploy(ownedMemory.address)
+  const uniswapv3Connector = await (
+    await ethers.getContractFactory('UniswapV3Connector')
+  ).deploy(ownedMemory.address)
   const compoundConnector = await (
     await ethers.getContractFactory('CompoundConnector')
   ).deploy(ownedMemory.address)
@@ -101,7 +105,8 @@ export async function fixtureForAutoMation() {
       uniswapConnector.address,
       compoundConnector.address,
       lidoConnector.address,
-      aaveV3Connector.address
+      aaveV3Connector.address,
+      uniswapv3Connector.address
     ])
   ).wait()
 
@@ -118,6 +123,7 @@ export async function fixtureForAutoMation() {
     flashLoanConnector,
     lidoConnector,
     aaveV3Connector,
+    uniswapv3Connector,
     flashLoanPool,
     usdc
   }

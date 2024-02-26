@@ -520,7 +520,71 @@ describe('automation test', () => {
       expect(await wstETH.balanceOf(smartWallet.address)).eq(0)
     })
 
-    it('uniswap connector test', async () => {
+    it('uniswapv3 connector test', async () => {
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      const { smartWallet, uniswapv3Connector } = loadedFixture
+      const UNI = await ethers.getContractAt(
+        'IERC20Metadata',
+        CONSTANTS.UNI_ADDRESS
+      )
+      const balance1 = await UNI.balanceOf(smartWallet.address)
+      const executor = await makeAnExecutor(loadedFixture)
+      await faucetToken(
+        CONSTANTS.USDC_ADDRESS,
+        smartWallet.address,
+        '100'
+      )
+
+      // buy uni with usdc
+      const data2 = uniswapv3Connector.interface.encodeFunctionData(
+        'sell',
+        [
+          CONSTANTS.UNI_ADDRESS,
+          CONSTANTS.USDC_ADDRESS,
+          3000,
+          0,
+          CONSTANTS.ONE_FOR_USDC,
+          0,
+          0
+        ]
+      )
+      await expect(
+        userOpCast(
+          [uniswapv3Connector.address],
+          [data2],
+          { wallet: executor },
+          loadedFixture
+        )
+      ).not.to.reverted
+      const balance2 = await UNI.balanceOf(smartWallet.address)
+      expect(balance2.sub(balance1).gt(0)).true
+
+      // sell uni
+      const data = uniswapv3Connector.interface.encodeFunctionData(
+        'buy',
+        [
+          CONSTANTS.UNI_ADDRESS,
+          CONSTANTS.USDC_ADDRESS,
+          3000,
+          ethers.utils.parseEther('1000'), // ratio
+          ethers.utils.parseEther('1'), // 1 UNI
+          0,
+          0
+        ]
+      )
+      await expect(
+        userOpCast(
+          [uniswapv3Connector.address],
+          [data],
+          { wallet: executor },
+          loadedFixture
+        )
+      ).not.to.reverted
+      const balance3 = await UNI.balanceOf(smartWallet.address)
+      expect(balance3.sub(balance2).gt(0)).true
+    })
+
+    it('uniswapv2 connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const { smartWallet, uniswapConnector } = loadedFixture
       const UNI = await ethers.getContractAt(
