@@ -126,6 +126,14 @@ contract BaseConnector is DSMath {
         }
     }
 
+    function getTokensDec(
+        TokenInterface buyAddr,
+        TokenInterface sellAddr
+    ) internal view returns (uint buyDec, uint sellDec) {
+        buyDec = address(buyAddr) == ETH_ADDR ? 18 : buyAddr.decimals();
+        sellDec = address(sellAddr) == ETH_ADDR ? 18 : sellAddr.decimals();
+    }
+
     function convert18ToDec(
         uint _dec,
         uint256 _amt

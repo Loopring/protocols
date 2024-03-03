@@ -77,6 +77,9 @@ export async function fixtureForAutoMation() {
   const uniswapv3Connector = await (
     await ethers.getContractFactory('UniswapV3Connector')
   ).deploy(ownedMemory.address)
+  const oneInchV5Connector = await (
+    await ethers.getContractFactory('OneInchV5Connector')
+  ).deploy(ownedMemory.address)
   const compoundConnector = await (
     await ethers.getContractFactory('CompoundConnector')
   ).deploy(ownedMemory.address)
@@ -106,7 +109,8 @@ export async function fixtureForAutoMation() {
       compoundConnector.address,
       lidoConnector.address,
       aaveV3Connector.address,
-      uniswapv3Connector.address
+      uniswapv3Connector.address,
+      oneInchV5Connector.address
     ])
   ).wait()
 
@@ -119,6 +123,7 @@ export async function fixtureForAutoMation() {
     ...initFixture,
     wethConnector,
     uniswapConnector,
+    oneInchV5Connector,
     compoundConnector,
     flashLoanConnector,
     lidoConnector,

@@ -520,6 +520,47 @@ describe('automation test', () => {
       expect(await wstETH.balanceOf(smartWallet.address)).eq(0)
     })
 
+    it('1inchv5 connector test', async () => {
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      const executor = await makeAnExecutor(loadedFixture)
+      const { smartWallet, oneInchV5Connector } = loadedFixture
+      await faucetToken(
+        CONSTANTS.USDC_ADDRESS,
+        smartWallet.address,
+        '100'
+      )
+      const UNI = await ethers.getContractAt(
+        'IERC20Metadata',
+        CONSTANTS.UNI_ADDRESS
+      )
+      // TODO(get a valid calldata from 1inch swap api)
+      const callData = '0x'
+      const data = oneInchV5Connector.interface.encodeFunctionData(
+        'sell',
+        [
+          CONSTANTS.UNI_ADDRESS,
+          CONSTANTS.USDC_ADDRESS,
+          3000,
+          0,
+          callData,
+          0
+        ]
+      )
+
+      const balanceBefore = await UNI.balanceOf(smartWallet.address)
+      await expect(
+        userOpCast(
+          [oneInchV5Connector.address],
+          [data],
+          { wallet: executor },
+          loadedFixture
+        )
+      ).not.to.reverted
+      const balanceAfter = await UNI.balanceOf(smartWallet.address)
+      // TODO(fix it when using a valid calldata)
+      expect(balanceAfter.sub(balanceBefore).gt(0)).false
+    })
+
     it('uniswapv3 connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const { smartWallet, uniswapv3Connector } = loadedFixture
