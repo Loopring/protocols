@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "../thirdparty/proxies/WalletProxy.sol";
@@ -12,7 +11,7 @@ import "../thirdparty/proxies/WalletProxy.sol";
 contract WalletDeploymentLib {
     address public immutable walletImplementation;
 
-    string public constant WALLET_CREATION = "WALLET_CREATION";
+    string private constant WALLET_CREATION = "WALLET_CREATION";
 
     constructor(address _walletImplementation) {
         walletImplementation = _walletImplementation;

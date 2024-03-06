@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "../../iface/PriceOracle.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./ApprovalLib.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/LoopringErrors.sol";
@@ -16,14 +14,13 @@ import "../../lib/LoopringErrors.sol";
 ///      A rolling daily limit is used.
 library QuotaLib {
     using SafeCast for uint;
-    using SafeMath for uint;
 
-    uint128 public constant MAX_QUOTA = type(uint128).max;
-    uint public constant QUOTA_PENDING_PERIOD = 1 days;
+    uint128 private constant MAX_QUOTA = type(uint128).max;
+    uint256 private constant QUOTA_PENDING_PERIOD = 1 days;
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
-    bytes32 public constant CHANGE_DAILY_QUOTE_TYPEHASH =
+    bytes32 private constant CHANGE_DAILY_QUOTE_TYPEHASH =
         keccak256(
             "changeDailyQuota(address wallet,uint256 validUntil,uint256 newQuota)"
         );
@@ -35,7 +32,7 @@ library QuotaLib {
     );
 
     function changeDailyQuota(Wallet storage wallet, uint newQuota) public {
-        setQuota(wallet, newQuota, block.timestamp.add(QUOTA_PENDING_PERIOD));
+        setQuota(wallet, newQuota, block.timestamp + QUOTA_PENDING_PERIOD);
     }
 
     function changeDailyQuotaWA(Wallet storage wallet, uint newQuota) public {
@@ -139,12 +136,12 @@ library QuotaLib {
     }
 
     function _spentQuota(Quota memory q) private view returns (uint) {
-        uint timeSinceLastSpent = block.timestamp.sub(q.spentTimestamp);
+        uint timeSinceLastSpent = block.timestamp - q.spentTimestamp;
         if (timeSinceLastSpent < 1 days) {
             return
-                uint(q.spentAmount).sub(
-                    timeSinceLastSpent.mul(q.spentAmount) / 1 days
-                );
+                uint(q.spentAmount) -
+                (timeSinceLastSpent * q.spentAmount) /
+                1 days;
         } else {
             return 0;
         }
@@ -172,7 +169,7 @@ library QuotaLib {
         uint amount
     ) private {
         Quota storage s = wallet.quota;
-        s.spentAmount = _spentQuota(q).add(amount).toUint128();
+        s.spentAmount = (_spentQuota(q) + amount).toUint128();
         s.spentTimestamp = uint64(block.timestamp);
     }
 

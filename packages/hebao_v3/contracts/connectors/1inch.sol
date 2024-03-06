@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./base_connector.sol";
 
@@ -30,6 +32,8 @@ struct OneInchData {
 }
 
 contract OneInchV5Connector is BaseConnector {
+    using SafeERC20 for IERC20;
+
     address internal constant ONEINCH_ADDR =
         0x1111111254EEB25477B68fb85Ed929f73A960582;
 
@@ -85,7 +89,10 @@ contract OneInchV5Connector is BaseConnector {
         if (address(_sellAddr) == ETH_ADDR) {
             ethAmt = oneInchData._sellAmt;
         } else {
-            _sellAddr.approve(ONEINCH_ADDR, oneInchData._sellAmt);
+            IERC20(address(_sellAddr)).safeApprove(
+                ONEINCH_ADDR,
+                oneInchData._sellAmt
+            );
         }
 
         oneInchData._buyAmt = oneInchSwap(oneInchData, ethAmt);

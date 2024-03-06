@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
 import "../lib/EIP712.sol";
@@ -25,7 +24,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet {
 
     bytes32 public immutable domainSeparator;
 
-    bytes32 public constant CREATE_WALLET_TYPEHASH =
+    bytes32 private constant CREATE_WALLET_TYPEHASH =
         keccak256(
             "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 maxFeeAmount,uint256 salt)"
         );

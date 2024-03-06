@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "../iface/IConnectorRegistry.sol";
 
-contract ConnectorRegistry is AccessControl, Ownable {
+contract ConnectorRegistry is AccessControl, Ownable, IConnectorRegistry {
     bytes32 public constant MANAGER = keccak256("MANAGER");
 
     mapping(address => bool) public connectors;

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "./GuardianLib.sol";
@@ -19,7 +18,7 @@ library LockLib {
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
-    bytes32 public constant UNLOCK_TYPEHASH =
+    bytes32 private constant UNLOCK_TYPEHASH =
         keccak256("unlock(address wallet,uint256 validUntil)");
 
     function lock(Wallet storage wallet, address entryPoint) public {
@@ -30,6 +29,8 @@ library LockLib {
                 wallet.isGuardian(msg.sender, false),
             Errors.NOT_FROM_WALLET_OR_OWNER_OR_GUARDIAN
         );
+        // cannot lock wallet when no any guardian exists
+        _require(wallet.numGuardians(true) > 0, Errors.NO_GUARDIANS);
         setLock(wallet, msg.sender, true);
     }
 

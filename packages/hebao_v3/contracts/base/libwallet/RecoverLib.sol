@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "./GuardianLib.sol";
@@ -21,7 +20,7 @@ library RecoverLib {
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_NOT_ALLOWED;
 
-    bytes32 public constant RECOVER_TYPEHASH =
+    bytes32 private constant RECOVER_TYPEHASH =
         keccak256(
             "recover(address wallet,uint256 validUntil,address newOwner,address[] newGuardians)"
         );

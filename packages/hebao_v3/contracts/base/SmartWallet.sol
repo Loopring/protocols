@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "../iface/ILoopringWalletV2.sol";
 import "../account-abstraction/interfaces/IEntryPoint.sol";
@@ -9,7 +8,6 @@ import "../account-abstraction/core/BaseAccount.sol";
 
 import "../lib/EIP712.sol";
 import "../lib/ERC1271.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../thirdparty/erc165/IERC165.sol";
 import "../thirdparty/erc1155/ERC1155Holder.sol";
 import "../thirdparty/erc721/ERC721Holder.sol";
@@ -411,7 +409,7 @@ abstract contract SmartWallet is
         address to,
         uint value,
         bytes calldata data
-    ) external onlyFromEntryPoint returns (bytes memory returnData) {
+    ) external onlyFromEntryPoint returns (bytes memory) {
         return ERC20Lib.callContractWA(to, value, data);
     }
 

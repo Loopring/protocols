@@ -45,6 +45,12 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         uint256 actualTokenCost
     );
 
+    error TokenLocked(address token, address user, uint256 unlockedBlockNumber);
+    error TokenUnregistered(address token);
+    error TokenRegistered(address token);
+    error InvalidSignatureLength(uint256 length);
+    error NoEnoughTokenBalance(address user, uint256 tokenRequiredPreFund);
+
     constructor(
         IEntryPoint _entryPoint,
         address paymasterOwner
@@ -108,27 +114,21 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         UserOperation calldata userOp,
         bytes32 userOpHash,
         uint256 requiredPreFund
-    )
-        internal
-        view
-        override
-        returns (bytes memory context, uint256 validationData)
-    {
+    ) internal view override returns (bytes memory, uint256) {
         address sender = userOp.getSender();
         (
             DecodedData memory decodedData,
             bytes memory signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
-        require(
-            registeredToken[decodedData.token],
-            "LoopringPaymaster: unsupported tokens"
-        );
+        if (!registeredToken[decodedData.token]) {
+            revert TokenUnregistered(decodedData.token);
+        }
+
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        require(
-            signature.length == 64 || signature.length == 65,
-            "LoopringPaymaster: invalid signature length in paymasterAndData"
-        );
+        if (signature.length != 64 && signature.length != 65) {
+            revert InvalidSignatureLength(signature.length);
+        }
 
         // NOTE(cannot use basefee during validation)
         uint256 costOfPost = userOp.maxFeePerGas * COST_OF_POST;
@@ -136,14 +136,15 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         if (decodedData.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
                 10 ** PRICE_DECIMAL) / decodedData.valueOfEth;
-            require(
-                (unlockBlock[sender] == 0 &&
+            if (
+                !(unlockBlock[sender] == 0 &&
                     balances[decodedData.token][sender] >=
-                    tokenRequiredPreFund) ||
-                    IERC20(decodedData.token).balanceOf(sender) >=
-                    tokenRequiredPreFund,
-                "LoopringPaymaster: no enough available tokens"
-            );
+                    tokenRequiredPreFund) &&
+                IERC20(decodedData.token).balanceOf(sender) <
+                tokenRequiredPreFund
+            ) {
+                revert NoEnoughTokenBalance(sender, tokenRequiredPreFund);
+            }
         }
         bytes32 hash = ECDSA.toEthSignedMessageHash(
             getHash(
@@ -268,12 +269,16 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      * owner of the paymaster should add supported tokens
      */
     function addToken(address token) external onlyOwner {
-        require(!registeredToken[token], "registered already");
+        if (registeredToken[token]) {
+            revert TokenRegistered(token);
+        }
         registeredToken[token] = true;
     }
 
     function removeToken(address token) external onlyOwner {
-        require(registeredToken[token], "unregistered already");
+        if (!registeredToken[token]) {
+            revert TokenUnregistered(token);
+        }
         registeredToken[token] = false;
     }
 
@@ -292,9 +297,11 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         address account,
         uint256 amount
     ) external {
+        if (!registeredToken[token]) {
+            revert TokenUnregistered(token);
+        }
         //(sender must have approval for the paymaster)
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        require(registeredToken[token], "LoopringPaymaster: unsupported token");
         balances[token][account] += amount;
         if (msg.sender == account) {
             lockTokenDeposit();
@@ -337,11 +344,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         address target,
         uint256 amount
     ) public {
-        require(
-            unlockBlock[msg.sender] != 0 &&
-                block.number > unlockBlock[msg.sender],
-            "LoopringPaymaster: must unlockTokenDeposit"
-        );
+        uint256 unlockedBlockNumber = unlockBlock[msg.sender];
+        if (unlockedBlockNumber == 0 || block.number <= unlockedBlockNumber) {
+            revert TokenLocked(msg.sender, token, unlockedBlockNumber);
+        }
         balances[token][msg.sender] -= amount;
         IERC20(token).safeTransfer(target, amount);
     }

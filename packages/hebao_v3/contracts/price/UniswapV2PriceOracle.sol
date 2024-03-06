@@ -3,16 +3,13 @@
 pragma solidity ^0.8.17;
 
 import "../iface/PriceOracle.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
 import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
 
 /// @title Uniswap2PriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapV2PriceOracle is PriceOracle {
-    using SafeMath for uint;
-
-    IUniswapV2Factory public factory;
+    IUniswapV2Factory public immutable factory;
     address public immutable wethAddress;
 
     constructor(IUniswapV2Factory _factory, address _wethAddress) {
@@ -41,9 +38,9 @@ contract UniswapV2PriceOracle is PriceOracle {
         }
 
         if (token < wethAddress) {
-            return amount.mul(reserve1) / reserve0;
+            return (amount * reserve1) / reserve0;
         } else {
-            return amount.mul(reserve0) / reserve1;
+            return (amount * reserve0) / reserve1;
         }
     }
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "./GuardianLib.sol";
@@ -17,7 +16,7 @@ library InheritanceLib {
     using Utils for address;
 
     // The minimal number of guardians for recovery and locking.
-    uint public constant TOUCH_GRACE_PERIOD = 30 days;
+    uint private constant TOUCH_GRACE_PERIOD = 30 days;
 
     event Inherited(address inheritor, address newOwner);
 
@@ -50,6 +49,8 @@ library InheritanceLib {
         wallet.inheritor = inheritor;
         wallet.inheritWaitingPeriod = waitingPeriod;
         wallet.lastActive = uint64(block.timestamp);
+
+        emit InheritorChanged(inheritor, waitingPeriod);
     }
 
     function inherit(

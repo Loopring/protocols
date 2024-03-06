@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "./ApprovalLib.sol";
@@ -13,11 +12,11 @@ library WhitelistLib {
     using WhitelistLib for Wallet;
     using SafeMath for uint;
 
-    uint public constant WHITELIST_PENDING_PERIOD = 1 days;
+    uint256 private constant WHITELIST_PENDING_PERIOD = 1 days;
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
-    bytes32 public constant ADD_TO_WHITELIST_TYPEHASH =
+    bytes32 private constant ADD_TO_WHITELIST_TYPEHASH =
         keccak256(
             "addToWhitelist(address wallet,uint256 validUntil,address addr)"
         );

@@ -21,13 +21,13 @@ describe('LoopringPaymaster test', () => {
       await paymaster.addToken(lrcToken.address)
       await expect(
         paymaster.addToken(lrcToken.address)
-      ).to.revertedWith('registered already')
+      ).to.revertedWithCustomError(paymaster, 'TokenRegistered')
       expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .true
       await paymaster.removeToken(lrcToken.address)
       await expect(
         paymaster.removeToken(lrcToken.address)
-      ).to.revertedWith('unregistered already')
+      ).to.revertedWithCustomError(paymaster, 'TokenUnregistered')
       expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .false
     })
@@ -166,10 +166,7 @@ describe('LoopringPaymaster test', () => {
         )
       )
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(
-          0,
-          'AA33 reverted: LoopringPaymaster: unsupported tokens'
-        )
+        .withArgs(0, 'AA33 reverted (or OOG)')
     })
 
     it('check valid until', async () => {
@@ -305,7 +302,7 @@ describe('LoopringPaymaster test', () => {
         paymaster
           .connect(deployer)
           .addDepositFor(lrcToken.address, deployer.address, amount)
-      ).to.revertedWith('LoopringPaymaster: unsupported token')
+      ).to.revertedWithCustomError(paymaster, 'TokenUnregistered')
 
       // add token before deposit
       await paymaster.addToken(lrcToken.address)
@@ -330,7 +327,7 @@ describe('LoopringPaymaster test', () => {
             deployer.address,
             amount
           )
-      ).to.revertedWith('LoopringPaymaster: must unlockTokenDeposit')
+      ).to.revertedWithCustomError(paymaster, 'TokenLocked')
       await paymaster.connect(deployer).unlockTokenDeposit()
       await paymaster
         .connect(deployer)
@@ -399,10 +396,7 @@ describe('LoopringPaymaster test', () => {
         )
       )
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(
-          0,
-          'AA33 reverted: LoopringPaymaster: no enough available tokens'
-        )
+        .withArgs(0, 'AA33 reverted (or OOG)')
 
       // only locked fund can be used for gas fee. so lock it again here.
       // note that cannot lock fund using paymaster service

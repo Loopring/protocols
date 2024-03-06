@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./base_connector.sol";
 
@@ -121,6 +123,8 @@ interface ISwapRouter02 is
 {}
 
 contract UniswapV3Connector is BaseConnector {
+    using SafeERC20 for IERC20;
+
     /**
      * @dev uniswap v3 Swap Router
      */
@@ -170,7 +174,10 @@ contract UniswapV3Connector is BaseConnector {
         );
         bool isEth = address(buyData.sellAddr) == ETH_ADDR;
         convertEthToWeth(isEth, _sellAddr, _slippageAmt);
-        _sellAddr.approve(address(SWAP_ROUTER), _slippageAmt);
+        IERC20(address(_sellAddr)).safeApprove(
+            address(SWAP_ROUTER),
+            _slippageAmt
+        );
 
         ExactOutputSingleParams memory params = ExactOutputSingleParams({
             tokenIn: address(_sellAddr),
@@ -187,7 +194,7 @@ contract UniswapV3Connector is BaseConnector {
 
         if (_slippageAmt > _sellAmt) {
             convertEthToWeth(isEth, _sellAddr, _slippageAmt - _sellAmt);
-            _sellAddr.approve(address(SWAP_ROUTER), 0);
+            IERC20(address(_sellAddr)).safeApprove(address(SWAP_ROUTER), 0);
         }
         isEth = address(buyData.buyAddr) == ETH_ADDR;
         convertWethToEth(isEth, _buyAddr, _buyAmt);
@@ -226,7 +233,7 @@ contract UniswapV3Connector is BaseConnector {
 
         bool isEth = address(sellData.sellAddr) == ETH_ADDR;
         convertEthToWeth(isEth, _sellAddr, _sellAmt);
-        _sellAddr.approve(address(SWAP_ROUTER), _sellAmt);
+        IERC20(address(_sellAddr)).safeApprove(address(SWAP_ROUTER), _sellAmt);
         ExactInputSingleParams memory params = ExactInputSingleParams({
             tokenIn: address(_sellAddr),
             tokenOut: address(_buyAddr),

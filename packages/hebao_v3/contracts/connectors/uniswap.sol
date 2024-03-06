@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./base_connector.sol";
 
@@ -85,6 +87,8 @@ interface IUniswapV2Factory {
 }
 
 contract UniswapConnector is BaseConnector {
+    using SafeERC20 for IERC20;
+
     IUniswapV2Router02 internal constant ROUTER =
         IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     constructor(address _instaMemory) BaseConnector(_instaMemory) {}
@@ -183,7 +187,7 @@ contract UniswapConnector is BaseConnector {
 
         bool isEth = address(_sellAddr) == WETH_ADDR;
         convertEthToWeth(isEth, _sellAddr, _expectedAmt);
-        _sellAddr.approve(address(ROUTER), _expectedAmt);
+        IERC20(address(_sellAddr)).safeApprove(address(ROUTER), _expectedAmt);
 
         uint _sellAmt = ROUTER.swapTokensForExactTokens(
             _buyAmt,
@@ -244,7 +248,7 @@ contract UniswapConnector is BaseConnector {
 
         bool isEth = address(_sellAddr) == WETH_ADDR;
         convertEthToWeth(isEth, _sellAddr, _sellAmt);
-        _sellAddr.approve(address(ROUTER), _sellAmt);
+        IERC20(address(_sellAddr)).safeApprove(address(ROUTER), _sellAmt);
 
         uint _buyAmt = ROUTER.swapExactTokensForTokens(
             _sellAmt,
@@ -296,8 +300,8 @@ contract UniswapConnector is BaseConnector {
         isEth = address(_tokenB) == WETH_ADDR;
         convertEthToWeth(isEth, _tokenB, _amtB);
 
-        _tokenA.approve(address(ROUTER), _amtA);
-        _tokenA.approve(address(ROUTER), _amtB);
+        IERC20(tokenA).safeApprove(address(ROUTER), _amtA);
+        IERC20(tokenB).safeApprove(address(ROUTER), _amtB);
 
         uint minAmtA = getMinAmount(_tokenA, _amtA, slippage);
         uint minAmtB = getMinAmount(_tokenB, _amtB, slippage);
@@ -334,7 +338,7 @@ contract UniswapConnector is BaseConnector {
         _uniAmt = _amt == type(uint).max
             ? uniToken.balanceOf(address(this))
             : _amt;
-        uniToken.approve(address(ROUTER), _uniAmt);
+        IERC20(exchangeAddr).safeApprove(address(ROUTER), _uniAmt);
 
         {
             uint minAmtA = convert18ToDec(

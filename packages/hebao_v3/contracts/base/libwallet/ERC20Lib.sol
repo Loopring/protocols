@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../../lib/AddressUtil.sol";
 import "../../iface/PriceOracle.sol";
 import "../../thirdparty/BytesUtil.sol";
@@ -22,7 +20,6 @@ library ERC20Lib {
     using WhitelistLib for Wallet;
     using QuotaLib for Wallet;
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
 
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
@@ -31,19 +28,19 @@ library ERC20Lib {
     event Approved(address token, address spender, uint amount);
     event ContractCalled(address to, uint value, bytes data);
 
-    bytes32 public constant TRANSFER_TOKEN_TYPEHASH =
+    bytes32 private constant TRANSFER_TOKEN_TYPEHASH =
         keccak256(
             "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
         );
-    bytes32 public constant APPROVE_TOKEN_TYPEHASH =
+    bytes32 private constant APPROVE_TOKEN_TYPEHASH =
         keccak256(
             "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
         );
-    bytes32 public constant CALL_CONTRACT_TYPEHASH =
+    bytes32 private constant CALL_CONTRACT_TYPEHASH =
         keccak256(
             "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
         );
-    bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH =
+    bytes32 private constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH =
         keccak256(
             "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
         );
@@ -194,7 +191,7 @@ library ERC20Lib {
 
         // If we increased the allowance, calculate by how much
         if (amount > allowance) {
-            additionalAllowance = amount.sub(allowance);
+            additionalAllowance = amount - allowance;
         }
         emit Approved(token, spender, amount);
     }

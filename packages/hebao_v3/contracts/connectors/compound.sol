@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Compound.
@@ -62,6 +64,8 @@ interface ComptrollerInterface {
 }
 
 contract CompoundConnector is BaseConnector {
+    using SafeERC20 for IERC20;
+
     /**
      * @dev Compound Comptroller
      */
@@ -102,7 +106,7 @@ contract CompoundConnector is BaseConnector {
             _amt = _amt == type(uint).max
                 ? tokenContract.balanceOf(address(this))
                 : _amt;
-            tokenContract.approve(cToken, _amt);
+            IERC20(address(tokenContract)).safeApprove(cToken, _amt);
             require(CTokenInterface(cToken).mint(_amt) == 0, "deposit-failed");
         }
         setUint(setId, _amt);
@@ -221,7 +225,7 @@ contract CompoundConnector is BaseConnector {
                 tokenContract.balanceOf(address(this)) >= _amt,
                 "not-enough-token"
             );
-            tokenContract.approve(cToken, _amt);
+            IERC20(address(tokenContract)).safeApprove(cToken, _amt);
             require(cTokenContract.repayBorrow(_amt) == 0, "repay-failed.");
         }
         setUint(setId, _amt);
@@ -263,7 +267,7 @@ contract CompoundConnector is BaseConnector {
             _amt = _amt == type(uint).max
                 ? tokenContract.balanceOf(address(this))
                 : _amt;
-            tokenContract.approve(cToken, _amt);
+            IERC20(address(tokenContract)).safeApprove(cToken, _amt);
             require(ctokenContract.mint(_amt) == 0, "deposit-ctoken-failed.");
         }
 
@@ -375,7 +379,7 @@ contract CompoundConnector is BaseConnector {
                 tokenContract.balanceOf(address(this)) >= _amt,
                 "not-enough-token"
             );
-            tokenContract.approve(cTokenPay, _amt);
+            IERC20(address(tokenContract)).safeApprove(cTokenPay, _amt);
             require(
                 cTokenContract.liquidateBorrow(borrower, _amt, cTokenColl) == 0,
                 "liquidate-failed"

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./base_connector.sol";
 
@@ -23,7 +22,6 @@ contract WETHConnector is BaseConnector {
         _amt = _amt == type(uint256).max
             ? WETH_CONTRACT.balanceOf(address(this))
             : _amt;
-        WETH_CONTRACT.approve(WETH_ADDR, _amt);
         WETH_CONTRACT.withdraw(_amt);
         setUint(setId, _amt);
     }

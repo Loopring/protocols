@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
@@ -21,12 +23,8 @@ interface MemoryInterface {
 }
 
 contract DSMath {
-    uint public constant WAD = 10 ** 18;
-    uint public constant RAY = 10 ** 27;
-
-    function add(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.add(x, y);
-    }
+    uint internal constant WAD = 10 ** 18;
+    uint internal constant RAY = 10 ** 27;
 
     function sub(uint x, uint y) internal pure virtual returns (uint z) {
         z = SafeMath.sub(x, y);
@@ -34,10 +32,6 @@ contract DSMath {
 
     function mul(uint x, uint y) internal pure returns (uint z) {
         z = SafeMath.mul(x, y);
-    }
-
-    function div(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.div(x, y);
     }
 
     function wmul(uint x, uint y) internal pure returns (uint z) {
@@ -72,6 +66,8 @@ contract DSMath {
 }
 
 contract BaseConnector is DSMath {
+    using SafeERC20 for IERC20;
+
     address internal constant ETH_ADDR =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -121,7 +117,7 @@ contract BaseConnector is DSMath {
         uint amount
     ) internal {
         if (isEth) {
-            token.approve(address(token), amount);
+            IERC20(address(token)).safeApprove(address(token), amount);
             token.withdraw(amount);
         }
     }

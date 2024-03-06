@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./base_connector.sol";
 
 interface AaveInterface {
@@ -93,6 +94,8 @@ interface AaveDataProviderInterface {
 }
 
 contract AaveV3Connector is BaseConnector {
+    using SafeERC20 for IERC20;
+
     /**
      * @dev Aave Pool Provider
      */
@@ -170,7 +173,7 @@ contract AaveV3Connector is BaseConnector {
                 : _amt;
         }
 
-        tokenContract.approve(address(aave), _amt);
+        IERC20(address(tokenContract)).safeApprove(address(aave), _amt);
 
         aave.supply(_token, _amt, address(this), REFERRAL_CODE);
 
@@ -274,7 +277,7 @@ contract AaveV3Connector is BaseConnector {
 
         if (isEth) convertEthToWeth(isEth, tokenContract, _amt);
 
-        tokenContract.approve(address(aave), _amt);
+        IERC20(address(tokenContract)).safeApprove(address(aave), _amt);
 
         aave.repay(_token, _amt, rateMode, address(this));
 

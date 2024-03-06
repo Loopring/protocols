@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "./WalletData.sol";
 import "../../lib/SignatureUtil.sol";
@@ -18,20 +17,20 @@ library GuardianLib {
     using SafeCast for uint;
     using SignatureUtil for bytes32;
 
-    uint public constant MAX_GUARDIANS = 10;
-    uint public constant GUARDIAN_PENDING_PERIOD = 3 days;
+    uint private constant MAX_GUARDIANS = 10;
+    uint private constant GUARDIAN_PENDING_PERIOD = 3 days;
     SigRequirement public constant SIG_REQUIREMENT =
         SigRequirement.MAJORITY_OWNER_REQUIRED;
 
-    bytes32 public constant ADD_GUARDIAN_TYPEHASH =
+    bytes32 private constant ADD_GUARDIAN_TYPEHASH =
         keccak256(
             "addGuardian(address wallet,uint256 validUntil,address guardian)"
         );
-    bytes32 public constant REMOVE_GUARDIAN_TYPEHASH =
+    bytes32 private constant REMOVE_GUARDIAN_TYPEHASH =
         keccak256(
             "removeGuardian(address wallet,uint256 validUntil,address guardian)"
         );
-    bytes32 public constant RESET_GUARDIANS_TYPEHASH =
+    bytes32 private constant RESET_GUARDIANS_TYPEHASH =
         keccak256(
             "resetGuardians(address wallet,uint256 validUntil,address[] guardians)"
         );

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "../lib/LoopringErrors.sol";
 
@@ -74,8 +73,8 @@ contract Memory {
 }
 
 contract OwnedMemory is Memory {
-    address public master;
-    address public constant BROADCAST_ADDR = address(0);
+    address public immutable master;
+    address private constant BROADCAST_ADDR = address(0);
 
     constructor() {
         master = msg.sender;
