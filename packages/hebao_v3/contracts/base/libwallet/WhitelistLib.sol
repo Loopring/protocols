@@ -70,7 +70,7 @@ library WhitelistLib {
     }
 
     function encodeApprovalForAddToWhitelist(
-        bytes memory data,
+        bytes calldata data,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {

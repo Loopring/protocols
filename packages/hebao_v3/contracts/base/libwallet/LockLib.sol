@@ -44,7 +44,7 @@ library LockLib {
     }
 
     function encodeApprovalForUnlock(
-        bytes memory,
+        bytes calldata,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {

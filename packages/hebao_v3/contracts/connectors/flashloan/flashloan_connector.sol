@@ -36,7 +36,7 @@ contract FlashLoanConnector is BaseConnector {
     function flashBorrowAndCast(
         address token,
         uint amt,
-        bytes memory data
+        bytes calldata data
     ) external payable {
         (address[] memory targets, bytes[] memory callDatas) = abi.decode(
             data,

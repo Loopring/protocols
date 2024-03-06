@@ -21,7 +21,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271 {
 
     function isValidSignature(
         bytes32 _signHash,
-        bytes memory _signature
+        bytes calldata _signature
     ) public view override returns (bytes4) {
         return
             isManager(_signHash.recoverECDSASigner(_signature))

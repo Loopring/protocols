@@ -7,8 +7,8 @@ import "./IFlashLoanRecipient.sol";
 interface IBalancerVault {
     function flashLoan(
         IFlashLoanRecipient recipient,
-        IERC20[] memory tokens,
-        uint256[] memory amounts,
-        bytes memory userData
+        IERC20[] calldata tokens,
+        uint256[] calldata amounts,
+        bytes calldata userData
     ) external;
 }

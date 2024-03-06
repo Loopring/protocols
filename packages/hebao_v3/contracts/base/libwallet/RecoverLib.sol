@@ -63,7 +63,7 @@ library RecoverLib {
 
     function encodeApprovalForRecover(
         address newOwner,
-        address[] memory newGuardians,
+        address[] calldata newGuardians,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {

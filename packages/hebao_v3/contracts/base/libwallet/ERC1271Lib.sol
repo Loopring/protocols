@@ -18,7 +18,7 @@ library ERC1271Lib {
         Wallet storage wallet,
         bytes4 erc1271MagicValue,
         bytes32 signHash,
-        bytes memory signature
+        bytes calldata signature
     ) public view returns (bytes4 magicValue) {
         if (wallet.locked) {
             return 0;

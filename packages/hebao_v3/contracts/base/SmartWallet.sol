@@ -190,7 +190,7 @@ abstract contract SmartWallet is
     //
     function isValidSignature(
         bytes32 signHash,
-        bytes memory signature
+        bytes calldata signature
     ) public view override returns (bytes4 magicValue) {
         return wallet.isValidSignature(ERC1271_MAGICVALUE, signHash, signature);
     }

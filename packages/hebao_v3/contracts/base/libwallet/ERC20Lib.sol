@@ -231,7 +231,7 @@ library ERC20Lib {
     }
 
     function encodeApprovalForTransferToken(
-        bytes memory data,
+        bytes calldata data,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {
@@ -255,7 +255,7 @@ library ERC20Lib {
     }
 
     function encodeApprovalForApproveToken(
-        bytes memory data,
+        bytes calldata data,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {
@@ -280,7 +280,7 @@ library ERC20Lib {
     }
 
     function encodeApprovalForCallContract(
-        bytes memory callData,
+        bytes calldata callData,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {
@@ -313,7 +313,7 @@ library ERC20Lib {
     }
 
     function encodeApprovalForApproveThenCallContract(
-        bytes memory callData,
+        bytes calldata callData,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {

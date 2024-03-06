@@ -40,7 +40,7 @@ library GuardianLib {
 
     function addGuardiansImmediately(
         Wallet storage wallet,
-        address[] memory _guardians
+        address[] calldata _guardians
     ) external {
         address guardian = address(0);
         for (uint i = 0; i < _guardians.length; i++) {
@@ -441,7 +441,7 @@ library GuardianLib {
     }
 
     function encodeApprovalForAddGuardian(
-        bytes memory data,
+        bytes calldata data,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {
@@ -461,7 +461,7 @@ library GuardianLib {
     }
 
     function encodeApprovalForRemoveGuardian(
-        bytes memory data,
+        bytes calldata data,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {
@@ -481,7 +481,7 @@ library GuardianLib {
     }
 
     function encodeApprovalForResetGuardians(
-        bytes memory data,
+        bytes calldata data,
         bytes32 domainSeparator,
         uint256 validUntil
     ) external view returns (bytes32) {
