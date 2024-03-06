@@ -30,6 +30,7 @@ contract BalancerFlashLoan is IFlashLoanRecipient, FlashLoanPoolInterface {
     }
 
     constructor(address _vault) {
+        _require(_vault != address(0), Errors.ZERO_ADDRESS);
         vault = _vault;
     }
 

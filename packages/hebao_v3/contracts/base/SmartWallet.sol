@@ -118,6 +118,8 @@ abstract contract SmartWallet is
         address _connectorRegistry
     ) {
         isImplementationContract = true;
+        _require(_connectorRegistry != address(0), Errors.ZERO_ADDRESS);
+        _require(address(entryPointInput) != address(0), Errors.ZERO_ADDRESS);
         _entryPoint = entryPointInput;
         connectorRegistry = _connectorRegistry;
 
@@ -339,16 +341,19 @@ abstract contract SmartWallet is
     function addToWhitelist(
         address addr
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        _require(addr != address(0), Errors.ZERO_ADDRESS);
         wallet.addToWhitelist(addr);
     }
 
     function addToWhitelistWA(address addr) external onlyFromEntryPoint {
+        _require(addr != address(0), Errors.ZERO_ADDRESS);
         wallet.addToWhitelistWA(addr);
     }
 
     function removeFromWhitelist(
         address addr
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        _require(addr != address(0), Errors.ZERO_ADDRESS);
         wallet.removeFromWhitelist(addr);
     }
 
@@ -489,12 +494,14 @@ abstract contract SmartWallet is
         address executor,
         uint256 validUntil
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        _require(executor != address(0), Errors.ZERO_ADDRESS);
         return AutomationLib.approveExecutor(wallet, executor, validUntil);
     }
 
     function unApproveExecutor(
         address executor
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
+        _require(executor != address(0), Errors.ZERO_ADDRESS);
         return AutomationLib.unApproveExecutor(wallet, executor);
     }
 

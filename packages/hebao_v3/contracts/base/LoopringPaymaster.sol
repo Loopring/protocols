@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "../lib/LoopringErrors.sol";
+
 /**
  * A sample paymaster that uses external service to decide whether to pay for the UserOp.
  * The paymaster trusts an external signer to sign the transaction.
@@ -55,6 +57,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         IEntryPoint _entryPoint,
         address paymasterOwner
     ) BasePaymaster(_entryPoint) {
+        _require(paymasterOwner != address(0), Errors.ZERO_ADDRESS);
         _transferOwnership(paymasterOwner);
         _grantRole(DEFAULT_ADMIN_ROLE, owner());
         _grantRole(SIGNER, paymasterOwner);
@@ -269,6 +272,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      * owner of the paymaster should add supported tokens
      */
     function addToken(address token) external onlyOwner {
+        _require(token != address(0), Errors.ZERO_ADDRESS);
         if (registeredToken[token]) {
             revert TokenRegistered(token);
         }
@@ -276,6 +280,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
     }
 
     function removeToken(address token) external onlyOwner {
+        _require(token != address(0), Errors.ZERO_ADDRESS);
         if (!registeredToken[token]) {
             revert TokenUnregistered(token);
         }

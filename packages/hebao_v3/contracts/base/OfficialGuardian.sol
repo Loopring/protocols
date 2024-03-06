@@ -14,7 +14,8 @@ contract OfficialGuardian is OwnerManagable, ERC1271 {
 
     /// @dev init owner for proxy contract:
     function initOwner(address _owner) external {
-        require(owner == address(0), "INITIALIZED_ALREADY");
+        _require(_owner != address(0), Errors.ZERO_ADDRESS);
+        _require(owner == address(0), Errors.INITIALIZED_ALREADY);
         owner = _owner;
     }
 

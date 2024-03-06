@@ -317,6 +317,12 @@ export async function deployWalletImpl(
       ['WhitelistLib', WhitelistLib.address]
     ])
   )
+  if (connectorRegistryAddr === ethers.constants.AddressZero) {
+    const connectorRegistry = await (
+      await ethers.getContractFactory('ConnectorRegistry')
+    ).deploy()
+    connectorRegistryAddr = connectorRegistry.address
+  }
 
   const smartWallet = await deploySingle(
     deployFactory,

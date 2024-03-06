@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "../thirdparty/proxies/WalletProxy.sol";
+import "../lib/LoopringErrors.sol";
 
 /// @title WalletDeploymentLib
 /// @dev Functionality to compute wallet addresses and to deploy wallets
@@ -14,6 +15,7 @@ contract WalletDeploymentLib {
     string private constant WALLET_CREATION = "WALLET_CREATION";
 
     constructor(address _walletImplementation) {
+        _require(_walletImplementation != address(0), Errors.ZERO_ADDRESS);
         walletImplementation = _walletImplementation;
     }
 

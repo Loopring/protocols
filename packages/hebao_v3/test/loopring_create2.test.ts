@@ -41,7 +41,8 @@ describe('loopring create test', () => {
       await loadFixture(fixture)
     const contract = await ethers.getContractFactory('WalletFactory')
     const deployableCode = contract.getDeployTransaction(
-      ethers.constants.AddressZero
+      // as fake wallet implementation
+      deployFactory.address
     ).data!
     await deployFactory.deploy(deployableCode, salt)
 
