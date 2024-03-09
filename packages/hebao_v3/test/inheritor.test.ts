@@ -48,6 +48,10 @@ describe('inheritor test', () => {
       newOwner.address,
       [] /* keep all guardians */
     )
+    // check emitted event
+    void expect(tx)
+      .to.emit(smartWallet, 'Inherited')
+      .withArgs(inheritor.address, newOwner.address)
 
     const snapshotRestorer = await takeSnapshot()
     await sendTx(
@@ -105,7 +109,11 @@ describe('inheritor test', () => {
 
     // set new inheritor for smartwallet
     const waitingPeriod = 3600 * 24 * 30
-    await smartWallet.setInheritor(inheritor.address, waitingPeriod)
+    void expect(
+      await smartWallet.setInheritor(inheritor.address, waitingPeriod)
+    )
+      .to.emit(smartWallet, 'InheritorChanged')
+      .withArgs(inheritor.address, waitingPeriod)
     const walletData = await smartWallet.wallet()
     const validBlockTime = walletData.lastActive.add(
       walletData.inheritWaitingPeriod

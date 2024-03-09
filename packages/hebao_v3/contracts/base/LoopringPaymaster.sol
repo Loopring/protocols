@@ -123,15 +123,17 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
             DecodedData memory decodedData,
             bytes memory signature
         ) = parsePaymasterAndData(userOp.paymasterAndData);
-        if (!registeredToken[decodedData.token]) {
-            revert TokenUnregistered(decodedData.token);
-        }
+        _require(
+            registeredToken[decodedData.token],
+            Errors.TOKEN_NOT_REGISTERED
+        );
 
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "VerifyingPaymaster", and not "ECDSA"
-        if (signature.length != 64 && signature.length != 65) {
-            revert InvalidSignatureLength(signature.length);
-        }
+        _require(
+            signature.length == 64 || signature.length == 65,
+            Errors.INVALID_SIGNATURE_LENGTH
+        );
 
         // NOTE(cannot use basefee during validation)
         uint256 costOfPost = userOp.maxFeePerGas * COST_OF_POST;
@@ -139,15 +141,14 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         if (decodedData.valueOfEth > 0) {
             uint256 tokenRequiredPreFund = ((requiredPreFund + costOfPost) *
                 10 ** PRICE_DECIMAL) / decodedData.valueOfEth;
-            if (
-                !(unlockBlock[sender] == 0 &&
+            _require(
+                (unlockBlock[sender] == 0 &&
                     balances[decodedData.token][sender] >=
-                    tokenRequiredPreFund) &&
-                IERC20(decodedData.token).balanceOf(sender) <
-                tokenRequiredPreFund
-            ) {
-                revert NoEnoughTokenBalance(sender, tokenRequiredPreFund);
-            }
+                    tokenRequiredPreFund) ||
+                    IERC20(decodedData.token).balanceOf(sender) >=
+                    tokenRequiredPreFund,
+                Errors.NO_ENOUGH_TOKEN_BALANCE
+            );
         }
         bytes32 hash = ECDSA.toEthSignedMessageHash(
             getHash(
@@ -273,17 +274,13 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
      */
     function addToken(address token) external onlyOwner {
         _require(token != address(0), Errors.ZERO_ADDRESS);
-        if (registeredToken[token]) {
-            revert TokenRegistered(token);
-        }
+        _require(!registeredToken[token], Errors.TOKEN_ALREADY_REGISTERED);
         registeredToken[token] = true;
     }
 
     function removeToken(address token) external onlyOwner {
         _require(token != address(0), Errors.ZERO_ADDRESS);
-        if (!registeredToken[token]) {
-            revert TokenUnregistered(token);
-        }
+        _require(registeredToken[token], Errors.TOKEN_NOT_REGISTERED);
         registeredToken[token] = false;
     }
 
@@ -302,9 +299,7 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         address account,
         uint256 amount
     ) external {
-        if (!registeredToken[token]) {
-            revert TokenUnregistered(token);
-        }
+        _require(registeredToken[token], Errors.TOKEN_NOT_REGISTERED);
         //(sender must have approval for the paymaster)
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         balances[token][account] += amount;
@@ -350,9 +345,10 @@ contract LoopringPaymaster is BasePaymaster, AccessControl {
         uint256 amount
     ) public {
         uint256 unlockedBlockNumber = unlockBlock[msg.sender];
-        if (unlockedBlockNumber == 0 || block.number <= unlockedBlockNumber) {
-            revert TokenLocked(msg.sender, token, unlockedBlockNumber);
-        }
+        _require(
+            unlockedBlockNumber != 0 && block.number > unlockedBlockNumber,
+            Errors.PAYMASTER_TOKEN_LOCKED
+        );
         balances[token][msg.sender] -= amount;
         IERC20(token).safeTransfer(target, amount);
     }

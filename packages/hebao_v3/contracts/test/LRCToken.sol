@@ -2,8 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
 /**
  * @title ERC20Basic
  * @dev Simpler version of ERC20 interface
@@ -24,7 +22,6 @@ abstract contract ERC20Basic {
  * @dev Basic version of StandardToken, with no allowances.
  */
 contract BasicToken is ERC20Basic {
-    using SafeMath for uint;
     mapping(address => uint) internal balances;
     uint internal totalSupply_;
 
@@ -50,8 +47,8 @@ contract BasicToken is ERC20Basic {
             "TRANSFER_INSUFFICIENT_BALANCE"
         );
         // SafeMath.sub will throw if there is not enough balance.
-        balances[msg.sender] = balances[msg.sender].sub(_value);
-        balances[_to] = balances[_to].add(_value);
+        balances[msg.sender] = balances[msg.sender] - _value;
+        balances[_to] = balances[_to] + _value;
         emit Transfer(msg.sender, _to, _value);
         return true;
     }
@@ -97,8 +94,6 @@ abstract contract AbsERC20 is ERC20Basic {
  * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
 contract StandardToken is AbsERC20, BasicToken {
-    using SafeMath for uint;
-
     mapping(address => mapping(address => uint)) internal allowed;
 
     /**
@@ -118,9 +113,9 @@ contract StandardToken is AbsERC20, BasicToken {
             _value <= allowed[_from][msg.sender],
             "TRANSFERFROM_INSUFFICIENT_ALLOWANCE"
         );
-        balances[_from] = balances[_from].sub(_value);
-        balances[_to] = balances[_to].add(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        balances[_from] = balances[_from] - _value;
+        balances[_to] = balances[_to] + _value;
+        allowed[_from][msg.sender] = allowed[_from][msg.sender] - _value;
         emit Transfer(_from, _to, _value);
         return true;
     }
@@ -171,9 +166,9 @@ contract StandardToken is AbsERC20, BasicToken {
         address _spender,
         uint _addedValue
     ) public returns (bool) {
-        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(
-            _addedValue
-        );
+        allowed[msg.sender][_spender] =
+            allowed[msg.sender][_spender] +
+            _addedValue;
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
@@ -196,7 +191,7 @@ contract StandardToken is AbsERC20, BasicToken {
         if (_subtractedValue > oldValue) {
             allowed[msg.sender][_spender] = 0;
         } else {
-            allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
+            allowed[msg.sender][_spender] = oldValue - _subtractedValue;
         }
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
@@ -204,8 +199,6 @@ contract StandardToken is AbsERC20, BasicToken {
 }
 
 contract LRCToken is StandardToken {
-    using SafeMath for uint;
-
     string public name = "New Loopring token on ethereum";
     string public symbol = "LRC";
     uint8 public decimals = 18;
@@ -216,8 +209,8 @@ contract LRCToken is StandardToken {
         require(_value <= balances[msg.sender], "BURN_INSUFFICIENT_BALANCE");
 
         address burner = msg.sender;
-        balances[burner] = balances[burner].sub(_value);
-        totalSupply_ = totalSupply_.sub(_value);
+        balances[burner] = balances[burner] - _value;
+        totalSupply_ = totalSupply_ - _value;
         emit Burn(burner, _value);
         emit Transfer(burner, address(0), _value);
         return true;
@@ -231,9 +224,9 @@ contract LRCToken is StandardToken {
             "BURNFROM_INSUFFICIENT_ALLOWANCE"
         );
 
-        balances[_owner] = balances[_owner].sub(_value);
-        allowed[_owner][msg.sender] = allowed[_owner][msg.sender].sub(_value);
-        totalSupply_ = totalSupply_.sub(_value);
+        balances[_owner] = balances[_owner] - _value;
+        allowed[_owner][msg.sender] = allowed[_owner][msg.sender] - _value;
+        totalSupply_ = totalSupply_ - _value;
 
         emit Burn(_owner, _value);
         emit Transfer(_owner, address(0), _value);

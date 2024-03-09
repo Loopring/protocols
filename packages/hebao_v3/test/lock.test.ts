@@ -157,6 +157,32 @@ describe('lock test', () => {
       // check if it is locked by the new guardian
       expect((await smartWallet.wallet()).locked).to.equal(true)
     })
+    it('cannot lock when no any guardians', async () => {
+      const { smartWalletOwner, walletFactory } =
+        await loadFixture(fixture)
+      // create wallet with empty guardians list
+
+      const salt = ethers.utils.formatBytes32String('0x1')
+      await createSmartWallet(
+        smartWalletOwner,
+        [],
+        walletFactory,
+        salt
+      )
+
+      const smartWalletAddr =
+        await walletFactory.computeWalletAddress(
+          smartWalletOwner.address,
+          salt
+        )
+      const smartWallet = SmartWalletV3__factory.connect(
+        smartWalletAddr,
+        smartWalletOwner
+      )
+
+      // cannot lock
+      await expect(smartWallet.lock()).to.rejectedWith('LRC#400')
+    })
   })
   describe('unlock test', () => {
     it('cannot unlock directly from wallet owner', async () => {

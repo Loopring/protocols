@@ -8,9 +8,41 @@ import { ethers } from 'hardhat'
 
 import { fixture } from './helper/fixture'
 import { type PaymasterOption, sendTx } from './helper/utils'
+// import { LoopringPaymaster__factory } from '../typechain-types'
 
 describe('LoopringPaymaster test', () => {
   describe('admin operation success', () => {
+    it('deploy test', async () => {
+      const entryPointAddr = ethers.Wallet.createRandom().address
+      const deployFactory = await ethers.getContractFactory(
+        'LoopringPaymaster'
+      )
+      await expect(
+        deployFactory.deploy(
+          entryPointAddr,
+          ethers.constants.AddressZero
+        )
+      ).to.revertedWith('LRC#104')
+      const paymasterOwnerAddr = ethers.Wallet.createRandom().address
+      const paymaster = await deployFactory.deploy(
+        entryPointAddr,
+        paymasterOwnerAddr
+      )
+      expect(await paymaster.owner()).to.eq(paymasterOwnerAddr)
+      expect(
+        await paymaster.hasRole(
+          await paymaster.SIGNER(),
+          paymasterOwnerAddr
+        )
+      ).to.be.true
+      expect(
+        await paymaster.hasRole(
+          await paymaster.DEFAULT_ADMIN_ROLE(),
+          paymasterOwnerAddr
+        )
+      ).to.be.true
+      expect(await paymaster.entryPoint()).to.eq(entryPointAddr)
+    })
     it('adjust paramster params by owner', async () => {
       const { paymaster, somebody, lrcToken } =
         await loadFixture(fixture)
@@ -18,16 +50,24 @@ describe('LoopringPaymaster test', () => {
       await expect(
         paymaster.connect(somebody).addToken(lrcToken.address)
       ).to.revertedWith('Ownable: caller is not the owner')
+      // cannot add zero as token address
+      await expect(
+        paymaster.addToken(ethers.constants.AddressZero)
+      ).to.revertedWith('LRC#104')
       await paymaster.addToken(lrcToken.address)
       await expect(
         paymaster.addToken(lrcToken.address)
-      ).to.revertedWithCustomError(paymaster, 'TokenRegistered')
+      ).to.revertedWith('LRC#522')
       expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .true
+      // cannot add zero as token address
+      await expect(
+        paymaster.removeToken(ethers.constants.AddressZero)
+      ).to.revertedWith('LRC#104')
       await paymaster.removeToken(lrcToken.address)
       await expect(
         paymaster.removeToken(lrcToken.address)
-      ).to.revertedWithCustomError(paymaster, 'TokenUnregistered')
+      ).to.revertedWith('LRC#521')
       expect(await paymaster.registeredToken(lrcToken.address)).to.be
         .false
     })
@@ -58,6 +98,7 @@ describe('LoopringPaymaster test', () => {
         smartWallet,
         smartWalletOwner,
         usdtToken,
+        lrcToken,
         deployer,
         sendUserOp,
         create2,
@@ -85,11 +126,27 @@ describe('LoopringPaymaster test', () => {
       const valueOfEth = ethers.utils.parseUnits('625', 12)
       const paymasterOption: PaymasterOption = {
         paymaster,
-        payToken: usdtToken,
+        payToken: lrcToken,
         paymasterOwner,
         valueOfEth,
         validUntil: 0
       }
+
+      await paymaster.addToken(lrcToken.address)
+      await expect(
+        sendTx(
+          [approveToken],
+          smartWallet,
+          smartWalletOwner,
+          create2,
+          entrypoint,
+          sendUserOp,
+          paymasterOption
+        )
+      )
+        .to.revertedWithCustomError(entrypoint, 'FailedOp')
+        .withArgs(0, 'AA33 reverted: LRC#525')
+      paymasterOption.payToken = usdtToken
 
       expect(await usdtToken.balanceOf(deployer.address)).to.eq(0)
 
@@ -166,7 +223,7 @@ describe('LoopringPaymaster test', () => {
         )
       )
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(0, 'AA33 reverted (or OOG)')
+        .withArgs(0, 'AA33 reverted: LRC#521')
     })
 
     it('check valid until', async () => {
@@ -302,7 +359,7 @@ describe('LoopringPaymaster test', () => {
         paymaster
           .connect(deployer)
           .addDepositFor(lrcToken.address, deployer.address, amount)
-      ).to.revertedWithCustomError(paymaster, 'TokenUnregistered')
+      ).to.revertedWith('LRC#521')
 
       // add token before deposit
       await paymaster.addToken(lrcToken.address)
@@ -327,7 +384,7 @@ describe('LoopringPaymaster test', () => {
             deployer.address,
             amount
           )
-      ).to.revertedWithCustomError(paymaster, 'TokenLocked')
+      ).to.revertedWith('LRC#523')
       await paymaster.connect(deployer).unlockTokenDeposit()
       await paymaster
         .connect(deployer)
@@ -396,7 +453,7 @@ describe('LoopringPaymaster test', () => {
         )
       )
         .to.revertedWithCustomError(entrypoint, 'FailedOp')
-        .withArgs(0, 'AA33 reverted (or OOG)')
+        .withArgs(0, 'AA33 reverted: LRC#525')
 
       // only locked fund can be used for gas fee. so lock it again here.
       // note that cannot lock fund using paymaster service
@@ -438,5 +495,8 @@ describe('LoopringPaymaster test', () => {
         depositInfo.amount
       )
     })
+  })
+  describe('failure cases checks', () => {
+    it('check revert reasons', async () => {})
   })
 })

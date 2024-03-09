@@ -271,12 +271,9 @@ library Errors {
     uint256 internal constant TOKENS_MISMATCH = 520;
     uint256 internal constant TOKEN_NOT_REGISTERED = 521;
     uint256 internal constant TOKEN_ALREADY_REGISTERED = 522;
-    uint256 internal constant TOKENS_ALREADY_SET = 523;
-    uint256 internal constant TOKENS_LENGTH_MUST_BE_2 = 524;
-    uint256 internal constant NONZERO_TOKEN_BALANCE = 525;
-    uint256 internal constant BALANCE_TOTAL_OVERFLOW = 526;
-    uint256 internal constant POOL_NO_TOKENS = 527;
-    uint256 internal constant INSUFFICIENT_FLASH_LOAN_BALANCE = 528;
+    uint256 internal constant PAYMASTER_TOKEN_LOCKED = 523;
+    uint256 internal constant INVALID_SIGNATURE_LENGTH = 524;
+    uint256 internal constant NO_ENOUGH_TOKEN_BALANCE = 525;
 
     // Fees
     uint256 internal constant SWAP_FEE_PERCENTAGE_TOO_HIGH = 600;

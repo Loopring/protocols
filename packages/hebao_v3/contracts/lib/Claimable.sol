@@ -26,8 +26,9 @@ contract Claimable is Ownable {
 
     /// @dev Allows the pendingOwner address to finalize the transfer.
     function claimOwnership() public onlyPendingOwner {
-        emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;
         pendingOwner = address(0);
+
+        emit OwnershipTransferred(owner, pendingOwner);
     }
 }

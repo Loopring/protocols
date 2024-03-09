@@ -4,13 +4,11 @@ pragma solidity ^0.8.17;
 
 import "./WalletData.sol";
 import "./ApprovalLib.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /// @title WhitelistLib
 /// @dev This store maintains a wallet's whitelisted addresses.
 library WhitelistLib {
     using WhitelistLib for Wallet;
-    using SafeMath for uint;
 
     uint256 private constant WHITELIST_PENDING_PERIOD = 1 days;
     SigRequirement public constant SIG_REQUIREMENT =
@@ -26,7 +24,7 @@ library WhitelistLib {
     function addToWhitelist(Wallet storage wallet, address addr) external {
         wallet._addToWhitelist(
             addr,
-            block.timestamp.add(WHITELIST_PENDING_PERIOD)
+            block.timestamp + WHITELIST_PENDING_PERIOD
         );
     }
 

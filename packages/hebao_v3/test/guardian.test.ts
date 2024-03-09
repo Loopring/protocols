@@ -54,6 +54,10 @@ describe('guardian test', () => {
   it('basic testcase', async () => {
     const { smartWallet } = await loadFixture(fixture)
     const guardian1 = '0x' + '12'.repeat(20)
+    await expect(
+      smartWallet.addGuardian(ethers.constants.AddressZero)
+    ).to.rejectedWith('LRC#104')
+
     const tx1 = await smartWallet.addGuardian(guardian1)
     const receipt1 = await tx1.wait()
     // console.log("receipt1:", receipt1);
@@ -124,7 +128,7 @@ describe('guardian test', () => {
       eventTopics2
     )
     expect(addEvent2.guardian).to.equal(guardian2)
-    const blockTime2 = await getBlockTimestamp(tx2.blockNumber)
+    const blockTime2 = await getBlockTimestamp(tx2.blockNumber!)
     // second guardian should be effective immediately:
     expect(addEvent2.effectiveTime.toNumber()).to.equal(
       blockTime2 + 1

@@ -501,7 +501,10 @@ abstract contract SmartWallet is
     function unApproveExecutor(
         address executor
     ) external onlyFromEntryPointOrWalletOrOwnerWhenUnlocked {
-        _require(executor != address(0), Errors.ZERO_ADDRESS);
+        _require(
+            AutomationLib.isExecutorOrOwner(wallet, executor),
+            Errors.NOT_EXECUTOR
+        );
         return AutomationLib.unApproveExecutor(wallet, executor);
     }
 

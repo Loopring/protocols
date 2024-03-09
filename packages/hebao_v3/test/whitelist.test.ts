@@ -15,6 +15,9 @@ describe('whitelist test', () => {
   it('owner should be able to add address to its whitelist', async () => {
     const whiteListedAddr = '0x' + '11'.repeat(20)
     const { smartWallet } = await loadFixture(fixture)
+    await expect(
+      smartWallet.addToWhitelist(ethers.constants.AddressZero)
+    ).to.rejectedWith('LRC#104')
     const tx = await smartWallet.addToWhitelist(whiteListedAddr)
     const effectiveTime =
       await smartWallet.getWhitelistEffectiveTime(whiteListedAddr)
@@ -27,6 +30,9 @@ describe('whitelist test', () => {
       .true
 
     // remove it from whitelist
+    await expect(
+      smartWallet.removeFromWhitelist(ethers.constants.AddressZero)
+    ).to.rejectedWith('LRC#104')
     await smartWallet.removeFromWhitelist(whiteListedAddr)
     expect(
       await smartWallet.getWhitelistEffectiveTime(whiteListedAddr)

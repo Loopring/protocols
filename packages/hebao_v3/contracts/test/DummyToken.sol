@@ -2,13 +2,10 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./LRCToken.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyToken is LRCToken {
-    using SafeMath for uint;
-
     constructor(
         string memory _name,
         string memory _symbol,
@@ -19,9 +16,9 @@ contract DummyToken is LRCToken {
     function setBalance(address _target, uint _value) public {
         uint currBalance = balanceOf(_target);
         if (_value < currBalance) {
-            totalSupply_ = totalSupply_.sub(currBalance.sub(_value));
+            totalSupply_ = totalSupply_ - currBalance + _value;
         } else {
-            totalSupply_ = totalSupply_.add(_value.sub(currBalance));
+            totalSupply_ = totalSupply_ + _value - currBalance;
         }
         balances[_target] = _value;
     }
@@ -29,7 +26,7 @@ contract DummyToken is LRCToken {
     function addBalance(address _target, uint _value) public {
         uint currBalance = balanceOf(_target);
         require(_value + currBalance >= currBalance, "INVALID_VALUE");
-        totalSupply_ = totalSupply_.add(_value);
-        balances[_target] = currBalance.add(_value);
+        totalSupply_ = totalSupply_ + _value;
+        balances[_target] = currBalance + _value;
     }
 }

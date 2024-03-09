@@ -71,6 +71,22 @@ describe('automation test', () => {
     })
   })
   describe('permission test', () => {
+    it('approve test', async () => {
+      const loadedFixture = await loadFixture(fixtureForAutoMation)
+      await expect(
+        approveExecutor(loadedFixture, ethers.constants.AddressZero)
+      ).to.revertedWith('LRC#104')
+      const executor = ethers.Wallet.createRandom()
+      await approveExecutor(loadedFixture, executor.address)
+      // check it is a valid executor
+      const { smartWallet } = loadedFixture
+      expect(await smartWallet.isExecutorOrOwner(executor.address)).to
+        .be.true
+      await expect(
+        unApproveExecutor(loadedFixture, ethers.constants.AddressZero)
+      ).to.revertedWith('LRC#309')
+      await unApproveExecutor(loadedFixture, executor.address)
+    })
     it('not approved executor should be rejected', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const { smartWallet } = loadedFixture

@@ -5,8 +5,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
 interface TokenInterface {
     function approve(address, uint256) external;
     function transfer(address, uint) external;
@@ -27,27 +25,27 @@ contract DSMath {
     uint internal constant RAY = 10 ** 27;
 
     function sub(uint x, uint y) internal pure virtual returns (uint z) {
-        z = SafeMath.sub(x, y);
+        z = x - y;
     }
 
     function mul(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.mul(x, y);
+        z = x * y;
     }
 
     function wmul(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.add(SafeMath.mul(x, y), WAD / 2) / WAD;
+        z = (x * y + WAD / 2) / WAD;
     }
 
     function wdiv(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.add(SafeMath.mul(x, WAD), y / 2) / y;
+        z = (x * WAD + y / 2) / y;
     }
 
     function rdiv(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.add(SafeMath.mul(x, RAY), y / 2) / y;
+        z = (x * RAY + y / 2) / y;
     }
 
     function rmul(uint x, uint y) internal pure returns (uint z) {
-        z = SafeMath.add(SafeMath.mul(x, y), RAY / 2) / RAY;
+        z = (x * y + RAY / 2) / RAY;
     }
 
     function toInt(uint x) internal pure returns (int y) {
