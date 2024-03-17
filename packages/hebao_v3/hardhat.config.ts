@@ -45,7 +45,7 @@ const config: HardhatUserConfig = {
     },
     taiko6: {
       url: 'https://rpc.katla.taiko.xyz/',
-      accounts: [process.env.PRIVATE_KEY],
+      accounts: [process.env.PRIVATE_KEY as string],
       gasPrice: 2000000000
     },
     sepolia: {

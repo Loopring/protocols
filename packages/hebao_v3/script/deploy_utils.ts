@@ -218,3 +218,76 @@ export async function deployAll() {
     addressBook
   }
 }
+
+// eslint-disable-next-line
+export async function deployNewImplmentation() {
+  const addressBook: Record<string, string> = {}
+  const signers = await ethers.getSigners()
+  const deployer = signers[0]
+  let paymasterOwner
+  if (hre.network.name === 'hardhat') {
+    // as a paymaster owner, enough eth is necessary
+    paymasterOwner = signers[1]
+  } else {
+    paymasterOwner = new ethers.Wallet(
+      process.env.PAYMASTER_OWNER_PRIVATE_KEY ??
+        (process.env.PRIVATE_KEY as string),
+      ethers.provider
+    )
+  }
+  const blankOwner = process.env.BLANK_OWNER ?? deployer.address
+
+  // create2 factory
+  // NOTE(update address when create2 factory contract is modified)
+  const create2Addr = (create2AddrJson as Record<string, string>)[
+    hre.network.name
+  ]
+  const create2 = await ethers.getContractAt(
+    'LoopringCreate2Deployer',
+    create2Addr
+  )
+  addressBook.LoopringCreate2Deployer = create2.address
+
+  // entrypoint and paymaster
+  // NOTE(uncomment when you need to deploy a new entrypoint contract)
+  let entrypoint: Contract
+  // const entrypointAddr = ethers.constants.AddressZero;
+  const entrypointAddr = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
+  if ((await ethers.provider.getCode(entrypointAddr)) !== '0x') {
+    entrypoint = await ethers.getContractAt(
+      'EntryPoint',
+      entrypointAddr
+    )
+  } else {
+    entrypoint = await deploySingle(create2, 'EntryPoint')
+  }
+  addressBook.EntryPoint = entrypoint.address
+
+  const paymaster = await deploySingle(create2, 'LoopringPaymaster', [
+    entrypoint.address,
+    paymasterOwner.address
+  ])
+  addressBook.LoopringPaymaster = paymaster.address
+
+  const smartWalletImpl = await deployWalletImpl(
+    create2,
+    entrypoint.address,
+    blankOwner
+  )
+  addressBook.SmartWalletImpl = smartWalletImpl.address
+  return {
+    entrypoint: EntryPoint__factory.connect(
+      entrypoint.address,
+      deployer
+    ),
+    paymaster: LoopringPaymaster__factory.connect(
+      paymaster.address,
+      paymasterOwner
+    ),
+    create2,
+    deployer,
+    paymasterOwner,
+    blankOwner,
+    addressBook
+  }
+}
