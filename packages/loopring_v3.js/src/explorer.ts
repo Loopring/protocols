@@ -17,8 +17,8 @@ export class Explorer {
 
   /**
    * Initializes the Explorer
-   * @param   web3                       The web3 instance that will be used to get the necessary data from Ethereum
-   * @param   universalRegistryAddress   The address of the universal registry address
+   * @param   web3   The web3 instance that will be used to get the necessary data from Ethereum
+   * @param   ethereumBlockFrom   The Ethereum block index to sync from
    */
   public async initialize(web3: Web3, ethereumBlockFrom: number = 0) {
     this.web3 = web3;
@@ -77,7 +77,7 @@ export class Explorer {
 
   /**
    * Gets an exchange using the exchange's index in the list of all exchanges
-   * @param   index   The index of the exchange
+   * @param   idx   The index of the exchange
    * @return  The exchange on the given index
    */
   public getExchange(idx: number) {
