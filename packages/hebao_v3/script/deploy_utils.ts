@@ -18,6 +18,10 @@ import {
   USDT__factory
 } from '../typechain-types'
 
+// TODO()
+export const connectorRegistryAddr =
+  '0xd9267CD2BBd228591960F2592dc55fB216f1be38'
+
 // eslint-disable-next-line
 export async function deployAll() {
   const addressBook: Record<string, string> = {}
@@ -86,7 +90,9 @@ export async function deployAll() {
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
-    blankOwner
+    blankOwner,
+    ethers.constants.AddressZero,
+    connectorRegistryAddr
   )
   addressBook.SmartWalletImpl = smartWalletImpl.address
 
@@ -272,7 +278,9 @@ export async function deployNewImplmentation() {
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
-    blankOwner
+    blankOwner,
+    ethers.constants.AddressZero,
+    connectorRegistryAddr
   )
   addressBook.SmartWalletImpl = smartWalletImpl.address
   return {
