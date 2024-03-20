@@ -41,9 +41,8 @@ export interface Approval {
   // salt: BytesLike
 }
 
-export async function signTypedData(
+export function generateMessage(
   data: BytesLike,
-  signer: Wallet,
   approvalOption: ApprovalOption,
   domain: any,
   initValue: {
@@ -51,8 +50,7 @@ export async function signTypedData(
     validUntil: BigNumberish
     // salt: BytesLike
   }
-): Promise<string> {
-  let message: any
+): any {
   switch (approvalOption.action_type) {
     case ActionType.ApproveToken: {
       const result = utils.defaultAbiCoder.decode(
@@ -69,7 +67,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'approveToken',
@@ -80,7 +78,6 @@ export async function signTypedData(
           amount: result[2]
         }
       }
-      break
     }
     case ActionType.TransferToken: {
       const result = utils.defaultAbiCoder.decode(
@@ -100,7 +97,7 @@ export async function signTypedData(
         ]
       }
 
-      message = {
+      return {
         types,
         domain,
         primaryType: 'transferToken',
@@ -112,7 +109,6 @@ export async function signTypedData(
           logdata: result[3]
         }
       }
-      break
     }
     case ActionType.CallContract: {
       const result = utils.defaultAbiCoder.decode(
@@ -129,7 +125,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'callContract',
@@ -140,7 +136,6 @@ export async function signTypedData(
           data: result[2]
         }
       }
-      break
     }
     case ActionType.ApproveThenCallContract: {
       const result = utils.defaultAbiCoder.decode(
@@ -159,7 +154,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'approveThenCallContract',
@@ -172,7 +167,6 @@ export async function signTypedData(
           data: result[4]
         }
       }
-      break
     }
     case ActionType.AddGuardian: {
       const result = utils.defaultAbiCoder.decode(['address'], data)
@@ -184,7 +178,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'addGuardian',
@@ -193,7 +187,6 @@ export async function signTypedData(
           guardian: result[0]
         }
       }
-      break
     }
     case ActionType.RemoveGuardian: {
       const result = utils.defaultAbiCoder.decode(['address'], data)
@@ -205,7 +198,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'removeGuardian',
@@ -214,7 +207,6 @@ export async function signTypedData(
           guardian: result[0]
         }
       }
-      break
     }
     case ActionType.ResetGuardians: {
       const result = utils.defaultAbiCoder.decode(['address[]'], data)
@@ -226,7 +218,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'resetGuardians',
@@ -235,7 +227,6 @@ export async function signTypedData(
           guardians: result[0]
         }
       }
-      break
     }
     case ActionType.AddToWhitelist: {
       const result = utils.defaultAbiCoder.decode(['address'], data)
@@ -247,7 +238,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'addToWhitelist',
@@ -256,7 +247,6 @@ export async function signTypedData(
           addr: result[0]
         }
       }
-      break
     }
     case ActionType.ChangeDailyQuota: {
       const result = utils.defaultAbiCoder.decode(['uint256'], data)
@@ -268,7 +258,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'changeDailyQuota',
@@ -277,7 +267,6 @@ export async function signTypedData(
           newQuota: result[0]
         }
       }
-      break
     }
     case ActionType.ChangeMasterCopy: {
       const result = utils.defaultAbiCoder.decode(['address'], data)
@@ -289,7 +278,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'changeMasterCopy',
@@ -298,7 +287,6 @@ export async function signTypedData(
           masterCopy: result[0]
         }
       }
-      break
     }
     case ActionType.Recover: {
       const result = utils.defaultAbiCoder.decode(
@@ -314,7 +302,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'recover',
@@ -324,7 +312,6 @@ export async function signTypedData(
           newGuardians: result[1]
         }
       }
-      break
     }
     case ActionType.Unlock: {
       const types = {
@@ -334,7 +321,7 @@ export async function signTypedData(
           // { name: 'salt', type: 'bytes32' }
         ]
       }
-      message = {
+      return {
         types,
         domain,
         primaryType: 'unlock',
@@ -342,9 +329,27 @@ export async function signTypedData(
           ...initValue
         }
       }
-      break
     }
   }
+}
+
+export async function signTypedData(
+  data: BytesLike,
+  signer: Wallet,
+  approvalOption: ApprovalOption,
+  domain: any,
+  initValue: {
+    wallet: string
+    validUntil: BigNumberish
+    // salt: BytesLike
+  }
+): Promise<string> {
+  const message = generateMessage(
+    data,
+    approvalOption,
+    domain,
+    initValue
+  )
   return await signer._signTypedData(
     message.domain,
     message.types,

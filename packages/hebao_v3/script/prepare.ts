@@ -12,14 +12,7 @@ import {
 } from './../typechain-types'
 import deploymentJson from '../deployments/deployments.json'
 import * as hre from 'hardhat'
-
-interface DeploymentType {
-  EntryPoint: string
-  LoopringPaymaster: string
-  SmartWallet?: string
-  WalletFactory?: string
-  USDT?: string
-}
+import { type DeploymentType } from './addresses'
 
 // eth config
 const ethAmount = ethers.utils.parseEther('0.2')

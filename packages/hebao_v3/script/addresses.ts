@@ -5,6 +5,14 @@ export type DeploymentsAddress = Record<
   Record<string, string>
 >
 
+export interface DeploymentType {
+  EntryPoint: string
+  LoopringPaymaster: string
+  SmartWallet?: string
+  WalletFactory?: string
+  USDT?: string
+}
+
 export function saveDeploymentsAddress(
   addressBook: Record<string, string>,
   network: string,

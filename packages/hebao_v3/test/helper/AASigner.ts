@@ -314,8 +314,8 @@ export async function fillAndMultiSign(
           domain,
           {
             wallet: smartWallet.address,
-            validUntil: approvalOption.validUntil,
-            salt: approvalOption.salt
+            validUntil: approvalOption.validUntil
+            // salt: approvalOption.salt
           }
         )
     )
@@ -337,15 +337,15 @@ export async function fillAndMultiSign(
   const approval = {
     signers: sortedSigners,
     signatures: sortedSignatures,
-    validUntil: approvalOption.validUntil,
-    salt: approvalOption.salt
+    validUntil: approvalOption.validUntil
+    // salt: approvalOption.salt
   }
   const ownerSignature = await smartWalletOwner.signMessage(
     arrayify(userOpHash)
   )
   const signature = ethers.utils.defaultAbiCoder.encode(
     [
-      'tuple(address[] signers,bytes[] signatures,uint256 validUntil,bytes32 salt)',
+      'tuple(address[] signers,bytes[] signatures,uint256 validUntil)',
       'bytes'
     ],
     [approval, ownerSignature]
