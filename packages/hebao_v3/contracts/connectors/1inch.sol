@@ -34,10 +34,15 @@ struct OneInchData {
 contract OneInchV5Connector is BaseConnector {
     using SafeERC20 for IERC20;
 
-    address internal constant ONEINCH_ADDR =
-        0x1111111254EEB25477B68fb85Ed929f73A960582;
+    address internal immutable ONEINCH_ADDR;
 
-    constructor(address _instaMemory) BaseConnector(_instaMemory) {}
+    constructor(
+        address _1inch,
+        address _instaMemory,
+        address _weth
+    ) BaseConnector(_instaMemory, _weth) {
+        ONEINCH_ADDR = _1inch;
+    }
 
     /**
      * @dev 1inch API swap handler

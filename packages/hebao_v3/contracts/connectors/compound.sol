@@ -69,10 +69,15 @@ contract CompoundConnector is BaseConnector {
     /**
      * @dev Compound Comptroller
      */
-    ComptrollerInterface internal constant COMP_TROLLER =
-        ComptrollerInterface(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    ComptrollerInterface internal immutable COMP_TROLLER;
 
-    constructor(address _instaMemory) BaseConnector(_instaMemory) {}
+    constructor(
+        address _comp_troller,
+        address _instaMemory,
+        address _weth
+    ) BaseConnector(_instaMemory, _weth) {
+        COMP_TROLLER = ComptrollerInterface(_comp_troller);
+    }
 
     /**
      * @dev Deposit ETH/ERC20_Token.

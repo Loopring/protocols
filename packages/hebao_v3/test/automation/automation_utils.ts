@@ -25,20 +25,85 @@ import {
   type SmartWalletV3
 } from '../../typechain-types'
 
+export enum ChainId {
+  ethereum = 1,
+  sepolia = 11155111
+}
+
 export const CONSTANTS = {
-  RICH_ADDRESS: '0x176F3DAb24a159341c0509bB36B833E7fdd0a132',
-  USDC_ADDRESS: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  UNI_ADDRESS: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
-  USDT_ADDRESS: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-  cUSDT_ADDRESS: '0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9',
-  WETH_ADDRESS: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  WBT_ADDRESS: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-  DAI_ADDRESS: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  ETH_ADDRESS: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
-  STETH_ADDRESS: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
-  WSTETH_ADDRESS: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
-  ONE_FOR_ETH: ethers.utils.parseEther('1'),
-  ONE_FOR_USDC: ethers.utils.parseUnits('1', 6)
+  ONE_FOR_USDC: ethers.utils.parseUnits('1', 6),
+  ONE_FOR_ETH: ethers.utils.parseEther('1')
+}
+
+export const AddressForNetwork: Record<
+  number,
+  Record<string, string>
+> = {
+  [ChainId.ethereum]: {
+    USDC_ADDRESS: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    UNI_ADDRESS: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+    USDT_ADDRESS: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    cUSDT_ADDRESS: '0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9',
+    WETH_ADDRESS: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    WBT_ADDRESS: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+    DAI_ADDRESS: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    ETH_ADDRESS: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    STETH_ADDRESS: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+    WSTETH_ADDRESS: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    SWAP_ROUTERV3_ADDRESS:
+      '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+    SWAP_ROUTERV2_ADDRESS:
+      '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+    BALANCER_VAULT: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+    AAVE_DATA: '0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3',
+    AAVE_PROVIDER: '0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e',
+    TREASURY: '0x456ecAca6A1Bc3a71fC1955562d1d9BF662974D8',
+    COMP_TROLLER: '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B',
+    ONEINCH: '0x1111111254EEB25477B68fb85Ed929f73A960582'
+  },
+  [ChainId.sepolia]: {
+    USDC_ADDRESS: '0xfffed8254566b7f800f6d8cdb843ec75ae49b07a',
+    ETH_ADDRESS: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    UNI_ADDRESS: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+    WETH_ADDRESS: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14',
+    SWAP_ROUTERV3_ADDRESS:
+      '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
+    SWAP_ROUTERV2_ADDRESS:
+      '0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008',
+    BALANCER_VAULT: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+    STETH_ADDRESS: '0x3e3FE7dBc6B4C189E7128855dD526361c49b40Af',
+    WSTETH_ADDRESS: '0xB82381A3fBD3FaFA77B3a7bE693342618240067b',
+    AAVE_DATA: '0x3e9708d80f7B3e43118013075F7e95CE3AB31F31',
+    AAVE_PROVIDER: '0x012bAC54348C0E635dCAc9D5FB99f06F24136C9A',
+    TREASURY: '0x456ecAca6A1Bc3a71fC1955562d1d9BF662974D8',
+    COMP_TROLLER: ethers.constants.AddressZero,
+    ONEINCH: ethers.constants.AddressZero
+  }
+}
+
+export const RichAddressForNetwork: Record<
+  string,
+  Record<string, string>
+> = {
+  [ChainId.ethereum]: {
+    USDC_ADDRESS: '0x176F3DAb24a159341c0509bB36B833E7fdd0a132',
+    ETH_ADDRESS: '0x176F3DAb24a159341c0509bB36B833E7fdd0a132',
+    WETH_ADDRESS: '0x57757E3D981446D585Af0D9Ae4d7DF6D64647806',
+    USDT_ADDRESS: '0x176F3DAb24a159341c0509bB36B833E7fdd0a132',
+    UNI_ADDRESS: '0x5a52E96BAcdaBb82fd05763E25335261B270Efcb',
+
+    cUSDT_ADDRESS: '0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9',
+    WBT_ADDRESS: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+    DAI_ADDRESS: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    STETH_ADDRESS: '0x18709E89BD403F470088aBDAcEbE86CC60dda12e',
+    WSTETH_ADDRESS: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
+  },
+  [ChainId.sepolia]: {
+    USDC_ADDRESS: '0x27b08aD52cb8a64543d58120bA9EB5a8638E8C60',
+    ETH_ADDRESS: '0xBaEb92889696217A3A6be2175E5a95dC4cFFC9f7',
+    UNI_ADDRESS: '0x41653c7d61609D856f29355E404F310Ec4142Cfb',
+    WETH_ADDRESS: '0xBaEb92889696217A3A6be2175E5a95dC4cFFC9f7'
+  }
 }
 
 export const tokenMapping = {
@@ -64,42 +129,76 @@ export const tokenMapping = {
 // eslint-disable-next-line
 export async function fixtureForAutoMation() {
   const initFixture = await fixture()
+  // set mainnet as default network
+  const chainId = parseInt(process.env.FORK ?? '1')
+  const addressBook = AddressForNetwork[chainId]
+
   const { connectorRegistry } = initFixture
   const ownedMemory = await (
     await ethers.getContractFactory('OwnedMemory')
   ).deploy()
   const wethConnector = await (
     await ethers.getContractFactory('WETHConnector')
-  ).deploy(ownedMemory.address)
+  ).deploy(ownedMemory.address, addressBook.WETH_ADDRESS)
   const uniswapConnector = await (
     await ethers.getContractFactory('UniswapConnector')
-  ).deploy(ownedMemory.address)
+  ).deploy(
+    addressBook.SWAP_ROUTERV2_ADDRESS,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
   const uniswapv3Connector = await (
     await ethers.getContractFactory('UniswapV3Connector')
-  ).deploy(ownedMemory.address)
+  ).deploy(
+    addressBook.SWAP_ROUTERV3_ADDRESS,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
   const oneInchV5Connector = await (
     await ethers.getContractFactory('OneInchV5Connector')
-  ).deploy(ownedMemory.address)
+  ).deploy(
+    addressBook.ONEINCH,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
   const compoundConnector = await (
     await ethers.getContractFactory('CompoundConnector')
-  ).deploy(ownedMemory.address)
+  ).deploy(
+    addressBook.COMP_TROLLER,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
 
-  const vaultAddr = '0xBA12222222228d8Ba445958a75a0704d566BF2C8'
   const flashLoanPool = await (
     await ethers.getContractFactory('BalancerFlashLoan')
-  ).deploy(vaultAddr)
+  ).deploy(addressBook.BALANCER_VAULT)
 
   const flashLoanConnector = await (
     await ethers.getContractFactory('FlashLoanConnector')
-  ).deploy(ownedMemory.address, flashLoanPool.address)
+  ).deploy(
+    flashLoanPool.address,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
 
   const lidoConnector = await (
     await ethers.getContractFactory('LidoConnector')
-  ).deploy(ownedMemory.address)
+  ).deploy(
+    addressBook.STETH_ADDRESS,
+    addressBook.WSTETH_ADDRESS,
+    addressBook.TREASURY,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
 
   const aaveV3Connector = await (
     await ethers.getContractFactory('AaveV3Connector')
-  ).deploy(ownedMemory.address)
+  ).deploy(
+    addressBook.AAVE_PROVIDER,
+    addressBook.AAVE_DATA,
+    ownedMemory.address,
+    addressBook.WETH_ADDRESS
+  )
 
   await (
     await connectorRegistry.addConnectors([
@@ -117,8 +216,9 @@ export async function fixtureForAutoMation() {
   // can only be used in forknet test
   const usdc = await ethers.getContractAt(
     'IERC20Metadata',
-    CONSTANTS.USDC_ADDRESS
+    addressBook.USDC_ADDRESS
   )
+  const richAddresses = RichAddressForNetwork[chainId]
   return {
     ...initFixture,
     wethConnector,
@@ -130,7 +230,9 @@ export async function fixtureForAutoMation() {
     aaveV3Connector,
     uniswapv3Connector,
     flashLoanPool,
-    usdc
+    usdc,
+    addressBook,
+    richAddresses
   }
 }
 
@@ -180,11 +282,11 @@ const getSignedUserOp = async (
 export const faucetToken = async (
   tokenAddress: string | 0,
   myAddress: string,
+  richAddress: string,
   amount: string
 ): Promise<TransactionReceipt> => {
-  const impersonatedRichAddr = await ethers.getImpersonatedSigner(
-    CONSTANTS.RICH_ADDRESS
-  )
+  const impersonatedRichAddr =
+    await ethers.getImpersonatedSigner(richAddress)
   if (tokenAddress === 0) {
     return impersonatedRichAddr
       .sendTransaction({

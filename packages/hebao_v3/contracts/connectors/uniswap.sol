@@ -89,9 +89,14 @@ interface IUniswapV2Factory {
 contract UniswapConnector is BaseConnector {
     using SafeERC20 for IERC20;
 
-    IUniswapV2Router02 internal constant ROUTER =
-        IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    constructor(address _instaMemory) BaseConnector(_instaMemory) {}
+    IUniswapV2Router02 internal immutable ROUTER;
+    constructor(
+        address router,
+        address instaMemory,
+        address _weth
+    ) BaseConnector(instaMemory, _weth) {
+        ROUTER = IUniswapV2Router02(router);
+    }
 
     function deposit(
         address tokenA,

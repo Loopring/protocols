@@ -12,18 +12,42 @@ dotenv.config()
 
 const privateKey = process.env.PRIVATE_KEY as string
 
+function generateForkInfo(
+  chainId: string | undefined,
+  apiKey: string | undefined
+): { url: string; blockNumber: number } | undefined {
+  if (chainId === undefined || apiKey === undefined) {
+    return undefined
+  }
+  switch (parseInt(chainId)) {
+    case 1: {
+      // mainnet
+      return {
+        url: `https://mainnet.infura.io/v3/${apiKey}`,
+        blockNumber: 18482580
+      }
+    }
+    case 11155111: {
+      // sepolia
+      return {
+        url: `https://sepolia.infura.io/v3/${apiKey}`,
+        blockNumber: 5563000
+      }
+    }
+    default: {
+      throw new Error(`unknown chainId: ${chainId}`)
+    }
+  }
+}
+
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {
-      forking:
-        process.env.FORK != null
-          ? {
-              // url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-              url: 'https://eth-mainnet.g.alchemy.com/v2/mgHwlYpgAvGEiR_RCgPiTfvT-yyJ6T03',
-              blockNumber: 18482580
-            }
-          : undefined
+      forking: generateForkInfo(
+        process.env.FORK,
+        process.env.INFURA_API_KEY
+      )
     },
     ethereum: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,

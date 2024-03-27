@@ -69,13 +69,13 @@ contract BaseConnector is DSMath {
     address internal constant ETH_ADDR =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    address internal constant WETH_ADDR =
-        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal immutable WETH_ADDR;
 
     MemoryInterface public immutable instaMemory;
 
-    constructor(address _instaMemory) {
+    constructor(address _instaMemory, address _wethAddr) {
         instaMemory = MemoryInterface(_instaMemory);
+        WETH_ADDR = _wethAddr;
     }
 
     function getUint(uint getId, uint val) internal returns (uint returnVal) {
@@ -92,7 +92,7 @@ contract BaseConnector is DSMath {
     function changeEthAddress(
         address buy,
         address sell
-    ) internal pure returns (TokenInterface _buy, TokenInterface _sell) {
+    ) internal view returns (TokenInterface _buy, TokenInterface _sell) {
         _buy = buy == ETH_ADDR
             ? TokenInterface(WETH_ADDR)
             : TokenInterface(buy);

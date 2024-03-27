@@ -4,16 +4,19 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import {
   faucetToken,
   fixtureForAutoMation,
-  CONSTANTS,
   userOpCast,
   makeAnExecutor,
   unApproveExecutor,
   encodeSpells,
   encodeFlashcastData,
-  approveExecutor
+  approveExecutor,
+  CONSTANTS,
+  ChainId
 } from './automation_utils'
 
 describe('automation test', () => {
+  const chainId = parseInt(process.env.FORK ?? '1')
+
   describe('connectorRegistry test', () => {
     it('connector management', async () => {
       const { connectorRegistry, deployer } = await loadFixture(
@@ -211,10 +214,11 @@ describe('automation test', () => {
   describe('basic connectors test', () => {
     it('weth connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, wethConnector } = loadedFixture
+      const { smartWallet, wethConnector, addressBook } =
+        loadedFixture
       const weth = await ethers.getContractAt(
         'TokenInterface',
-        CONSTANTS.WETH_ADDRESS
+        addressBook.WETH_ADDRESS
       )
       const executor = await makeAnExecutor(loadedFixture)
 
@@ -235,76 +239,128 @@ describe('automation test', () => {
       expect(balance2.sub(balance1)).eq(CONSTANTS.ONE_FOR_ETH)
     })
 
-    it('compound connector test', async () => {
-      const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, compoundConnector } = loadedFixture
-      const executor = await makeAnExecutor(loadedFixture)
+    if (chainId !== ChainId.sepolia) {
+      it('compound connector test', async () => {
+        const loadedFixture = await loadFixture(fixtureForAutoMation)
+        const {
+          smartWallet,
+          compoundConnector,
+          addressBook,
+          richAddresses
+        } = loadedFixture
+        const executor = await makeAnExecutor(loadedFixture)
 
-      // USDC-A
-      const cTokenAddr = '0x39AA39c021dfbaE8faC545936693aC917d5E7563'
-      const cERC20 = await ethers.getContractAt(
-        'IERC20Metadata',
-        cTokenAddr
-      )
-      const cToken = await ethers.getContractAt(
-        'CTokenInterface',
-        cTokenAddr
-      )
-      const tokenAddr = await cToken.underlying()
-      await faucetToken(
-        CONSTANTS.USDC_ADDRESS,
-        smartWallet.address,
-        '1'
-      )
-
-      // deposit
-      {
-        const data = compoundConnector.interface.encodeFunctionData(
-          'deposit',
-          [tokenAddr, cTokenAddr, CONSTANTS.ONE_FOR_USDC, 0, 0]
+        // USDC-A
+        const cTokenAddr =
+          '0x39AA39c021dfbaE8faC545936693aC917d5E7563'
+        const cERC20 = await ethers.getContractAt(
+          'IERC20Metadata',
+          cTokenAddr
         )
-        const balanceBefore = await cERC20.balanceOf(
-          smartWallet.address
-        )
-        await expect(
-          userOpCast(
-            [compoundConnector.address],
-            [data],
-            { wallet: executor },
-            loadedFixture
-          )
-        ).not.to.reverted
-        const balanceAfter = await cERC20.balanceOf(
-          smartWallet.address
-        )
-        expect(balanceAfter.sub(balanceBefore)).gt(0)
-      }
-
-      // borrow
-      {
-        // "USDT-A"
         const cToken = await ethers.getContractAt(
           'CTokenInterface',
-          '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9'
+          cTokenAddr
         )
         const tokenAddr = await cToken.underlying()
-        const token = await ethers.getContractAt(
-          'IERC20Metadata',
-          tokenAddr
+        await faucetToken(
+          addressBook.USDC_ADDRESS,
+          smartWallet.address,
+          richAddresses.USDC_ADDRESS,
+          '1'
         )
-        const balanceBefore = await token.balanceOf(
-          smartWallet.address
-        )
+
+        // deposit
+        {
+          const data = compoundConnector.interface.encodeFunctionData(
+            'deposit',
+            [tokenAddr, cTokenAddr, CONSTANTS.ONE_FOR_USDC, 0, 0]
+          )
+          const balanceBefore = await cERC20.balanceOf(
+            smartWallet.address
+          )
+          await expect(
+            userOpCast(
+              [compoundConnector.address],
+              [data],
+              { wallet: executor },
+              loadedFixture
+            )
+          ).not.to.reverted
+          const balanceAfter = await cERC20.balanceOf(
+            smartWallet.address
+          )
+          expect(balanceAfter.sub(balanceBefore)).gt(0)
+        }
+
+        // borrow
+        {
+          // "USDT-A"
+          const cToken = await ethers.getContractAt(
+            'CTokenInterface',
+            '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9'
+          )
+          const tokenAddr = await cToken.underlying()
+          const token = await ethers.getContractAt(
+            'IERC20Metadata',
+            tokenAddr
+          )
+          const balanceBefore = await token.balanceOf(
+            smartWallet.address
+          )
+          const data = compoundConnector.interface.encodeFunctionData(
+            'borrow',
+            [
+              tokenAddr,
+              cToken.address,
+              CONSTANTS.ONE_FOR_USDC.div(2),
+              0,
+              0
+            ]
+          )
+          await expect(
+            userOpCast(
+              [compoundConnector.address],
+              [data],
+              { wallet: executor },
+              loadedFixture
+            )
+          ).not.to.reverted
+          const balanceAfter = await token.balanceOf(
+            smartWallet.address
+          )
+          expect(balanceAfter.sub(balanceBefore)).eq(
+            CONSTANTS.ONE_FOR_USDC.div(2)
+          )
+
+          // repay
+          const data2 =
+            compoundConnector.interface.encodeFunctionData(
+              'payback',
+              [
+                tokenAddr,
+                cToken.address,
+                ethers.constants.MaxUint256, // repay all borrowed tokens
+                0,
+                0
+              ]
+            )
+
+          await expect(
+            userOpCast(
+              [compoundConnector.address],
+              [data2],
+              { wallet: executor },
+              loadedFixture
+            )
+          ).not.to.reverted
+        }
+
+        // withdraw
         const data = compoundConnector.interface.encodeFunctionData(
-          'borrow',
-          [
-            tokenAddr,
-            cToken.address,
-            CONSTANTS.ONE_FOR_USDC.div(2),
-            0,
-            0
-          ]
+          'withdraw',
+          [tokenAddr, cTokenAddr, ethers.constants.MaxUint256, 0, 0]
         )
+
         await expect(
           userOpCast(
             [compoundConnector.address],
@@ -313,148 +369,120 @@ describe('automation test', () => {
             loadedFixture
           )
         ).not.to.reverted
-        const balanceAfter = await token.balanceOf(
-          smartWallet.address
-        )
-        expect(balanceAfter.sub(balanceBefore)).eq(
-          CONSTANTS.ONE_FOR_USDC.div(2)
-        )
-
-        // repay
-        const data2 = compoundConnector.interface.encodeFunctionData(
-          'payback',
+      })
+    }
+    if (chainId !== ChainId.sepolia) {
+      it('aaveV3 connector test', async () => {
+        const loadedFixture = await loadFixture(fixtureForAutoMation)
+        const {
+          smartWallet,
+          aaveV3Connector,
+          addressBook,
+          richAddresses
+        } = loadedFixture
+        const data = aaveV3Connector.interface.encodeFunctionData(
+          'deposit',
           [
-            tokenAddr,
-            cToken.address,
-            ethers.constants.MaxUint256, // repay all borrowed tokens
+            addressBook.WETH_ADDRESS,
+            CONSTANTS.ONE_FOR_ETH.mul(10),
             0,
             0
           ]
         )
-
+        await faucetToken(
+          addressBook.WETH_ADDRESS,
+          smartWallet.address,
+          richAddresses.WETH_ADDRESS,
+          '100'
+        )
+        const wETH = await ethers.getContractAt(
+          'IERC20Metadata',
+          addressBook.WETH_ADDRESS
+        )
+        const wETHBalanceBefore = await wETH.balanceOf(
+          smartWallet.address
+        )
+        const executor = await makeAnExecutor(loadedFixture)
         await expect(
           userOpCast(
-            [compoundConnector.address],
-            [data2],
+            [aaveV3Connector.address],
+            [data],
             { wallet: executor },
             loadedFixture
           )
         ).not.to.reverted
-      }
+        const wETHBalanceAfter = await wETH.balanceOf(
+          smartWallet.address
+        )
+        expect(wETHBalanceBefore.sub(wETHBalanceAfter)).eq(
+          CONSTANTS.ONE_FOR_ETH.mul(10)
+        )
 
-      // withdraw
-      const data = compoundConnector.interface.encodeFunctionData(
-        'withdraw',
-        [tokenAddr, cTokenAddr, ethers.constants.MaxUint256, 0, 0]
-      )
+        // borrow weth from aavev3
+        const borrowData =
+          aaveV3Connector.interface.encodeFunctionData('borrow', [
+            addressBook.USDC_ADDRESS,
+            CONSTANTS.ONE_FOR_USDC,
+            2,
+            0,
+            0
+          ])
+        await expect(
+          userOpCast(
+            [aaveV3Connector.address],
+            [borrowData],
+            { wallet: executor },
+            loadedFixture
+          )
+        ).not.to.reverted
 
-      await expect(
-        userOpCast(
-          [compoundConnector.address],
-          [data],
-          { wallet: executor },
-          loadedFixture
+        // payback all debts
+        // need some weth token to pay for interests
+        await faucetToken(
+          addressBook.USDC_ADDRESS,
+          smartWallet.address,
+          richAddresses.USDC_ADDRESS,
+          '10'
         )
-      ).not.to.reverted
-    })
-    it('aaveV3 connector test', async () => {
-      const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, aaveV3Connector } = loadedFixture
-      const data = aaveV3Connector.interface.encodeFunctionData(
-        'deposit',
-        [
-          CONSTANTS.WSTETH_ADDRESS,
-          CONSTANTS.ONE_FOR_ETH.mul(10),
-          0,
-          0
-        ]
-      )
-      await faucetToken(
-        CONSTANTS.WSTETH_ADDRESS,
-        smartWallet.address,
-        '100'
-      )
-      const wstETH = await ethers.getContractAt(
-        'IERC20Metadata',
-        CONSTANTS.WSTETH_ADDRESS
-      )
-      const wstETHBalanceBefore = await wstETH.balanceOf(
-        smartWallet.address
-      )
-      const executor = await makeAnExecutor(loadedFixture)
-      await expect(
-        userOpCast(
-          [aaveV3Connector.address],
-          [data],
-          { wallet: executor },
-          loadedFixture
-        )
-      ).not.to.reverted
-      const wstETHBalanceAfter = await wstETH.balanceOf(
-        smartWallet.address
-      )
-      expect(wstETHBalanceBefore.sub(wstETHBalanceAfter)).eq(
-        CONSTANTS.ONE_FOR_ETH.mul(10)
-      )
-
-      // borrow weth from aavev3
-      const borrowData = aaveV3Connector.interface.encodeFunctionData(
-        'borrow',
-        [CONSTANTS.USDC_ADDRESS, CONSTANTS.ONE_FOR_USDC, 2, 0, 0]
-      )
-      await expect(
-        userOpCast(
-          [aaveV3Connector.address],
-          [borrowData],
-          { wallet: executor },
-          loadedFixture
-        )
-      ).not.to.reverted
-
-      // payback all debts
-      // need some weth token to pay for interests
-      await faucetToken(
-        CONSTANTS.USDC_ADDRESS,
-        smartWallet.address,
-        '10'
-      )
-      const paybackData =
-        aaveV3Connector.interface.encodeFunctionData('payback', [
-          CONSTANTS.USDC_ADDRESS,
-          ethers.constants.MaxUint256,
-          2,
-          0,
-          0
-        ])
-      await expect(
-        userOpCast(
-          [aaveV3Connector.address],
-          [paybackData],
-          { wallet: executor },
-          loadedFixture
-        )
-      ).not.to.reverted
-      // withdraw
-      const withdrawData =
-        aaveV3Connector.interface.encodeFunctionData('withdraw', [
-          CONSTANTS.WSTETH_ADDRESS,
-          ethers.constants.MaxUint256,
-          0,
-          0
-        ])
-      await expect(
-        userOpCast(
-          [aaveV3Connector.address],
-          [withdrawData],
-          { wallet: executor },
-          loadedFixture
-        )
-      ).not.to.reverted
-    })
+        const paybackData =
+          aaveV3Connector.interface.encodeFunctionData('payback', [
+            addressBook.USDC_ADDRESS,
+            ethers.constants.MaxUint256,
+            2,
+            0,
+            0
+          ])
+        await expect(
+          userOpCast(
+            [aaveV3Connector.address],
+            [paybackData],
+            { wallet: executor },
+            loadedFixture
+          )
+        ).not.to.reverted
+        // withdraw
+        const withdrawData =
+          aaveV3Connector.interface.encodeFunctionData('withdraw', [
+            addressBook.WETH_ADDRESS,
+            ethers.constants.MaxUint256,
+            0,
+            0
+          ])
+        await expect(
+          userOpCast(
+            [aaveV3Connector.address],
+            [withdrawData],
+            { wallet: executor },
+            loadedFixture
+          )
+        ).not.to.reverted
+      })
+    }
 
     it('lido connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, lidoConnector, deployer } = loadedFixture
+      const { smartWallet, lidoConnector, deployer, addressBook } =
+        loadedFixture
       const data = lidoConnector.interface.encodeFunctionData(
         'deposit',
         [CONSTANTS.ONE_FOR_ETH, 0, 0]
@@ -489,7 +517,7 @@ describe('automation test', () => {
 
       const stETH = await ethers.getContractAt(
         'IERC20Metadata',
-        CONSTANTS.STETH_ADDRESS
+        addressBook.STETH_ADDRESS
       )
       const stETHBalance = await stETH.balanceOf(smartWallet.address)
       expect(stETHBalance).to.gt(0)
@@ -503,7 +531,7 @@ describe('automation test', () => {
 
       const wstETH = await ethers.getContractAt(
         'IERC20Metadata',
-        CONSTANTS.WSTETH_ADDRESS
+        addressBook.WSTETH_ADDRESS
       )
       const wstETHBalanceBefore = await wstETH.balanceOf(
         smartWallet.address
@@ -539,23 +567,29 @@ describe('automation test', () => {
     it('1inchv5 connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const executor = await makeAnExecutor(loadedFixture)
-      const { smartWallet, oneInchV5Connector } = loadedFixture
+      const {
+        smartWallet,
+        oneInchV5Connector,
+        addressBook,
+        richAddresses
+      } = loadedFixture
       await faucetToken(
-        CONSTANTS.USDC_ADDRESS,
+        addressBook.USDC_ADDRESS,
         smartWallet.address,
+        richAddresses.USDC_ADDRESS,
         '100'
       )
       const UNI = await ethers.getContractAt(
         'IERC20Metadata',
-        CONSTANTS.UNI_ADDRESS
+        addressBook.UNI_ADDRESS
       )
       // TODO(get a valid calldata from 1inch swap api)
       const callData = '0x'
       const data = oneInchV5Connector.interface.encodeFunctionData(
         'sell',
         [
-          CONSTANTS.UNI_ADDRESS,
-          CONSTANTS.USDC_ADDRESS,
+          addressBook.UNI_ADDRESS,
+          addressBook.USDC_ADDRESS,
           3000,
           0,
           callData,
@@ -579,16 +613,22 @@ describe('automation test', () => {
 
     it('uniswapv3 connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, uniswapv3Connector } = loadedFixture
+      const {
+        smartWallet,
+        uniswapv3Connector,
+        addressBook,
+        richAddresses
+      } = loadedFixture
       const UNI = await ethers.getContractAt(
         'IERC20Metadata',
-        CONSTANTS.UNI_ADDRESS
+        addressBook.UNI_ADDRESS
       )
       const balance1 = await UNI.balanceOf(smartWallet.address)
       const executor = await makeAnExecutor(loadedFixture)
       await faucetToken(
-        CONSTANTS.USDC_ADDRESS,
+        addressBook.WETH_ADDRESS,
         smartWallet.address,
+        richAddresses.WETH_ADDRESS,
         '100'
       )
 
@@ -596,11 +636,11 @@ describe('automation test', () => {
       const data2 = uniswapv3Connector.interface.encodeFunctionData(
         'sell',
         [
-          CONSTANTS.UNI_ADDRESS,
-          CONSTANTS.USDC_ADDRESS,
+          addressBook.UNI_ADDRESS,
+          addressBook.WETH_ADDRESS,
           3000,
           0,
-          CONSTANTS.ONE_FOR_USDC,
+          CONSTANTS.ONE_FOR_ETH,
           0,
           0
         ]
@@ -620,8 +660,8 @@ describe('automation test', () => {
       const data = uniswapv3Connector.interface.encodeFunctionData(
         'buy',
         [
-          CONSTANTS.UNI_ADDRESS,
-          CONSTANTS.USDC_ADDRESS,
+          addressBook.UNI_ADDRESS,
+          addressBook.WETH_ADDRESS,
           3000,
           ethers.utils.parseEther('1000'), // ratio
           ethers.utils.parseEther('1'), // 1 UNI
@@ -643,26 +683,32 @@ describe('automation test', () => {
 
     it('uniswapv2 connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const { smartWallet, uniswapConnector } = loadedFixture
+      const {
+        smartWallet,
+        uniswapConnector,
+        addressBook,
+        richAddresses
+      } = loadedFixture
       const UNI = await ethers.getContractAt(
         'IERC20Metadata',
-        CONSTANTS.UNI_ADDRESS
+        addressBook.UNI_ADDRESS
       )
       const balance1 = await UNI.balanceOf(smartWallet.address)
       const executor = await makeAnExecutor(loadedFixture)
       await faucetToken(
-        CONSTANTS.USDC_ADDRESS,
+        addressBook.WETH_ADDRESS,
         smartWallet.address,
+        richAddresses.WETH_ADDRESS,
         '100'
       )
 
-      // buy uni with usdc
+      // buy uni with weth
       const data2 = uniswapConnector.interface.encodeFunctionData(
         'sell',
         [
-          CONSTANTS.UNI_ADDRESS,
-          CONSTANTS.USDC_ADDRESS,
-          CONSTANTS.ONE_FOR_USDC,
+          addressBook.UNI_ADDRESS,
+          addressBook.WETH_ADDRESS,
+          CONSTANTS.ONE_FOR_ETH,
           0,
           0,
           0
@@ -683,9 +729,9 @@ describe('automation test', () => {
       const data = uniswapConnector.interface.encodeFunctionData(
         'buy',
         [
-          CONSTANTS.UNI_ADDRESS,
-          CONSTANTS.USDC_ADDRESS,
-          ethers.utils.parseEther('1'), // 1 UNI
+          addressBook.UNI_ADDRESS,
+          addressBook.WETH_ADDRESS,
+          ethers.utils.parseEther('0.001'), // 1 UNI
           ethers.utils.parseEther('1000'), // ratio
           0,
           0
@@ -707,172 +753,180 @@ describe('automation test', () => {
     // remove liquidity
   })
 
-  describe('flashloan test', () => {
-    it('margin trading', async () => {
-      const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const {
-        uniswapConnector,
-        compoundConnector,
-        flashLoanConnector,
-        smartWallet,
-        usdc
-      } = loadedFixture
-      const ratio = 3
-      const collateral = 200
-      const decimal = await usdc.decimals()
-      const total = ethers.utils.parseUnits(
-        (collateral * ratio).toString(),
-        decimal
-      )
-      const loan = ethers.utils.parseUnits(
-        (collateral * (ratio - 1)).toString(),
-        decimal
-      )
-      await faucetToken(
-        CONSTANTS.USDC_ADDRESS,
-        smartWallet.address,
-        collateral.toString()
-      )
-      const IdOne = '2878734423'
-      const spells = [
-        {
-          connectorName: 'UNISWAP',
-          connectorAddr: uniswapConnector.address,
-          method: 'sell',
-          args: [
-            CONSTANTS.ETH_ADDRESS,
-            CONSTANTS.USDC_ADDRESS,
-            total,
-            0,
-            0,
-            IdOne
-          ] // margin trade
-        },
-        {
-          connectorName: 'COMPOUND',
-          connectorAddr: compoundConnector.address,
-          method: 'deposit',
-          args: [
-            CONSTANTS.ETH_ADDRESS,
-            '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
-            0,
-            IdOne,
-            0
-          ]
-        },
-        {
-          connectorName: 'COMPOUND',
-          connectorAddr: compoundConnector.address,
-          method: 'borrow',
-          args: [
-            CONSTANTS.USDC_ADDRESS,
-            '0x39aa39c021dfbae8fac545936693ac917d5e7563',
-            loan,
-            0,
-            0
-          ] // borrow usdt, note use token id here
-        },
-        {
-          connectorName: 'FLASHLOAN',
-          connectorAddr: flashLoanConnector.address,
-          method: 'flashPayback',
-          args: [CONSTANTS.USDC_ADDRESS, loan, 0, 0]
-        }
-      ]
+  if (chainId !== ChainId.sepolia) {
+    describe('flashloan test', () => {
+      it('margin trading', async () => {
+        const loadedFixture = await loadFixture(fixtureForAutoMation)
+        const {
+          uniswapConnector,
+          compoundConnector,
+          flashLoanConnector,
+          smartWallet,
+          usdc,
+          addressBook,
+          richAddresses
+        } = loadedFixture
+        const ratio = 3
+        const collateral = 200
+        const decimal = await usdc.decimals()
+        const total = ethers.utils.parseUnits(
+          (collateral * ratio).toString(),
+          decimal
+        )
+        const loan = ethers.utils.parseUnits(
+          (collateral * (ratio - 1)).toString(),
+          decimal
+        )
+        await faucetToken(
+          addressBook.USDC_ADDRESS,
+          smartWallet.address,
+          richAddresses.USDC_ADDRESS,
+          collateral.toString()
+        )
+        const IdOne = '2878734423'
+        const spells = [
+          {
+            connectorName: 'UNISWAP',
+            connectorAddr: uniswapConnector.address,
+            method: 'sell',
+            args: [
+              addressBook.ETH_ADDRESS,
+              addressBook.USDC_ADDRESS,
+              total,
+              0,
+              0,
+              IdOne
+            ] // margin trade
+          },
+          {
+            connectorName: 'COMPOUND',
+            connectorAddr: compoundConnector.address,
+            method: 'deposit',
+            args: [
+              addressBook.ETH_ADDRESS,
+              '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
+              0,
+              IdOne,
+              0
+            ]
+          },
+          {
+            connectorName: 'COMPOUND',
+            connectorAddr: compoundConnector.address,
+            method: 'borrow',
+            args: [
+              addressBook.USDC_ADDRESS,
+              '0x39aa39c021dfbae8fac545936693ac917d5e7563',
+              loan,
+              0,
+              0
+            ] // borrow usdt, note use token id here
+          },
+          {
+            connectorName: 'FLASHLOAN',
+            connectorAddr: flashLoanConnector.address,
+            method: 'flashPayback',
+            args: [addressBook.USDC_ADDRESS, loan, 0, 0]
+          }
+        ]
 
-      const calldata = encodeFlashcastData(spells)
-      const spells2 = [
-        {
-          connectorName: 'FLASHLOAN',
-          connectorAddr: flashLoanConnector.address,
-          method: 'flashBorrowAndCast',
-          args: [CONSTANTS.USDC_ADDRESS, loan, calldata]
-        }
-      ]
+        const calldata = encodeFlashcastData(spells)
+        const spells2 = [
+          {
+            connectorName: 'FLASHLOAN',
+            connectorAddr: flashLoanConnector.address,
+            method: 'flashBorrowAndCast',
+            args: [addressBook.USDC_ADDRESS, loan, calldata]
+          }
+        ]
 
-      const executor = await makeAnExecutor(loadedFixture)
-      const balanceBefore = await usdc.balanceOf(smartWallet.address)
-      await userOpCast(
-        ...encodeSpells(spells2),
-        { wallet: executor },
-        loadedFixture
-      )
-      const balanceAfter = await usdc.balanceOf(smartWallet.address)
-      expect(balanceBefore.sub(balanceAfter)).eq(
-        ethers.utils.parseUnits(collateral.toString(), decimal)
-      )
-    })
-    it('leverage staking', async () => {
-      const loadedFixture = await loadFixture(fixtureForAutoMation)
-      const {
-        flashLoanConnector,
-        aaveV3Connector,
-        lidoConnector,
-        wethConnector,
-        smartWallet,
-        deployer
-      } = loadedFixture
-
-      const ratio = 3
-      const collateral = CONSTANTS.ONE_FOR_ETH
-      const total = collateral.mul(ratio)
-      const loan = total.sub(collateral)
-
-      // prepare init eth for smart wallet
-      await deployer.sendTransaction({
-        to: smartWallet.address,
-        value: collateral
+        const executor = await makeAnExecutor(loadedFixture)
+        const balanceBefore = await usdc.balanceOf(
+          smartWallet.address
+        )
+        await userOpCast(
+          ...encodeSpells(spells2),
+          { wallet: executor },
+          loadedFixture
+        )
+        const balanceAfter = await usdc.balanceOf(smartWallet.address)
+        expect(balanceBefore.sub(balanceAfter)).eq(
+          ethers.utils.parseUnits(collateral.toString(), decimal)
+        )
       })
-      const wstETH = CONSTANTS.WSTETH_ADDRESS
-      const spells = [
-        {
-          connectorName: 'WETH',
-          connectorAddr: wethConnector.address,
-          method: 'withdraw',
-          args: [loan, 0, 0]
-        },
-        {
-          connectorName: 'LIDO',
-          connectorAddr: lidoConnector.address,
-          method: 'wrapAndStaking',
-          args: [total, 0, 0]
-        },
-        {
-          connectorName: 'AAVEV3',
-          connectorAddr: aaveV3Connector.address,
-          method: 'deposit',
-          args: [wstETH, ethers.constants.MaxUint256, 0, 0] // margin trade
-        },
-        {
-          connectorName: 'AAVEV3',
-          connectorAddr: aaveV3Connector.address,
-          method: 'borrow',
-          args: [CONSTANTS.WETH_ADDRESS, loan, 2, 0, 0]
-        },
-        {
-          connectorName: 'FLASHLOAN',
-          connectorAddr: flashLoanConnector.address,
-          method: 'flashPayback',
-          args: [CONSTANTS.WETH_ADDRESS, loan, 0, 0]
-        }
-      ]
+      it('leverage staking', async () => {
+        const loadedFixture = await loadFixture(fixtureForAutoMation)
+        const {
+          flashLoanConnector,
+          aaveV3Connector,
+          lidoConnector,
+          wethConnector,
+          smartWallet,
+          deployer,
+          addressBook
+        } = loadedFixture
 
-      const calldata = encodeFlashcastData(spells)
-      const spells2 = [
-        {
-          connectorName: 'FLASHLOAN',
-          connectorAddr: flashLoanConnector.address,
-          method: 'flashBorrowAndCast',
-          args: [CONSTANTS.WETH_ADDRESS, loan, calldata]
-        }
-      ]
+        const ratio = 3
+        const collateral = CONSTANTS.ONE_FOR_ETH
+        const total = collateral.mul(ratio)
+        const loan = total.sub(collateral)
 
-      const executor = await makeAnExecutor(loadedFixture)
-      await userOpCast(
-        ...encodeSpells(spells2),
-        { wallet: executor },
-        loadedFixture
-      )
+        // prepare init eth for smart wallet
+        await deployer.sendTransaction({
+          to: smartWallet.address,
+          value: collateral
+        })
+        const wstETH = addressBook.WSTETH_ADDRESS
+        const spells = [
+          {
+            connectorName: 'WETH',
+            connectorAddr: wethConnector.address,
+            method: 'withdraw',
+            args: [loan, 0, 0]
+          },
+          {
+            connectorName: 'LIDO',
+            connectorAddr: lidoConnector.address,
+            method: 'wrapAndStaking',
+            args: [total, 0, 0]
+          },
+          {
+            connectorName: 'AAVEV3',
+            connectorAddr: aaveV3Connector.address,
+            method: 'deposit',
+            args: [wstETH, ethers.constants.MaxUint256, 0, 0] // margin trade
+          },
+          {
+            connectorName: 'AAVEV3',
+            connectorAddr: aaveV3Connector.address,
+            method: 'borrow',
+            args: [addressBook.WETH_ADDRESS, loan, 2, 0, 0]
+          },
+          {
+            connectorName: 'FLASHLOAN',
+            connectorAddr: flashLoanConnector.address,
+            method: 'flashPayback',
+            args: [addressBook.WETH_ADDRESS, loan, 0, 0]
+          }
+        ]
+
+        const calldata = encodeFlashcastData(spells)
+        const spells2 = [
+          {
+            connectorName: 'FLASHLOAN',
+            connectorAddr: flashLoanConnector.address,
+            method: 'flashBorrowAndCast',
+            args: [addressBook.WETH_ADDRESS, loan, calldata]
+          }
+        ]
+
+        const executor = await makeAnExecutor(loadedFixture)
+        await userOpCast(
+          ...encodeSpells(spells2),
+          { wallet: executor },
+          loadedFixture
+        )
+      })
     })
-  })
+  }
 })

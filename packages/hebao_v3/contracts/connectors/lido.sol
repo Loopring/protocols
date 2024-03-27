@@ -26,15 +26,23 @@ interface IWstETH {
 contract LidoConnector is BaseConnector {
     using SafeERC20 for IERC20;
 
-    ILido internal constant LIDO =
-        ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+    ILido internal immutable LIDO;
 
-    IWstETH internal constant WSTETH =
-        IWstETH(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+    IWstETH internal immutable WSTETH;
 
-    address internal constant TREASURY =
-        0x28849D2b63fA8D361e5fc15cB8aBB13019884d09; // Instadapp's treasury address
-    constructor(address _instaMemory) BaseConnector(_instaMemory) {}
+    address internal immutable TREASURY;
+    // 0x28849D2b63fA8D361e5fc15cB8aBB13019884d09; // Instadapp's treasury address
+    constructor(
+        address _lido,
+        address _wsteth,
+        address _treasury,
+        address _instaMemory,
+        address _weth
+    ) BaseConnector(_instaMemory, _weth) {
+        LIDO = ILido(_lido);
+        WSTETH = IWstETH(_wsteth);
+        TREASURY = _treasury;
+    }
     /**
      * @dev deposit ETH into Lido.
      * @notice stake Eth in Lido, users receive stETH tokens on a 1:1 basis representing their staked ETH.

@@ -18,7 +18,9 @@
     "test-local-aa": "yarn hardhat test $(find ./test/account-abstraction -type f -name '*.test.ts') --parallel",
     "test-local-smartwallet": "yarn hardhat test $(find ./test -type f -name '*.test.ts' ! -path './test/automation/*' ! -path './test/account-abstraction/*') --parallel",
     "test-local": "yarn test-local-aa && yarn test-local-smartwallet",
-    "test-fork": "FORK=1 hardhat test $(find ./test/automation -type f -name '*.test.ts') --parallel",
+    "test-fork": "hardhat test $(find ./test/automation -type f -name '*.test.ts')",
+    "test-fork-sepolia": "FORK=11155111 yarn test-fork",
+    "test-fork-mainnet": "FORK=1 yarn test-fork",
     "test": "yarn run test-local && yarn run test-fork",
     "coverage": "yarn clean && COVERAGE=1 FORK=1 hardhat coverage"
   },

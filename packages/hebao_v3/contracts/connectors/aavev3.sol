@@ -99,21 +99,27 @@ contract AaveV3Connector is BaseConnector {
     /**
      * @dev Aave Pool Provider
      */
-    AavePoolProviderInterface internal constant AAVE_PROVIDER =
-        AavePoolProviderInterface(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
+    AavePoolProviderInterface internal immutable AAVE_PROVIDER;
 
     /**
      * @dev Aave Pool Data Provider
      */
-    AaveDataProviderInterface internal constant AAVE_DATA =
-        AaveDataProviderInterface(0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3);
+    AaveDataProviderInterface internal immutable AAVE_DATA;
 
     /**
      * @dev Aave Referral Code
      */
     uint16 internal constant REFERRAL_CODE = 3228;
 
-    constructor(address _instaMemory) BaseConnector(_instaMemory) {}
+    constructor(
+        address _aave_provider,
+        address _aave_data,
+        address _instaMemory,
+        address _weth
+    ) BaseConnector(_instaMemory, _weth) {
+        AAVE_PROVIDER = AavePoolProviderInterface(_aave_provider);
+        AAVE_DATA = AaveDataProviderInterface(_aave_data);
+    }
 
     /**
      * @dev Checks if collateral is enabled for an asset

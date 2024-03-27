@@ -21,9 +21,10 @@ contract FlashLoanConnector is BaseConnector {
     FlashLoanPoolInterface public immutable flashLoanPool;
 
     constructor(
+        address _flashLoanPool,
         address _instaMemory,
-        address _flashLoanPool
-    ) BaseConnector(_instaMemory) {
+        address _weth
+    ) BaseConnector(_instaMemory, _weth) {
         flashLoanPool = FlashLoanPoolInterface(_flashLoanPool);
     }
 

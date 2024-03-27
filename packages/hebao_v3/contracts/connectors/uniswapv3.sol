@@ -128,10 +128,15 @@ contract UniswapV3Connector is BaseConnector {
     /**
      * @dev uniswap v3 Swap Router
      */
-    ISwapRouter02 internal constant SWAP_ROUTER =
-        ISwapRouter02(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
+    ISwapRouter02 internal immutable SWAP_ROUTER;
 
-    constructor(address _instaMemory) BaseConnector(_instaMemory) {}
+    constructor(
+        address swapRouterAddr,
+        address instaMemory,
+        address wethAddr
+    ) BaseConnector(instaMemory, wethAddr) {
+        SWAP_ROUTER = ISwapRouter02(swapRouterAddr);
+    }
 
     struct BuyInfo {
         address buyAddr; //token to be bought
