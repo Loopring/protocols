@@ -3,19 +3,21 @@ import { ethers } from 'hardhat'
 import * as hre from 'hardhat'
 
 import { localUserOpSender } from '../test/helper/AASigner'
+import { type DeploymentType } from './addresses'
 import {
   deploySingle,
   deployWalletImpl,
   createSmartWallet
 } from '../test/helper/utils'
-import * as create2AddrJson from '../deployments/create2.json'
+import deploymentJson from '../deployments/deployments.json'
 import {
   EntryPoint__factory,
   type LoopringCreate2Deployer,
   LoopringPaymaster__factory,
   SmartWalletV3__factory,
   WalletFactory__factory,
-  USDT__factory
+  USDT__factory,
+  OfficialGuardian__factory
 } from '../typechain-types'
 
 // TODO()
@@ -43,9 +45,9 @@ export async function deployAll() {
   // create2 factory
   let create2: LoopringCreate2Deployer
   // NOTE(update address when create2 factory contract is modified)
-  const create2Addr = (create2AddrJson as Record<string, string>)[
-    hre.network.name
-  ]
+  const create2Addr = (
+    deploymentJson as unknown as Record<string, DeploymentType>
+  )[hre.network.name].LoopringCreate2Deployer
   if (
     create2Addr !== undefined &&
     (await ethers.provider.getCode(create2Addr)) !== '0x'
@@ -298,4 +300,57 @@ export async function deployNewImplmentation() {
     blankOwner,
     addressBook
   }
+}
+
+export async function deployOfficialGuardian(): Promise<string> {
+  const signers = await ethers.getSigners()
+  const deployer = signers[0]
+
+  let proxyAddress: string
+  const deployment = (
+    deploymentJson as unknown as Record<string, DeploymentType>
+  )[hre.network.name]
+
+  if (deployment.OfficialGuardian === undefined) {
+    const proxy = await (
+      await ethers.getContractFactory('OwnedUpgradeabilityProxy')
+    ).deploy()
+
+    const officialGuardian = await (
+      await ethers.getContractFactory('OfficialGuardian')
+    ).deploy()
+
+    await (await proxy.upgradeTo(officialGuardian.address)).wait()
+    proxyAddress = proxy.address
+  } else {
+    proxyAddress = deployment.OfficialGuardian
+    const proxy = await ethers.getContractAt(
+      'OwnedUpgradeabilityProxy',
+      proxyAddress
+    )
+    // verify proxy and official guardian
+    await hre.run('verify:verify', {
+      address: proxyAddress,
+      constructorArguments: []
+    })
+
+    await hre.run('verify:verify', {
+      address: await proxy.implementation(),
+      constructorArguments: []
+    })
+  }
+  const proxyAsOfficialGuardian = OfficialGuardian__factory.connect(
+    proxyAddress,
+    deployer
+  )
+
+  if (
+    (await proxyAsOfficialGuardian.owner()) ===
+    ethers.constants.AddressZero
+  ) {
+    await (
+      await proxyAsOfficialGuardian.initOwner(deployer.address)
+    ).wait()
+  }
+  return proxyAddress
 }
