@@ -37,11 +37,11 @@ contract OneInchV5Connector is BaseConnector {
     address internal immutable ONEINCH_ADDR;
 
     constructor(
-        address _1inch,
-        address _instaMemory,
-        address _weth
-    ) BaseConnector(_instaMemory, _weth) {
-        ONEINCH_ADDR = _1inch;
+        address oneInch,
+        address instaMemory,
+        address weth
+    ) BaseConnector(instaMemory, weth) {
+        ONEINCH_ADDR = oneInch;
     }
 
     /**

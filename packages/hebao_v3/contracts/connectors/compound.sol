@@ -72,11 +72,11 @@ contract CompoundConnector is BaseConnector {
     ComptrollerInterface internal immutable COMP_TROLLER;
 
     constructor(
-        address _comp_troller,
-        address _instaMemory,
-        address _weth
-    ) BaseConnector(_instaMemory, _weth) {
-        COMP_TROLLER = ComptrollerInterface(_comp_troller);
+        address compTroller,
+        address instaMemory,
+        address weth
+    ) BaseConnector(instaMemory, weth) {
+        COMP_TROLLER = ComptrollerInterface(compTroller);
     }
 
     /**

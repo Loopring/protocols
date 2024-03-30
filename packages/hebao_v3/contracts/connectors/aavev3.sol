@@ -112,13 +112,13 @@ contract AaveV3Connector is BaseConnector {
     uint16 internal constant REFERRAL_CODE = 3228;
 
     constructor(
-        address _aave_provider,
-        address _aave_data,
-        address _instaMemory,
-        address _weth
-    ) BaseConnector(_instaMemory, _weth) {
-        AAVE_PROVIDER = AavePoolProviderInterface(_aave_provider);
-        AAVE_DATA = AaveDataProviderInterface(_aave_data);
+        address aaveProvider,
+        address aaveData,
+        address instaMemory,
+        address weth
+    ) BaseConnector(instaMemory, weth) {
+        AAVE_PROVIDER = AavePoolProviderInterface(aaveProvider);
+        AAVE_DATA = AaveDataProviderInterface(aaveData);
     }
 
     /**

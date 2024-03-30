@@ -25,7 +25,8 @@
     "LoopringCreate2Deployer": "0x391fD52903D1531fd45F41c4A354533c91289F5F",
     "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
     "LoopringPaymaster": "0x5e3c2457dDffCdf1AfbAb6f8cF131d4051525e53",
-    "SmartWalletImpl": "0xa08F1Ba8d20B9B418513C7b44d95B400f5d8CEbf"
+    "SmartWalletImpl": "0xa08F1Ba8d20B9B418513C7b44d95B400f5d8CEbf",
+    "OfficialGuardian": "0xe70fb4Ee507454709FB497b24a2d2B70ecb5d5fF"
   },
   "taiko6": {
     "LoopringCreate2Deployer": "0x391fD52903D1531fd45F41c4A354533c91289F5F",
