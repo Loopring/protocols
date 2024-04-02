@@ -567,18 +567,8 @@ describe('automation test', () => {
     it('1inchv5 connector test', async () => {
       const loadedFixture = await loadFixture(fixtureForAutoMation)
       const executor = await makeAnExecutor(loadedFixture)
-      const {
-        smartWallet,
-        oneInchV5Connector,
-        addressBook,
-        richAddresses
-      } = loadedFixture
-      await faucetToken(
-        addressBook.USDC_ADDRESS,
-        smartWallet.address,
-        richAddresses.USDC_ADDRESS,
-        '100'
-      )
+      const { smartWallet, oneInchV5Connector, addressBook } =
+        loadedFixture
       const UNI = await ethers.getContractAt(
         'IERC20Metadata',
         addressBook.UNI_ADDRESS
@@ -589,7 +579,7 @@ describe('automation test', () => {
         'sell',
         [
           addressBook.UNI_ADDRESS,
-          addressBook.USDC_ADDRESS,
+          addressBook.ETH_ADDRESS,
           3000,
           0,
           callData,
@@ -632,7 +622,7 @@ describe('automation test', () => {
         '100'
       )
 
-      // buy uni with usdc
+      // sell weth
       const data2 = uniswapv3Connector.interface.encodeFunctionData(
         'sell',
         [
@@ -656,7 +646,7 @@ describe('automation test', () => {
       const balance2 = await UNI.balanceOf(smartWallet.address)
       expect(balance2.sub(balance1).gt(0)).true
 
-      // sell uni
+      // buy uni
       const data = uniswapv3Connector.interface.encodeFunctionData(
         'buy',
         [
@@ -679,6 +669,60 @@ describe('automation test', () => {
       ).not.to.reverted
       const balance3 = await UNI.balanceOf(smartWallet.address)
       expect(balance3.sub(balance2).gt(0)).true
+
+      // buy usdc with eth
+      // 1 eth = 3600 usdc
+      const data3 = uniswapv3Connector.interface.encodeFunctionData(
+        'buy',
+        [
+          addressBook.USDC_ADDRESS,
+          addressBook.ETH_ADDRESS,
+          3000,
+          ethers.utils.parseEther('0.02'), // ratio 1/3600 * (1 + slippage)
+          ethers.utils.parseUnits('100', 6), // 100 USDC
+          0,
+          0
+        ]
+      )
+      const USDC = await ethers.getContractAt(
+        'IERC20Metadata',
+        addressBook.USDC_ADDRESS
+      )
+      const usdcBalance1 = await USDC.balanceOf(smartWallet.address)
+      await expect(
+        userOpCast(
+          [uniswapv3Connector.address],
+          [data3],
+          { wallet: executor },
+          loadedFixture
+        )
+      ).not.to.reverted
+      const usdcBalance2 = await USDC.balanceOf(smartWallet.address)
+      expect(usdcBalance2.sub(usdcBalance1)).to.gt(0)
+
+      // sell eth
+      const data4 = uniswapv3Connector.interface.encodeFunctionData(
+        'sell',
+        [
+          addressBook.USDC_ADDRESS,
+          addressBook.ETH_ADDRESS,
+          3000,
+          ethers.utils.parseEther('3000'), // ratio 3600 * (1 - slippage)
+          ethers.utils.parseEther('1'), // 1 ETH
+          0,
+          0
+        ]
+      )
+      await expect(
+        userOpCast(
+          [uniswapv3Connector.address],
+          [data4],
+          { wallet: executor },
+          loadedFixture
+        )
+      ).not.to.reverted
+      const usdcBalance3 = await USDC.balanceOf(smartWallet.address)
+      expect(usdcBalance3.sub(usdcBalance2)).to.gt(0)
     })
 
     it('uniswapv2 connector test', async () => {
