@@ -8,6 +8,7 @@ export type DeploymentsAddress = Record<
 export interface DeploymentType {
   EntryPoint: string
   LoopringPaymaster: string
+  ConnectorRegistry: string
   SmartWallet?: string
   WalletFactory?: string
   OfficialGuardian?: string

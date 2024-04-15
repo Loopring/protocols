@@ -38,5 +38,12 @@
     "SmartWallet": "0xce49F224CA69E4BCa519765bdc644f88fD017001",
     "WalletFactory": "0xe7d8df8F6546965A59dab007e8709965Efe1255d",
     "USDT": "0xD69d3e64D71844BBDdA51Cd7f23ED3631E9FAC49"
+  },
+  "taiko7": {
+    "LoopringCreate2Deployer": "0x391fD52903D1531fd45F41c4A354533c91289F5F",
+    "EntryPoint": "0x5C07472a097D0e7212612846305a73342Dc01b9A",
+    "LoopringPaymaster": "0xd3c155dAe74f8C6C0E40b9621fF8Bef7b8b0dB75",
+    "ConnectorRegistry": "0x2B0677AF2C68a1837AEA4f28F54e0e41b85756be",
+    "SmartWalletImpl": "0x05aBa4EF2B0ddc5fCab1A13B72ABCe10032214D7"
   }
 }

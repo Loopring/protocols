@@ -1,12 +1,16 @@
 import { ethers } from 'hardhat'
 import * as hre from 'hardhat'
 import { ConnectorRegistry__factory } from '../typechain-types'
-import { connectorRegistryAddr } from './deploy_utils'
+import { type DeploymentType } from './addresses'
+import deploymentJson from '../deployments/deployments.json'
 import { AddressForNetwork } from '../test/automation/automation_utils'
 
 async function main(): Promise<void> {
   const signers = await ethers.getSigners()
   const deployer = signers[0]
+  const connectorRegistryAddr = (
+    deploymentJson as unknown as Record<string, DeploymentType>
+  )[hre.network.name].ConnectorRegistry
   const connectorRegistry = ConnectorRegistry__factory.connect(
     connectorRegistryAddr,
     deployer
@@ -21,27 +25,37 @@ async function main(): Promise<void> {
 
   const { chainId } = await ethers.provider.getNetwork()
   const addressBook = AddressForNetwork[chainId]
-  const uniswapv3Connector = await (
-    await ethers.getContractFactory('UniswapV3Connector')
-  ).deploy(
-    addressBook.SWAP_ROUTERV3_ADDRESS,
-    ownedMemory.address,
-    addressBook.WETH_ADDRESS
-  )
-  console.log(`uniswapv3 connector: `, uniswapv3Connector.address)
-  await hre.run('verify:verify', {
-    address: uniswapv3Connector.address,
-    constructorArguments: [
+  // check available in this network
+  if (
+    addressBook.SWAP_ROUTERV3_ADDRESS !== undefined &&
+    (await ethers.provider.getCode(
+      addressBook.SWAP_ROUTERV3_ADDRESS
+    )) !== '0x'
+  ) {
+    const uniswapv3Connector = await (
+      await ethers.getContractFactory('UniswapV3Connector')
+    ).deploy(
       addressBook.SWAP_ROUTERV3_ADDRESS,
       ownedMemory.address,
       addressBook.WETH_ADDRESS
-    ]
-  })
-  await (
-    await connectorRegistry.addConnectors([
-      uniswapv3Connector.address
-    ])
-  ).wait()
+    )
+    console.log(`uniswapv3 connector: `, uniswapv3Connector.address)
+    await hre.run('verify:verify', {
+      address: uniswapv3Connector.address,
+      constructorArguments: [
+        addressBook.SWAP_ROUTERV3_ADDRESS,
+        ownedMemory.address,
+        addressBook.WETH_ADDRESS
+      ]
+    })
+    await (
+      await connectorRegistry.addConnectors([
+        uniswapv3Connector.address
+      ])
+    ).wait()
+  } else {
+    console.log('uniswapv3 is not supported, skip its connector')
+  }
 }
 
 main()

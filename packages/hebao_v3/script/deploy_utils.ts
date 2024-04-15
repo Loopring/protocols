@@ -246,22 +246,53 @@ export async function deployNewImplmentation() {
   const blankOwner = process.env.BLANK_OWNER ?? deployer.address
 
   // create2 factory
+  let create2: LoopringCreate2Deployer
+  const deployment = (
+    deploymentJson as unknown as Record<string, DeploymentType>
+  )[hre.network.name]
   // NOTE(update address when create2 factory contract is modified)
-  const create2Addr = (create2AddrJson as Record<string, string>)[
-    hre.network.name
-  ]
-  const create2 = await ethers.getContractAt(
-    'LoopringCreate2Deployer',
-    create2Addr
-  )
+  const create2Addr = deployment.LoopringCreate2Deployer
+  if (
+    create2Addr !== undefined &&
+    (await ethers.provider.getCode(create2Addr)) !== '0x'
+  ) {
+    console.log(
+      'create2 factory is deployed already at : ',
+      create2Addr
+    )
+    create2 = await ethers.getContractAt(
+      'LoopringCreate2Deployer',
+      create2Addr
+    )
+
+    //  check ownership first
+    if ((await create2.owner()) !== deployer.address) {
+      if ((await create2.pendingOwner()) === deployer.address) {
+        // try to claim
+        await (await create2.claimOwnership()).wait()
+      } else {
+        throw new Error(
+          `need call transferOwnership by current owner first`
+        )
+      }
+    }
+  } else {
+    create2 = await (
+      await ethers.getContractFactory('LoopringCreate2Deployer')
+    ).deploy()
+    console.log('create2 factory is deployed at : ', create2.address)
+  }
   addressBook.LoopringCreate2Deployer = create2.address
 
   // entrypoint and paymaster
   // NOTE(uncomment when you need to deploy a new entrypoint contract)
   let entrypoint: Contract
   // const entrypointAddr = ethers.constants.AddressZero;
-  const entrypointAddr = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
-  if ((await ethers.provider.getCode(entrypointAddr)) !== '0x') {
+  const entrypointAddr = deployment.EntryPoint
+  if (
+    entrypointAddr !== undefined &&
+    (await ethers.provider.getCode(entrypointAddr)) !== '0x'
+  ) {
     entrypoint = await ethers.getContractAt(
       'EntryPoint',
       entrypointAddr
@@ -277,12 +308,33 @@ export async function deployNewImplmentation() {
   ])
   addressBook.LoopringPaymaster = paymaster.address
 
+  const connectorRegistry = LoopringPaymaster__factory.connect(
+    (await deploySingle(create2, 'ConnectorRegistry')).address,
+    deployer
+  )
+  addressBook.ConnectorRegistry = connectorRegistry.address
+
+  // transfer ConnectorRegistry ownership to deployer
+  if (create2.address === (await connectorRegistry.owner())) {
+    console.log('transfer ConnectorRegistry ownership to deployer')
+    await (await create2.setTarget(connectorRegistry.address)).wait()
+    const transferOwnership =
+      await connectorRegistry.populateTransaction.transferOwnership(
+        deployer.address
+      )
+    await (await create2.transact(transferOwnership.data!)).wait()
+  } else {
+    console.log(
+      'ownership of ConnectorRegistry is transfered already'
+    )
+  }
+
   const smartWalletImpl = await deployWalletImpl(
     create2,
     entrypoint.address,
     blankOwner,
     ethers.constants.AddressZero,
-    connectorRegistryAddr
+    connectorRegistry.address
   )
   addressBook.SmartWalletImpl = smartWalletImpl.address
   return {
@@ -294,6 +346,7 @@ export async function deployNewImplmentation() {
       paymaster.address,
       paymasterOwner
     ),
+    connectorRegistry,
     create2,
     deployer,
     paymasterOwner,

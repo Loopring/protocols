@@ -72,6 +72,11 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY as string],
       gasPrice: 2000000000
     },
+    taiko7: {
+      url: 'https://rpc.hekla.taiko.xyz',
+      accounts: [process.env.PRIVATE_KEY as string],
+      gasPrice: 2000000000
+    },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [privateKey]
