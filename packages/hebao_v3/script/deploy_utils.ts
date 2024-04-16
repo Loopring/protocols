@@ -1,4 +1,5 @@
 import { type Contract } from 'ethers'
+import { type SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { ethers } from 'hardhat'
 import * as hre from 'hardhat'
 
@@ -14,6 +15,7 @@ import {
   EntryPoint__factory,
   type LoopringCreate2Deployer,
   LoopringPaymaster__factory,
+  ConnectorRegistry__factory,
   SmartWalletV3__factory,
   WalletFactory__factory,
   USDT__factory,
@@ -308,7 +310,7 @@ export async function deployNewImplmentation() {
   ])
   addressBook.LoopringPaymaster = paymaster.address
 
-  const connectorRegistry = LoopringPaymaster__factory.connect(
+  const connectorRegistry = ConnectorRegistry__factory.connect(
     (await deploySingle(create2, 'ConnectorRegistry')).address,
     deployer
   )
@@ -355,10 +357,9 @@ export async function deployNewImplmentation() {
   }
 }
 
-export async function deployOfficialGuardian(): Promise<string> {
-  const signers = await ethers.getSigners()
-  const deployer = signers[0]
-
+export async function deployOfficialGuardian(
+  deployer: SignerWithAddress
+): Promise<string> {
   let proxyAddress: string
   const deployment = (
     deploymentJson as unknown as Record<string, DeploymentType>

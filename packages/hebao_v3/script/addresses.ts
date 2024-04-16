@@ -20,7 +20,7 @@ export function saveDeploymentsAddress(
   addressBook: Record<string, string>,
   network: string,
   deploymentsDir: string,
-  onlyUpdate = false
+  onlyUpdate = true
 ): void {
   if (!fs.existsSync(deploymentsDir)) {
     fs.mkdirSync(deploymentsDir)
