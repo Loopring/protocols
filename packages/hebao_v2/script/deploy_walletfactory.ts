@@ -1,10 +1,12 @@
 import { ethers } from "hardhat";
 import { deployWalletImpl, deploySingle } from "./deploy_utils";
+import config from "../config.json";
 
+//NOTE: ownership managment for these contracts is not handled in this repo
 async function main() {
   const deployer = (await ethers.getSigners())[0];
   // prepare create2 deployer before
-  const create2Addr = "0x391fD52903D1531fd45F41c4A354533c91289F5F";
+  const create2Addr = config.create2;
   const create2 = await ethers.getContractAt(
     "LoopringCreate2Deployer",
     create2Addr,
@@ -17,10 +19,9 @@ async function main() {
   }
 
   // deploy wallet implementation
-  const smartWalletImpl = await deployWalletImpl(
-    create2,
-    "0xd54f3bDe60B73614905BA3881954d9FeB2476360"
-  );
+  // NOTE(cannot modified to make sure we can deploy contracts with the same address)
+  const blankOwner = "0xd54f3bDe60B73614905BA3881954d9FeB2476360";
+  const smartWalletImpl = await deployWalletImpl(create2, blankOwner);
 
   const implStorage = await deploySingle(
     create2,
@@ -62,19 +63,8 @@ async function main() {
   }
 
   // operator
-  const operatorList = [
-    //dev
-    "0x8Ea180381D0DbFC9E40842Fc1ccDBBc2445D196f",
-    // uat
-    "0xbd64ef53FB86860fD72D4f35120B900CFDd9c521",
-    // prod
-    "0xb1a6bf349c947a540a5fe6f1e89992acdad836ab",
-    "0xedee915ae45cc4b2fdd1ce12a2f70dca0b2ad9e5",
-    "0xd15953bd7cbcb36b69d4b9961b56f59cc2553d2e",
-    "0xA5b2DA9ddfCc4E554bB255D9989fdD7be3858Bc9",
-  ];
   console.log(`----- prepare operators for wallet factory -----`);
-  for (const operator of operatorList) {
+  for (const operator of config.operators) {
     if (!(await walletFactory.isOperator(operator))) {
       await (await walletFactory.addOperator(operator)).wait();
     }
@@ -93,10 +83,10 @@ async function main() {
     console.log(`ownership of implStorage is transfered already`);
   }
   // const oldOwner = "0x7D3C67E008709D076e1e6F33da4c5296D4383C0C";
-  const oldOwner = undefined;
+  // const oldOwner = undefined;
 
   // update to new impl, deployed using eip4337 version
-  const newImpl = "0x05aBa4EF2B0ddc5fCab1A13B72ABCe10032214D7";
+  const newImpl = config.impl;
   const currImpl = await implStorage.currImpl();
   if (currImpl !== newImpl) {
     const nextImpl = await implStorage.nextImpl();
@@ -113,24 +103,24 @@ async function main() {
       await (await implStorage.executeUpgrade()).wait();
       // check
       console.log(`upgrade to new impl(${newImpl}) successfully`);
-      if (
-        oldOwner !== undefined &&
-        (await walletFactory.owner()) === deployer.address
-      ) {
-        // transfer ownership to offical after upgrade
-        await (await implStorage.transferOwnership(oldOwner)).wait();
-      }
+      // if (
+      // oldOwner !== undefined &&
+      // (await walletFactory.owner()) === deployer.address
+      // ) {
+      // // transfer ownership to offical after upgrade
+      // await (await implStorage.transferOwnership(oldOwner)).wait();
+      // }
     } else {
       console.log(`wait for one day`);
     }
   }
-  if (
-    oldOwner !== undefined &&
-    (await walletFactory.owner()) === deployer.address
-  ) {
-    // transfer ownership to offical
-    await (await walletFactory.transferOwnership(oldOwner)).wait();
-  }
+  // if (
+  // oldOwner !== undefined &&
+  // (await walletFactory.owner()) === deployer.address
+  // ) {
+  // // transfer ownership to offical
+  // await (await walletFactory.transferOwnership(oldOwner)).wait();
+  // }
 
   // transfer ownership of create2 back to previous owner
   // await (await create2.transferOwnership(oldOwner)).wait();

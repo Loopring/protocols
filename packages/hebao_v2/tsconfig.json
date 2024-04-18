@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "resolveJsonModule": true
   }
 }

@@ -420,7 +420,9 @@ describe("wallet", () => {
         data,
         "0x" + "00".repeat(66)
       );
-      await expect(ethers.provider.call({to: wallet.address, data, from: wallet.address})).not.to.be.reverted;
+      await expect(
+        ethers.provider.call({ to: wallet.address, data, from: wallet.address })
+      ).not.to.be.reverted;
 
       const metaTxSig = signMetaTx(masterCopy, metaTx, owner);
       const tx = await wallet.executeMetaTx(
@@ -436,7 +438,7 @@ describe("wallet", () => {
         Buffer.from(metaTxSig.txSignature.slice(2), "hex")
       );
       const receipt = await tx.wait();
-      expect(gasUsed).gt(receipt.gasUsed)
+      expect(gasUsed).gt(receipt.gasUsed);
     });
   });
 });
