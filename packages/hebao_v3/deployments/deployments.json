@@ -45,6 +45,8 @@
     "LoopringPaymaster": "0xd3c155dAe74f8C6C0E40b9621fF8Bef7b8b0dB75",
     "ConnectorRegistry": "0x2B0677AF2C68a1837AEA4f28F54e0e41b85756be",
     "SmartWalletImpl": "0x05aBa4EF2B0ddc5fCab1A13B72ABCe10032214D7",
-    "OfficialGuardian": "0xDE325eE6ee194EE899C016df583dCc061c7443Fd"
+    "OfficialGuardian": "0xDE325eE6ee194EE899C016df583dCc061c7443Fd",
+    "USDT": "0xB2DC2da9684DfEF77CFa5c6bb07e733023715292",
+    "LRC": "0xc837BbEa8C7b0caC0e8928f797ceB04A34c9c06e"
   }
 }

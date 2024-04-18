@@ -202,14 +202,11 @@ export async function deploySingle(
   deployFactory: Contract,
   contractName: string,
   args?: any[],
-  libs?: Map<string, any>,
+  libraries?: Record<string, any>,
   verifiedContract?: string
 ): Promise<Contract> {
   // use same salt for all deployments:
   const salt = ethers.utils.formatBytes32String('0x5')
-
-  const libraries: Record<string, string> = {}
-  libs?.forEach((value, key) => (libraries[key] = value))
 
   const contract = await ethers.getContractFactory(contractName, {
     libraries
@@ -284,7 +281,7 @@ export async function deployWalletImpl(
     deployFactory,
     'InheritanceLib',
     undefined,
-    new Map([['GuardianLib', GuardianLib.address]])
+    { GuardianLib: GuardianLib.address }
   )
   const QuotaLib = await deploySingle(deployFactory, 'QuotaLib')
   const UpgradeLib = await deploySingle(deployFactory, 'UpgradeLib')
@@ -296,26 +293,26 @@ export async function deployWalletImpl(
     deployFactory,
     'LockLib',
     undefined,
-    new Map([['GuardianLib', GuardianLib.address]])
+    { GuardianLib: GuardianLib.address }
   )
   const RecoverLib = await deploySingle(
     deployFactory,
     'RecoverLib',
     undefined,
-    new Map([['GuardianLib', GuardianLib.address]])
+    { GuardianLib: GuardianLib.address }
   )
   const ApprovalLib = await deploySingle(
     deployFactory,
     'ApprovalLib',
     undefined,
-    new Map([
-      ['ERC20Lib', ERC20Lib.address],
-      ['GuardianLib', GuardianLib.address],
-      ['LockLib', LockLib.address],
-      ['RecoverLib', RecoverLib.address],
-      ['UpgradeLib', UpgradeLib.address],
-      ['WhitelistLib', WhitelistLib.address]
-    ])
+    {
+      ERC20Lib: ERC20Lib.address,
+      GuardianLib: GuardianLib.address,
+      LockLib: LockLib.address,
+      RecoverLib: RecoverLib.address,
+      UpgradeLib: UpgradeLib.address,
+      WhitelistLib: WhitelistLib.address
+    }
   )
   if (connectorRegistryAddr === ethers.constants.AddressZero) {
     const connectorRegistry = await (
@@ -333,18 +330,18 @@ export async function deployWalletImpl(
       entryPointAddr,
       connectorRegistryAddr
     ],
-    new Map([
-      ['ERC1271Lib', ERC1271Lib.address],
-      ['ERC20Lib', ERC20Lib.address],
-      ['GuardianLib', GuardianLib.address],
-      ['InheritanceLib', InheritanceLib.address],
-      ['LockLib', LockLib.address],
-      ['QuotaLib', QuotaLib.address],
-      ['RecoverLib', RecoverLib.address],
-      ['UpgradeLib', UpgradeLib.address],
-      ['WhitelistLib', WhitelistLib.address],
-      ['ApprovalLib', ApprovalLib.address]
-    ])
+    {
+      ERC20Lib: ERC20Lib.address,
+      GuardianLib: GuardianLib.address,
+      LockLib: LockLib.address,
+      RecoverLib: RecoverLib.address,
+      UpgradeLib: UpgradeLib.address,
+      WhitelistLib: WhitelistLib.address,
+      ERC1271Lib: ERC1271Lib.address,
+      InheritanceLib: InheritanceLib.address,
+      ApprovalLib: ApprovalLib.address,
+      QuotaLib: QuotaLib.address
+    }
   )
   return smartWallet
 }

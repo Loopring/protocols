@@ -1,5 +1,20 @@
 {
   "manager": "0xf6c53560e79857ce12dde54782d487b743b70717",
   "loopringCreate2": "0x391fD52903D1531fd45F41c4A354533c91289F5F",
-  "newOwner": "0x3419349cD15816CD20E36DB47960cDB90f50E5b9"
+  "newOwner": "0x3419349cD15816CD20E36DB47960cDB90f50E5b9",
+  "operators": [
+    "0x8Ea180381D0DbFC9E40842Fc1ccDBBc2445D196f",
+    "0xbd64ef53FB86860fD72D4f35120B900CFDd9c521",
+    "0xb1a6bf349c947a540a5fe6f1e89992acdad836ab",
+    "0xedee915ae45cc4b2fdd1ce12a2f70dca0b2ad9e5",
+    "0xd15953bd7cbcb36b69d4b9961b56f59cc2553d2e"
+  ],
+  "paymasterSigners": [
+    "0xf6c53560e79857ce12dde54782d487b743b70717",
+    "0xe6fda200797a5b8116e69812344ce7d2a9f17b0b"
+  ],
+  "tokens": [
+    "0xc837BbEa8C7b0caC0e8928f797ceB04A34c9c06e",
+    "0xB2DC2da9684DfEF77CFa5c6bb07e733023715292"
+  ]
 }

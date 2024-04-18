@@ -6,11 +6,13 @@ import {
   LoopringPaymaster__factory,
   WalletFactory__factory,
   USDT__factory,
+  OfficialGuardian__factory,
   type SmartWalletV3,
   type EntryPoint,
   type LoopringPaymaster
 } from './../typechain-types'
 import deploymentJson from '../deployments/deployments.json'
+import systemConfig from '../deployments/system_config.json'
 import * as hre from 'hardhat'
 import { type DeploymentType } from './addresses'
 
@@ -94,16 +96,14 @@ async function prepareSmartWallet(
 
 async function prepareOperators(
   walletFactoryAddr: string,
-  deployer: any
+  deployer: SignerWithAddress,
+  operators: string[]
 ): Promise<void> {
-  const operators = [
-    '0x3435259218bf656186F123B6d9129BF8D19c2941',
-    '0xd465F61eB0c067e648B81e43f97af8cCD54b3D17'
-  ]
   const walletFactory = WalletFactory__factory.connect(
     walletFactoryAddr,
     deployer
   )
+  console.log(`---- start to add operators for wallet factory ----`)
   for (const operator of operators) {
     if (await walletFactory.isOperator(operator)) {
       console.log(`operator ${operator} has permission already`)
@@ -112,6 +112,30 @@ async function prepareOperators(
       console.log(`grant role to ${operator} successfully`)
     }
   }
+  console.log(`--------------------- end -----------------------`)
+}
+
+async function prepareManagers(
+  officialGuardianAddr: string,
+  deployer: SignerWithAddress,
+  managers: string[]
+): Promise<void> {
+  const officialGuardian = OfficialGuardian__factory.connect(
+    officialGuardianAddr,
+    deployer
+  )
+  console.log(
+    `---- start to add managers for official guardians ----`
+  )
+  for (const manager of managers) {
+    if (!(await officialGuardian.isManager(manager))) {
+      await (await officialGuardian.addManager(manager)).wait()
+      console.log(`add manager(${manager}) successfully`)
+    } else {
+      console.log(`manger(${manager} has permission already`)
+    }
+  }
+  console.log(`--------------------- end -----------------------`)
 }
 
 async function main(): Promise<void> {
@@ -121,7 +145,7 @@ async function main(): Promise<void> {
     throw new Error(`unsupported network ${hre.network.name}`)
   }
   const deployment = (
-    deploymentJson as Record<string, DeploymentType>
+    deploymentJson as unknown as Record<string, DeploymentType>
   )[hre.network.name]
   const entryPointAddr = deployment.EntryPoint
   // loopring paymaster
@@ -132,12 +156,13 @@ async function main(): Promise<void> {
   const usdtTokenAddr = deployment.USDT
 
   const deployer = (await ethers.getSigners())[0]
+  const deployerPrivateKey = process.env.PRIVATE_KEY as string
   const smartWalletOwner = new ethers.Wallet(
-    process.env.TEST_ACCOUNT_PRIVATE_KEY ?? deployer.address,
+    process.env.TEST_ACCOUNT_PRIVATE_KEY ?? deployerPrivateKey,
     ethers.provider
   )
   const paymasterOwner = new ethers.Wallet(
-    process.env.PAYMASTER_OWNER_PRIVATE_KEY ?? deployer.address,
+    process.env.PAYMASTER_OWNER_PRIVATE_KEY ?? deployerPrivateKey,
     ethers.provider
   )
   const entryPoint = EntryPoint__factory.connect(
@@ -148,11 +173,11 @@ async function main(): Promise<void> {
     paymasterAddr,
     paymasterOwner
   )
-  const tokens = [
-    '0xaE404C050c3Da571AfefCFF5B6a64af451584000', // LRC
-    '0x1FEa9801725853622C33a23a86251e7c81898b25' // USDT
-  ]
-  if (usdtTokenAddr !== undefined) {
+  const tokens = systemConfig.tokens
+  if (
+    usdtTokenAddr !== undefined &&
+    !tokens.includes(usdtTokenAddr)
+  ) {
     tokens.push(usdtTokenAddr)
   }
   // make sure usdt token is supported in paymaster
@@ -167,7 +192,7 @@ async function main(): Promise<void> {
   }
 
   // signer for paymaster
-  const signers = ['0xf6c53560e79857ce12dde54782d487b743b70717']
+  const signers = systemConfig.paymasterSigners
   const signerRole = await paymaster.SIGNER()
   for (const signer of signers) {
     if (await paymaster.hasRole(signerRole, signer)) {
@@ -180,11 +205,25 @@ async function main(): Promise<void> {
 
   // add operator for wallet factory
   if (deployment.WalletFactory !== undefined) {
-    await prepareOperators(deployment.WalletFactory, deployer)
+    await prepareOperators(
+      deployment.WalletFactory,
+      deployer,
+      systemConfig.operators
+    )
+  }
+  if (deployment.OfficialGuardian !== undefined) {
+    await prepareManagers(
+      deployment.OfficialGuardian,
+      deployer,
+      systemConfig.operators
+    )
   }
 
   // prepare tokens for paymaster
   if ((await entryPoint.balanceOf(paymasterAddr)).lt(minAmount)) {
+    console.log(
+      `prepare eth(${ethAmount.toString()}) in entrypoint for paymaster`
+    )
     await (
       await entryPoint.connect(deployer).depositTo(paymasterAddr, {
         value: ethAmount
