@@ -44,7 +44,7 @@ export default {
       url: "http://127.0.0.1:8545",
     },
     hardhat: {
-        accounts: loadTestAccounts(),
+      accounts: loadTestAccounts(),
     },
 
     optimistic: {
@@ -86,6 +86,10 @@ export default {
     taiko2: {
       chainId: 167004,
       url: "https://l2rpc.a2.taiko.xyz/",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    taiko7: {
+      url: "https://rpc.hekla.taiko.xyz",
       accounts: [process.env.PRIVATE_KEY],
     },
     sepolia: {
