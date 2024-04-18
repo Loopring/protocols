@@ -204,13 +204,11 @@ async function main(): Promise<void> {
   }
 
   // add operator for wallet factory
-  if (deployment.WalletFactory !== undefined) {
-    await prepareOperators(
-      deployment.WalletFactory,
-      deployer,
-      systemConfig.operators
-    )
-  }
+  await prepareOperators(
+    systemConfig.walletFactory,
+    deployer,
+    systemConfig.operators
+  )
   if (deployment.OfficialGuardian !== undefined) {
     await prepareManagers(
       deployment.OfficialGuardian,

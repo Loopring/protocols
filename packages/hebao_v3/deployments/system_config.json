@@ -1,13 +1,15 @@
 {
   "manager": "0xf6c53560e79857ce12dde54782d487b743b70717",
   "loopringCreate2": "0x391fD52903D1531fd45F41c4A354533c91289F5F",
+  "walletFactory": "0xe7d8df8F6546965A59dab007e8709965Efe1255d",
   "newOwner": "0x3419349cD15816CD20E36DB47960cDB90f50E5b9",
   "operators": [
     "0x8Ea180381D0DbFC9E40842Fc1ccDBBc2445D196f",
     "0xbd64ef53FB86860fD72D4f35120B900CFDd9c521",
     "0xb1a6bf349c947a540a5fe6f1e89992acdad836ab",
     "0xedee915ae45cc4b2fdd1ce12a2f70dca0b2ad9e5",
-    "0xd15953bd7cbcb36b69d4b9961b56f59cc2553d2e"
+    "0xd15953bd7cbcb36b69d4b9961b56f59cc2553d2e",
+    "0xA5b2DA9ddfCc4E554bB255D9989fdD7be3858Bc9"
   ],
   "paymasterSigners": [
     "0xf6c53560e79857ce12dde54782d487b743b70717",
