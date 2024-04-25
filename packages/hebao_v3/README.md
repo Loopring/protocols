@@ -6,7 +6,6 @@ _[hebao]_(荷包）means wallet in China -- see https://www.pinterest.com/pin/37
 
 ```
 yarn install
-yarn compile
 ```
 
 # Run test
@@ -15,8 +14,12 @@ yarn compile
 yarn test
 ```
 
-# Deploy contract to arbitrum:
+# Deploy
 
 ```
-npx hardhat run --network arbitrum scripts/deploy-arbitrum.ts
+# deploy new implementation of smart wallet
+yarn hardhat run ./scripts/deploy_impl.ts --network ${NETWORK}
+
+# deploy official guardians
+yarn hardhat run ./scripts/deploy_official_guardian.ts --network ${NETWORK}
 ```

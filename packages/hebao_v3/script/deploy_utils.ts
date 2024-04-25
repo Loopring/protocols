@@ -357,6 +357,7 @@ export async function deployNewImplmentation() {
   }
 }
 
+// TODO(use deployAndVerify instead)
 export async function deployOfficialGuardian(
   deployer: SignerWithAddress
 ): Promise<string> {
@@ -382,16 +383,18 @@ export async function deployOfficialGuardian(
       'OwnedUpgradeabilityProxy',
       proxyAddress
     )
-    // verify proxy and official guardian
-    await hre.run('verify:verify', {
-      address: proxyAddress,
-      constructorArguments: []
-    })
+    if (!notSupportVerification(hre.network.name)) {
+      // verify proxy and official guardian
+      await hre.run('verify:verify', {
+        address: proxyAddress,
+        constructorArguments: []
+      })
 
-    await hre.run('verify:verify', {
-      address: await proxy.implementation(),
-      constructorArguments: []
-    })
+      await hre.run('verify:verify', {
+        address: await proxy.implementation(),
+        constructorArguments: []
+      })
+    }
   }
   const proxyAsOfficialGuardian = OfficialGuardian__factory.connect(
     proxyAddress,
@@ -407,4 +410,8 @@ export async function deployOfficialGuardian(
     ).wait()
   }
   return proxyAddress
+}
+
+function notSupportVerification(networkName: string): boolean {
+  return networkName.includes('taiko')
 }
