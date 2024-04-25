@@ -15,8 +15,11 @@ yarn compile
 yarn test
 ```
 
-# Deploy contract to arbitrum:
+# Deploy
 
 ```
-npx hardhat run --network arbitrum scripts/deploy-arbitrum.ts
+# deploy wallet factory with the same address
+# modify config.json, set new impl address will to use, make sure create2 contract is deployed already
+# and all these operators will be added to wallet factory
+yarn hardhat run scripts/deploy_walletfactory.ts --network ${NETWORK}
 ```
