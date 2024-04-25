@@ -21,12 +21,14 @@ async function main() {
   // deploy wallet implementation
   // NOTE(cannot modified to make sure we can deploy contracts with the same address)
   const blankOwner = "0xd54f3bDe60B73614905BA3881954d9FeB2476360";
-  const smartWalletImpl = await deployWalletImpl(create2, blankOwner);
+  // we dont need to deploy the original deprecated impl, but need use its fixed address as constructor arguments
+  // to deploy all other contracts with the same addresses
+  const smartWalletImplAddr = "0xdf7E7f110E76449F217e799692eb8EB11B4F5557";
 
   const implStorage = await deploySingle(
     create2,
     "DelayedImplementationManager",
-    [smartWalletImpl.address]
+    [smartWalletImplAddr]
   );
 
   const forwardProxy = await deploySingle(create2, "ForwardProxy", [
