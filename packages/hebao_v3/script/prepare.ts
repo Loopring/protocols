@@ -17,8 +17,8 @@ import * as hre from 'hardhat'
 import { type DeploymentType } from './addresses'
 
 // eth config
-const ethAmount = ethers.utils.parseEther('0.2')
-const minAmount = ethers.utils.parseEther('0.05')
+const ethFundedAmount = ethers.utils.parseEther('90')
+const ethMinAmount = ethers.utils.parseEther('1')
 
 async function prepareSmartWallet(
   smartWallet: SmartWalletV3,
@@ -28,23 +28,30 @@ async function prepareSmartWallet(
   deployer: SignerWithAddress
 ): Promise<void> {
   const usdtToken = USDT__factory.connect(usdtTokenAddr, deployer)
-  const tokenAmount = ethers.utils.parseUnits('100000', 6)
-  const minTokenAmount = ethers.utils.parseUnits('100', 6)
+  const decimal = await usdtToken.decimals()
+  const tokenFundedAmount = ethers.utils.parseUnits('100000', decimal)
+  const tokenMinAmount = ethers.utils.parseUnits('100', decimal)
+
   const { amount: depositedTokenAmount } =
     await paymaster.depositInfo(usdtTokenAddr, smartWallet.address)
   // two options, one is deposit for user, the other is mint tokens to user
-  if (depositedTokenAmount.lt(minTokenAmount)) {
+  if (depositedTokenAmount.lt(tokenMinAmount)) {
     if (
-      (await usdtToken.balanceOf(deployer.address)).lt(tokenAmount)
+      (await usdtToken.balanceOf(deployer.address)).lt(
+        tokenFundedAmount
+      )
     ) {
       await (
-        await usdtToken.setBalance(deployer.address, tokenAmount)
+        await usdtToken.setBalance(
+          deployer.address,
+          tokenFundedAmount
+        )
       ).wait()
       // deployer approve tokens to paymaster
       await (
         await usdtToken
           .connect(deployer)
-          .approve(paymaster.address, tokenAmount)
+          .approve(paymaster.address, tokenFundedAmount)
       ).wait()
     }
     await (
@@ -53,7 +60,7 @@ async function prepareSmartWallet(
         .addDepositFor(
           usdtTokenAddr,
           smartWallet.address,
-          tokenAmount
+          tokenFundedAmount
         )
     ).wait()
   } else {
@@ -61,17 +68,20 @@ async function prepareSmartWallet(
   }
 
   const usdtBalance = await usdtToken.balanceOf(smartWallet.address)
-  if (usdtBalance.lt(minTokenAmount)) {
+  if (usdtBalance.lt(tokenMinAmount)) {
     // prepare tokens for smartwallet
     await (
-      await usdtToken.setBalance(smartWallet.address, tokenAmount)
+      await usdtToken.setBalance(
+        smartWallet.address,
+        tokenFundedAmount
+      )
     ).wait()
     // approve tokens to paymaster
     await (
       await smartWallet.approveToken(
         usdtTokenAddr,
         paymaster.address,
-        tokenAmount,
+        tokenFundedAmount,
         false
       )
     ).wait()
@@ -80,13 +90,13 @@ async function prepareSmartWallet(
   }
 
   if (
-    (await entryPoint.balanceOf(smartWallet.address)).lt(minAmount)
+    (await entryPoint.balanceOf(smartWallet.address)).lt(ethMinAmount)
   ) {
     await (
       await entryPoint
         .connect(deployer)
         .depositTo(smartWallet.address, {
-          value: ethAmount
+          value: ethFundedAmount
         })
     ).wait()
   } else {
@@ -218,13 +228,13 @@ async function main(): Promise<void> {
   }
 
   // prepare tokens for paymaster
-  if ((await entryPoint.balanceOf(paymasterAddr)).lt(minAmount)) {
+  if ((await entryPoint.balanceOf(paymasterAddr)).lt(ethMinAmount)) {
     console.log(
-      `prepare eth(${ethAmount.toString()}) in entrypoint for paymaster`
+      `prepare eth(${ethFundedAmount.toString()}) in entrypoint for paymaster`
     )
     await (
       await entryPoint.connect(deployer).depositTo(paymasterAddr, {
-        value: ethAmount
+        value: ethFundedAmount
       })
     ).wait()
   } else {
