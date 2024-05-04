@@ -274,7 +274,7 @@ contract("SmartWallet", (accounts: string[]) => {
             salt
           );
 
-          // Do a transfer the the smart wallet
+          // Do a transfer the smart wallet
           await ctx.transfer(
             ownerA,
             walletAddress,
@@ -418,7 +418,7 @@ contract("SmartWallet", (accounts: string[]) => {
             salt
           );
 
-          // Do a transfer the the smart wallet
+          // Do a transfer the smart wallet
           await ctx.transfer(
             ownerA,
             walletAddress,

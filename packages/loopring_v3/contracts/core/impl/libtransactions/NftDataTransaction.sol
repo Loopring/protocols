@@ -128,7 +128,7 @@ library NftDataTransaction
         NftDataTransaction.readTx(txData, 0, nftData);
 
         // Make sure the NFT_DATA transaction pushes data on-chain
-        // that matches the the tokens that are getting withdrawn
+        // that matches the tokens that are getting withdrawn
         require(
             nftData.scheme == uint8(expectedScheme) &&
             nftData.accountID == accountID &&

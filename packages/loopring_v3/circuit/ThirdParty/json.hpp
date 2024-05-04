@@ -1221,7 +1221,7 @@ enum class value_t : std::uint8_t
     number_integer,   ///< number value (signed integer)
     number_unsigned,  ///< number value (unsigned integer)
     number_float,     ///< number value (floating-point)
-    discarded         ///< discarded by the the parser callback function
+    discarded         ///< discarded by the parser callback function
 };
 
 /*!
@@ -15365,7 +15365,7 @@ class basic_json
 
     @throw type_error.304 if the JSON value is not an object; in this case,
     calling `at` with a key makes no sense. See example below.
-    @throw out_of_range.403 if the key @a key is is not stored in the object;
+    @throw out_of_range.403 if the key @a key is not stored in the object;
     that is, `find(key) == end()`. See example below.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
@@ -15416,7 +15416,7 @@ class basic_json
 
     @throw type_error.304 if the JSON value is not an object; in this case,
     calling `at` with a key makes no sense. See example below.
-    @throw out_of_range.403 if the key @a key is is not stored in the object;
+    @throw out_of_range.403 if the key @a key is not stored in the object;
     that is, `find(key) == end()`. See example below.
 
     @exceptionsafety Strong guarantee: if an exception is thrown, there are no
@@ -19551,7 +19551,7 @@ class basic_json
 
     Uses a JSON pointer to retrieve a reference to the respective JSON value.
     No bound checking is performed. The function does not change the JSON
-    value; no `null` values are created. In particular, the the special value
+    value; no `null` values are created. In particular, the special value
     `-` yields an exception.
 
     @param[in] ptr  JSON pointer to the desired element
