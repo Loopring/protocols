@@ -157,7 +157,7 @@ async function main() {
   const thirdStage = true;
   let create2;
 
-  const create2Addr = "0x495F13956D92a364C895981851D98B8EfF4c6AD4";
+  const create2Addr = "0x391fD52903D1531fd45F41c4A354533c91289F5F";
   if ((await ethers.provider.getCode(create2Addr)) != "0x") {
     create2 = await ethers.getContractAt(
       "LoopringCreate2Deployer",
@@ -173,66 +173,66 @@ async function main() {
   // deploy wallet implementation
   const smartWalletImpl = await deployWalletImpl(create2, deployer.address);
 
-  const implStorage = await deploySingle(
-    create2,
-    "DelayedImplementationManager",
-    [smartWalletImpl.address]
-  );
+  // const implStorage = await deploySingle(
+  // create2,
+  // "DelayedImplementationManager",
+  // [smartWalletImpl.address]
+  // );
 
-  const forwardProxy = await deploySingle(create2, "ForwardProxy", [
-    implStorage.address,
-  ]);
+  // const forwardProxy = await deploySingle(create2, "ForwardProxy", [
+  // implStorage.address,
+  // ]);
 
-  const walletFactory = await deploySingle(create2, "WalletFactory", [
-    forwardProxy.address,
-  ]);
-  /////////////////////////////
-  // call it once
-  // transfer wallet factory ownership to deployer
-  const factoryCurrentOwner = await walletFactory.owner();
-  if (deployer.address != factoryCurrentOwner) {
-    await create2.setTarget(walletFactory.address);
-    const transferWalletFactoryOwnership =
-      await walletFactory.populateTransaction.transferOwnership(
-        deployer.address
-      );
-    await create2.transact(transferWalletFactoryOwnership.data);
-    await walletFactory.addOperator(deployer.address);
-  }
+  // const walletFactory = await deploySingle(create2, "WalletFactory", [
+  // forwardProxy.address,
+  // ]);
+  // /////////////////////////////
+  // // call it once
+  // // transfer wallet factory ownership to deployer
+  // const factoryCurrentOwner = await walletFactory.owner();
+  // if (deployer.address != factoryCurrentOwner) {
+  // await create2.setTarget(walletFactory.address);
+  // const transferWalletFactoryOwnership =
+  // await walletFactory.populateTransaction.transferOwnership(
+  // deployer.address
+  // );
+  // await create2.transact(transferWalletFactoryOwnership.data);
+  // await walletFactory.addOperator(deployer.address);
+  // }
 
-  // transfer DelayedImplementationManager ownership to deployer
-  const managerCurrentOwner = await walletFactory.owner();
-  if (deployer.address != managerCurrentOwner) {
-    await create2.setTarget(implStorage.address);
-    const transferImplStorageOwnership =
-      await implStorage.populateTransaction.transferOwnership(deployer.address);
-    await create2.transact(transferImplStorageOwnership.data);
-  }
+  // // transfer DelayedImplementationManager ownership to deployer
+  // const managerCurrentOwner = await walletFactory.owner();
+  // if (deployer.address != managerCurrentOwner) {
+  // await create2.setTarget(implStorage.address);
+  // const transferImplStorageOwnership =
+  // await implStorage.populateTransaction.transferOwnership(deployer.address);
+  // await create2.transact(transferImplStorageOwnership.data);
+  // }
 
-  if (thirdStage) {
-    const [account1, account2, account3] = await ethers.getSigners();
-    // const owner = await ethers.Wallet.createRandom();
-    const owner = new ethers.Wallet(process.env.TEST_ACCOUNT_PRIVATE_KEY);
-    const guardians = [
-      new ethers.Wallet(process.env.PRIVATE_KEY).connect(ethers.provider),
-    ];
-    guardians.push(ethers.Wallet.createRandom().connect(ethers.provider));
-    const smartWalletAddr = await createSmartWallet(
-      owner,
-      walletFactory,
-      guardians
-    );
-    const wallet = await smartWalletImpl.attach(smartWalletAddr);
-    console.log("masterCopy: ", await wallet.getMasterCopy());
-    // metatx transfer eth
-    await executeMetaTx(
-      wallet,
-      owner,
-      deployer,
-      smartWalletImpl.address,
-      guardians
-    );
-  }
+  // if (thirdStage) {
+  // const [account1, account2, account3] = await ethers.getSigners();
+  // // const owner = await ethers.Wallet.createRandom();
+  // const owner = new ethers.Wallet(process.env.TEST_ACCOUNT_PRIVATE_KEY);
+  // const guardians = [
+  // new ethers.Wallet(process.env.PRIVATE_KEY).connect(ethers.provider),
+  // ];
+  // guardians.push(ethers.Wallet.createRandom().connect(ethers.provider));
+  // const smartWalletAddr = await createSmartWallet(
+  // owner,
+  // walletFactory,
+  // guardians
+  // );
+  // const wallet = await smartWalletImpl.attach(smartWalletAddr);
+  // console.log("masterCopy: ", await wallet.getMasterCopy());
+  // // metatx transfer eth
+  // await executeMetaTx(
+  // wallet,
+  // owner,
+  // deployer,
+  // smartWalletImpl.address,
+  // guardians
+  // );
+  // }
 }
 
 main()
