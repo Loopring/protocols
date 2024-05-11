@@ -42,7 +42,7 @@ async function fetchAllMetaTxHashs() {
 
     const events = await metatxContract.queryFilter(
       metatxContract.filters.MetaTxExecuted,
-      fromBlock
+      fromBlock,
     );
     // console.log("events:", events);
     events.forEach((e) => {

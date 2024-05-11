@@ -27,7 +27,7 @@ async function getWalletIface() {
 async function walletERC1271Test(
   walletAddr: string,
   hash: string,
-  signature: string
+  signature: string,
 ) {
   const wallet = await attachWallet(walletAddr);
 
@@ -42,7 +42,7 @@ async function walletERC1271Test(
 async function verifySignatureERC1271(
   officialGuardianAddr: string,
   hash: string,
-  signature: string
+  signature: string,
 ) {
   const officialGuardian = await (
     await ethers.getContractFactory("OfficialGuardian")
@@ -147,7 +147,7 @@ async function signRecoverTest(walletAddr: string) {
     newOwner,
     guardians,
     signer,
-    privateKey
+    privateKey,
   );
   console.log("signRes:", signRes);
 }
@@ -193,7 +193,7 @@ async function main() {
 
   decodeWithABI(
     '[{"inputs":[{"internalType":"contract IUniswapV2Factory","name":"_factory","type":"address"},{"internalType":"address","name":"_wethAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"tokenValue","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]',
-    "0xf18217830000000000000000000000000baba1ad5be3a5c0a66e7ac838a129bf948f1ea40000000000000000000000000000000000000000000000000de0b6b3a7640000"
+    "0xf18217830000000000000000000000000baba1ad5be3a5c0a66e7ac838a129bf948f1ea40000000000000000000000000000000000000000000000000de0b6b3a7640000",
   );
 
   // signTest();

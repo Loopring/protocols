@@ -20,7 +20,7 @@ async function newSingleFactory() {
 async function deploySingle(
   contractName: string,
   args?: any[],
-  libs?: Map<string, any>
+  libs?: Map<string, any>,
 ) {
   // use same salt for all deployments:
   const salt = ethers.utils.formatBytes32String("0x5");
@@ -44,7 +44,7 @@ async function deploySingle(
   const deployedAddress = ethers.utils.getCreate2Address(
     deployFactory.address,
     salt,
-    ethers.utils.keccak256(deployableCode)
+    ethers.utils.keccak256(deployableCode),
   );
 
   console.log(contractName, "deployed, address:", deployedAddress);
@@ -62,17 +62,17 @@ export async function deployWalletImpl() {
   const LockLibAddr = await deploySingle(
     "LockLib",
     undefined,
-    new Map([["GuardianLib", GuardianLibAddr]])
+    new Map([["GuardianLib", GuardianLibAddr]]),
   );
   const RecoverLibAddr = await deploySingle(
     "RecoverLib",
     undefined,
-    new Map([["GuardianLib", GuardianLibAddr]])
+    new Map([["GuardianLib", GuardianLibAddr]]),
   );
   const MetaTxLibAddr = await deploySingle(
     "MetaTxLib",
     undefined,
-    new Map([["ERC20Lib", ERC20LibAddr]])
+    new Map([["ERC20Lib", ERC20LibAddr]]),
   );
 
   const blankOwner = await (await ethers.getSigners())[0].getAddress();
@@ -90,7 +90,7 @@ export async function deployWalletImpl() {
       ["RecoverLib", RecoverLibAddr],
       ["UpgradeLib", UpgradeLibAddr],
       ["WhitelistLib", WhitelistLibAddr],
-    ])
+    ]),
   );
 
   return SmartWalletAddr;

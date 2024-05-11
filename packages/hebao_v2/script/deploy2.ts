@@ -23,20 +23,20 @@ function getUnlockCalldata(
   wallet: Contract,
   walletOwner: Wallet,
   masterCopy: string,
-  guardians: Wallet[]
+  guardians: Wallet[],
 ) {
   const validUntil = new Date().getTime() + 1000 * 3600 * 24; // one day
   const sig1 = signUnlock(
     masterCopy,
     wallet.address,
     new BN(validUntil),
-    walletOwner.address
+    walletOwner.address,
   );
   const sig2 = signUnlock(
     masterCopy,
     wallet.address,
     new BN(validUntil),
-    guardians[0].address
+    guardians[0].address,
   );
 
   const sortedSigs = sortSignersAndSignatures(
@@ -44,7 +44,7 @@ function getUnlockCalldata(
     [
       Buffer.from(sig1.txSignature.slice(2), "hex"),
       Buffer.from(sig2.txSignature.slice(2), "hex"),
-    ]
+    ],
   );
 
   const approval = {
@@ -61,7 +61,7 @@ async function executeMetaTx(
   walletOwner: Wallet,
   executor: Signer & { address: string },
   masterCopy: string,
-  guardians: Wallet[]
+  guardians: Wallet[],
 ) {
   const ethAmount = 1;
 
@@ -87,11 +87,11 @@ async function executeMetaTx(
   // due to that executor is guardian
   await (await wallet.connect(guardians[0]).lock()).wait();
   actionCalldataLists.push(
-    getUnlockCalldata(wallet, walletOwner, masterCopy, guardians)
+    getUnlockCalldata(wallet, walletOwner, masterCopy, guardians),
   );
   const callData = testContract.interface.encodeFunctionData(
     "functionDefault",
-    [10]
+    [10],
   );
   actionCalldataLists.push(
     wallet.interface.encodeFunctionData("callContract", [
@@ -99,7 +99,7 @@ async function executeMetaTx(
       0,
       callData,
       false,
-    ])
+    ]),
   );
 
   for (let i = 0; i < actionCalldataLists.length; ++i) {
@@ -118,14 +118,14 @@ async function executeMetaTx(
       signature: Buffer.from(""),
       approvedHash: Buffer.from(
         "0000000000000000000000000000000000000000000000000000000000000000",
-        "hex"
+        "hex",
       ),
     };
     const metaTxSig = signMetaTx(
       masterCopy,
       metaTx,
       walletOwner.address,
-      walletOwner.privateKey.slice(2)
+      walletOwner.privateKey.slice(2),
     );
 
     //prepare eth for wallet
@@ -146,7 +146,7 @@ async function executeMetaTx(
         metaTx.feeRecipient,
         metaTx.requiresSuccess,
         metaTx.data,
-        Buffer.from(metaTxSig.txSignature.slice(2), "hex")
+        Buffer.from(metaTxSig.txSignature.slice(2), "hex"),
       )
     ).wait();
   }
@@ -162,11 +162,47 @@ async function main() {
   }
   const create2 = await ethers.getContractAt(
     "LoopringCreate2Deployer",
-    create2Addr
+    create2Addr,
   );
 
   // deploy wallet implementation
   const smartWalletImpl = await deployWalletImpl(create2, deployer.address);
+
+  const implStorage = await deploySingle(
+    create2,
+    "DelayedImplementationManager",
+    [smartWalletImpl.address],
+  );
+
+  const forwardProxy = await deploySingle(create2, "ForwardProxy", [
+    implStorage.address,
+  ]);
+
+  const walletFactory = await deploySingle(create2, "WalletFactory", [
+    forwardProxy.address,
+  ]);
+  /////////////////////////////
+  // call it once
+  // transfer wallet factory ownership to deployer
+  const factoryCurrentOwner = await walletFactory.owner();
+  if (deployer.address != factoryCurrentOwner) {
+    await create2.setTarget(walletFactory.address);
+    const transferWalletFactoryOwnership =
+      await walletFactory.populateTransaction.transferOwnership(
+        deployer.address,
+      );
+    await create2.transact(transferWalletFactoryOwnership.data);
+    await walletFactory.addOperator(deployer.address);
+  }
+
+  // transfer DelayedImplementationManager ownership to deployer
+  const managerCurrentOwner = await walletFactory.owner();
+  if (deployer.address != managerCurrentOwner) {
+    await create2.setTarget(implStorage.address);
+    const transferImplStorageOwnership =
+      await implStorage.populateTransaction.transferOwnership(deployer.address);
+    await create2.transact(transferImplStorageOwnership.data);
+  }
 }
 
 main()

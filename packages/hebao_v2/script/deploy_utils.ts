@@ -15,7 +15,7 @@ export async function deploySingle(
   deployFactory: Contract,
   contractName: string,
   args?: any[],
-  libs?: Map<string, any>
+  libs?: Map<string, any>,
 ): Promise<Contract> {
   // use same salt for all deployments:
   // const salt = ethers.utils.randomBytes(32);
@@ -38,7 +38,7 @@ export async function deploySingle(
   const deployedAddress = ethers.utils.getCreate2Address(
     deployFactory.address,
     salt,
-    ethers.utils.keccak256(deployableCode)
+    ethers.utils.keccak256(deployableCode),
   );
   // check if it is deployed already
   if ((await ethers.provider.getCode(deployedAddress)) != "0x") {
@@ -47,7 +47,7 @@ export async function deploySingle(
     // const gasLimit = 15000000 ;
     const gasLimit = await deployFactory.estimateGas.deploy(
       deployableCode,
-      salt
+      salt,
     );
     const tx = await deployFactory.deploy(deployableCode, salt, { gasLimit });
     await tx.wait();
@@ -59,7 +59,7 @@ export async function deploySingle(
 
 export async function deployWalletImpl(
   deployFactory: Contract,
-  blankOwner: string
+  blankOwner: string,
 ) {
   const ERC1271Lib = await deploySingle(deployFactory, "ERC1271Lib");
   const ERC20Lib = await deploySingle(deployFactory, "ERC20Lib");
@@ -72,19 +72,19 @@ export async function deployWalletImpl(
     deployFactory,
     "LockLib",
     undefined,
-    new Map([["GuardianLib", GuardianLib.address]])
+    new Map([["GuardianLib", GuardianLib.address]]),
   );
   const RecoverLib = await deploySingle(
     deployFactory,
     "RecoverLib",
     undefined,
-    new Map([["GuardianLib", GuardianLib.address]])
+    new Map([["GuardianLib", GuardianLib.address]]),
   );
   const MetaTxLib = await deploySingle(
     deployFactory,
     "MetaTxLib",
     undefined,
-    new Map([["ERC20Lib", ERC20Lib.address]])
+    new Map([["ERC20Lib", ERC20Lib.address]]),
   );
 
   // const blankOwner = await (await ethers.getSigners())[0].getAddress();
@@ -103,7 +103,7 @@ export async function deployWalletImpl(
       ["RecoverLib", RecoverLib.address],
       ["UpgradeLib", UpgradeLib.address],
       ["WhitelistLib", WhitelistLib.address],
-    ])
+    ]),
   );
 
   return smartWallet;
@@ -114,7 +114,7 @@ export async function adjustNonce(targetNonce: number) {
   let nonce = await ethers.provider.getTransactionCount(ownerAccount.address);
   if (targetNonce < nonce) {
     throw Error(
-      `targetNonce is lower than current nonce, please increase targetNonce!`
+      `targetNonce is lower than current nonce, please increase targetNonce!`,
     );
   }
   console.log("before nonce: ", nonce);
@@ -132,7 +132,7 @@ export async function adjustNonce(targetNonce: number) {
 export async function createSmartWallet(
   owner: Wallet,
   walletFactory: Contract,
-  guardianWallets: Wallet[]
+  guardianWallets: Wallet[],
 ) {
   const guardians = guardianWallets.map((g) => g.address.toLowerCase()).sort();
   const feeRecipient = ethers.constants.AddressZero;
@@ -140,14 +140,14 @@ export async function createSmartWallet(
   const salt = ethers.utils.formatBytes32String("0x5");
   const walletAddrComputed = await walletFactory.computeWalletAddress(
     owner.address,
-    salt
+    salt,
   );
   if ((await ethers.provider.getCode(walletAddrComputed)) != "0x") {
     console.log(
       "smart wallet: ",
       owner.address,
       " is deployed already at: ",
-      walletAddrComputed
+      walletAddrComputed,
     );
   } else {
     // create smart wallet
@@ -161,7 +161,7 @@ export async function createSmartWallet(
       ethers.constants.AddressZero,
       new BN(0),
       salt,
-      owner.privateKey.slice(2)
+      owner.privateKey.slice(2),
     );
 
     const walletConfig: any = {

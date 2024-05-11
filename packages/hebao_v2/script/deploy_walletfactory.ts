@@ -10,11 +10,11 @@ async function main() {
   const create2 = await ethers.getContractAt(
     "LoopringCreate2Deployer",
     create2Addr,
-    deployer
+    deployer,
   );
   if ((await create2.owner()) !== deployer.address) {
     throw new Error(
-      `deployer(${deployer.address}) is not owner of LoopringCreate2Deployer(${create2Addr})`
+      `deployer(${deployer.address}) is not owner of LoopringCreate2Deployer(${create2Addr})`,
     );
   }
 
@@ -28,7 +28,7 @@ async function main() {
   const implStorage = await deploySingle(
     create2,
     "DelayedImplementationManager",
-    [smartWalletImplAddr]
+    [smartWalletImplAddr],
   );
 
   const forwardProxy = await deploySingle(create2, "ForwardProxy", [
@@ -45,7 +45,7 @@ async function main() {
       await (await create2.claimOwnership()).wait();
     } else {
       throw new Error(
-        `deployer: ${deployer.address} is not owner of create2: ${create2.address}`
+        `deployer: ${deployer.address} is not owner of create2: ${create2.address}`,
       );
     }
   }
@@ -55,7 +55,7 @@ async function main() {
     await create2.setTarget(walletFactory.address);
     const transferWalletFactoryOwnership =
       await walletFactory.populateTransaction.transferOwnership(
-        deployer.address
+        deployer.address,
       );
     // transfer ownership of wallet factory from create2 to deployer
     await create2.transact(transferWalletFactoryOwnership.data);

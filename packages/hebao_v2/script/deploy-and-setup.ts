@@ -22,7 +22,7 @@ async function newWallet(walletFactoryAddress: string, _salt?: number) {
     ethers.constants.AddressZero,
     ethers.constants.AddressZero,
     new BN(0),
-    salt
+    salt,
   );
   const walletConfig: any = {
     owner: ownerAddr,
@@ -42,7 +42,7 @@ async function newWallet(walletFactoryAddress: string, _salt?: number) {
 
   const walletAddrComputed = await walletFactory.computeWalletAddress(
     ownerAddr,
-    salt
+    salt,
   );
   console.log("walletAddrcomputed:", walletAddrComputed);
 
