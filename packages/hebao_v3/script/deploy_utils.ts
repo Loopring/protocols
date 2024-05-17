@@ -64,8 +64,10 @@ export async function deployAll() {
     )
   } else {
     create2 = await (
-      await ethers.getContractFactory('LoopringCreate2Deployer')
-    ).deploy()
+      await (
+        await ethers.getContractFactory('LoopringCreate2Deployer')
+      ).deploy()
+    ).deployed()
     console.log('create2 factory is deployed at : ', create2.address)
   }
   addressBook.LoopringCreate2Deployer = create2.address
@@ -280,8 +282,10 @@ export async function deployNewImplmentation() {
     }
   } else {
     create2 = await (
-      await ethers.getContractFactory('LoopringCreate2Deployer')
-    ).deploy()
+      await (
+        await ethers.getContractFactory('LoopringCreate2Deployer')
+      ).deploy()
+    ).deployed()
     console.log('create2 factory is deployed at : ', create2.address)
   }
   addressBook.LoopringCreate2Deployer = create2.address
@@ -368,12 +372,16 @@ export async function deployOfficialGuardian(
 
   if (deployment.OfficialGuardian === undefined) {
     const proxy = await (
-      await ethers.getContractFactory('OwnedUpgradeabilityProxy')
-    ).deploy()
+      await (
+        await ethers.getContractFactory('OwnedUpgradeabilityProxy')
+      ).deploy()
+    ).deployed()
 
     const officialGuardian = await (
-      await ethers.getContractFactory('OfficialGuardian')
-    ).deploy()
+      await (
+        await ethers.getContractFactory('OfficialGuardian')
+      ).deploy()
+    ).deployed()
 
     await (await proxy.upgradeTo(officialGuardian.address)).wait()
     proxyAddress = proxy.address

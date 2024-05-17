@@ -63,10 +63,12 @@ export async function deployAndVerify(
       } else {
         contractAddr = (
           await (
-            await hre.ethers.getContractFactory(task.contractName, {
-              libraries: task.libraries
-            })
-          ).deploy(task.args)
+            await (
+              await hre.ethers.getContractFactory(task.contractName, {
+                libraries: task.libraries
+              })
+            ).deploy(task.args)
+          ).deployed()
         ).address
       }
     }

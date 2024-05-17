@@ -316,8 +316,10 @@ export async function deployWalletImpl(
   )
   if (connectorRegistryAddr === ethers.constants.AddressZero) {
     const connectorRegistry = await (
-      await ethers.getContractFactory('ConnectorRegistry')
-    ).deploy()
+      await (
+        await ethers.getContractFactory('ConnectorRegistry')
+      ).deploy()
+    ).deployed()
     connectorRegistryAddr = connectorRegistry.address
   }
 

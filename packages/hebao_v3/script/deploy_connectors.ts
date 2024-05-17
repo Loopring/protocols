@@ -16,8 +16,8 @@ async function main(): Promise<void> {
     deployer
   )
   const ownedMemory = await (
-    await ethers.getContractFactory('OwnedMemory')
-  ).deploy()
+    await (await ethers.getContractFactory('OwnedMemory')).deploy()
+  ).deployed()
   console.log(`owned memory: `, ownedMemory.address)
   await hre.run('verify:verify', {
     address: ownedMemory.address
@@ -33,12 +33,14 @@ async function main(): Promise<void> {
     )) !== '0x'
   ) {
     const uniswapv3Connector = await (
-      await ethers.getContractFactory('UniswapV3Connector')
-    ).deploy(
-      addressBook.SWAP_ROUTERV3_ADDRESS,
-      ownedMemory.address,
-      addressBook.WETH_ADDRESS
-    )
+      await (
+        await ethers.getContractFactory('UniswapV3Connector')
+      ).deploy(
+        addressBook.SWAP_ROUTERV3_ADDRESS,
+        ownedMemory.address,
+        addressBook.WETH_ADDRESS
+      )
+    ).deployed()
     console.log(`uniswapv3 connector: `, uniswapv3Connector.address)
     await hre.run('verify:verify', {
       address: uniswapv3Connector.address,
