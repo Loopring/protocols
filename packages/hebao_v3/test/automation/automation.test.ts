@@ -81,6 +81,11 @@ describe('automation test', () => {
       ).to.revertedWith('LRC#104')
       const executor = ethers.Wallet.createRandom()
       await approveExecutor(loadedFixture, executor.address)
+      await approveExecutor(
+        loadedFixture,
+        executor.address,
+        ethers.constants.MaxUint256
+      )
       // check it is a valid executor
       const { smartWallet } = loadedFixture
       expect(await smartWallet.isExecutorOrOwner(executor.address)).to
