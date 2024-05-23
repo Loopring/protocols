@@ -1,4 +1,12 @@
 {
+  "ethereum": {
+    "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    "LoopringPaymaster": "0x7A1a1475b8B0204606a57DbFCAc4f9A52191b825",
+    "SmartWalletImpl": "0xf4f41cf0cAFDA4840CBd97ad85F3f5cc7137862d",
+    "OfficialGuardian": "",
+    "LoopringCreate2Deployer": "0x7A2B366299080b6c91f2Bb0DD1f77BE66B11C7bd",
+    "ConnectorRegistry": "0x522a27e039F8EF40d77fF50fA4F74f8BD97EB28A"
+  },
   "goerli": {
     "LoopringCreate2Deployer": "0xd57d71A16D850038e7266E3885140A7E7d1Ba3fD",
     "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
