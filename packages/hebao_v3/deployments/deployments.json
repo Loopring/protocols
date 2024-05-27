@@ -1,0 +1,46 @@
+{
+  "goerli": {
+    "LoopringCreate2Deployer": "0xd57d71A16D850038e7266E3885140A7E7d1Ba3fD",
+    "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    "LoopringPaymaster": "0x7027C780771F4d13d59c179A868Aa5269Bc0D09C",
+    "SmartWalletImpl": "0x07707966b3Dd56400d2e099Ea4d20E088ea0e062",
+    "DelayedImplementationManager": "0xb200f9FF3568e977393F9e40Dfa32627BBaAcb91",
+    "ForwardProxy": "0x16a95B4e615DE64d40E43CD723c422f6eAF3DeAf",
+    "WalletFactory": "0xE5C8214342735a4c0Dc281B528E372C6A56513CD",
+    "SmartWallet": "0xce49F224CA69E4BCa519765bdc644f88fD017001",
+    "USDT": "0x85E48056F3Dc8899d4B57e21e9EEf2D4c079d5ff"
+  },
+  "hardhat": {
+    "LoopringCreate2Deployer": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "EntryPoint": "0x67fC9E8D89f6599b65920496A0c41111a179617e",
+    "LoopringPaymaster": "0xE4c25F6816BCC6D160C080b0B456893e2F7659Dd",
+    "SmartWalletImpl": "0xD1585aB8FA51894acF4ece9bBcdB9D3cc6ec7Eb6",
+    "DelayedImplementationManager": "0xc4C1b2f57D424d1D7a48b768be91a23B8c72b3b0",
+    "ForwardProxy": "0xDfB46FdF9E35f75454B9D6FF187ea1e956f54126",
+    "WalletFactory": "0x75182bf345e3B78b6FFd4020035E627249e29Ba9",
+    "SmartWallet": "0x207088EB181359Fb963a6AE7F645969DAF812CcF",
+    "USDT": "0xa7517f4e2f844CB90d99B898cEC0487E4DFCf99c"
+  },
+  "sepolia": {
+    "LoopringCreate2Deployer": "0x100f3f74125c8c724c7c0ee81e4dd5626830dd9a",
+    "EntryPoint": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    "LoopringPaymaster": "0x45006b87a034fdB751b940FA3Ec55C243f6FbbF2",
+    "SmartWalletImpl": "0xaa4706c8E3bd1ec1F2Ca3234100624058AaaDfF8",
+    "DelayedImplementationManager": "0xD7aDEF9dB43b22Ca2c9Be79b440749135b8AEeF0",
+    "ForwardProxy": "0xEa089CF04E0bA72e11686eC791604C3D8a87E455",
+    "WalletFactory": "0x8Bd86790734f0a45F9e93722faCF4a4079B8898e",
+    "SmartWallet": "0xE01E3610717b9446fA244e579efA79bbB5d98Db9",
+    "USDT": "0xbb39a16E032a8F5cC8fe4E0043fD8C72f87755A2"
+  },
+  "taiko6": {
+    "LoopringCreate2Deployer": "0x391fD52903D1531fd45F41c4A354533c91289F5F",
+    "EntryPoint": "0x779eEcA2315a44D20806217c005731aE7DDB5ca0",
+    "LoopringPaymaster": "0x9CA6FFC3cC53a50C7322ab7B70fd413C49A55Bfd",
+    "SmartWalletImpl": "0xaD54dF1D61399EbBca32c8c82DF081163e9f70f5",
+    "DelayedImplementationManager": "0x93cC2B5ABDa1830E9AcaDE3CB76E22D3082BFAe5",
+    "ForwardProxy": "0x23a19a97A2dA581e3d66Ef5Fd1eeA15024f55611",
+    "SmartWallet": "0xce49F224CA69E4BCa519765bdc644f88fD017001",
+    "WalletFactory": "0xe7d8df8F6546965A59dab007e8709965Efe1255d",
+    "USDT": "0xD69d3e64D71844BBDdA51Cd7f23ED3631E9FAC49"
+  }
+}
