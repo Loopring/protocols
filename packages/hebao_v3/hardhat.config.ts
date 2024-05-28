@@ -60,8 +60,9 @@ const config: HardhatUserConfig = {
     },
 
     taiko: {
-      url: 'https://l2rpc.hackathon.taiko.xyz',
-      accounts: [privateKey]
+      url: 'https://rpc.mainnet.taiko.xyz',
+      accounts: [privateKey],
+      gasPrice: 10000000
     },
     taiko2: {
       url: 'https://l2rpc.a2.taiko.xyz/',
@@ -127,8 +128,16 @@ const config: HardhatUserConfig = {
   },
 
   etherscan: {
-    // Your API key for Etherscan
-    apiKey: process.env.ETHERSCAN_API_KEY
+      // Your API key for Etherscan
+      apiKey: process.env.ETHERSCAN_API_KEY,
+      customChains: [{
+          network: 'taiko',
+          chainId: 167000,
+          urls: {
+              apiURL: 'https://api.taikoscan.io/api',
+              browserURL: 'https://taikoscan.io',
+          }
+      }],
   }
 }
 
