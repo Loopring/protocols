@@ -128,16 +128,18 @@ const config: HardhatUserConfig = {
   },
 
   etherscan: {
-      // Your API key for Etherscan
-      apiKey: process.env.ETHERSCAN_API_KEY,
-      customChains: [{
-          network: 'taiko',
-          chainId: 167000,
-          urls: {
-              apiURL: 'https://api.taikoscan.io/api',
-              browserURL: 'https://taikoscan.io',
-          }
-      }],
+    // Your API key for Etherscan
+    apiKey: process.env.ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: 'taiko',
+        chainId: 167000,
+        urls: {
+          apiURL: 'https://api.taikoscan.io/api',
+          browserURL: 'https://taikoscan.io'
+        }
+      }
+    ]
   }
 }
 

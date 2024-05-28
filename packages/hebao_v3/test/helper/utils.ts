@@ -226,6 +226,7 @@ export async function deploySingle(
     ethers.utils.keccak256(deployableCode)
   )
   const forTest = hre.network.name === 'hardhat'
+  console.log(`${contractName} address: `, deployedAddress)
   // check if it is deployed already
   if ((await ethers.provider.getCode(deployedAddress)) === '0x') {
     const gasLimit = await deployFactory.estimateGas.deploy(
@@ -253,7 +254,8 @@ export async function deploySingle(
     if (
       hre.network.name === 'goerli' ||
       hre.network.name === 'sepolia' ||
-      hre.network.name === 'ethereum'
+      hre.network.name === 'ethereum' ||
+      hre.network.name === 'taiko'
     ) {
       await hre.run('verify:verify', {
         contract: verifiedContract,
