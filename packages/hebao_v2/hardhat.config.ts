@@ -23,7 +23,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 function loadTestAccounts() {
   const fs = require("fs");
   const accountKeys = JSON.parse(
-    fs.readFileSync("./test_account_keys.json", "ascii")
+    fs.readFileSync("./test_account_keys.json", "ascii"),
   ).private_keys;
   const accounts = [];
   for (const addr in accountKeys) {
@@ -79,9 +79,11 @@ export default {
       accounts: [process.env.PRIVATE_KEY],
     },
     taiko: {
-      chainId: 167002,
-      url: "https://l2rpc.hackathon.taiko.xyz",
+      chainId: 167000,
+      url: "https://rpc.mainnet.taiko.xyz",
+      loggingEnabled: true,
       accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 10000000,
     },
     taiko2: {
       chainId: 167004,
@@ -151,6 +153,17 @@ export default {
 
   etherscan: {
     // Your API key for Etherscan
-    apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI",
+    // apiKey: "1F73WEV5ZM2HKPIVCG65U5QQ427NPUG9FI",
+    apiKey: "22PHXVHY72MJ1GFFYGV6P3T17XPYXR6BAG",
+    customChains: [
+      {
+        network: "taiko",
+        chainId: 167000,
+        urls: {
+          apiURL: "https://api.taikoscan.io/api", // https => http
+          browserURL: "https://taikoscan.io",
+        },
+      },
+    ],
   },
 };
