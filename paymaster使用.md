@@ -29,3 +29,9 @@ owner发起
 1. unlockTokenDeposit()  // 记录sender at blockNumber
 2. withdrawTokensTo($token, $target, $amount)  // sender 在下一个block执行，把$token transfer到$target 地址
 ```
+#### 6. 用户往paymaster预存fee
+用户发起   
+```
+1. 用户wallet授权token给paymaster合约
+2. addDepositFor($token, $account, $amount)
+```
