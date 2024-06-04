@@ -1,0 +1,8 @@
+{
+  "dev": {
+    "ConnectorRegistry": "0xCC553C3418C6d7E25Ec8e35D3A217F75AEB6C029",
+    "LoopringPaymaster": "0x4D9De7bcBa9DFC87f387A19839c63b98fC368EcA",
+    "smartWallet": "0xD2f1c204F219db1478e8D92728D584e7A51A5235",
+    "USDT": "0x3191290012C079fA4815ab8bF3ff3a8a6bbAce5B"
+  }
+}

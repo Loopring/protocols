@@ -20,6 +20,12 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "src/*": ["./src/*"],
+      "deployments/*": ["./deployments/*"],
+      "typechain-types": ["./typechain-types"],
+      "tasks/*": ["./tasks/*"]
+    }
   }
 }

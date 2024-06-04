@@ -11,3 +11,5 @@ libraries.js
 .env
 /coverage
 /coverage.json
+deployments/hardhat
+deployments/localhost
