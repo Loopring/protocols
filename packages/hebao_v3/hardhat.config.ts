@@ -8,6 +8,18 @@ import '@nomicfoundation/hardhat-verify'
 
 import * as dotenv from 'dotenv'
 
+import 'tsconfig-paths/register'
+import 'tasks/load_deploy_results'
+import 'tasks/task_helper'
+
+import 'tasks/paymaster'
+import 'tasks/smart_wallet'
+import 'tasks/connector_registry'
+import 'tasks/entry_point'
+import 'tasks/token'
+import 'tasks/tools'
+
+// cannot read env before the following line
 dotenv.config()
 
 const privateKey = process.env.PRIVATE_KEY as string

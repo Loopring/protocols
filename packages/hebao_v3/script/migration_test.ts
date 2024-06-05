@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { SmartWalletV3__factory } from '../typechain-types'
+import { SmartWalletV3__factory } from 'typechain-types'
 
 import { deployWalletImpl } from '../test/helper/utils'
 
