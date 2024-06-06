@@ -5,7 +5,8 @@ import {
   constants,
   Contract,
   type Signer,
-  type Wallet
+  type Wallet,
+  ethers
 } from 'ethers'
 import {
   arrayify,
@@ -14,20 +15,15 @@ import {
   hexDataSlice,
   keccak256
 } from 'ethers/lib/utils'
-import { ethers } from 'hardhat'
 import _ from 'lodash'
 
-import {
-  type EntryPoint,
-  EntryPoint__factory,
-  type SmartWalletV3
-} from '../../typechain-types'
+import { EntryPoint__factory } from 'typechain-types'
 
 import {
   type ApprovalOption,
   signTypedData
-} from './LoopringGuardianAPI'
-import type * as typ from './solidityTypes'
+} from 'src/LoopringGuardianAPI'
+import type * as typ from 'src/solidityTypes'
 
 export const HashZero = ethers.constants.HashZero
 
@@ -174,7 +170,7 @@ export function callDataCost(data: string): number {
 export async function fillUserOp(
   op: Partial<UserOperation>,
   walletFactoryAddress: string,
-  entryPoint?: EntryPoint
+  entryPoint?: Contract
 ): Promise<UserOperation> {
   const op1 = { ...op }
   const provider = entryPoint?.provider
@@ -268,7 +264,7 @@ export async function fillUserOp(
 
 export async function fillAndMultiSign(
   callData: string,
-  smartWallet: SmartWalletV3,
+  smartWallet: Contract,
   smartWalletOwner: Wallet,
   smartWalletOrEOASigners: Array<{
     signer: Wallet
@@ -277,7 +273,7 @@ export async function fillAndMultiSign(
   walletFactoryAddress: string,
   verifyingContract: string,
   approvalOption: ApprovalOption,
-  entryPoint?: EntryPoint,
+  entryPoint?: Contract,
   option?: Partial<{
     nonce: BigNumberish
     callGasLimit: BigNumberish
@@ -360,7 +356,7 @@ export async function fillAndSign(
   op: Partial<UserOperation>,
   signer: Wallet | Signer,
   walletFactoryAddress: string,
-  entryPoint?: EntryPoint
+  entryPoint?: Contract
 ): Promise<UserOperation> {
   const provider = entryPoint?.provider
   const op2 = await fillUserOp(op, walletFactoryAddress, entryPoint)
@@ -393,16 +389,17 @@ export function localUserOpSender(
   signer: Signer,
   beneficiary?: string
 ): SendUserOp {
+  // const entryPoint = new ethers.ContractFactory(['function handleOps(tuple(address,)[] ops,address beneficiary)'], '0x', signer)
   const entryPoint = EntryPoint__factory.connect(
     entryPointAddress,
     signer
   )
   return async function (userOp) {
-    const gasLimit = BigNumber.from(userOp.preVerificationGas)
-      .add(userOp.verificationGasLimit)
-      .add(userOp.callGasLimit)
-    // TODO(handle gasLimit)
-    gasLimit
+    // const gasLimit = BigNumber.from(userOp.preVerificationGas)
+    // .add(userOp.verificationGasLimit)
+    // .add(userOp.callGasLimit)
+    // // TODO(handle gasLimit)
+    // gasLimit
     const ret = await entryPoint.handleOps(
       [userOp],
       beneficiary ?? (await signer.getAddress()),

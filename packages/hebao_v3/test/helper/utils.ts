@@ -42,7 +42,7 @@ import {
   type UserOperation
 } from './AASigner'
 import { signCreateWallet } from './signatureUtils'
-import type * as typ from './solidityTypes'
+import type * as typ from 'src/solidityTypes'
 
 export interface WalletConfig {
   accountOwner: typ.address

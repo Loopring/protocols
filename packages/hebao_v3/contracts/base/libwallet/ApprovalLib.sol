@@ -269,7 +269,10 @@ library ApprovalLib {
                         approval
                     );
                     if (
-                        !localVar.hash.verifySignature(newOwner, ownerSignature)
+                        !localVar.hash.verifyEOASignature(
+                            newOwner,
+                            ownerSignature
+                        )
                     ) return SIG_VALIDATION_FAILED;
                 }
 
@@ -277,7 +280,10 @@ library ApprovalLib {
                 // check signature of new owner when recover
                 if (
                     localVar.methodId != SmartWallet.recover.selector &&
-                    !localVar.hash.verifySignature(wallet.owner, ownerSignature)
+                    !localVar.hash.verifyEOASignature(
+                        wallet.owner,
+                        ownerSignature
+                    )
                 ) {
                     return SIG_VALIDATION_FAILED;
                 }
@@ -287,7 +293,7 @@ library ApprovalLib {
 
             if (localVar.methodId == SmartWallet.inherit.selector) {
                 if (
-                    localVar.hash.verifySignature(
+                    localVar.hash.verifyEOASignature(
                         wallet.inheritor,
                         userOp.signature
                     )
@@ -305,18 +311,20 @@ library ApprovalLib {
                     (address, bytes)
                 );
                 if (
-                    AutomationLib.isExecutorOrOwner(wallet, executor) &&
-                    localVar.hash.verifySignature(executor, executorSignature)
+                    !localVar.hash.verifyEOASignature(
+                        executor,
+                        executorSignature
+                    )
                 ) {
-                    return 0;
+                    return SIG_VALIDATION_FAILED;
                 }
-                return SIG_VALIDATION_FAILED;
+                return AutomationLib.isExecutorOrOwner(wallet, executor);
             }
         }
 
         require(!wallet.locked, "wallet is locked");
 
-        if (!localVar.hash.verifySignature(wallet.owner, userOp.signature))
+        if (!localVar.hash.verifyEOASignature(wallet.owner, userOp.signature))
             return SIG_VALIDATION_FAILED;
         return 0;
     }

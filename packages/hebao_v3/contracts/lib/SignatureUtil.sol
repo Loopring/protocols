@@ -94,7 +94,7 @@ library SignatureUtil {
         bytes32 signHash,
         address signer,
         bytes memory signature
-    ) private pure returns (bool success) {
+    ) internal pure returns (bool success) {
         if (signer == address(0)) {
             return false;
         }
@@ -136,7 +136,7 @@ library SignatureUtil {
         bytes32 signHash,
         address signer,
         bytes memory signature
-    ) private view returns (bool) {
+    ) internal view returns (bool) {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271.isValidSignature.selector,
             signHash,

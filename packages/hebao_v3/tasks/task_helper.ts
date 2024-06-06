@@ -23,27 +23,35 @@ export interface DeployTask {
 }
 
 subtask(TASK_VERIFY_CONTRACTS)
-  .addParam('task', undefined, undefined, types.any)
+  .addParam('tasks', undefined, [], types.any)
   .setAction(
     async (
-      { task }: { task: DeployTask },
-      { network, run, config, deployResults }
+      { tasks }: { tasks: DeployTask[] },
+      { network, run, config, deployResults, ethers }
     ) => {
       if (isNetworkForVerification(network.name)) {
-        const libraries: Record<string, string> = {}
-        task.libs?.forEach(
-          (libName: string) =>
-            (libraries[libName] = deployResults[libName])
-        )
-        const key = task.key ?? task.contractName
-        const args = processArgs(task.args ?? [], deployResults)
-        // handle for some special contracts with fixed addresses
-        await run('verify:verify', {
-          contract: task.verifiedName,
-          address: deployResults[key],
-          constructorArguments: args,
-          libraries
-        })
+        for (const task of tasks) {
+          const key = task.key ?? task.contractName
+          if (ethers.utils.isAddress(deployResults[key])) {
+            const libraries: Record<string, string> = {}
+            task.libs?.forEach(
+              (libName: string) =>
+                (libraries[libName] = deployResults[libName])
+            )
+            const args = processArgs(task.args ?? [], deployResults)
+            // handle for some special contracts with fixed addresses
+            await run('verify:verify', {
+              contract: task.verifiedName,
+              address: deployResults[key],
+              constructorArguments: args,
+              libraries
+            })
+          } else {
+            console.log(
+              `unknown deployment task(${key}) to verify contract`
+            )
+          }
+        }
       }
     }
   )
@@ -71,18 +79,23 @@ subtask(TASK_DEPLOY_CONTRACTS)
             (libraries[libName] = deployResults[libName])
         )
         const args = processArgs(task.args ?? [], deployResults)
-        if (ethers.utils.isAddress(deployResults[key])) {
-          await run(TASK_VERIFY_CONTRACTS, { task })
-          isNewDeployed[key] = false
-          console.log(`task:${key} is deployed, skip.`)
-          continue
-        }
-        let contractAddr: string
         const contractFactory =
           task.contractFactory ??
           (await ethers.getContractFactory(task.contractName, {
             libraries
           }))
+
+        if (ethers.utils.isAddress(deployResults[key])) {
+          // TODO(check if deployed bytecodes onchain is consist with the current one)
+          // if(contractFactory.bytecode===await ethers.provider.getCode(deployResults[key])){
+          isNewDeployed[key] = false
+          console.log(`task:${key} is deployed, skip.`)
+          continue
+          // }else{
+          // console.log(`[${key}] bytecode is changed locally, deploy and upgrade to the newest one`)
+          // }
+        }
+        let contractAddr: string
         if (task.useCreate2 ?? false) {
           if (task.create2Factory === undefined) {
             throw new Error(

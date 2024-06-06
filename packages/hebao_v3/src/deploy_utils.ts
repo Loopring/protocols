@@ -21,7 +21,7 @@ function saveSharedDeploymentsAddress(
   }
   const sharedFields = [
     // shared amm libraries and its implementation
-    'UDST',
+    'USDT',
     'LRC',
     'EntryPoint',
     'ERC1271Lib',

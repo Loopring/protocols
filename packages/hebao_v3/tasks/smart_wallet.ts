@@ -1,14 +1,25 @@
 import { scope, types } from 'hardhat/config'
-import { checkValidContractAddress } from 'src/deploy_utils'
-import { entrypointAddr } from 'src/constants'
+import {
+  checkValidContractAddress,
+  processAddressOrName
+} from 'src/deploy_utils'
 import {
   TASK_DEPLOY_CONTRACTS,
   type DeployTask
 } from 'tasks/task_helper'
+import {
+  simulationResultCatch,
+  fillAndMultiSign,
+  generateSignedUserOp
+} from 'src/aa_utils'
+import { ActionType } from 'src/LoopringGuardianAPI'
+import assert from 'assert'
 
 export const SCOPE_SMART_WALLET = 'smart-wallet'
 export const TASK_DEPLOY = 'deploy'
 export const TASK_CREATE = 'create'
+export const TASK_UPGRADE_IMPL = 'upgrade-impl'
+export const TASK_ADD_GUARDIANS = 'add-guardians'
 
 const smartWalletScope = scope(SCOPE_SMART_WALLET, 'smart wallet')
 
@@ -20,9 +31,18 @@ smartWalletScope
     undefined,
     types.string
   )
+  .addOptionalParam(
+    'versionName',
+    'version name for different implementation',
+    'SmartWalletV3',
+    types.string
+  )
   .setAction(
     async (
-      { blankOwner }: { blankOwner?: string },
+      {
+        blankOwner,
+        versionName
+      }: { blankOwner?: string; versionName: string },
       { ethers, network, deployResults, run }
     ) => {
       await checkValidContractAddress(
@@ -31,7 +51,7 @@ smartWalletScope
         'ConnectorRegistry'
       )
       await checkValidContractAddress(
-        deployResults.EntryPoint ?? entrypointAddr,
+        deployResults.EntryPoint,
         ethers.provider,
         'EntryPoint'
       )
@@ -79,6 +99,7 @@ smartWalletScope
           ]
         },
         {
+          key: versionName,
           contractName: 'SmartWalletV3',
           args: [
             deployResults.PriceOracle ?? ethers.constants.AddressZero,
@@ -121,6 +142,12 @@ smartWalletScope
     types.string
   )
   .addOptionalParam(
+    'impl',
+    'name/address of smart wallet implementation',
+    'SmartWalletV3',
+    types.string
+  )
+  .addOptionalParam(
     'guardians',
     'list of guardian addresses, split by comma',
     undefined,
@@ -131,8 +158,14 @@ smartWalletScope
       {
         accountOwner,
         guardians: guardiansArg,
-        name: smartWalletName
-      }: { accountOwner?: string; guardians?: string; name: string },
+        name: smartWalletName,
+        implName
+      }: {
+        accountOwner?: string
+        guardians?: string
+        name: string
+        implName: string
+      },
       { ethers, network, deployResults, run }
     ) => {
       const [deployer] = await ethers.getSigners()
@@ -149,7 +182,7 @@ smartWalletScope
         {
           key: smartWalletName,
           contractName: 'WalletProxy',
-          args: [deployResults.SmartWalletV3]
+          args: [processAddressOrName(implName, deployResults)]
         }
       ]
       await run(TASK_DEPLOY_CONTRACTS, { tasks })
@@ -183,6 +216,139 @@ smartWalletScope
             0
           )
         ).wait()
+      }
+    }
+  )
+
+smartWalletScope
+  .task(TASK_UPGRADE_IMPL)
+  .addParam(
+    'impl',
+    'new implementation address/name',
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    'beneficiary',
+    'beneficiary address',
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    'name',
+    'name of new-created smart wallet',
+    'smartWallet',
+    types.string
+  )
+  .setAction(
+    async (
+      {
+        name: smartWalletName,
+        impl,
+        beneficiary
+      }: { name: string; impl: string; beneficiary: string },
+      { ethers, deployResults }
+    ) => {
+      const [deployer] = await ethers.getSigners()
+      const smartWallet = await ethers.getContractAt(
+        'SmartWalletV3',
+        deployResults[smartWalletName]
+      )
+      const smartWalletOwner = new ethers.Wallet(
+        process.env.PRIVATE_KEY as string,
+        ethers.provider
+      )
+      assert(
+        process.env.GUARDIAN_PRIVATE_KEY !== undefined,
+        'undefined guardian private key to execute WA operations'
+      )
+      const guardian = new ethers.Wallet(
+        process.env.GUARDIAN_PRIVATE_KEY as string,
+        ethers.provider
+      )
+      assert(
+        await smartWallet.isGuardian(guardian.address, false),
+        'invalid guardian address'
+      )
+      const callData = smartWallet.interface.encodeFunctionData(
+        'changeMasterCopy',
+        [processAddressOrName(impl, deployResults)]
+      )
+
+      assert(
+        (await smartWallet.getOwner()) === deployer.address,
+        'only owner can upgrade'
+      )
+      const approvalOption = {
+        validUntil: 0,
+        salt: ethers.utils.randomBytes(32),
+        action_type: ActionType.ChangeMasterCopy
+      }
+      const entryPoint = await ethers.getContractAt(
+        'EntryPoint',
+        deployResults.EntryPoint
+      )
+      // TODO(handle case when it is forward proxy)
+      const curImpl = await smartWallet.getMasterCopy()
+      const signedUserOp = await fillAndMultiSign(
+        callData,
+        smartWallet,
+        smartWalletOwner,
+        [
+          { signer: smartWalletOwner },
+          {
+            signer: guardian
+          }
+        ],
+        ethers.constants.AddressZero,
+        curImpl, // impl
+        approvalOption,
+        entryPoint
+      )
+      // check before execution
+      await entryPoint.callStatic
+        .simulateValidation(signedUserOp)
+        .catch(simulationResultCatch)
+      await (
+        await entryPoint.handleOps(
+          [signedUserOp],
+          beneficiary ?? deployer.address
+        )
+      ).wait()
+
+      // TODO(validate after execution)
+    }
+  )
+
+smartWalletScope
+  .task(TASK_ADD_GUARDIANS)
+  .addParam(
+    'guardians',
+    'list guardian addresses, split by comma',
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    'name',
+    'name of new-created smart wallet',
+    'smartWallet',
+    types.string
+  )
+  .setAction(
+    async (
+      {
+        name: smartWalletName,
+        guardians: guardiansArg
+      }: { name: string; guardians: string },
+      { ethers, deployResults }
+    ) => {
+      const smartWallet = await ethers.getContractAt(
+        'SmartWalletV3',
+        deployResults[smartWalletName]
+      )
+      const guardians = guardiansArg.split(',')
+      for (const guardian of guardians) {
+        await (await smartWallet.addGuardian(guardian)).wait()
       }
     }
   )

@@ -133,9 +133,7 @@ export async function testExecuteTxWithUSDCPaymaster(
   )
 }
 
-export async function testExecuteTx(
-  fixture: any
-): Promise<ContractReceipt> {
+export async function testExecuteTx(fixture: any): Promise<void> {
   const {
     entrypoint,
     smartWallet,
