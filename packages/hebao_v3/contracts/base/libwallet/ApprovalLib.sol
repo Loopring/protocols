@@ -311,14 +311,12 @@ library ApprovalLib {
                     (address, bytes)
                 );
                 if (
-                    !localVar.hash.verifyEOASignature(
-                        executor,
-                        executorSignature
-                    )
+                    AutomationLib.isExecutorOrOwner(wallet, executor) &&
+                    localVar.hash.verifySignature(executor, executorSignature)
                 ) {
-                    return SIG_VALIDATION_FAILED;
+                    return 0;
                 }
-                return AutomationLib.isExecutorOrOwner(wallet, executor);
+                return SIG_VALIDATION_FAILED;
             }
         }
 
