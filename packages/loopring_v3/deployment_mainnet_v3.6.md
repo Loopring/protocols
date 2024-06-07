@@ -2160,6 +2160,23 @@
   tokenSymbol: 'LP-SAND-USDC'
 }
 ```
+
+127. AMM-TAIKO-USDC: 0xB42bBCd12c14F4b2efc1C84bb971F62A943db7d5
+```
+{
+  sharedConfig: '0x19b28198D993d3B0b1807C7bd46b4F0a4AFD473D',
+  exchange: '0x0BABA1Ad5bE3a5C0a66E7ac838a129Bf948f1eA4',
+  poolName: 'AMM-TAIKO-USDC',
+  accountID:127,
+  tokens: [
+    '0x10dea67478c5F8C5E2D90e5E9B26dBe60c54d800', // tokenId:290
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+  ],
+  weights: [ 1000000, 1000000 ],
+  feeBips: 20,
+  tokenSymbol: 'LP-TAIKO-USDC' // tokenId:291
+}
+```
   ***
 
 ### Registered tokens:
@@ -2427,3 +2444,5 @@
   - LP-MANA-USDC: 0xD4df78bbD50C564702F0C96C8C7de536154DB07d, tokenId: 261
   - LP-SAND-USDC: 0x17bAa21Bec595da6A9d88A4b4FfdD1d336186c48, tokenId: 262
   - wstETH: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0, tokenId: 263
+  - TAIKO: 0x10dea67478c5F8C5E2D90e5E9B26dBe60c54d800, tokenId: 290
+  - LP-TAIKO-USDC: 0xB42bBCd12c14F4b2efc1C84bb971F62A943db7d5, tokenId: 291
