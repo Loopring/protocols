@@ -1,6 +1,7 @@
 import { scope, types } from 'hardhat/config'
 import {
   TASK_DEPLOY_CONTRACTS,
+  TASK_VERIFY_CONTRACTS,
   type DeployTask
 } from 'tasks/task_helper'
 import {
@@ -17,11 +18,13 @@ export const TASK_ADD_SIGNER = 'add-signer'
 export const TASK_DEPOSIT_TOKENS = 'deposit-token'
 export const TASK_WITHDRAW_TOKENS = 'withdraw-token'
 export const TASK_TRANSFER_OWNERSHIP = 'transfer-ownership'
+export const TASK_VERIFY = 'verify'
+export const TASK_GET_TASKS = 'get-tasks'
 
 const paymasterScope = scope(SCOPE_PAYMSTER, 'paymaster')
 
 paymasterScope
-  .task(TASK_DEPLOY)
+  .subtask(TASK_GET_TASKS)
   .addOptionalParam(
     'paymasterOwner',
     'paymaster owner',
@@ -47,7 +50,50 @@ paymasterScope
           ]
         }
       ]
+      return tasks
+    }
+  )
+
+paymasterScope
+  .task(TASK_DEPLOY)
+  .addOptionalParam(
+    'paymasterOwner',
+    'paymaster owner',
+    undefined,
+    types.string
+  )
+  .setAction(
+    async (
+      { paymasterOwner }: { paymasterOwner?: string },
+      { ethers, run, deployResults }
+    ) => {
+      const tasks = await run(
+        { scope: SCOPE_PAYMSTER, task: TASK_GET_TASKS },
+        { paymasterOwner }
+      )
       await run(TASK_DEPLOY_CONTRACTS, { tasks })
+    }
+  )
+
+paymasterScope
+  .task(TASK_VERIFY)
+  .addOptionalParam(
+    'paymasterOwner',
+    'paymaster owner',
+    undefined,
+    types.string
+  )
+  .setAction(
+    async (
+      { paymasterOwner }: { paymasterOwner?: string },
+      { ethers, run, deployResults }
+    ) => {
+      const tasks = await run(
+        { scope: SCOPE_PAYMSTER, task: TASK_GET_TASKS },
+        { paymasterOwner }
+      )
+
+      await run(TASK_VERIFY_CONTRACTS, { tasks })
     }
   )
 

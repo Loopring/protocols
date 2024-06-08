@@ -52,6 +52,10 @@ subtask(TASK_VERIFY_CONTRACTS)
             )
           }
         }
+      } else {
+        console.log(
+          `no need to verify contract when in ${network.name} network`
+        )
       }
     }
   )

@@ -63,9 +63,7 @@ export class HttpRpcClient {
    * @param userOp1
    * @returns latest gas suggestions made by the bundler.
    */
-  async estimateUserOpGas(
-    userOp1: Partial<UserOperation>
-  ): Promise<{
+  async estimateUserOpGas(userOp1: Partial<UserOperation>): Promise<{
     callGasLimit: number
     preVerificationGas: number
     verificationGasLimit: number
