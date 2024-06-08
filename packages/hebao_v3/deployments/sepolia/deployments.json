@@ -2,7 +2,6 @@
   "dev": {
     "ConnectorRegistry": "0xCC553C3418C6d7E25Ec8e35D3A217F75AEB6C029",
     "LoopringPaymaster": "0x4D9De7bcBa9DFC87f387A19839c63b98fC368EcA",
-    "smartWallet": "0xD2f1c204F219db1478e8D92728D584e7A51A5235",
-    "SmartWalletV3_2": "0x118703B5A6120FFb9fBC145E3003a20a3De9d0Ca"
+    "smartWallet": "0xD2f1c204F219db1478e8D92728D584e7A51A5235"
   }
 }

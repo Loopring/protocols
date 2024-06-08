@@ -689,6 +689,7 @@ export async function fillAndMultiSign(
   option?: Partial<{
     nonce: BigNumberish
     callGasLimit: BigNumberish
+    preVerificationGas: BigNumberish
   }>
 ): Promise<UserOperation> {
   const provider = entryPoint?.provider
@@ -762,4 +763,33 @@ export async function fillAndMultiSign(
     ...op2,
     signature
   }
+}
+
+/**
+ * hexlify all members of object, recursively
+ * @param obj
+ */
+export function deepHexlify(obj: any): any {
+  if (typeof obj === 'function') {
+    return undefined
+  }
+  if (
+    obj == null ||
+    typeof obj === 'string' ||
+    typeof obj === 'boolean'
+  ) {
+    return obj
+  } else if (obj._isBigNumber != null || typeof obj !== 'object') {
+    return ethers.utils.hexlify(obj).replace(/^0x0/, '0x')
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((member) => deepHexlify(member))
+  }
+  return Object.keys(obj).reduce(
+    (set, key) => ({
+      ...set,
+      [key]: deepHexlify(obj[key])
+    }),
+    {}
+  )
 }

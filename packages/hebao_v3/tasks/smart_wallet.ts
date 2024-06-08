@@ -7,11 +7,7 @@ import {
   TASK_DEPLOY_CONTRACTS,
   type DeployTask
 } from 'tasks/task_helper'
-import {
-  simulationResultCatch,
-  fillAndMultiSign,
-  generateSignedUserOp
-} from 'src/aa_utils'
+import { simulationResultCatch, fillAndMultiSign } from 'src/aa_utils'
 import { ActionType } from 'src/LoopringGuardianAPI'
 import assert from 'assert'
 
@@ -309,6 +305,7 @@ smartWalletScope
       await entryPoint.callStatic
         .simulateValidation(signedUserOp)
         .catch(simulationResultCatch)
+
       await (
         await entryPoint.handleOps(
           [signedUserOp],

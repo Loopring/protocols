@@ -6,7 +6,7 @@ NETWORK=sepolia
 RECEIVER=smartWallet
 PAYMASTER=LoopringPaymaster
 GUARDIAN=0x456ecAca6A1Bc3a71fC1955562d1d9BF662974D8
-NEW_IMPL=SmartWalletV3_2
+NEW_IMPL=SmartWalletV3
 
 # create a demo wallet
 # yarn hardhat smart-wallet create --name ${RECEIVER} --impl ${NEW_IMPL} --network ${NETWORK}

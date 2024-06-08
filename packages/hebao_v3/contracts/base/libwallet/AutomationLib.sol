@@ -57,10 +57,10 @@ library AutomationLib {
         address executor
     ) internal view returns (bool) {
         bool isOwner = executor == wallet.owner;
-        bool isExecutor = wallet.executorsPermission[executor] >
-            // solhint-disable-next-line not-rely-on-time
-            block.timestamp;
-        return isExecutor || isOwner;
+        /* bool isExecutor = wallet.executorsPermission[executor] > */
+        /* // solhint-disable-next-line not-rely-on-time */
+        /* block.timestamp; */
+        return isOwner;
     }
 
     function cast(

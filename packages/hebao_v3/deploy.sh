@@ -2,7 +2,7 @@
 #
 NETWORK=sepolia
 
-VERSION="SmartWalletV3_2"
+VERSION="SmartWalletV3"
 
 # rm -rf deployments/${NETWORK}
 
