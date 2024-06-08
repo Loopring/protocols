@@ -692,7 +692,7 @@ abstract contract IExchangeV3 is Claimable
     ///      Can be called by anyone.
     ///
     /// @param  accountID The accountID the forced request was made for
-    /// @param  tokenID The tokenID of the the forced request
+    /// @param  tokenID The tokenID of the forced request
     function notifyForcedRequestTooOld(
         uint32 accountID,
         uint16 tokenID
