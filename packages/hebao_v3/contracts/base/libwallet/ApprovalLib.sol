@@ -312,10 +312,7 @@ library ApprovalLib {
                 );
                 if (
                     AutomationLib.isExecutorOrOwner(wallet, executor) &&
-                    localVar.hash.verifyEOASignature(
-                        executor,
-                        executorSignature
-                    )
+                    localVar.hash.verifySignature(executor, executorSignature)
                 ) {
                     return 0;
                 }

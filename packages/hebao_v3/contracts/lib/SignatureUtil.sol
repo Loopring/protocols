@@ -26,7 +26,7 @@ library SignatureUtil {
 
     function verifySignatures(
         bytes32 signHash,
-        bytes32[] memory signers,
+        address[] memory signers,
         bytes[] memory signatures
     ) internal view returns (bool) {
         require(signers.length == signatures.length, "BAD_SIGNATURE_DATA");
@@ -34,10 +34,7 @@ library SignatureUtil {
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
-            // get isContract flag from the first bit, then get address from the lowest 20 bytes
-            address signer = 0xff & signers[i];
-            bool isContract = 0xff & signers[i];
-            if (!verifySignature(signHash, signer, signatures[i], isContract)) {
+            if (!verifySignature(signHash, signers[i], signatures[i])) {
                 return false;
             }
         }
@@ -47,15 +44,14 @@ library SignatureUtil {
     function verifySignature(
         bytes32 signHash,
         address signer,
-        bytes memory signature,
-        bool isContract
+        bytes memory signature
     ) internal view returns (bool) {
         if (signer == address(0)) {
             return false;
         }
 
         return
-            isContract
+            signer.isContract()
                 ? verifyERC1271Signature(signHash, signer, signature)
                 : verifyEOASignature(signHash, signer, signature);
     }

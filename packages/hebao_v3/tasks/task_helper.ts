@@ -71,7 +71,7 @@ subtask(TASK_DEPLOY_CONTRACTS)
   .setAction(
     async (
       { tasks, save }: DeployContractsSubtaskArgs,
-      { ethers, network, run, config, deployResults }
+      { ethers, network, run, config, deployResults, artifacts }
     ) => {
       const isNewDeployed: Record<string, boolean> = {}
 
@@ -90,13 +90,21 @@ subtask(TASK_DEPLOY_CONTRACTS)
           }))
 
         if (ethers.utils.isAddress(deployResults[key])) {
-          // TODO(check if deployed bytecodes onchain is consist with the current one)
-          // if(contractFactory.bytecode===await ethers.provider.getCode(deployResults[key])){
+          // TODO(all constructor arguments used in deployedBytecode is filled with zero)
+          // const artifact = await artifacts.readArtifact(
+          // task.contractName
+          // )
+          // const codeOnChain = await ethers.provider.getCode(
+          // deployResults[key]
+          // )
+          // if (artifact.deployedBytecode !== codeOnChain) {
+          // console.log(
+          // `contract code(${key}) is changed, deploy again`
+          // )
+          // } else {
           isNewDeployed[key] = false
-          console.log(`task:${key} is deployed, skip.`)
+          console.log(`contract(${key}) is deployed, skip.`)
           continue
-          // }else{
-          // console.log(`[${key}] bytecode is changed locally, deploy and upgrade to the newest one`)
           // }
         }
         let contractAddr: string
