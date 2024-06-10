@@ -1,6 +1,7 @@
 import { scope, types } from 'hardhat/config'
 import {
   TASK_DEPLOY_CONTRACTS,
+  TASK_VERIFY_CONTRACTS,
   type DeployTask
 } from 'tasks/task_helper'
 import {
@@ -10,6 +11,7 @@ import {
 
 export const SCOPE_TOKEN = 'token'
 export const TASK_DEPLOY = 'deploy'
+export const TASK_VERIFY = 'verify'
 export const TASK_MINT = 'mint'
 
 const tokenScope = scope(SCOPE_TOKEN, 'token')
@@ -31,6 +33,25 @@ tokenScope
       })
     }
     await run(TASK_DEPLOY_CONTRACTS, { tasks })
+  })
+
+tokenScope
+  .task(TASK_VERIFY, 'verify tokens code')
+  .addParam(
+    'tokens',
+    'token names to deploy, avaiable tokens: USDT and LRC',
+    undefined,
+    types.string
+  )
+  .setAction(async ({ tokens }: { tokens: string }, { run }) => {
+    // check tokens
+    const tasks: DeployTask[] = []
+    for (const token of tokens.split(',')) {
+      tasks.push({
+        contractName: token
+      })
+    }
+    await run(TASK_VERIFY_CONTRACTS, { tasks })
   })
 
 tokenScope

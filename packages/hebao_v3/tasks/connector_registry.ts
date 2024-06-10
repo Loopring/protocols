@@ -1,6 +1,7 @@
 import { scope, types } from 'hardhat/config'
 import {
   TASK_DEPLOY_CONTRACTS,
+  TASK_VERIFY_CONTRACTS,
   type DeployTask
 } from 'tasks/task_helper'
 import { checkValidContractAddress } from 'src/deploy_utils'
@@ -9,6 +10,7 @@ import assert from 'assert'
 
 export const SCOPE_CONNECTOR_REGISTRY = 'connector-registry'
 export const TASK_DEPLOY = 'deploy'
+export const TASK_VERIFY = 'verify'
 export const TASK_REGISTER_CONNECTOR = 'register-connector'
 export const TASK_TRANSFER_OWNERSHIP = 'transfer-ownership'
 
@@ -26,6 +28,31 @@ connectorRegistryScope
       }
     ]
     await run(TASK_DEPLOY_CONTRACTS, { tasks })
+  })
+
+connectorRegistryScope
+  .task(TASK_VERIFY, 'verify connector registry')
+  .setAction(async (_, { run, ethers }) => {
+    const { chainId } = await ethers.provider.getNetwork()
+    const addressBook = AddressForNetwork[chainId]
+    const tasks: DeployTask[] = [
+      {
+        contractName: 'ConnectorRegistry'
+      },
+      {
+        contractName: 'OwnedMemory'
+      },
+      {
+        contractName: 'UniswapV3Connector',
+        args: [
+          addressBook.SWAP_ROUTERV3_ADDRESS,
+          '>>>OwnedMemory',
+          addressBook.WETH_ADDRESS
+        ]
+      }
+    ]
+
+    await run(TASK_VERIFY_CONTRACTS, { tasks })
   })
 
 connectorRegistryScope
