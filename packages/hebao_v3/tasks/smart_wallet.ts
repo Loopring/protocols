@@ -183,12 +183,12 @@ smartWalletScope
         accountOwner,
         guardians: guardiansArg,
         name: smartWalletName,
-        implName
+        impl: implName
       }: {
         accountOwner?: string
         guardians?: string
         name: string
-        implName: string
+        impl: string
       },
       { ethers, network, deployResults, run }
     ) => {
@@ -355,7 +355,7 @@ smartWalletScope
       )
 
       assert(
-        (await smartWallet.getOwner()) === deployer.address,
+        (await smartWallet.getOwner()) === smartWalletOwner.address,
         'only owner can upgrade'
       )
       const approvalOption = {
@@ -428,7 +428,11 @@ smartWalletScope
       )
       const guardians = guardiansArg.split(',')
       for (const guardian of guardians) {
-        await (await smartWallet.addGuardian(guardian)).wait()
+        if (!(await smartWallet.isGuardian(guardian, true))) {
+          await (await smartWallet.addGuardian(guardian)).wait()
+        } else {
+          console.log(`${guardian} is added as guardian already`)
+        }
       }
     }
   )
