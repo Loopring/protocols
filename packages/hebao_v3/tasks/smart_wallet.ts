@@ -5,35 +5,29 @@ import {
 } from 'src/deploy_utils'
 import {
   TASK_DEPLOY_CONTRACTS,
+  TASK_VERIFY_CONTRACTS,
   type DeployTask
 } from 'tasks/task_helper'
-import {
-  simulationResultCatch,
-  fillAndMultiSign,
-  generateSignedUserOp
-} from 'src/aa_utils'
+import { simulationResultCatch, fillAndMultiSign } from 'src/aa_utils'
 import { ActionType } from 'src/LoopringGuardianAPI'
 import assert from 'assert'
 
 export const SCOPE_SMART_WALLET = 'smart-wallet'
 export const TASK_DEPLOY = 'deploy'
+export const TASK_VERIFY = 'verify'
 export const TASK_CREATE = 'create'
 export const TASK_UPGRADE_IMPL = 'upgrade-impl'
 export const TASK_ADD_GUARDIANS = 'add-guardians'
+const TASK_GET_TASKS = 'get-tasks'
 
 const smartWalletScope = scope(SCOPE_SMART_WALLET, 'smart wallet')
 
 smartWalletScope
-  .task(TASK_DEPLOY)
-  .addOptionalParam(
-    'blankOwner',
-    'default owner of smart wallet',
-    undefined,
-    types.string
-  )
+  .subtask(TASK_GET_TASKS)
+  .addOptionalParam('blankOwner', undefined, undefined, types.string)
   .addOptionalParam(
     'versionName',
-    'version name for different implementation',
+    undefined,
     'SmartWalletV3',
     types.string
   )
@@ -42,9 +36,10 @@ smartWalletScope
       {
         blankOwner,
         versionName
-      }: { blankOwner?: string; versionName: string },
-      { ethers, network, deployResults, run }
+      }: { blankOwner: string; versionName: string },
+      { ethers, deployResults }
     ) => {
+      const [deployer] = await ethers.getSigners()
       await checkValidContractAddress(
         deployResults.ConnectorRegistry,
         ethers.provider,
@@ -55,7 +50,6 @@ smartWalletScope
         ethers.provider,
         'EntryPoint'
       )
-      const [deployer] = await ethers.getSigners()
       const tasks: DeployTask[] = [
         {
           contractName: 'ERC1271Lib'
@@ -121,6 +115,36 @@ smartWalletScope
           ]
         }
       ]
+      return tasks
+    }
+  )
+
+smartWalletScope
+  .task(TASK_DEPLOY)
+  .addOptionalParam(
+    'blankOwner',
+    'default owner of smart wallet',
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    'versionName',
+    'version name for different implementation',
+    'SmartWalletV3',
+    types.string
+  )
+  .setAction(
+    async (
+      {
+        blankOwner,
+        versionName
+      }: { blankOwner?: string; versionName: string },
+      { ethers, network, deployResults, run }
+    ) => {
+      const tasks = await run(
+        { scope: SCOPE_SMART_WALLET, task: TASK_GET_TASKS },
+        { blankOwner, versionName }
+      )
 
       await run(TASK_DEPLOY_CONTRACTS, { tasks })
     }
@@ -159,12 +183,12 @@ smartWalletScope
         accountOwner,
         guardians: guardiansArg,
         name: smartWalletName,
-        implName
+        impl: implName
       }: {
         accountOwner?: string
         guardians?: string
         name: string
-        implName: string
+        impl: string
       },
       { ethers, network, deployResults, run }
     ) => {
@@ -217,6 +241,61 @@ smartWalletScope
           )
         ).wait()
       }
+    }
+  )
+
+smartWalletScope
+  .task(TASK_VERIFY)
+  .addOptionalParam(
+    'blankOwner',
+    'default owner of smart wallet',
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    'versionName',
+    'version name for different implementation',
+    'SmartWalletV3',
+    types.string
+  )
+  .addOptionalParam(
+    'name',
+    'name of new-created smart wallet',
+    'smartWallet',
+    types.string
+  )
+  .addOptionalParam(
+    'impl',
+    'name/address of smart wallet implementation',
+    'SmartWalletV3',
+    types.string
+  )
+  .setAction(
+    async (
+      {
+        blankOwner,
+        versionName,
+        name: smartWalletName,
+        impl: implName
+      }: {
+        blankOwner?: string
+        versionName: string
+        name: string
+        impl: string
+      },
+      { run, deployResults }
+    ) => {
+      const tasks = await run(
+        { scope: SCOPE_SMART_WALLET, task: TASK_GET_TASKS },
+        { blankOwner, versionName }
+      )
+      // including any new created smart wallet
+      tasks.push({
+        key: smartWalletName,
+        contractName: 'WalletProxy',
+        args: [processAddressOrName(implName, deployResults)]
+      })
+      await run(TASK_VERIFY_CONTRACTS, { tasks })
     }
   )
 
@@ -276,7 +355,7 @@ smartWalletScope
       )
 
       assert(
-        (await smartWallet.getOwner()) === deployer.address,
+        (await smartWallet.getOwner()) === smartWalletOwner.address,
         'only owner can upgrade'
       )
       const approvalOption = {
@@ -309,6 +388,7 @@ smartWalletScope
       await entryPoint.callStatic
         .simulateValidation(signedUserOp)
         .catch(simulationResultCatch)
+
       await (
         await entryPoint.handleOps(
           [signedUserOp],
@@ -348,7 +428,11 @@ smartWalletScope
       )
       const guardians = guardiansArg.split(',')
       for (const guardian of guardians) {
-        await (await smartWallet.addGuardian(guardian)).wait()
+        if (!(await smartWallet.isGuardian(guardian, true))) {
+          await (await smartWallet.addGuardian(guardian)).wait()
+        } else {
+          console.log(`${guardian} is added as guardian already`)
+        }
       }
     }
   )

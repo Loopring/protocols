@@ -56,10 +56,15 @@ const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {
+      accounts: [{ privateKey, balance: '1' + '0'.repeat(24) }],
       forking: generateForkInfo(
         process.env.FORK,
         process.env.INFURA_API_KEY
       )
+    },
+    localhost: {
+      accounts: [privateKey],
+      gasPrice: 8000000000
     },
     ethereum: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
