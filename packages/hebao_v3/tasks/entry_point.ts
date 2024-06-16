@@ -53,6 +53,8 @@ entryPointScope
         }
       ]
       await run(TASK_VERIFY_CONTRACTS, { tasks })
+    } else {
+      console.log('no need to verify entrypoint deployed by official')
     }
   })
 

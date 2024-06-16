@@ -48,7 +48,8 @@ tokenScope
     const tasks: DeployTask[] = []
     for (const token of tokens.split(',')) {
       tasks.push({
-        contractName: token
+        contractName: token,
+        verifiedName: `contracts/test/tokens/${token}.sol:${token}`
       })
     }
     await run(TASK_VERIFY_CONTRACTS, { tasks })
