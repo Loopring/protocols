@@ -56,7 +56,6 @@ const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {
-      accounts: [{ privateKey, balance: '1' + '0'.repeat(24) }],
       forking: generateForkInfo(
         process.env.FORK,
         process.env.INFURA_API_KEY

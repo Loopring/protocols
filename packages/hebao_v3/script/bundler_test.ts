@@ -25,11 +25,32 @@ async function sign(
   return signedUserOp
 }
 
-async function main(): Promise<void> {
-  const baseUrl = 'https://eth-sepolia.g.alchemy.com/v2'
-  const apiKey = 'SNFvRbyJF_p1iea94S-Piy5fqNhALSVB'
+enum VendorType {
+  Alchemy,
+  StackUp,
+  Local
+}
 
-  const bundlerUrl = `${baseUrl}/${apiKey}`
+function getBundlerUrl(vendor: VendorType): string {
+  switch (vendor) {
+    case VendorType.Alchemy: {
+      const baseUrl = 'https://eth-sepolia.g.alchemy.com/v2'
+      const apiKey = 'SNFvRbyJF_p1iea94S-Piy5fqNhALSVB'
+      const bundlerUrl = `${baseUrl}/${apiKey}`
+      return bundlerUrl
+    }
+    case VendorType.Local: {
+      const bundlerUrl = 'http://0.0.0.0:3000/rpc'
+      return bundlerUrl
+    }
+    case VendorType.StackUp: {
+      return 'https://public.stackup.sh/api/v1/node/ethereum-sepolia'
+    }
+  }
+}
+
+async function main(): Promise<void> {
+  const bundlerUrl = getBundlerUrl(VendorType.StackUp)
   const { chainId } = await ethers.provider.getNetwork()
   const smartWallet = await ethers.getContractAt(
     'SmartWalletV3',
@@ -71,26 +92,27 @@ async function main(): Promise<void> {
     signature,
 
     // default value for these fields
-    preVerificationGas: 10e6, // E: Expected indentation of 6 spaces but found 2.
-    verificationGasLimit: 10e6,
-    callGasLimit: 10e6 // E: Expected indentation of 6 spaces but found 2.
+    preVerificationGas: 1e6, // E: Expected indentation of 6 spaces but found 2.
+    verificationGasLimit: 1e6,
+    callGasLimit: 1e6 // E: Expected indentation of 6 spaces but found 2.
   }
   const estimatedGas =
     await bundlerProvider.estimateUserOpGas(partialUserOp)
   const userOp: UserOperation = {
     ...partialUserOp,
-    ...estimatedGas
+    ...estimatedGas,
+    preVerificationGas: Math.round(
+      estimatedGas.preVerificationGas * 1.1
+    )
   }
   const signedUserOp = await sign(userOp, smartWalletOwner)
   try {
     const userOpHash =
       await bundlerProvider.sendUserOpToBundler(signedUserOp)
-    const txid = '0x'
-    // const txid = await this.accountApi.getUserOpReceipt(userOpHash)
-    console.log('reqId', userOpHash, 'txid=', txid)
+    const receipt = await bundlerProvider.getUserOpReceipt(userOpHash)
+    console.log('reqId', userOpHash, 'txid=', receipt)
   } catch (e: any) {
     console.log(e)
-    // throw this.parseExpectedGas(e)
   }
 }
 

@@ -1,5 +1,5 @@
 import { type JsonRpcProvider } from '@ethersproject/providers'
-import { ethers } from 'ethers'
+import { ethers } from 'hardhat'
 import { type UserOperation, deepHexlify } from 'src/aa_utils'
 
 export class HttpRpcClient {
@@ -98,5 +98,34 @@ export class HttpRpcClient {
       },
       entryPointAddress
     )
+  }
+
+  // async getUserOpReceipt(userOpHash: string): Promise<string> {
+  // return await this.userOpJsonRpcProvider.send(
+  // 'eth_getUserOperationReceipt',
+  // [userOpHash]
+  // )
+  // }
+
+  async getUserOpReceipt(
+    userOpHash: string,
+    timeout = 60000,
+    interval = 5000
+  ): Promise<string | null> {
+    const entryPointView = await ethers.getContractAt(
+      'EntryPoint',
+      this.entryPointAddress
+    )
+    const endtime = Date.now() + timeout
+    while (Date.now() < endtime) {
+      const events = await entryPointView.queryFilter(
+        entryPointView.filters.UserOperationEvent(userOpHash)
+      )
+      if (events.length > 0) {
+        return events[0].transactionHash
+      }
+      await new Promise((resolve) => setTimeout(resolve, interval))
+    }
+    return null
   }
 }
