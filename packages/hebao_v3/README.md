@@ -5,7 +5,7 @@ _[hebao]_(荷包）means wallet in China -- see https://www.pinterest.com/pin/37
 # Build
 
 ```
-yarn install
+yarn install && yarn hardhat compile
 ```
 
 # Run test
@@ -14,12 +14,15 @@ yarn install
 yarn test
 ```
 
-# Deploy
+# Tools
 
 ```
-# deploy new implementation of smart wallet
-yarn hardhat run ./scripts/deploy_impl.ts --network ${NETWORK}
+# deploy smartwallet and paymaster
+bash ./tools/deploy.sh
 
-# deploy official guardians
-yarn hardhat run ./scripts/deploy_official_guardian.ts --network ${NETWORK}
+# prepare tokens for paymaster and create new wallet
+bash ./tools/prepare.sh
+
+# upgrade wallet to new implementation
+bash ./tools/upgrade_impl.sh
 ```
