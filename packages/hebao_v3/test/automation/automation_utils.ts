@@ -285,7 +285,10 @@ export const userOpCast = async (
 
 export const approveExecutor = async (
   loadedFixture: Fixture,
-  executorAddr: string
+  executorAddr: string,
+  validUntil: BigNumberish = Math.floor(
+    Date.now() / 1000 + 24 * 60 * 60
+  ).toString()
 ): Promise<void> => {
   const {
     smartWallet,
@@ -295,9 +298,6 @@ export const approveExecutor = async (
     sendUserOp
   } = loadedFixture
   const nonce = await smartWallet.getNonce()
-  const validUntil = Math.floor(
-    Date.now() / 1000 + 24 * 60 * 60
-  ).toString()
   const data = smartWallet.interface.encodeFunctionData(
     'approveExecutor',
     [executorAddr, validUntil]
@@ -337,8 +337,8 @@ export const unApproveExecutor = async (
   } = loadedFixture
   const nonce = await smartWallet.getNonce()
   const data = smartWallet.interface.encodeFunctionData(
-    'unApproveExecutor',
-    [executor]
+    'approveExecutor',
+    [executor, 0]
   )
   const signedUserOp = await getSignedUserOp(
     data,
