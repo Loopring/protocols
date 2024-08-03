@@ -2,7 +2,7 @@
 
 ## How to find pretty addresses
 
-Simply run `node findaddr.js find [chunk]` to find the best address in that chunk. Currenlty 12 chunks are being explored.
+Simply run `node findaddr.js find [chunk]` to find the best address in that chunk. Currently 12 chunks are being explored.
 
 ## How to use found addresses
 

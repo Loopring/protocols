@@ -98,7 +98,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner);
 
-        // The first two guardian is added WA (so cannot be cancelled)
+        // The first two guardian is added WA (so cannot be canceled)
         await addGuardianChecked(owner, wallet, ctx.guardians[0]);
         await addGuardianChecked(owner, wallet, ctx.guardians[1]);
 
@@ -143,7 +143,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         // Skip forward `guardianPendingPeriod` seconds
         await advanceTimeAndBlockAsync(guardianPendingPeriod);
 
-        // Make sure the cancelled guardian isn't a guardian
+        // Make sure the canceled guardian isn't a guardian
         assert(
           !(await ctx.securityStore.isGuardian(
             wallet,
@@ -205,7 +205,7 @@ contract("GuardiansModule-Guardian", (accounts: string[]) => {
         // Skip forward `guardianPendingPeriod` seconds
         await advanceTimeAndBlockAsync(guardianPendingPeriod);
 
-        // Make sure the cancelled guardian is still a guardian
+        // Make sure the canceled guardian is still a guardian
         assert(
           await ctx.securityStore.isGuardian(wallet, ctx.guardians[0], false),
           "should be guardian"
