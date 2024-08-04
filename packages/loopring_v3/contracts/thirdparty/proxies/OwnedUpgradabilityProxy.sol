@@ -76,6 +76,14 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   }
 
   /**
+   * @dev Allows the proxy owner to upgrade the current version of the proxy.
+   * @param implementation representing the address of the new implementation to be set.
+   */
+  function applyUpdate() public onlyProxyOwner {
+    _applyUpgrade();
+  }
+
+  /**
    * @dev Allows the proxy owner to upgrade the current version of the proxy and call the new implementation
    * to initialize whatever is needed through a low level call.
    * @param implementation representing the address of the new implementation to be set.

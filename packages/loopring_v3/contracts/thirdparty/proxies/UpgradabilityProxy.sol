@@ -19,6 +19,14 @@ contract UpgradeabilityProxy is Proxy {
 
   // Storage position of the address of the current implementation
   bytes32 private constant implementationPosition = keccak256("org.zeppelinos.proxy.implementation");
+  bytes32 private constant delayedImplementationPosition = keccak256("org.zeppelinos.proxy.delayedImplementation");
+
+  uint internal constant DELAYED_EFFECT_TIME = 7 days;
+
+  struct DelayedImpl {
+        address delayedImplementation;
+        uint nextEffecteTime;
+  }
 
   /**
    * @dev Constructor function
@@ -36,6 +44,13 @@ contract UpgradeabilityProxy is Proxy {
     }
   }
 
+  function delayedImpl() public view override returns (DelayedImpl storage delayedImpl) {
+    bytes32 position = delayedImplementationPosition;
+    assembly {
+      delayedImpl.slot := position
+    }
+  }
+
   /**
    * @dev Sets the address of the current implementation
    * @param newImplementation address representing the new implementation to be set
@@ -47,6 +62,12 @@ contract UpgradeabilityProxy is Proxy {
     }
   }
 
+  function setDelayedImplementation(address newImplementation) internal {
+      DelayedImpl storage delayedImpl = delayedImpl();
+      delayedImpl.delayedImplementation =  newImplementation;
+      delayedImpl.nextEffectiveTime = block.timestamp + DELAYED_EFFECT_TIME;
+  }
+
   /**
    * @dev Upgrades the implementation address
    * @param newImplementation representing the address of the new implementation to be set
@@ -54,7 +75,21 @@ contract UpgradeabilityProxy is Proxy {
   function _upgradeTo(address newImplementation) internal {
     address currentImplementation = implementation();
     require(currentImplementation != newImplementation);
-    setImplementation(newImplementation);
+    if(currentImplementation == address(0)) {
+        // effect immediately for the first impl
+       setImplementation(newImplementation);
+    } else {
+        setDelayedImplementation(newImplementation);
+    }
     emit Upgraded(newImplementation);
+  }
+
+
+  function _applyUpgrade() internal {
+      DelayedImpl storage delayedImpl = delayedImpl();
+      require(delayedImpl.delayedImplementation!=address(0), "NO_DELAYED_UPGRADE");
+      require(block.timestamp>=delayedImpl.nextEffecteTime, "NOT_EFFECT_YET");
+      setImplementation(delayedImpl.delayedImplementation);
+      delete delayedImpl;
   }
 }

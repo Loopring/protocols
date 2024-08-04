@@ -17,11 +17,14 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
     struct Circuit
     {
         bool registered;
+        uint registeredTime;
         bool enabled;
         uint[18] verificationKey;
     }
 
     mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit))) public circuits;
+
+    uint constant internal CIRCUIT_DELAYED_EFFECT = 7 days;
 
     constructor() Claimable() {}
 
@@ -44,7 +47,8 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
             circuit.verificationKey[i] = vk[i];
         }
         circuit.registered = true;
-        circuit.enabled = true;
+        circuit.registeredTime = block.timestamp;
+        // NOTE: circuit is disabled by default
 
         emit CircuitRegistered(
             blockType,
@@ -53,6 +57,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         );
     }
 
+    //@dev it is no more risk to disable exist circuits, so it's not necessary to delay the operation
     function disableCircuit(
         uint8  blockType,
         uint16 blockSize,
@@ -69,6 +74,31 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 
         // Disable the circuit
         circuit.enabled = false;
+
+        emit CircuitDisabled(
+            blockType,
+            blockSize,
+            blockVersion
+        );
+    }
+
+    function enableCircuit(
+        uint8  blockType,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
+        require(circuit.registered == true, "NOT_REGISTERED");
+        require(circuit.enabled == false, "ALREADY_ENABLED");
+        require(block.timestamp >= circuit.registeredTime + CIRCUIT_DELAYED_EFFECT, "NOT_EFFECT_YET");
+
+        // Enable the circuit
+        circuit.enabled = true;
 
         emit CircuitDisabled(
             blockType,

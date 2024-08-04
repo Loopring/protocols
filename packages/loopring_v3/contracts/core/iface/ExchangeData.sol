@@ -124,6 +124,8 @@ library ExchangeData
     // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
     uint public constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
+    // 0.1% of pending deposited amount
+    uint public constant MIN_DEPOSIT_PERCENTAGE = 1;
     uint public constant MAX_OPEN_FORCED_REQUESTS = 4096;
     uint public constant MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE = 15 days;
     uint public constant TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = 7 days;
