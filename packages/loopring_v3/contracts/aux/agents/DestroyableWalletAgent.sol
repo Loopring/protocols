@@ -5,14 +5,11 @@ pragma experimental ABIEncoderV2;
 
 import "./LoopringWalletAgent.sol";
 
-
 /// @title DestroyableWalletAgent
 /// @dev Agent that allows setting up accounts that can easily be rendered unusable
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DestroyableWalletAgent is LoopringWalletAgent
-{
-    struct WalletData
-    {
+contract DestroyableWalletAgent is LoopringWalletAgent {
+    struct WalletData {
         uint32 accountID;
         bool destroyed;
     }
@@ -20,19 +17,17 @@ contract DestroyableWalletAgent is LoopringWalletAgent
 
     constructor(
         IExchangeV3 exchange
-        )
-        LoopringWalletAgent(address(0), address(this), exchange)
-    {}
+    ) LoopringWalletAgent(address(0), address(this), exchange) {}
 
     function onReceiveTransactions(
         bytes calldata txsData,
         bytes calldata callbackData
-        )
-        external
-        override
-    {
+    ) external override {
         AccountUpdateTransaction.AccountUpdate memory accountUpdate;
-        accountUpdate = LoopringWalletAgent._beforeBlockSubmission(txsData, callbackData);
+        accountUpdate = LoopringWalletAgent._beforeBlockSubmission(
+            txsData,
+            callbackData
+        );
 
         WalletData storage wallet = walletData[accountUpdate.owner];
         if (wallet.accountID == 0) {
@@ -58,29 +53,15 @@ contract DestroyableWalletAgent is LoopringWalletAgent
     /// @return The wallet address
     function computeWalletAddress(
         address owner,
-        uint    salt
-        )
-        public
-        view
-        returns (address)
-    {
-        return _computeWalletAddress(
-            owner,
-            salt,
-            deployer
-        );
+        uint salt
+    ) public view returns (address) {
+        return _computeWalletAddress(owner, salt, deployer);
     }
 
     /// @dev Checks if the wallet can still be used
     /// @param wallet The wallet address.
     /// @return Returns true if destroyed, else false
-    function isDestroyed(
-        address wallet
-        )
-        public
-        view
-        returns (bool)
-    {
+    function isDestroyed(address wallet) public view returns (bool) {
         return walletData[wallet].destroyed;
     }
 
@@ -88,12 +69,8 @@ contract DestroyableWalletAgent is LoopringWalletAgent
     function approveTransactionsFor(
         address[] calldata /*wallets*/,
         bytes32[] calldata /*txHashes*/,
-        bytes[]   calldata /*signatures*/
-        )
-        external
-        override
-        pure
-    {
+        bytes[] calldata /*signatures*/
+    ) external pure override {
         revert("UNSUPPORTED");
     }
 
@@ -101,14 +78,10 @@ contract DestroyableWalletAgent is LoopringWalletAgent
 
     function _isInitialOwnerUsable(
         address wallet
-        )
-        internal
-        view
-        override
-        returns (bool)
-    {
+    ) internal view override returns (bool) {
         // Also disallow the owner to use the wallet when destroyed
-        return LoopringWalletAgent._isInitialOwnerUsable(wallet) &&
-               !isDestroyed(wallet);
+        return
+            LoopringWalletAgent._isInitialOwnerUsable(wallet) &&
+            !isDestroyed(wallet);
     }
 }

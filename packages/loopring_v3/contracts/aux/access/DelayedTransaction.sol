@@ -8,36 +8,30 @@ import "../../lib/ReentrancyGuard.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./IDelayedTransaction.sol";
 
-
 /// @title DelayedOwner
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Base class for an Owner contract where certain functions have
 ///      a mandatory delay for security purposes.
-abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
-{
+abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard {
     using AddressUtil for address payable;
-    using BytesUtil   for bytes;
-    using MathUint    for uint;
+    using BytesUtil for bytes;
+    using MathUint for uint;
 
     // Map from address and function to the functions's location+1 in the `delayedFunctions` array.
-    mapping (address => mapping (bytes4 => uint)) private delayedFunctionMap;
+    mapping(address => mapping(bytes4 => uint)) private delayedFunctionMap;
 
     // Map from transaction ID to the transaction's location+1 in the `pendingTransactions` array.
-    mapping (uint => uint) private pendingTransactionMap;
+    mapping(uint => uint) private pendingTransactionMap;
 
     // Used to generate a unique identifier for a delayed transaction
     uint private totalNumDelayedTransactions = 0;
 
-    modifier onlyAuthorized
-    {
+    modifier onlyAuthorized() {
         require(isAuthorizedForTransactions(msg.sender), "UNAUTHORIZED");
         _;
     }
 
-    constructor(
-        uint    _timeToLive
-        )
-    {
+    constructor(uint _timeToLive) {
         timeToLive = _timeToLive;
     }
 
@@ -46,40 +40,39 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
     // `executeTransaction` when the necessary time has passed.
     function transact(
         address to,
-        bytes   calldata data
-        )
-        external
-        override
-        nonReentrant
-        payable
-        onlyAuthorized
-    {
+        bytes calldata data
+    ) external payable override nonReentrant onlyAuthorized {
         transactInternal(to, msg.value, data);
     }
 
     function executeTransaction(
         uint transactionId
-        )
-        external
-        override
-        nonReentrant
-        onlyAuthorized
-    {
+    ) external override nonReentrant onlyAuthorized {
         Transaction memory transaction = getTransaction(transactionId);
 
         // Make sure the delay is respected
         bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
-        require(block.timestamp >= transaction.timestamp.add(delay), "TOO_EARLY");
-        require(block.timestamp <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
+        require(
+            block.timestamp >= transaction.timestamp.add(delay),
+            "TOO_EARLY"
+        );
+        require(
+            block.timestamp <= transaction.timestamp.add(delay).add(timeToLive),
+            "TOO_LATE"
+        );
 
         // Remove the transaction
         removeTransaction(transaction.id);
 
         // Exectute the transaction
-        (bool success, bytes memory returnData) = exectuteTransaction(transaction);
+        (bool success, bytes memory returnData) = exectuteTransaction(
+            transaction
+        );
         if (!success) {
-            assembly { revert(add(returnData, 32), mload(returnData)) }
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
         }
 
         emit PendingTransactionExecuted(
@@ -93,12 +86,7 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
     function cancelTransaction(
         uint transactionId
-        )
-        external
-        override
-        nonReentrant
-        onlyAuthorized
-    {
+    ) external override nonReentrant onlyAuthorized {
         cancelTransactionInternal(transactionId);
     }
 
@@ -121,13 +109,8 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
     function getFunctionDelay(
         address to,
-        bytes4  functionSelector
-        )
-        public
-        override
-        view
-        returns (uint)
-    {
+        bytes4 functionSelector
+    ) public view override returns (uint) {
         uint pos = delayedFunctionMap[to][functionSelector];
         if (pos == 0) {
             return 0;
@@ -136,21 +119,11 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         }
     }
 
-    function getNumPendingTransactions()
-        external
-        override
-        view
-        returns (uint)
-    {
+    function getNumPendingTransactions() external view override returns (uint) {
         return pendingTransactions.length;
     }
 
-    function getNumDelayedFunctions()
-        external
-        override
-        view
-        returns (uint)
-    {
+    function getNumDelayedFunctions() external view override returns (uint) {
         return delayedFunctions.length;
     }
 
@@ -158,11 +131,9 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
     function transactInternal(
         address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-    {
+        uint value,
+        bytes memory data
+    ) internal {
         Transaction memory transaction = Transaction(
             totalNumDelayedTransactions,
             block.timestamp,
@@ -174,9 +145,13 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         bytes4 functionSelector = transaction.data.toBytes4(0);
         uint delay = getFunctionDelay(transaction.to, functionSelector);
         if (delay == 0) {
-            (bool success, bytes memory returnData) = exectuteTransaction(transaction);
+            (bool success, bytes memory returnData) = exectuteTransaction(
+                transaction
+            );
             if (!success) {
-                assembly { revert(add(returnData, 32), mload(returnData)) }
+                assembly {
+                    revert(add(returnData, 32), mload(returnData))
+                }
             }
             emit TransactionExecuted(
                 transaction.timestamp,
@@ -201,11 +176,9 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
     function setFunctionDelay(
         address to,
-        bytes4  functionSelector,
-        uint    delay
-        )
-        internal
-    {
+        bytes4 functionSelector,
+        uint delay
+    ) internal {
         // Check if the function already has a delay
         uint pos = delayedFunctionMap[to][functionSelector];
         if (pos > 0) {
@@ -218,7 +191,9 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
                 if (pos != size) {
                     DelayedFunction memory lastOne = delayedFunctions[size - 1];
                     delayedFunctions[pos - 1] = lastOne;
-                    delayedFunctionMap[lastOne.to][lastOne.functionSelector] = pos;
+                    delayedFunctionMap[lastOne.to][
+                        lastOne.functionSelector
+                    ] = pos;
                 }
                 delayedFunctions.pop();
                 delete delayedFunctionMap[to][functionSelector];
@@ -237,19 +212,14 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
     function exectuteTransaction(
         Transaction memory transaction
-        )
-        internal
-        returns (bool success, bytes memory returnData)
-    {
+    ) internal returns (bool success, bytes memory returnData) {
         // solium-disable-next-line security/no-call-value
-        (success, returnData) = transaction.to.call{value: transaction.value}(transaction.data);
+        (success, returnData) = transaction.to.call{value: transaction.value}(
+            transaction.data
+        );
     }
 
-    function cancelTransactionInternal(
-        uint transactionId
-        )
-        internal
-    {
+    function cancelTransactionInternal(uint transactionId) internal {
         Transaction memory transaction = getTransaction(transactionId);
 
         // Remove the transaction
@@ -272,21 +242,13 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
     function getTransaction(
         uint transactionId
-        )
-        internal
-        view
-        returns (Transaction storage transaction)
-    {
+    ) internal view returns (Transaction storage transaction) {
         uint pos = pendingTransactionMap[transactionId];
         require(pos != 0, "TRANSACTION_NOT_FOUND");
         transaction = pendingTransactions[pos - 1];
     }
 
-    function removeTransaction(
-        uint transactionId
-        )
-        internal
-    {
+    function removeTransaction(uint transactionId) internal {
         uint pos = pendingTransactionMap[transactionId];
         require(pos != 0, "TRANSACTION_NOT_FOUND");
 
@@ -301,9 +263,7 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         delete pendingTransactionMap[transactionId];
     }
 
-    function isAuthorizedForTransactions(address sender)
-        internal
-        virtual
-        view
-        returns (bool);
+    function isAuthorizedForTransactions(
+        address sender
+    ) internal view virtual returns (bool);
 }

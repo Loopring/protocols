@@ -9,15 +9,12 @@ import "../IAmmController.sol";
 import "../IAssetManager.sol";
 import "./IAmmSharedConfig.sol";
 
-
 /// @title AmmData
-library AmmData
-{
+library AmmData {
     uint public constant POOL_TOKEN_BASE = 100 * (10 ** 8);
     uint public constant POOL_TOKEN_MINTED_SUPPLY = type(uint96).max;
 
-    enum PoolTxType
-    {
+    enum PoolTxType {
         NOOP,
         JOIN,
         EXIT,
@@ -26,93 +23,79 @@ library AmmData
         WITHDRAW
     }
 
-    struct PoolConfig
-    {
-        address   sharedConfig;
-        address   exchange;
-        string    poolName;
-        uint32    accountID;
+    struct PoolConfig {
+        address sharedConfig;
+        address exchange;
+        string poolName;
+        uint32 accountID;
         address[] tokens;
-        uint96[]  weights;
-        uint8     feeBips;
-        string    tokenSymbol;
+        uint96[] weights;
+        uint8 feeBips;
+        string tokenSymbol;
     }
 
-    struct PoolJoin
-    {
-        address   owner;
-        uint96[]  joinAmounts;
-        uint32[]  joinStorageIDs;
-        uint96    mintMinAmount;
-        uint96    fee;
-        uint32    validUntil;
+    struct PoolJoin {
+        address owner;
+        uint96[] joinAmounts;
+        uint32[] joinStorageIDs;
+        uint96 mintMinAmount;
+        uint96 fee;
+        uint32 validUntil;
     }
 
-    struct PoolExit
-    {
-        address   owner;
-        uint96    burnAmount;
-        uint32    burnStorageID; // for pool token withdrawal from user to the pool
-        uint96[]  exitMinAmounts; // the amount to receive BEFORE paying the fee.
-        uint96    fee;
-        uint32    validUntil;
+    struct PoolExit {
+        address owner;
+        uint96 burnAmount;
+        uint32 burnStorageID; // for pool token withdrawal from user to the pool
+        uint96[] exitMinAmounts; // the amount to receive BEFORE paying the fee.
+        uint96 fee;
+        uint32 validUntil;
     }
 
-    struct PoolVirtualBalances
-    {
-        uint96[]  vBalancesNew;
-        bytes     data;
+    struct PoolVirtualBalances {
+        uint96[] vBalancesNew;
+        bytes data;
     }
 
-    struct PoolDeposit
-    {
-        uint96[]  amounts;
+    struct PoolDeposit {
+        uint96[] amounts;
     }
 
-    struct PoolWithdrawal
-    {
-        uint96[]  amounts;
+    struct PoolWithdrawal {
+        uint96[] amounts;
     }
 
-    struct PoolTx
-    {
+    struct PoolTx {
         PoolTxType txType;
-        bytes      data;
-        bytes      signature;
+        bytes data;
+        bytes signature;
     }
 
-    struct Token
-    {
+    struct Token {
         address addr;
-        uint96  weight;
-        uint16  tokenID;
+        uint96 weight;
+        uint16 tokenID;
     }
 
-    struct Settings
-    {
+    struct Settings {
         IAmmController controller;
-        IAssetManager  assetManager;
-        bool           joinsDisabled;
+        IAssetManager assetManager;
+        bool joinsDisabled;
     }
 
-    struct Context
-    {
+    struct Context {
         // functional parameters
         uint txsDataPtr;
         uint txsDataPtrStart;
-
         // AMM pool state variables
         bytes32 domainSeparator;
-        uint32  accountID;
-
-        uint16  poolTokenID;
-        uint8   feeBips;
-        uint    totalSupply;
-
-        Token[]  tokens;
+        uint32 accountID;
+        uint16 poolTokenID;
+        uint8 feeBips;
+        uint totalSupply;
+        Token[] tokens;
         uint96[] tokenBalancesL2;
         uint96[] vTokenBalancesL2;
-
         Settings settings;
     }
 
@@ -120,36 +103,27 @@ library AmmData
         // Pool token state variables
         string poolName;
         string symbol;
-        uint   _totalSupply;
-
-        mapping (address => uint)                      balanceOf;
-        mapping (address => mapping (address => uint)) allowance;
-        mapping (address => uint)                      nonces;
-
+        uint _totalSupply;
+        mapping(address => uint) balanceOf;
+        mapping(address => mapping(address => uint)) allowance;
+        mapping(address => uint) nonces;
         // AMM pool state variables
         IAmmSharedConfig sharedConfig;
-
-        Token[]     tokens;
-
+        Token[] tokens;
         // The order of the following variables important to minimize loads
-        bytes32     exchangeDomainSeparator;
-        bytes32     domainSeparator;
+        bytes32 exchangeDomainSeparator;
+        bytes32 domainSeparator;
         IExchangeV3 exchange;
-        uint32      accountID;
-        uint16      poolTokenID;
-        uint8       feeBips;
-
-        address     exchangeOwner;
-
-        uint64      shutdownTimestamp;
-        uint16      forcedExitCount;
-
+        uint32 accountID;
+        uint16 poolTokenID;
+        uint8 feeBips;
+        address exchangeOwner;
+        uint64 shutdownTimestamp;
+        uint16 forcedExitCount;
         // A map from a user to the forced exit.
-        mapping (address => PoolExit) forcedExit;
-        mapping (bytes32 => bool) approvedTx;
-
-        mapping (address => uint96) balancesL1;
-
-        bool        exitMode;
+        mapping(address => PoolExit) forcedExit;
+        mapping(bytes32 => bool) approvedTx;
+        mapping(address => uint96) balancesL1;
+        bool exitMode;
     }
 }

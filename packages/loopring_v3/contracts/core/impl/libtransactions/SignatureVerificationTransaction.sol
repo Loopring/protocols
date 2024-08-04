@@ -9,32 +9,30 @@ import "../../../lib/SignatureUtil.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 
-
 /// @title SignatureVerificationTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library SignatureVerificationTransaction
-{
-    using BytesUtil            for bytes;
-    using MathUint             for uint;
+library SignatureVerificationTransaction {
+    using BytesUtil for bytes;
+    using MathUint for uint;
 
-    struct SignatureVerification
-    {
+    struct SignatureVerification {
         address owner;
-        uint32  accountID;
+        uint32 accountID;
         uint256 data;
     }
 
     function readTx(
         bytes memory data,
-        uint         offset,
+        uint offset,
         SignatureVerification memory verification
-        )
-        internal
-        pure
-    {
+    ) internal pure {
         uint _offset = offset;
 
-        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.SIGNATURE_VERIFICATION), "INVALID_TX_TYPE");
+        require(
+            data.toUint8Unsafe(_offset) ==
+                uint8(ExchangeData.TransactionType.SIGNATURE_VERIFICATION),
+            "INVALID_TX_TYPE"
+        );
         _offset += 1;
 
         // We don't use abi.decode for this because of the large amount of zero-padding

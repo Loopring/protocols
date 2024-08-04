@@ -6,23 +6,15 @@ import "../../core/iface/IL2MintableNFT.sol";
 import "../../lib/OwnerManagable.sol";
 import "../../thirdparty/erc1155/ERC1155.sol";
 
-
 /// @title  L2MintableERC1155
 /// @author Brecht Devos - <brecht@loopring.org>
-contract L2MintableERC1155 is ERC1155, IL2MintableNFT, OwnerManagable
-{
-    event MintFromL2(
-        address owner,
-        uint256 id,
-        uint    amount,
-        address minter
-    );
+contract L2MintableERC1155 is ERC1155, IL2MintableNFT, OwnerManagable {
+    event MintFromL2(address owner, uint256 id, uint amount, address minter);
 
-    string  public           name;
+    string public name;
     address public immutable layer2;
 
-    modifier onlyFromLayer2
-    {
+    modifier onlyFromLayer2() {
         require(msg.sender == layer2, "UNAUTHORIZED");
         _;
     }
@@ -30,56 +22,37 @@ contract L2MintableERC1155 is ERC1155, IL2MintableNFT, OwnerManagable
     constructor(
         string memory _name,
         string memory _uri,
-        address       _layer2
-        )
-        OwnerManagable()
-        ERC1155(_uri)
-    {
+        address _layer2
+    ) OwnerManagable() ERC1155(_uri) {
         name = _name;
         layer2 = _layer2;
     }
 
     function mintFromL2(
-        address          to,
-        uint256          id,
-        uint             amount,
-        address          minter,
-        bytes   calldata data
-        )
-        external
-        override
-        onlyFromLayer2
-        onlyManager(minter)
-    {
+        address to,
+        uint256 id,
+        uint amount,
+        address minter,
+        bytes calldata data
+    ) external override onlyFromLayer2 onlyManager(minter) {
         _mint(to, id, amount, data);
         emit MintFromL2(to, id, amount, minter);
     }
 
-    function minters()
-        public
-        view
-        override
-        returns (address[] memory)
-    {
+    function minters() public view override returns (address[] memory) {
         return managers();
     }
 
-    function removeManager(address /*manager*/)
-        override
-        public
-    {
+    function removeManager(address /*manager*/) public pure override {
         revert("DISABLED");
     }
 
     function mint(
-        address          to,
-        uint256          id,
-        uint             amount,
-        bytes   calldata data
-        )
-        external
-        onlyOwner
-    {
+        address to,
+        uint256 id,
+        uint amount,
+        bytes calldata data
+    ) external onlyOwner {
         _mint(to, id, amount, data);
     }
 }

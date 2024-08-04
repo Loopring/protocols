@@ -18,15 +18,14 @@ import "./IBridge.sol";
 
 /// @title  Bridge implementation
 /// @author Brecht Devos - <brecht@loopring.org>
-contract Bridge is IBridge, BatchDepositor, Claimable
-{
-    using AddressUtil       for address;
-    using AddressUtil       for address payable;
-    using BytesUtil         for bytes;
+contract Bridge is IBridge, BatchDepositor, Claimable {
+    using AddressUtil for address;
+    using AddressUtil for address payable;
+    using BytesUtil for bytes;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
-    using MathUint96        for uint96;
-    using TransferUtil      for address;
+    using MathUint for uint;
+    using MathUint96 for uint96;
+    using TransferUtil for address;
 
     enum CheckGasResult {
         SUCCESS,
@@ -34,32 +33,33 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         CHECK_FAILED
     }
 
-    event ConnectorTransacted (address connector, CheckGasResult check, bool success, bytes reason);
-    event ConnectorTrusted    (address connector, bool trusted);
+    event ConnectorTransacted(
+        address connector,
+        CheckGasResult check,
+        bool success,
+        bytes reason
+    );
+    event ConnectorTrusted(address connector, bool trusted);
 
-    struct DepositBatch
-    {
-        uint     batchID;
+    struct DepositBatch {
+        uint batchID;
         uint96[] amounts;
     }
 
-    struct ConnectorCall
-    {
-        address            connector;
-        uint               gasLimit;
+    struct ConnectorCall {
+        address connector;
+        uint gasLimit;
         ConnectorTxGroup[] txGroups;
     }
 
-    struct Context
-    {
+    struct Context {
         TokenData[] tokens;
-        uint        tokensOffset;
-        uint        txsDataPtr;
-        uint        txsDataPtrStart;
+        uint tokensOffset;
+        uint txsDataPtr;
+        uint txsDataPtrStart;
     }
 
-    struct CallTransfer
-    {
+    struct CallTransfer {
         uint fromAccountID;
         uint tokenID;
         uint amount;
@@ -70,48 +70,42 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     }
 
     // This struct can be used for packing data into bytes
-    struct BridgeOperation
-    {
-        DepositBatch[]  batches;
+    struct BridgeOperation {
+        DepositBatch[] batches;
         ConnectorCall[] calls;
-        TokenData[]     tokens;
+        TokenData[] tokens;
     }
 
-    bytes32 constant public CONNECTOR_TX_TYPEHASH = keccak256(
-        "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
-    );
+    bytes32 public constant CONNECTOR_TX_TYPEHASH =
+        keccak256(
+            "ConnectorTx(uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID,uint32 minGas,address connector,bytes groupData,bytes userData)"
+        );
 
-    uint    public constant  MAX_FEE_BIPS              = 25;     // 0.25%
-    uint    public constant  GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
+    uint public constant MAX_FEE_BIPS = 25; // 0.25%
+    uint public constant GAS_LIMIT_CHECK_GAS_LIMIT = 10000;
 
     bytes32 public immutable DOMAIN_SEPARATOR;
 
-    mapping (address => bool) public trustedConnectors;
+    mapping(address => bool) public trustedConnectors;
 
-    modifier onlyFromExchangeOwner()
-    {
+    modifier onlyFromExchangeOwner() {
         require(msg.sender == exchange.owner(), "UNAUTHORIZED");
         _;
     }
 
     constructor(
         IExchangeV3 _exchange,
-        uint32      _accountID
-        )
-        Claimable()
-        BatchDepositor(_exchange, _accountID)
-    {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Bridge", "1.0", address(this)));
+        uint32 _accountID
+    ) Claimable() BatchDepositor(_exchange, _accountID) {
+        DOMAIN_SEPARATOR = EIP712.hash(
+            EIP712.Domain("Bridge", "1.0", address(this))
+        );
     }
 
     function onReceiveTransactions(
         bytes calldata txsData,
         bytes calldata /*callbackData*/
-        )
-        external
-        override
-        onlyFromExchangeOwner
-    {
+    ) external override onlyFromExchangeOwner {
         // Get the offset to txsData in the calldata
         uint txsDataPtr = 0;
         assembly {
@@ -127,16 +121,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         _processTransactions(ctx);
 
         // Make sure we have consumed exactly the expected number of transactions
-        require(txsData.length == ctx.txsDataPtr - ctx.txsDataPtrStart, "INVALID_NUM_TXS");
+        require(
+            txsData.length == ctx.txsDataPtr - ctx.txsDataPtrStart,
+            "INVALID_NUM_TXS"
+        );
     }
 
     function trustConnector(
         address connector,
-        bool    trusted
-        )
-        external
-        onlyOwner
-    {
+        bool trusted
+    ) external onlyOwner {
         trustedConnectors[connector] = trusted;
         emit ConnectorTrusted(connector, trusted);
     }
@@ -145,28 +139,35 @@ contract Bridge is IBridge, BatchDepositor, Claimable
 
     // --- Internal functions ---
 
-    function _processTransactions(Context memory ctx)
-        internal
-    {
+    function _processTransactions(Context memory ctx) internal {
         // abi.decode(callbackData, (BridgeOperation))
         // Get the calldata structs directly from the encoded calldata bytes data
-        DepositBatch[]  calldata batches;
+        DepositBatch[] calldata batches;
         ConnectorCall[] calldata calls;
-        TokenData[]     calldata tokens;
+        TokenData[] calldata tokens;
         uint tokensOffset;
 
         assembly {
             let offsetToCallbackData := add(68, calldataload(36))
             // batches
-            batches.offset := add(add(offsetToCallbackData, 32), calldataload(offsetToCallbackData))
+            batches.offset := add(
+                add(offsetToCallbackData, 32),
+                calldataload(offsetToCallbackData)
+            )
             batches.length := calldataload(sub(batches.offset, 32))
 
             // calls
-            calls.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 32)))
+            calls.offset := add(
+                add(offsetToCallbackData, 32),
+                calldataload(add(offsetToCallbackData, 32))
+            )
             calls.length := calldataload(sub(calls.offset, 32))
 
             // tokens
-            tokens.offset := add(add(offsetToCallbackData, 32), calldataload(add(offsetToCallbackData, 64)))
+            tokens.offset := add(
+                add(offsetToCallbackData, 32),
+                calldataload(add(offsetToCallbackData, 64))
+            )
             tokens.length := calldataload(sub(tokens.offset, 32))
             tokensOffset := sub(tokens.offset, 32)
         }
@@ -193,7 +194,7 @@ contract Bridge is IBridge, BatchDepositor, Claimable
 
         // Process L2 transfers from users to the Bridge, then withdraw tokens
         // to L1 to interact with connectors,
-        uint[]                      memory totalAmounts;
+        uint[] memory totalAmounts;
         IBatchDepositor.Deposit[][] memory depositsList;
         (totalAmounts, depositsList) = _processConnectorCalls(ctx, calls);
 
@@ -205,22 +206,18 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     }
 
     function _processDepositBatches(
-        Context        memory   ctx,
+        Context memory ctx,
         DepositBatch[] calldata batches
-        )
-        internal
-    {
+    ) internal {
         for (uint i = 0; i < batches.length; i++) {
             _processDepositBatch(ctx, batches[i]);
         }
     }
 
     function _processDepositBatch(
-        Context      memory   ctx,
+        Context memory ctx,
         DepositBatch calldata batch
-        )
-        internal
-    {
+    ) internal {
         uint96[] memory amounts = batch.amounts;
 
         // Verify transfers
@@ -233,9 +230,9 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             uint targetAmount = amounts[i];
 
             (uint packedData, address to, ) = readTransfer(ctx);
-            uint tokenID      = (packedData >> 88) & 0xffff;
-            uint amount       = (packedData >> 64) & 0xffffff;
-            uint fee          = (packedData >> 32) & 0xffff;
+            uint tokenID = (packedData >> 88) & 0xffff;
+            uint amount = (packedData >> 64) & 0xffffff;
+            uint fee = (packedData >> 32) & 0xffff;
             // Decode floats
             amount = (amount & 524287) * (10 ** (amount >> 19));
             fee = (fee & 2047) * (10 ** (fee >> 11));
@@ -250,41 +247,48 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 // transfer.type == 1 &&
                 // transfer.fromAccountID == ctx.accountID &&
                 // transfer.toAccountID == UNKNOWN  &&
-                packedData & 0xffffffffffff0000000000000000000000000000000000 == value &&
-                (packedData >> 48) & 0xffff == tokenID && // feeTokenID
-                fee <= (amount * MAX_FEE_BIPS / 10000) &&
-                (100000 - 8) * targetAmount <= 100000 * amount &&
-                amount <= targetAmount,
+                packedData & 0xffffffffffff0000000000000000000000000000000000 ==
+                    value &&
+                    (packedData >> 48) & 0xffff == tokenID && // feeTokenID
+                    fee <= ((amount * MAX_FEE_BIPS) / 10000) &&
+                    (100000 - 8) * targetAmount <= 100000 * amount &&
+                    amount <= targetAmount,
                 "INVALID_BRIDGE_TRANSFER_TX_DATA"
             );
 
             // Pack the transfer data to compare against batch deposit hash
             assembly {
                 mstore(add(transfersData, 2), tokenID)
-                mstore(    transfersData    , or(shl(96, to), targetAmount))
+                mstore(transfersData, or(shl(96, to), targetAmount))
                 transfersData := add(transfersData, 34)
             }
         }
 
         // Get the original transfersData ptr back
         assembly {
-            transfersData := sub(transfersData, add(32, mul(34, mload(amounts))))
+            transfersData := sub(
+                transfersData,
+                add(32, mul(34, mload(amounts)))
+            )
         }
         // Check if these transfers can be processed
         bytes32 hash = _hashTransfers(transfersData);
-        require(!_arePendingDepositsTooOld(batch.batchID, hash), "BATCH_DEPOSITS_TOO_OLD");
+        require(
+            !_arePendingDepositsTooOld(batch.batchID, hash),
+            "BATCH_DEPOSITS_TOO_OLD"
+        );
 
         // Mark transfers as completed
         delete pendingDeposits[batch.batchID][hash];
     }
 
     function _processConnectorCalls(
-        Context          memory   ctx,
-        ConnectorCall[]  calldata calls
-        )
+        Context memory ctx,
+        ConnectorCall[] calldata calls
+    )
         internal
-        returns(
-            uint[]                      memory totalAmounts,
+        returns (
+            uint[] memory totalAmounts,
             IBatchDepositor.Deposit[][] memory depositsList
         )
     {
@@ -307,13 +311,10 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     }
 
     function _verifyInboundTransfers(
-        Context          memory   ctx,
-        ConnectorCall    calldata call,
-        uint[]           memory   totalAmounts
-        )
-        internal
-        view
-    {
+        Context memory ctx,
+        ConnectorCall calldata call,
+        uint[] memory totalAmounts
+    ) internal view {
         CallTransfer memory transfer;
         uint totalMinGas = 0;
         for (uint i = 0; i < call.txGroups.length; i++) {
@@ -324,14 +325,18 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
                 (uint packedData, , ) = readTransfer(ctx);
                 transfer.fromAccountID = (packedData >> 136) & 0xffffffff;
-                transfer.tokenID       = (packedData >>  88) & 0xffff;
-                transfer.amount        = (packedData >>  64) & 0xffffff;
-                transfer.feeTokenID    = (packedData >>  48) & 0xffff;
-                transfer.fee           = (packedData >>  32) & 0xffff;
-                transfer.storageID     = (packedData       ) & 0xffffffff;
+                transfer.tokenID = (packedData >> 88) & 0xffff;
+                transfer.amount = (packedData >> 64) & 0xffffff;
+                transfer.feeTokenID = (packedData >> 48) & 0xffff;
+                transfer.fee = (packedData >> 32) & 0xffff;
+                transfer.storageID = (packedData) & 0xffffffff;
 
-                transfer.amount = (transfer.amount & 524287) * (10 ** (transfer.amount >> 19));
-                transfer.fee = (transfer.fee & 2047) * (10 ** (transfer.fee >> 11));
+                transfer.amount =
+                    (transfer.amount & 524287) *
+                    (10 ** (transfer.amount >> 19));
+                transfer.fee =
+                    (transfer.fee & 2047) *
+                    (10 ** (transfer.fee >> 11));
 
                 // Verify that the transaction was approved with an L2 signature
                 bytes32 txHash = _hashConnectorTx(
@@ -343,11 +348,19 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     txGroup.groupData,
                     connectorTx.userData
                 );
-                verifySignatureL2(ctx, connectorTx.owner, transfer.fromAccountID, txHash);
+                verifySignatureL2(
+                    ctx,
+                    connectorTx.owner,
+                    transfer.fromAccountID,
+                    txHash
+                );
 
                 // Find the token in the tokens list
                 uint k = 0;
-                while (k < ctx.tokens.length && transfer.tokenID != ctx.tokens[k].tokenID) {
+                while (
+                    k < ctx.tokens.length &&
+                    transfer.tokenID != ctx.tokens[k].tokenID
+                ) {
                     k++;
                 }
                 require(k < ctx.tokens.length, "INVALID_INPUT_TOKENS");
@@ -359,12 +372,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                     // transfer.type == 1 &&
                     // transfer.fromAccountID == UNKNOWN &&
                     // transfer.toAccountID == ctx.accountID &&
-                    packedData & 0xffff00000000ffffffff00000000000000000000000000 ==
-                    (uint(ExchangeData.TransactionType.TRANSFER) << 176) | (1 << 168) | (uint(accountID) << 104) &&
-                    transfer.fee <= connectorTx.maxFee &&
-                    connectorTx.validUntil == 0 || block.timestamp < connectorTx.validUntil &&
-                    connectorTx.token == ctx.tokens[k].token &&
-                    connectorTx.amount == transfer.amount,
+                    (packedData &
+                        0xffff00000000ffffffff00000000000000000000000000 ==
+                        (uint(ExchangeData.TransactionType.TRANSFER) << 176) |
+                            (1 << 168) |
+                            (uint(accountID) << 104) &&
+                        transfer.fee <= connectorTx.maxFee &&
+                        connectorTx.validUntil == 0) ||
+                        (block.timestamp < connectorTx.validUntil &&
+                            connectorTx.token == ctx.tokens[k].token &&
+                            connectorTx.amount == transfer.amount),
                     "INVALID_BRIDGE_CALL_TRANSFER"
                 );
 
@@ -381,23 +398,21 @@ contract Bridge is IBridge, BatchDepositor, Claimable
 
     function _verifyWithdrawals(
         Context memory ctx,
-        uint[]  memory totalAmounts
-        )
-        internal
-    {
+        uint[] memory totalAmounts
+    ) internal {
         // Verify the withdrawals
         for (uint i = 0; i < ctx.tokens.length; i++) {
             TokenData memory token = ctx.tokens[i];
             // Verify token data
             require(
                 _getTokenID(token.token) == token.tokenID &&
-                token.amount == totalAmounts[i],
+                    token.amount == totalAmounts[i],
                 "INVALID_TOKEN_DATA"
             );
 
             bytes20 onchainDataHash = WithdrawTransaction.hashOnchainData(
-                0,                  // Withdrawal needs to succeed no matter the gas coast
-                address(this),      // Withdraw to this contract first
+                0, // Withdrawal needs to succeed no matter the gas coast
+                address(this), // Withdraw to this contract first
                 new bytes(0)
             );
 
@@ -410,19 +425,24 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             uint packedData;
             bytes20 dataHash;
             assembly {
-                header     := calldataload(    txsDataPtr     )
+                header := calldataload(txsDataPtr)
                 packedData := calldataload(add(txsDataPtr, 42))
-                dataHash   := and(calldataload(add(txsDataPtr, 78)), 0xffffffffffffffffffffffffffffffffffffffff000000000000000000000000)
+                dataHash := and(
+                    calldataload(add(txsDataPtr, 78)),
+                    0xffffffffffffffffffffffffffffffffffffffff000000000000000000000000
+                )
             }
             require(
                 // txType == ExchangeData.TransactionType.WITHDRAWAL &&
                 // withdrawal.type == 1 &&
-                header & 0xffff == (uint(ExchangeData.TransactionType.WITHDRAWAL) << 8) | 1 &&
-                // withdrawal.tokenID == token.tokenID &&
-                // withdrawal.amount == token.amount &&
-                // withdrawal.fee == 0,
-                packedData & 0xffffffffffffffffffffffffffff0000ffff == (uint(token.tokenID) << 128) | (token.amount << 32) &&
-                onchainDataHash == dataHash,
+                header & 0xffff ==
+                    (uint(ExchangeData.TransactionType.WITHDRAWAL) << 8) | 1 &&
+                    // withdrawal.tokenID == token.tokenID &&
+                    // withdrawal.amount == token.amount &&
+                    // withdrawal.fee == 0,
+                    packedData & 0xffffffffffffffffffffffffffff0000ffff ==
+                    (uint(token.tokenID) << 128) | (token.amount << 32) &&
+                    onchainDataHash == dataHash,
                 "INVALID_BRIDGE_WITHDRAWAL_TX_DATA"
             );
 
@@ -431,16 +451,16 @@ contract Bridge is IBridge, BatchDepositor, Claimable
     }
 
     function _transactConnector(
-        Context          memory   ctx,
-        ConnectorCall    calldata call,
-        uint                      n,
-        ConnectorCall[]  calldata calls
-        )
-        internal
-        returns (IBatchDepositor.Deposit[] memory deposits)
-    {
+        Context memory ctx,
+        ConnectorCall calldata call,
+        uint n,
+        ConnectorCall[] calldata calls
+    ) internal returns (IBatchDepositor.Deposit[] memory deposits) {
         require(call.connector != address(this), "INVALID_CONNECTOR");
-        require(trustedConnectors[call.connector], "ONLY_TRUSTED_CONNECTORS_SUPPORTED");
+        require(
+            trustedConnectors[call.connector],
+            "ONLY_TRUSTED_CONNECTORS_SUPPORTED"
+        );
 
         // Check if the minimum amount of gas required is achieved
         bytes memory txData = _getDataForConnectorTxs(
@@ -469,11 +489,15 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         //
         // Execute the logic using a delegatecall so no extra L1 transfers are needed
         txData = _getDataForConnectorTxs(
-            ctx,IBridgeConnector.processTransactions.selector,
+            ctx,
+            IBridgeConnector.processTransactions.selector,
             calls,
             n
         );
-        (success, returnData) = call.connector.fastDelegatecall(call.gasLimit, txData);
+        (success, returnData) = call.connector.fastDelegatecall(
+            call.gasLimit,
+            txData
+        );
 
         if (success) {
             deposits = abi.decode(returnData, (IBatchDepositor.Deposit[]));
@@ -490,8 +514,8 @@ contract Bridge is IBridge, BatchDepositor, Claimable
                 for (uint j = 0; j < txGroup.transactions.length; j++) {
                     ConnectorTx memory connectorTx = txGroup.transactions[j];
                     deposits[txIdx++] = IBatchDepositor.Deposit({
-                        owner:  connectorTx.owner,
-                        token:  connectorTx.token,
+                        owner: connectorTx.owner,
+                        token: connectorTx.token,
                         amount: connectorTx.amount
                     });
                 }
@@ -509,17 +533,13 @@ contract Bridge is IBridge, BatchDepositor, Claimable
 
     function _hashConnectorTx(
         CallTransfer memory transfer,
-        uint                maxFee,
-        uint                validUntil,
-        uint                minGas,
-        address             connector,
-        bytes        memory groupData,
-        bytes        memory userData
-        )
-        internal
-        view
-        returns (bytes32 h)
-    {
+        uint maxFee,
+        uint validUntil,
+        uint minGas,
+        address connector,
+        bytes memory groupData,
+        bytes memory userData
+    ) internal view returns (bytes32 h) {
         bytes32 _DOMAIN_SEPARATOR = DOMAIN_SEPARATOR;
         uint tokenID = transfer.tokenID;
         uint amount = transfer.amount;
@@ -545,35 +565,37 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         bytes32 typeHash = CONNECTOR_TX_TYPEHASH;
         assembly {
             let data := mload(0x40)
-            mstore(    data      , typeHash)
-            mstore(add(data,  32), tokenID)
-            mstore(add(data,  64), amount)
-            mstore(add(data,  96), feeTokenID)
+            mstore(data, typeHash)
+            mstore(add(data, 32), tokenID)
+            mstore(add(data, 64), amount)
+            mstore(add(data, 96), feeTokenID)
             mstore(add(data, 128), maxFee)
             mstore(add(data, 160), validUntil)
             mstore(add(data, 192), storageID)
             mstore(add(data, 224), minGas)
             mstore(add(data, 256), connector)
-            mstore(add(data, 288), keccak256(add(groupData, 32), mload(groupData)))
-            mstore(add(data, 320), keccak256(add(userData , 32), mload(userData)))
+            mstore(
+                add(data, 288),
+                keccak256(add(groupData, 32), mload(groupData))
+            )
+            mstore(
+                add(data, 320),
+                keccak256(add(userData, 32), mload(userData))
+            )
             let p := keccak256(data, 352)
             mstore(data, "\x19\x01")
-            mstore(add(data,  2), _DOMAIN_SEPARATOR)
+            mstore(add(data, 2), _DOMAIN_SEPARATOR)
             mstore(add(data, 34), p)
             h := keccak256(data, 66)
         }
     }
 
     function _getDataForConnectorTxs(
-        Context memory            ctx,
-        bytes4                    selector,
-        ConnectorCall[]  calldata calls,
-        uint                      n
-        )
-        internal
-        pure
-        returns (bytes memory)
-    {
+        Context memory ctx,
+        bytes4 selector,
+        ConnectorCall[] calldata calls,
+        uint n
+    ) internal pure returns (bytes memory) {
         // Position in the calldata to start copying
         uint offsetToGroups;
         ConnectorTxGroup[] calldata txGroups = calls[n].txGroups;
@@ -589,8 +611,12 @@ contract Bridge is IBridge, BatchDepositor, Claimable
             uint offsetToCall;
             uint offsetToNextCall;
             assembly {
-                offsetToCall := calldataload(add(calls.offset, mul(add(n, 0), 32)))
-                offsetToNextCall := calldataload(add(calls.offset, mul(add(n, 1), 32)))
+                offsetToCall := calldataload(
+                    add(calls.offset, mul(add(n, 0), 32))
+                )
+                offsetToNextCall := calldataload(
+                    add(calls.offset, mul(add(n, 1), 32))
+                )
             }
             txDataSize = offsetToNextCall.sub(offsetToCall);
         } else {
@@ -608,11 +634,9 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         return txData;
     }
 
-    function readTransfer(Context memory ctx)
-        internal
-        pure
-        returns (uint packedData, address to, address from)
-    {
+    function readTransfer(
+        Context memory ctx
+    ) internal pure returns (uint packedData, address to, address from) {
         // TransferTransaction.readTx(txsData, ctx.txIdx++ * ExchangeData.TX_DATA_AVAILABILITY_SIZE, transfer);
 
         // Start by reading the first 23 bytes into packedData
@@ -620,21 +644,24 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         // packedData: txType (1) | type (1) | fromAccountID (4) | toAccountID (4) | tokenID (2) | amount (3) | feeTokenID (2) | fee (2) | storageID (4)
         assembly {
             packedData := calldataload(txsDataPtr)
-            to := and(calldataload(add(txsDataPtr, 20)), 0xffffffffffffffffffffffffffffffffffffffff)
-            from := and(calldataload(add(txsDataPtr, 40)), 0xffffffffffffffffffffffffffffffffffffffff)
+            to := and(
+                calldataload(add(txsDataPtr, 20)),
+                0xffffffffffffffffffffffffffffffffffffffff
+            )
+            from := and(
+                calldataload(add(txsDataPtr, 40)),
+                0xffffffffffffffffffffffffffffffffffffffff
+            )
         }
         ctx.txsDataPtr += ExchangeData.TX_DATA_AVAILABILITY_SIZE;
     }
 
     function verifySignatureL2(
         Context memory ctx,
-        address        owner,
-        uint           _accountID,
-        bytes32        txHash
-        )
-        internal
-        pure
-    {
+        address owner,
+        uint _accountID,
+        bytes32 txHash
+    ) internal pure {
         /*
         // Read the signature verification transaction
         SignatureVerificationTransaction.SignatureVerification memory verification;
@@ -661,13 +688,17 @@ contract Bridge is IBridge, BatchDepositor, Claimable
         }
 
         // Verify that the hash was signed on L2
-        uint value = (uint(ExchangeData.TransactionType.SIGNATURE_VERIFICATION) << 192) |
-            ((uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) << 32) |
+        uint value = (uint(
+            ExchangeData.TransactionType.SIGNATURE_VERIFICATION
+        ) << 192) |
+            ((uint(owner) & 0x00ffffffffffffffffffffffffffffffffffffffff) <<
+                32) |
             _accountID;
 
         require(
-            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffff == value &&
-            data == uint(txHash) >> 3,
+            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffff ==
+                value &&
+                data == uint(txHash) >> 3,
             "INVALID_OFFCHAIN_L2_APPROVAL"
         );
 

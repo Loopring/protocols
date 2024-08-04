@@ -11,20 +11,14 @@ import "./AmmPoolToken.sol";
 import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 
-
 /// @title AmmWithdrawal
-library AmmWithdrawal
-{
-    using AmmPoolToken      for AmmData.State;
-    using AmmStatus         for AmmData.State;
-    using MathUint          for uint;
-    using TransferUtil      for address;
+library AmmWithdrawal {
+    using AmmPoolToken for AmmData.State;
+    using AmmStatus for AmmData.State;
+    using MathUint for uint;
+    using TransferUtil for address;
 
-    function withdrawWhenOffline(
-        AmmData.State storage S
-        )
-        public
-    {
+    function withdrawWhenOffline(AmmData.State storage S) public {
         _checkWithdrawalConditionInShutdown(S);
 
         // Burn the full balance
@@ -56,10 +50,7 @@ library AmmWithdrawal
 
     function _checkWithdrawalConditionInShutdown(
         AmmData.State storage S
-        )
-        private
-        view
-    {
+    ) private view {
         IExchangeV3 exchange = S.exchange;
         bool withdrawalMode = exchange.isInWithdrawalMode();
 
@@ -67,8 +58,13 @@ library AmmWithdrawal
             address token = S.tokens[i].addr;
 
             require(
-                withdrawalMode && exchange.isWithdrawnInWithdrawalMode(S.accountID, token) ||
-                !withdrawalMode && !exchange.isForcedWithdrawalPending(S.accountID, token),
+                (withdrawalMode &&
+                    exchange.isWithdrawnInWithdrawalMode(S.accountID, token)) ||
+                    (!withdrawalMode &&
+                        !exchange.isForcedWithdrawalPending(
+                            S.accountID,
+                            token
+                        )),
                 "PENDING_WITHDRAWAL"
             );
 

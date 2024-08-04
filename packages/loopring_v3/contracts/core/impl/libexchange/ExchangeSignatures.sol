@@ -6,28 +6,27 @@ pragma experimental ABIEncoderV2;
 import "../../../lib/SignatureUtil.sol";
 import "../../iface/ExchangeData.sol";
 
-
 /// @title ExchangeSignatures.
 /// @dev All methods in this lib are internal, therefore, there is no need
 ///      to deploy this library independently.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-library ExchangeSignatures
-{
+library ExchangeSignatures {
     using SignatureUtil for bytes32;
 
     function requireAuthorizedTx(
         ExchangeData.State storage S,
         address signer,
         bytes memory signature,
-        bytes32 txHash
-        )
-        internal // inline call
-    {
+        bytes32 txHash // inline call
+    ) internal {
         require(signer != address(0), "INVALID_SIGNER");
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (signature.length > 0) {
-            require(txHash.verifySignature(signer, signature), "INVALID_SIGNATURE");
+            require(
+                txHash.verifySignature(signer, signature),
+                "INVALID_SIGNATURE"
+            );
         } else {
             require(S.approvedTx[signer][txHash], "TX_NOT_APPROVED");
             delete S.approvedTx[signer][txHash];
@@ -38,9 +37,7 @@ library ExchangeSignatures
         ExchangeData.State storage S,
         address[] calldata owners,
         bytes32[] calldata transactionHashes
-        )
-        external
-    {
+    ) external {
         require(owners.length == transactionHashes.length, "INVALID_DATA");
         require(S.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
         for (uint i = 0; i < owners.length; i++) {

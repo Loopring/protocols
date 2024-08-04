@@ -8,19 +8,15 @@ import "../../lib/MathUint.sol";
 import "../../lib/TransferUtil.sol";
 import "./AmmData.sol";
 
-
 /// @title AmmAssetManagement
-library AmmAssetManagement
-{
-    using TransferUtil      for address;
+library AmmAssetManagement {
+    using TransferUtil for address;
 
     function deposit(
         AmmData.State storage S,
-        address               token,
-        uint96                amount
-        )
-        public
-    {
+        address token,
+        uint96 amount
+    ) public {
         if (amount == 0) {
             return;
         }
@@ -28,7 +24,10 @@ library AmmAssetManagement
         if (token == address(0)) {
             ethValue = amount;
         } else {
-            ERC20(token).approve(address(S.exchange.getDepositContract()), amount);
+            ERC20(token).approve(
+                address(S.exchange.getDepositContract()),
+                amount
+            );
         }
         S.exchange.deposit{value: ethValue}(
             address(this),
@@ -41,12 +40,10 @@ library AmmAssetManagement
 
     function transferOut(
         AmmData.State storage /*S*/,
-        address               to,
-        address               token,
-        uint                  amount
-        )
-        public
-    {
+        address to,
+        address token,
+        uint amount
+    ) public {
         token.transferOut(to, amount);
     }
 }

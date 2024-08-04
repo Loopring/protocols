@@ -2,7 +2,5 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IAssetManager
-{}
+interface IAssetManager {}

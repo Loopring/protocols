@@ -5,21 +5,15 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/SignatureUtil.sol";
 
-
 /// @title AmmSignature
-library AmmSignature
-{
-    using SignatureUtil     for bytes32;
+library AmmSignature {
+    using SignatureUtil for bytes32;
 
     function verifySignature(
-        bytes32        signHash,
-        address        signer,
-        bytes   memory signature
-        )
-        public
-        view
-        returns (bool)
-    {
+        bytes32 signHash,
+        address signer,
+        bytes memory signature
+    ) public view returns (bool) {
         return signHash.verifySignature(signer, signature);
     }
 }

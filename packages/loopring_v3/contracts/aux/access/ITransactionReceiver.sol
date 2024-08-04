@@ -8,12 +8,9 @@ import "../../amm/libamm/AmmData.sol";
 
 /// @title ITransactionReceiver
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract ITransactionReceiver
-{
+abstract contract ITransactionReceiver {
     function onReceiveTransactions(
         bytes calldata txsData,
         bytes calldata callbackData
-        )
-        external
-        virtual;
+    ) external virtual;
 }

@@ -5,11 +5,9 @@ pragma solidity ^0.7.0;
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
 
-
 contract TransferContract {
-
-    using AddressUtil       for address;
-    using AddressUtil       for address payable;
+    using AddressUtil for address;
+    using AddressUtil for address payable;
     using ERC20SafeTransfer for address;
 
     uint8 public constant TEST_NOTHING = 0;
@@ -23,11 +21,9 @@ contract TransferContract {
     function safeTransferWithGasLimit(
         address token,
         address to,
-        uint    value,
-        uint    gasLimit
-        )
-        external
-    {
+        uint value,
+        uint gasLimit
+    ) external {
         token.safeTransferWithGasLimitAndVerify(to, value, gasLimit);
     }
 
@@ -35,36 +31,21 @@ contract TransferContract {
         address token,
         address from,
         address to,
-        uint    value,
-        uint    gasLimit
-        )
-        external
-    {
+        uint value,
+        uint gasLimit
+    ) external {
         token.safeTransferFromWithGasLimitAndVerify(from, to, value, gasLimit);
     }
 
-    function sendETH(
-        address to,
-        uint    amount,
-        uint    gasLimit
-        )
-        external
-    {
+    function sendETH(address to, uint amount, uint gasLimit) external {
         to.sendETHAndVerify(amount, gasLimit);
     }
 
-    function setTestCase(
-        uint8 _testCase
-        )
-        external
-    {
+    function setTestCase(uint8 _testCase) external {
         testCase = _testCase;
     }
 
-    receive()
-        external
-        payable
-    {
+    receive() external payable {
         if (testCase == TEST_NOTHING) {
             return;
         } else if (testCase == TEST_REQUIRE_FAIL) {

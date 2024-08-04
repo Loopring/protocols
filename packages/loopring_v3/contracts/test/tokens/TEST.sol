@@ -27,23 +27,9 @@ contract TEST is DummyToken {
 
     uint[16] private dummyStorageVariables;
 
-    constructor() DummyToken(
-        "TEST_TEST",
-        "TEST",
-        18,
-        2 ** 128
-    )
-    {
-    }
+    constructor() DummyToken("TEST_TEST", "TEST", 18, 2 ** 128) {}
 
-    function transfer(
-        address _to,
-        uint _value
-        )
-        public
-        override
-        returns (bool)
-    {
+    function transfer(address _to, uint _value) public override returns (bool) {
         if (testCase == TEST_DIFFERENT_TRANSFER_AMOUNT) {
             _value = _value.mul(99) / 100;
         }
@@ -60,11 +46,7 @@ contract TEST is DummyToken {
         address _from,
         address _to,
         uint _value
-        )
-        public
-        override
-        returns (bool)
-    {
+    ) public override returns (bool) {
         if (testCase == TEST_DIFFERENT_TRANSFER_AMOUNT) {
             _value = _value.mul(99) / 100;
         }
@@ -78,10 +60,7 @@ contract TEST is DummyToken {
         return doTestCase();
     }
 
-    function doTestCase()
-        internal
-        returns (bool)
-    {
+    function doTestCase() internal returns (bool) {
         if (testCase == TEST_NOTHING) {
             return true;
         } else if (testCase == TEST_REENTRANCY) {
@@ -104,7 +83,10 @@ contract TEST is DummyToken {
             );
 
             // Throw here when the results are as expected. This way we know the test was correctly executed.
-            require(keccak256(reentryMessageData) != keccak256(returnData), "REVERT_MESSAGE_OK");
+            require(
+                keccak256(reentryMessageData) != keccak256(returnData),
+                "REVERT_MESSAGE_OK"
+            );
             return true;
         } else if (testCase == TEST_REQUIRE_FAIL) {
             require(false, "REQUIRE_FAILED");
@@ -128,27 +110,15 @@ contract TEST is DummyToken {
         return true;
     }
 
-    function setTestCase(
-        uint8 _testCase
-        )
-        external
-    {
+    function setTestCase(uint8 _testCase) external {
         testCase = _testCase;
     }
 
-    function setExchangeAddress(
-        address _exchangeAddress
-        )
-        external
-    {
+    function setExchangeAddress(address _exchangeAddress) external {
         exchangeAddress = _exchangeAddress;
     }
 
-    function setCalldata(
-        bytes calldata _reentrancyCalldata
-        )
-        external
-    {
+    function setCalldata(bytes calldata _reentrancyCalldata) external {
         reentrancyCalldata = _reentrancyCalldata;
     }
 }

@@ -7,21 +7,13 @@ import "../aux/compression/ZeroDecompressor.sol";
 contract ZeroDecompressorContract {
     function decompress(
         bytes calldata data
-        )
-        external
-        pure
-        returns (bytes memory)
-    {
+    ) external pure returns (bytes memory) {
         return ZeroDecompressor.decompress(data, 0);
     }
 
     function benchmark(
         bytes calldata data
-        )
-        external
-        pure
-        returns (bytes memory)
-    {
+    ) external pure returns (bytes memory) {
         return ZeroDecompressor.decompress(data, 0);
     }
 }

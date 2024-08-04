@@ -7,21 +7,17 @@ import "../lib/Claimable.sol";
 import "../lib/Drainable.sol";
 import "../lib/ERC20.sol";
 
-
 /// @author Brecht Devos - <brecht@loopring.org>
-contract SinglePhaseConverter is Claimable, Drainable
-{
+contract SinglePhaseConverter is Claimable, Drainable {
     function swapAndRepay(
         address exchange,
         address swapContract,
-        bytes   calldata swapData,
+        bytes calldata swapData,
         address swapToken,
-        uint    swapAmount,
+        uint swapAmount,
         address repayToken,
-        uint96  repayAmount
-        )
-        public
-    {
+        uint96 repayAmount
+    ) public {
         // Swap
         if (swapToken != address(0)) {
             ERC20(swapToken).approve(swapContract, swapAmount);
@@ -31,7 +27,8 @@ contract SinglePhaseConverter is Claimable, Drainable
 
         // Repay
         if (repayToken != address(0)) {
-            IDepositContract depositContract = IExchangeV3(exchange).getDepositContract();
+            IDepositContract depositContract = IExchangeV3(exchange)
+                .getDepositContract();
             ERC20(repayToken).approve(address(depositContract), repayAmount);
         }
         uint repayValue = (repayToken == address(0)) ? repayAmount : 0;
@@ -43,12 +40,10 @@ contract SinglePhaseConverter is Claimable, Drainable
         );
     }
 
-    function canDrain(address drainer, address /* token */)
-        public
-        override
-        view
-        returns (bool)
-    {
+    function canDrain(
+        address drainer,
+        address /* token */
+    ) public view override returns (bool) {
         return drainer == owner;
     }
 }

@@ -13,22 +13,21 @@ import "./AmmStatus.sol";
 import "./AmmUtil.sol";
 import "./AmmWithdrawal.sol";
 
-
 /// @title AmmDepositProcess
-library AmmDepositProcess
-{
+library AmmDepositProcess {
     using AmmAssetManagement for AmmData.State;
-    using MathUint96         for uint96;
-    using TransferUtil       for address;
+    using MathUint96 for uint96;
+    using TransferUtil for address;
 
     function processDeposit(
-        AmmData.State       storage S,
-        AmmData.Context     memory ctx,
+        AmmData.State storage S,
+        AmmData.Context memory ctx,
         AmmData.PoolDeposit memory poolDeposit
-        )
-        internal
-    {
-        require(poolDeposit.amounts.length == ctx.tokens.length, "INVALID_DEPOSIT_DATA");
+    ) internal {
+        require(
+            poolDeposit.amounts.length == ctx.tokens.length,
+            "INVALID_DEPOSIT_DATA"
+        );
         for (uint i = 0; i < ctx.tokens.length; i++) {
             uint96 amount = poolDeposit.amounts[i];
             if (amount > 0) {
@@ -42,12 +41,9 @@ library AmmDepositProcess
 
     function verifyDepositTx(
         AmmData.Context memory ctx,
-        uint                   tokenID,
-        uint96                 amount
-        )
-        internal
-        view
-    {
+        uint tokenID,
+        uint96 amount
+    ) internal view {
         // Verify deposit data
         // Start by reading the first 27 bytes into packedData
         uint txsDataPtr = ctx.txsDataPtr + 27;
@@ -64,8 +60,13 @@ library AmmDepositProcess
             // owner == address(this) &&
             // accountID == ctx.accountID &&
             // tokenID == tokenID &&
-            packedData & 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff == (uint(ExchangeData.TransactionType.DEPOSIT) << 208) | (uint(address(this)) << 48) | (uint(ctx.accountID) << 16) | uint(tokenID) &&
-            amount == txAmount,
+            packedData &
+                0xffffffffffffffffffffffffffffffffffffffffffffffffffffff ==
+                (uint(ExchangeData.TransactionType.DEPOSIT) << 208) |
+                    (uint(address(this)) << 48) |
+                    (uint(ctx.accountID) << 16) |
+                    uint(tokenID) &&
+                amount == txAmount,
             "INVALID_AMM_DEPOSIT_TX_DATA"
         );
 

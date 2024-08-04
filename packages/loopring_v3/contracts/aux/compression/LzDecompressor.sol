@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-
 /// @title LzDecompressor
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Decompresses data compressed with a LZ77/Snappy like compressor optimized for EVM
@@ -15,21 +14,20 @@ pragma solidity ^0.7.0;
 ///      - add mode copying from random location in calldata (faster than memory copies)
 ///      - add support to copy data from memory using the identity pre-compile
 ///        (large initital cost but cheaper copying, does not support overlapping memory ranges)
-library LzDecompressor
-{
+library LzDecompressor {
     function decompress(
         bytes calldata /*data*/
-        )
-        internal
-        pure
-        returns (bytes memory)
-    {
+    ) internal pure returns (bytes memory) {
         bytes memory uncompressed;
         assembly {
             uncompressed := mload(0x40)
             let ptr := add(uncompressed, 32)
             let dataLength := calldataload(36)
-            for { let pos := 0 } lt(pos, dataLength) {} {
+            for {
+                let pos := 0
+            } lt(pos, dataLength) {
+
+            } {
                 // Read the mode
                 pos := add(pos, 1)
                 let mode := and(calldataload(add(36, pos)), 0xFF)
@@ -80,7 +78,11 @@ library LzDecompressor
                     }
                     // This can copy too many bytes, but that's okay
                     // Needs unrolling for the best performance
-                    for { } lt(i, length) { } {
+                    for {
+
+                    } lt(i, length) {
+
+                    } {
                         mstore(add(ptr, i), mload(add(src, i)))
                         i := add(i, 32)
                         mstore(add(ptr, i), mload(add(src, i)))

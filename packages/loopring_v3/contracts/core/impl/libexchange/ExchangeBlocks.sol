@@ -18,25 +18,23 @@ import "../libtransactions/NftMintTransaction.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeWithdrawals.sol";
 
-
 /// @title ExchangeBlocks.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-library ExchangeBlocks
-{
-    using AddressUtil          for address;
-    using AddressUtil          for address payable;
-    using BlockReader          for bytes;
-    using BytesUtil            for bytes;
-    using MathUint             for uint;
-    using ExchangeMode         for ExchangeData.State;
-    using ExchangeWithdrawals  for ExchangeData.State;
-    using SignatureUtil        for bytes32;
+library ExchangeBlocks {
+    using AddressUtil for address;
+    using AddressUtil for address payable;
+    using BlockReader for bytes;
+    using BytesUtil for bytes;
+    using MathUint for uint;
+    using ExchangeMode for ExchangeData.State;
+    using ExchangeWithdrawals for ExchangeData.State;
+    using SignatureUtil for bytes32;
 
     event BlockSubmitted(
-        uint    indexed blockIdx,
-        bytes32         merkleRoot,
-        bytes32         publicDataHash
+        uint indexed blockIdx,
+        bytes32 merkleRoot,
+        bytes32 publicDataHash
     );
 
     event ProtocolFeesUpdated(
@@ -47,11 +45,9 @@ library ExchangeBlocks
     );
 
     function submitBlocks(
-        ExchangeData.State   storage S,
-        ExchangeData.Block[] memory  blocks
-        )
-        public
-    {
+        ExchangeData.State storage S,
+        ExchangeData.Block[] memory blocks
+    ) public {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
@@ -72,11 +68,9 @@ library ExchangeBlocks
 
     function commitBlock(
         ExchangeData.State storage S,
-        ExchangeData.Block memory  _block,
-        bytes32                    _publicDataHash
-        )
-        private
-    {
+        ExchangeData.Block memory _block,
+        bytes32 _publicDataHash
+    ) private {
         // Read the block header
         BlockReader.BlockHeader memory header = _block.data.readHeader();
 
@@ -84,26 +78,36 @@ library ExchangeBlocks
         require(header.exchange == address(this), "INVALID_EXCHANGE");
         // Validate the Merkle roots
         require(header.merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
-        require(header.merkleRootAfter != header.merkleRootBefore, "EMPTY_BLOCK_DISABLED");
-        require(uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD, "INVALID_MERKLE_ROOT");
+        require(
+            header.merkleRootAfter != header.merkleRootBefore,
+            "EMPTY_BLOCK_DISABLED"
+        );
+        require(
+            uint(header.merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD,
+            "INVALID_MERKLE_ROOT"
+        );
         // Validate the timestamp
         require(
-            header.timestamp > block.timestamp - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS &&
-            header.timestamp < block.timestamp + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
+            header.timestamp >
+                block.timestamp -
+                    ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS &&
+                header.timestamp <
+                block.timestamp +
+                    ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             "INVALID_TIMESTAMP"
         );
         // Validate the protocol fee values
         require(
-            validateAndSyncProtocolFees(S, header.protocolTakerFeeBips, header.protocolMakerFeeBips),
+            validateAndSyncProtocolFees(
+                S,
+                header.protocolTakerFeeBips,
+                header.protocolMakerFeeBips
+            ),
             "INVALID_PROTOCOL_FEES"
         );
 
         // Process conditional transactions
-        processConditionalTransactions(
-            S,
-            _block,
-            header
-        );
+        processConditionalTransactions(S, _block, header);
 
         // Emit an event
         uint numBlocks = S.numBlocks;
@@ -122,13 +126,10 @@ library ExchangeBlocks
     }
 
     function verifyBlocks(
-        ExchangeData.State   storage S,
-        ExchangeData.Block[] memory  blocks,
-        bytes32[]            memory  publicDataHashes
-        )
-        private
-        view
-    {
+        ExchangeData.State storage S,
+        ExchangeData.Block[] memory blocks,
+        bytes32[] memory publicDataHashes
+    ) private view {
         IBlockVerifier blockVerifier = S.blockVerifier;
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
@@ -145,9 +146,11 @@ library ExchangeBlocks
                         batch[batchLength++] = i;
                     } else {
                         ExchangeData.Block memory _block = blocks[i];
-                        if (_block.blockType == firstBlock.blockType &&
+                        if (
+                            _block.blockType == firstBlock.blockType &&
                             _block.blockSize == firstBlock.blockSize &&
-                            _block.blockVersion == firstBlock.blockVersion) {
+                            _block.blockVersion == firstBlock.blockVersion
+                        ) {
                             batch[batchLength++] = i;
                         }
                     }
@@ -168,7 +171,7 @@ library ExchangeBlocks
                 // Copy proof
                 ExchangeData.Block memory _block = blocks[blockIdx];
                 for (uint j = 0; j < 8; j++) {
-                    proofs[i*8 + j] = _block.proof[j];
+                    proofs[i * 8 + j] = _block.proof[j];
                 }
             }
 
@@ -189,12 +192,10 @@ library ExchangeBlocks
     }
 
     function processConditionalTransactions(
-        ExchangeData.State      storage S,
-        ExchangeData.Block      memory _block,
+        ExchangeData.State storage S,
+        ExchangeData.Block memory _block,
         BlockReader.BlockHeader memory header
-        )
-        private
-    {
+    ) private {
         if (header.numConditionalTransactions > 0) {
             // Cache the domain separator to save on SLOADs each time it is accessed.
             ExchangeData.BlockContext memory ctx = ExchangeData.BlockContext({
@@ -207,7 +208,9 @@ library ExchangeBlocks
             ExchangeData.AuxiliaryData[] memory block_auxiliaryData;
             {
                 bytes memory blockAuxData = _block.auxiliaryData;
-                assembly { block_auxiliaryData := add(blockAuxData, 64) }
+                assembly {
+                    block_auxiliaryData := add(blockAuxData, 64)
+                }
             }
 
             require(
@@ -217,7 +220,9 @@ library ExchangeBlocks
 
             // Run over all conditional transactions
             uint minTxIndex = 0;
-            bytes memory txData = new bytes(ExchangeData.TX_DATA_AVAILABILITY_SIZE);
+            bytes memory txData = new bytes(
+                ExchangeData.TX_DATA_AVAILABILITY_SIZE
+            );
 
             uint txIndex;
             bool approved;
@@ -228,12 +233,17 @@ library ExchangeBlocks
                 // Load the data from auxiliaryData, which is still encoded as calldata
                 assembly {
                     // Offset to block_auxiliaryData[i]
-                    offset := mload(add(block_auxiliaryData, add(32, mul(32, i))))
+                    offset := mload(
+                        add(block_auxiliaryData, add(32, mul(32, i)))
+                    )
                     // Load `txIndex` (pos 0) and `approved` (pos 1) in block_auxiliaryData[i]
                     txIndex := mload(add(add(32, block_auxiliaryData), offset))
                     approved := mload(add(add(64, block_auxiliaryData), offset))
                     // Load `data` (pos 2)
-                    offset := add(offset, mload(add(add(96, block_auxiliaryData), offset)))
+                    offset := add(
+                        offset,
+                        mload(add(add(96, block_auxiliaryData), offset))
+                    )
                     auxData := add(add(32, block_auxiliaryData), offset)
                 }
                 ctx.txIndex = txIndex;
@@ -245,23 +255,23 @@ library ExchangeBlocks
 
                 txType = _block.data.readTransactionType(txIndex);
 
-                if (approved &&
+                if (
+                    approved &&
                     txType != ExchangeData.TransactionType.WITHDRAWAL &&
-                    txType != ExchangeData.TransactionType.DEPOSIT) {
+                    txType != ExchangeData.TransactionType.DEPOSIT
+                ) {
                     continue;
                 }
 
                 // Get the transaction data
-                _block.data.readTransactionData(txIndex, _block.blockSize, txData);
+                _block.data.readTransactionData(
+                    txIndex,
+                    _block.blockSize,
+                    txData
+                );
 
                 if (txType == ExchangeData.TransactionType.DEPOSIT) {
-                    DepositTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        0,
-                        auxData
-                    );
+                    DepositTransaction.process(S, ctx, txData, 0, auxData);
                 } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     WithdrawTransaction.process(
                         S,
@@ -272,14 +282,10 @@ library ExchangeBlocks
                         approved
                     );
                 } else if (txType == ExchangeData.TransactionType.TRANSFER) {
-                    TransferTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        0,
-                        auxData
-                    );
-                } else if (txType == ExchangeData.TransactionType.ACCOUNT_UPDATE) {
+                    TransferTransaction.process(S, ctx, txData, 0, auxData);
+                } else if (
+                    txType == ExchangeData.TransactionType.ACCOUNT_UPDATE
+                ) {
                     AccountUpdateTransaction.process(
                         S,
                         ctx,
@@ -288,21 +294,9 @@ library ExchangeBlocks
                         auxData
                     );
                 } else if (txType == ExchangeData.TransactionType.AMM_UPDATE) {
-                    AmmUpdateTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        0,
-                        auxData
-                    );
+                    AmmUpdateTransaction.process(S, ctx, txData, 0, auxData);
                 } else if (txType == ExchangeData.TransactionType.NFT_MINT) {
-                    NftMintTransaction.process(
-                        S,
-                        ctx,
-                        txData,
-                        0,
-                        auxData
-                    );
+                    NftMintTransaction.process(S, ctx, txData, 0, auxData);
                 } else {
                     // ExchangeData.TransactionType.NOOP,
                     // ExchangeData.TransactionType.SPOT_TRADE and
@@ -312,7 +306,10 @@ library ExchangeBlocks
                 }
             }
 
-            require(minTxIndex <= _block.blockSize, "AUXILIARYDATA_INVALID_ORDER");
+            require(
+                minTxIndex <= _block.blockSize,
+                "AUXILIARYDATA_INVALID_ORDER"
+            );
         }
     }
 
@@ -320,21 +317,25 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint8 takerFeeBips,
         uint8 makerFeeBips
-        )
-        private
-        returns (bool)
-    {
+    ) private returns (bool) {
         ExchangeData.ProtocolFeeData memory data = S.protocolFeeData;
-        if (block.timestamp > data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED) {
+        if (
+            block.timestamp >
+            data.syncedAt + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
+        ) {
             // Store the current protocol fees in the previous protocol fees
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
-            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues();
+            (data.takerFeeBips, data.makerFeeBips) = S
+                .loopring
+                .getProtocolFeeValues();
             data.syncedAt = uint32(block.timestamp);
 
-            if (data.takerFeeBips != data.previousTakerFeeBips ||
-                data.makerFeeBips != data.previousMakerFeeBips) {
+            if (
+                data.takerFeeBips != data.previousTakerFeeBips ||
+                data.makerFeeBips != data.previousMakerFeeBips
+            ) {
                 emit ProtocolFeesUpdated(
                     data.takerFeeBips,
                     data.makerFeeBips,
@@ -347,7 +348,10 @@ library ExchangeBlocks
             S.protocolFeeData = data;
         }
         // The given fee values are valid if they are the current or previous protocol fee values
-        return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
-            (takerFeeBips == data.previousTakerFeeBips && makerFeeBips == data.previousMakerFeeBips);
+        return
+            (takerFeeBips == data.takerFeeBips &&
+                makerFeeBips == data.makerFeeBips) ||
+            (takerFeeBips == data.previousTakerFeeBips &&
+                makerFeeBips == data.previousMakerFeeBips);
     }
 }

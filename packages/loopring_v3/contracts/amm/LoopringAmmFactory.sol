@@ -10,16 +10,12 @@ import "../thirdparty/proxies/OwnedUpgradabilityProxy.sol";
 import "./LoopringAmmPool.sol";
 import "./libamm/AmmData.sol";
 
-
-contract LoopringAmmFactory is ReentrancyGuard, Claimable
-{
+contract LoopringAmmFactory is ReentrancyGuard, Claimable {
     event PoolCreated(AmmData.PoolConfig config, address pool);
 
     address public immutable poolImplementation;
 
-    constructor(address _poolImplementation)
-        Claimable()
-    {
+    constructor(address _poolImplementation) Claimable() {
         require(_poolImplementation != address(0), "INVALID_IMPL");
         poolImplementation = _poolImplementation;
     }
@@ -27,12 +23,11 @@ contract LoopringAmmFactory is ReentrancyGuard, Claimable
     function createPool(
         uint salt,
         AmmData.PoolConfig calldata config
-        )
-        external
-        nonReentrant
-        returns (address payable pool)
-    {
-        pool = Create2.deploy(bytes32(salt), type(OwnedUpgradabilityProxy).creationCode);
+    ) external nonReentrant returns (address payable pool) {
+        pool = Create2.deploy(
+            bytes32(salt),
+            type(OwnedUpgradabilityProxy).creationCode
+        );
 
         OwnedUpgradabilityProxy(pool).transferProxyOwnership(owner);
         OwnedUpgradabilityProxy(pool).upgradeTo(poolImplementation);
@@ -41,11 +36,11 @@ contract LoopringAmmFactory is ReentrancyGuard, Claimable
         emit PoolCreated(config, pool);
     }
 
-   function getPoolAddress(uint salt)
-        public
-        view
-        returns (address)
-    {
-        return Create2.computeAddress(bytes32(salt), type(OwnedUpgradabilityProxy).creationCode);
+    function getPoolAddress(uint salt) public view returns (address) {
+        return
+            Create2.computeAddress(
+                bytes32(salt),
+                type(OwnedUpgradabilityProxy).creationCode
+            );
     }
 }

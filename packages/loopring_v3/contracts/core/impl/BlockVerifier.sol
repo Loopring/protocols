@@ -9,36 +9,29 @@ import "../iface/ExchangeData.sol";
 import "../iface/IBlockVerifier.sol";
 import "./VerificationKeys.sol";
 
-
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BlockVerifier is ReentrancyGuard, IBlockVerifier
-{
-    struct Circuit
-    {
+contract BlockVerifier is ReentrancyGuard, IBlockVerifier {
+    struct Circuit {
         bool registered;
         uint registeredTime;
         bool enabled;
         uint[18] verificationKey;
     }
 
-    mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit))) public circuits;
+    mapping(uint8 => mapping(uint16 => mapping(uint8 => Circuit)))
+        public circuits;
 
-    uint constant internal CIRCUIT_DELAYED_EFFECT = 7 days;
+    uint internal constant CIRCUIT_DELAYED_EFFECT = 7 days;
 
     constructor() Claimable() {}
 
     function registerCircuit(
-        uint8    blockType,
-        uint16   blockSize,
-        uint8    blockVersion,
+        uint8 blockType,
+        uint16 blockSize,
+        uint8 blockVersion,
         uint[18] calldata vk
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    ) external override nonReentrant onlyOwner {
         Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == false, "ALREADY_REGISTERED");
 
@@ -50,24 +43,15 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         circuit.registeredTime = block.timestamp;
         // NOTE: circuit is disabled by default
 
-        emit CircuitRegistered(
-            blockType,
-            blockSize,
-            blockVersion
-        );
+        emit CircuitRegistered(blockType, blockSize, blockVersion);
     }
 
     //@dev it is no more risk to disable exist circuits, so it's not necessary to delay the operation
     function disableCircuit(
-        uint8  blockType,
+        uint8 blockType,
         uint16 blockSize,
-        uint8  blockVersion
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+        uint8 blockVersion
+    ) external override nonReentrant onlyOwner {
         Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
         require(circuit.enabled == true, "ALREADY_DISABLED");
@@ -75,66 +59,65 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         // Disable the circuit
         circuit.enabled = false;
 
-        emit CircuitDisabled(
-            blockType,
-            blockSize,
-            blockVersion
-        );
+        emit CircuitDisabled(blockType, blockSize, blockVersion);
     }
 
     function enableCircuit(
-        uint8  blockType,
+        uint8 blockType,
         uint16 blockSize,
-        uint8  blockVersion
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+        uint8 blockVersion
+    ) external override nonReentrant onlyOwner {
         Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
         require(circuit.enabled == false, "ALREADY_ENABLED");
-        require(block.timestamp >= circuit.registeredTime + CIRCUIT_DELAYED_EFFECT, "NOT_EFFECT_YET");
+        require(
+            block.timestamp >= circuit.registeredTime + CIRCUIT_DELAYED_EFFECT,
+            "NOT_EFFECT_YET"
+        );
 
         // Enable the circuit
         circuit.enabled = true;
 
-        emit CircuitDisabled(
-            blockType,
-            blockSize,
-            blockVersion
-        );
+        emit CircuitDisabled(blockType, blockSize, blockVersion);
     }
 
     function verifyProofs(
-        uint8  blockType,
+        uint8 blockType,
         uint16 blockSize,
-        uint8  blockVersion,
+        uint8 blockVersion,
         uint[] calldata publicInputs,
         uint[] calldata proofs
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+    ) external view override returns (bool) {
         // First try to find the verification key in the hard coded list
-        (uint[14] memory _vk, uint[4] memory _vk_gammaABC, bool found) = VerificationKeys.getKey(
-            blockType,
-            blockSize,
-            blockVersion
-        );
+        (
+            uint[14] memory _vk,
+            uint[4] memory _vk_gammaABC,
+            bool found
+        ) = VerificationKeys.getKey(blockType, blockSize, blockVersion);
         if (!found) {
-            Circuit storage circuit = circuits[blockType][blockSize][blockVersion];
+            Circuit storage circuit = circuits[blockType][blockSize][
+                blockVersion
+            ];
             require(circuit.registered == true, "NOT_REGISTERED");
             require(circuit.enabled == true, "NOT_ENABLED");
 
             // Load the verification key from storage.
             uint[18] storage vk = circuit.verificationKey;
             _vk = [
-                vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
-                vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
+                vk[0],
+                vk[1],
+                vk[2],
+                vk[3],
+                vk[4],
+                vk[5],
+                vk[6],
+                vk[7],
+                vk[8],
+                vk[9],
+                vk[10],
+                vk[11],
+                vk[12],
+                vk[13]
             ];
             _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
         }
@@ -147,51 +130,38 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         if (publicInputs.length == 1) {
             return Verifier.Verify(_vk, _vk_gammaABC, proofs, publicInputs);
         } else {
-            return BatchVerifier.BatchVerify(
-                _vk,
-                _vk_gammaABC,
-                proofs,
-                publicInputs,
-                publicInputs.length
-            );
+            return
+                BatchVerifier.BatchVerify(
+                    _vk,
+                    _vk_gammaABC,
+                    proofs,
+                    publicInputs,
+                    publicInputs.length
+                );
         }
     }
 
     function isCircuitRegistered(
-        uint8  blockType,
+        uint8 blockType,
         uint16 blockSize,
-        uint8  blockVersion
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+        uint8 blockVersion
+    ) external view override returns (bool) {
         return circuits[blockType][blockSize][blockVersion].registered;
     }
 
     function isCircuitEnabled(
-        uint8  blockType,
+        uint8 blockType,
         uint16 blockSize,
-        uint8  blockVersion
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+        uint8 blockVersion
+    ) external view override returns (bool) {
         return circuits[blockType][blockSize][blockVersion].enabled;
     }
 
     function getVerificationKey(
-        uint8  blockType,
+        uint8 blockType,
         uint16 blockSize,
-        uint8  blockVersion
-        )
-        public
-        view
-        returns (uint[18] memory)
-    {
+        uint8 blockVersion
+    ) public view returns (uint[18] memory) {
         return circuits[blockType][blockSize][blockVersion].verificationKey;
     }
 }

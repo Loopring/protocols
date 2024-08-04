@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-
 /// @title IDepositContract.
 /// @dev   Contract storing and transferring funds for an exchange.
 ///
@@ -11,13 +10,9 @@ pragma solidity ^0.7.0;
 ///        deposit contract can look up the real token address and paramsters with the
 ///        pseudo token address before doing the transfers.
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IDepositContract
-{
+interface IDepositContract {
     /// @dev Returns if a token is suppoprted by this contract.
-    function isTokenSupported(address token)
-        external
-        view
-        returns (bool);
+    function isTokenSupported(address token) external view returns (bool);
 
     /// @dev Transfers tokens from a user to the exchange. This function will
     ///      be called when a user deposits funds to the exchange.
@@ -38,12 +33,9 @@ interface IDepositContract
     function deposit(
         address from,
         address token,
-        uint96  amount,
-        bytes   calldata extraData
-        )
-        external
-        payable
-        returns (uint96 amountReceived);
+        uint96 amount,
+        bytes calldata extraData
+    ) external payable returns (uint96 amountReceived);
 
     /// @dev Transfers tokens from the exchange to a user. This function will
     ///      be called when a withdrawal is done for a user on the exchange.
@@ -67,11 +59,9 @@ interface IDepositContract
         address from,
         address to,
         address token,
-        uint    amount,
-        bytes   calldata extraData
-        )
-        external
-        payable;
+        uint amount,
+        bytes calldata extraData
+    ) external payable;
 
     /// @dev Transfers tokens (ETH not supported) for a user using the allowance set
     ///      for the exchange. This way the approval can be used for all functionality (and
@@ -93,10 +83,8 @@ interface IDepositContract
         address from,
         address to,
         address token,
-        uint    amount
-        )
-        external
-        payable;
+        uint amount
+    ) external payable;
 
     /// @dev Checks if the given address is used for depositing ETH or not.
     ///      Is used while depositing to send the correct ETH amount to the deposit contract.
@@ -107,8 +95,5 @@ interface IDepositContract
     ///
     /// @param addr The address to check
     /// @return True if the address is used for depositing ETH, else false.
-    function isETH(address addr)
-        external
-        view
-        returns (bool);
+    function isETH(address addr) external view returns (bool);
 }

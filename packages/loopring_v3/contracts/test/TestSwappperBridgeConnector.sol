@@ -12,49 +12,45 @@ import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 import "../aux/bridge/IBridge.sol";
 
-
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestSwappperBridgeConnector is IBridgeConnector
-{
-    using AddressUtil       for address payable;
+contract TestSwappperBridgeConnector is IBridgeConnector {
+    using AddressUtil for address payable;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
-    using SafeCast          for uint;
+    using MathUint for uint;
+    using SafeCast for uint;
 
-    struct GroupSettings
-    {
+    struct GroupSettings {
         address tokenIn;
         address tokenOut;
     }
 
-    struct UserSettings
-    {
+    struct UserSettings {
         uint minAmountOut;
     }
 
     TestSwapper public immutable testSwapper;
 
-    constructor(TestSwapper _testSwapper)
-    {
+    constructor(TestSwapper _testSwapper) {
         testSwapper = _testSwapper;
     }
 
-    function processTransactions(ConnectorTxGroup[] memory groups)
-        external
-        payable
-        override
-        returns (IBatchDepositor.Deposit[] memory)
-    {
+    function processTransactions(
+        ConnectorTxGroup[] memory groups
+    ) external payable override returns (IBatchDepositor.Deposit[] memory) {
         uint numDeposits = 0;
         for (uint g = 0; g < groups.length; g++) {
             numDeposits += groups[g].transactions.length;
         }
-        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numDeposits);
+        IBatchDepositor.Deposit[]
+            memory transfers = new IBatchDepositor.Deposit[](numDeposits);
         uint transferIdx = 0;
 
         ConnectorTx memory bridgeTx;
         for (uint g = 0; g < groups.length; g++) {
-            GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
+            GroupSettings memory settings = abi.decode(
+                groups[g].groupData,
+                (GroupSettings)
+            );
 
             ConnectorTx[] memory txs = groups[g].transactions;
 
@@ -83,8 +79,12 @@ contract TestSwappperBridgeConnector is IBridgeConnector
             for (uint i = 0; i < txs.length; i++) {
                 bridgeTx = txs[i];
                 if (valid[i] && bridgeTx.userData.length == 32) {
-                    UserSettings memory userSettings = abi.decode(bridgeTx.userData, (UserSettings));
-                    uint userAmountOut = uint(bridgeTx.amount).mul(amountOut) / amountInExpected;
+                    UserSettings memory userSettings = abi.decode(
+                        bridgeTx.userData,
+                        (UserSettings)
+                    );
+                    uint userAmountOut = uint(bridgeTx.amount).mul(amountOut) /
+                        amountInExpected;
                     if (userAmountOut < userSettings.minAmountOut) {
                         valid[i] = false;
                     }
@@ -113,15 +113,16 @@ contract TestSwappperBridgeConnector is IBridgeConnector
                 if (valid[i]) {
                     // Give equal share to all valid calls
                     transfers[transferIdx++] = IBatchDepositor.Deposit({
-                        owner:  txs[i].owner,
-                        token:  settings.tokenOut,
-                        amount: (uint(txs[i].amount).mul(amountOut) / amountIn).toUint96()
+                        owner: txs[i].owner,
+                        token: settings.tokenOut,
+                        amount: (uint(txs[i].amount).mul(amountOut) / amountIn)
+                            .toUint96()
                     });
                 } else {
                     // Just transfer the tokens back
                     transfers[transferIdx++] = IBatchDepositor.Deposit({
-                        owner:  txs[i].owner,
-                        token:  txs[i].token,
+                        owner: txs[i].owner,
+                        token: txs[i].token,
                         amount: txs[i].amount
                     });
                 }
@@ -132,20 +133,14 @@ contract TestSwappperBridgeConnector is IBridgeConnector
         return transfers;
     }
 
-    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
-        external
-        pure
-        override
-        returns (uint gasLimit)
-    {
+    function getMinGasLimit(
+        ConnectorTxGroup[] calldata groups
+    ) external pure override returns (uint gasLimit) {
         gasLimit = 40000;
         for (uint g = 0; g < groups.length; g++) {
-           gasLimit += 100000 + 2500 * groups[g].transactions.length;
+            gasLimit += 100000 + 2500 * groups[g].transactions.length;
         }
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 }

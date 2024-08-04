@@ -9,59 +9,65 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeSignatures.sol";
 
-
 /// @title AccountUpdateTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library AccountUpdateTransaction
-{
-    using BytesUtil            for bytes;
-    using FloatUtil            for uint16;
-    using ExchangeSignatures   for ExchangeData.State;
+library AccountUpdateTransaction {
+    using BytesUtil for bytes;
+    using FloatUtil for uint16;
+    using ExchangeSignatures for ExchangeData.State;
 
-    bytes32 constant public ACCOUNTUPDATE_TYPEHASH = keccak256(
-        "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint96 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
-    );
+    bytes32 public constant ACCOUNTUPDATE_TYPEHASH =
+        keccak256(
+            "AccountUpdate(address owner,uint32 accountID,uint16 feeTokenID,uint96 maxFee,uint256 publicKey,uint32 validUntil,uint32 nonce)"
+        );
 
-    struct AccountUpdate
-    {
+    struct AccountUpdate {
         address owner;
-        uint32  accountID;
-        uint16  feeTokenID;
-        uint96  maxFee;
-        uint96  fee;
-        uint    publicKey;
-        uint32  validUntil;
-        uint32  nonce;
+        uint32 accountID;
+        uint16 feeTokenID;
+        uint96 maxFee;
+        uint96 fee;
+        uint publicKey;
+        uint32 validUntil;
+        uint32 nonce;
     }
 
     // Auxiliary data for each account update
-    struct AccountUpdateAuxiliaryData
-    {
-        bytes  signature;
+    struct AccountUpdateAuxiliaryData {
+        bytes signature;
         uint96 maxFee;
         uint32 validUntil;
     }
 
     function process(
-        ExchangeData.State        storage S,
-        ExchangeData.BlockContext memory  ctx,
-        bytes                     memory  data,
-        uint                              offset,
-        bytes                     memory  auxiliaryData
-        )
-        internal
-    {
+        ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
+        bytes memory data,
+        uint offset,
+        bytes memory auxiliaryData
+    ) internal {
         // Read the account update
         AccountUpdate memory accountUpdate;
         readTx(data, offset, accountUpdate);
-        AccountUpdateAuxiliaryData memory auxData = abi.decode(auxiliaryData, (AccountUpdateAuxiliaryData));
+        AccountUpdateAuxiliaryData memory auxData = abi.decode(
+            auxiliaryData,
+            (AccountUpdateAuxiliaryData)
+        );
 
         // Fill in withdrawal data missing from DA
         accountUpdate.validUntil = auxData.validUntil;
-        accountUpdate.maxFee = auxData.maxFee == 0 ? accountUpdate.fee : auxData.maxFee;
+        accountUpdate.maxFee = auxData.maxFee == 0
+            ? accountUpdate.fee
+            : auxData.maxFee;
         // Validate
-        require(ctx.timestamp < accountUpdate.validUntil, "ACCOUNT_UPDATE_EXPIRED");
-        require(accountUpdate.fee <= accountUpdate.maxFee, "ACCOUNT_UPDATE_FEE_TOO_HIGH");
+        require(
+            ctx.timestamp < accountUpdate.validUntil,
+            "ACCOUNT_UPDATE_EXPIRED"
+        );
+        require(
+            accountUpdate.fee <= accountUpdate.maxFee,
+            "ACCOUNT_UPDATE_FEE_TOO_HIGH"
+        );
 
         // Calculate the tx hash
         bytes32 txHash = hashTx(ctx.DOMAIN_SEPARATOR, accountUpdate);
@@ -72,15 +78,16 @@ library AccountUpdateTransaction
 
     function readTx(
         bytes memory data,
-        uint         offset,
+        uint offset,
         AccountUpdate memory accountUpdate
-        )
-        internal
-        pure
-    {
+    ) internal pure {
         uint _offset = offset;
 
-        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.ACCOUNT_UPDATE), "INVALID_TX_TYPE");
+        require(
+            data.toUint8Unsafe(_offset) ==
+                uint8(ExchangeData.TransactionType.ACCOUNT_UPDATE),
+            "INVALID_TX_TYPE"
+        );
         _offset += 1;
 
         // Check that this is a conditional offset
@@ -107,25 +114,22 @@ library AccountUpdateTransaction
     function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         AccountUpdate memory accountUpdate
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encode(
-                    ACCOUNTUPDATE_TYPEHASH,
-                    accountUpdate.owner,
-                    accountUpdate.accountID,
-                    accountUpdate.feeTokenID,
-                    accountUpdate.maxFee,
-                    accountUpdate.publicKey,
-                    accountUpdate.validUntil,
-                    accountUpdate.nonce
+    ) internal pure returns (bytes32) {
+        return
+            EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        ACCOUNTUPDATE_TYPEHASH,
+                        accountUpdate.owner,
+                        accountUpdate.accountID,
+                        accountUpdate.feeTokenID,
+                        accountUpdate.maxFee,
+                        accountUpdate.publicKey,
+                        accountUpdate.validUntil,
+                        accountUpdate.nonce
+                    )
                 )
-            )
-        );
+            );
     }
 }

@@ -10,56 +10,46 @@ import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 import "./IUserStakingPool.sol";
 
-
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
-{
+contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool {
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
+    using MathUint for uint;
 
     struct Staking {
-        uint   balance;        // Total amount of LRC staked or rewarded
+        uint balance; // Total amount of LRC staked or rewarded
         uint64 depositedAt;
-        uint64 claimedAt;      // timestamp from which more points will be accumulated
+        uint64 claimedAt; // timestamp from which more points will be accumulated
     }
 
     address public immutable override lrcAddress;
 
     Staking public total;
-    mapping (address => Staking) public stakings;
+    mapping(address => Staking) public stakings;
 
-    constructor(address _lrcAddress)
-        Claimable()
-    {
+    constructor(address _lrcAddress) Claimable() {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
     }
 
-    function setProtocolFeeVault(address _protocolFeeVaultAddress)
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    function setProtocolFeeVault(
+        address _protocolFeeVaultAddress
+    ) external override nonReentrant onlyOwner {
         // Allow zero-address
         protocolFeeVaultAddress = _protocolFeeVaultAddress;
         emit ProtocolFeeVaultChanged(protocolFeeVaultAddress);
     }
 
-    function getTotalStaking()
-        public
-        override
-        view
-        returns (uint)
-    {
+    function getTotalStaking() public view override returns (uint) {
         return total.balance;
     }
 
-    function getUserStaking(address user)
+    function getUserStaking(
+        address user
+    )
         public
-        override
         view
+        override
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,
@@ -73,11 +63,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         (, , pendingReward) = getUserPendingReward(user);
     }
 
-    function stake(uint amount)
-        external
-        override
-        nonReentrant
-    {
+    function stake(uint amount) external override nonReentrant {
         require(amount > 0, "ZERO_VALUE");
 
         // Lets trandfer LRC first.
@@ -93,15 +79,14 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint balance = user.balance.add(amount);
 
         user.depositedAt = uint64(
-            user.balance
-                .mul(user.depositedAt)
-                .add(amount.mul(block.timestamp)) / balance
+            user.balance.mul(user.depositedAt).add(
+                amount.mul(block.timestamp)
+            ) / balance
         );
 
         user.claimedAt = uint64(
-            user.balance
-                .mul(user.claimedAt)
-                .add(amount.mul(block.timestamp)) / balance
+            user.balance.mul(user.claimedAt).add(amount.mul(block.timestamp)) /
+                balance
         );
 
         user.balance = balance;
@@ -110,9 +95,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         balance = total.balance.add(amount);
 
         total.claimedAt = uint64(
-            total.balance
-                .mul(total.claimedAt)
-                .add(amount.mul(block.timestamp)) / balance
+            total.balance.mul(total.claimedAt).add(
+                amount.mul(block.timestamp)
+            ) / balance
         );
 
         total.balance = balance;
@@ -120,22 +105,22 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         emit LRCStaked(msg.sender, amount);
     }
 
-    function withdraw(uint amount)
-        external
-        override
-        nonReentrant
-    {
+    function withdraw(uint amount) external override nonReentrant {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         // automatical claim when possible
-        if (protocolFeeVaultAddress != address(0) &&
-            getUserClaimWaitTime(msg.sender) == 0) {
+        if (
+            protocolFeeVaultAddress != address(0) &&
+            getUserClaimWaitTime(msg.sender) == 0
+        ) {
             claimReward();
         }
 
         Staking storage user = stakings[msg.sender];
 
-        uint _amount = (amount == 0 || amount > user.balance) ? user.balance : amount;
+        uint _amount = (amount == 0 || amount > user.balance)
+            ? user.balance
+            : amount;
         require(_amount > 0, "ZERO_BALANCE");
 
         total.balance = total.balance.sub(_amount);
@@ -163,20 +148,21 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     // -- Private Function --
 
-    function claimReward()
-        private
-        returns (uint claimedAmount)
-    {
+    function claimReward() private returns (uint claimedAmount) {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
         require(getUserClaimWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         uint totalPoints;
         uint userPoints;
 
-        (totalPoints, userPoints, claimedAmount) = getUserPendingReward(msg.sender);
+        (totalPoints, userPoints, claimedAmount) = getUserPendingReward(
+            msg.sender
+        );
 
         if (claimedAmount > 0) {
-            IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
+            IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(
+                claimedAmount
+            );
 
             total.balance = total.balance.add(claimedAmount);
 
@@ -191,11 +177,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         emit LRCRewarded(msg.sender, claimedAmount);
     }
 
-    function getUserWithdrawalWaitTime(address user)
-        private
-        view
-        returns (uint)
-    {
+    function getUserWithdrawalWaitTime(
+        address user
+    ) private view returns (uint) {
         uint depositedAt = stakings[user].depositedAt;
         if (depositedAt == 0) {
             return MIN_WITHDRAW_DELAY;
@@ -205,11 +189,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         }
     }
 
-    function getUserClaimWaitTime(address user)
-        private
-        view
-        returns (uint)
-    {
+    function getUserClaimWaitTime(address user) private view returns (uint) {
         uint claimedAt = stakings[user].claimedAt;
         if (claimedAt == 0) {
             return MIN_CLAIM_DELAY;
@@ -219,29 +199,33 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         }
     }
 
-    function getUserPendingReward(address user)
+    function getUserPendingReward(
+        address user
+    )
         private
         view
-        returns (
-            uint totalPoints,
-            uint userPoints,
-            uint pendingReward
-        )
+        returns (uint totalPoints, uint userPoints, uint pendingReward)
     {
         Staking storage staking = stakings[user];
 
         // We add 1 to the time to make totalPoints slightly bigger
-        totalPoints = total.balance.mul(block.timestamp.sub(total.claimedAt).add(1));
-        userPoints = staking.balance.mul(block.timestamp.sub(staking.claimedAt));
+        totalPoints = total.balance.mul(
+            block.timestamp.sub(total.claimedAt).add(1)
+        );
+        userPoints = staking.balance.mul(
+            block.timestamp.sub(staking.claimedAt)
+        );
 
         // Because of the math calculation, this is possible.
         if (totalPoints < userPoints) {
             userPoints = totalPoints;
         }
 
-        if (protocolFeeVaultAddress != address(0) &&
+        if (
+            protocolFeeVaultAddress != address(0) &&
             totalPoints != 0 &&
-            userPoints != 0) {
+            userPoints != 0
+        ) {
             (, , , , , , , pendingReward) = IProtocolFeeVault(
                 protocolFeeVaultAddress
             ).getProtocolFeeStats();

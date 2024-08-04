@@ -9,39 +9,36 @@ import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
 import "../thirdparty/loopring-wallet/WalletDeploymentLib.sol";
 
-
 /// @title WalletFactory
 /// @dev A factory contract to create a new wallet by deploying a proxy
 ///      in front of a real wallet.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletFactory is WalletDeploymentLib
-{
+contract WalletFactory is WalletDeploymentLib {
     using SignatureUtil for bytes32;
 
-    event WalletCreated (address wallet, address owner);
+    event WalletCreated(address wallet, address owner);
 
-    bytes32             public immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
-    bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)");
+    bytes32 public constant CREATE_WALLET_TYPEHASH =
+        keccak256(
+            "createWallet(address owner,address[] guardians,uint256 quota,address inheritor,address feeRecipient,address feeToken,uint256 feeAmount,uint256 salt)"
+        );
 
-    struct WalletConfig
-    {
-        address   owner;
+    struct WalletConfig {
+        address owner;
         address[] guardians;
-        uint      quota;
-        address   inheritor;
-        address   feeRecipient;
-        address   feeToken;
-        uint      feeAmount;
-        bytes     signature;
+        uint quota;
+        address inheritor;
+        address feeRecipient;
+        address feeToken;
+        uint feeAmount;
+        bytes signature;
     }
 
     constructor(
-        address        _walletImplementation
-        )
-        WalletDeploymentLib(_walletImplementation)
-    {
+        address _walletImplementation
+    ) WalletDeploymentLib(_walletImplementation) {
         DOMAIN_SEPARATOR = EIP712.hash(
             EIP712.Domain("WalletFactory", "2.0.0", address(this))
         );
@@ -53,11 +50,8 @@ contract WalletFactory is WalletDeploymentLib
     /// @return wallet The new wallet address
     function createWallet(
         WalletConfig calldata config,
-        uint                  salt
-        )
-        external
-        returns (address wallet)
-    {
+        uint salt
+    ) external returns (address wallet) {
         _validateRequest(config, salt);
         wallet = _deploy(config.owner, salt);
         _initializeWallet(wallet, config);
@@ -69,27 +63,17 @@ contract WalletFactory is WalletDeploymentLib
     /// @return wallet The wallet address
     function computeWalletAddress(
         address owner,
-        uint    salt
-        )
-        public
-        view
-        returns (address)
-    {
-        return _computeWalletAddress(
-            owner,
-            salt,
-            address(this)
-        );
+        uint salt
+    ) public view returns (address) {
+        return _computeWalletAddress(owner, salt, address(this));
     }
 
     // --- Internal functions ---
 
     function _initializeWallet(
-        address               wallet,
+        address wallet,
         WalletConfig calldata config
-        )
-        internal
-    {
+    ) internal {
         ILoopringWalletV2(wallet).initialize(
             config.owner,
             config.guardians,
@@ -105,11 +89,8 @@ contract WalletFactory is WalletDeploymentLib
 
     function _validateRequest(
         WalletConfig calldata config,
-        uint                  salt
-        )
-        private
-        view
-    {
+        uint salt
+    ) private view {
         require(config.owner != address(0), "INVALID_OWNER");
 
         bytes32 dataHash = keccak256(
@@ -127,6 +108,9 @@ contract WalletFactory is WalletDeploymentLib
         );
 
         bytes32 signHash = EIP712.hashPacked(DOMAIN_SEPARATOR, dataHash);
-        require(signHash.verifySignature(config.owner, config.signature), "INVALID_SIGNATURE");
+        require(
+            signHash.verifySignature(config.owner, config.signature),
+            "INVALID_SIGNATURE"
+        );
     }
 }

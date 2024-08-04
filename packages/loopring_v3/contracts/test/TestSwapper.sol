@@ -7,22 +7,16 @@ import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
-
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestSwapper
-{
-    using AddressUtil       for address payable;
+contract TestSwapper {
+    using AddressUtil for address payable;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
+    using MathUint for uint;
 
-    uint    public immutable rate;
-    bool    public immutable fail;
+    uint public immutable rate;
+    bool public immutable fail;
 
-    constructor(
-        uint    _rate,
-        bool    _fail
-        )
-    {
+    constructor(uint _rate, bool _fail) {
         rate = _rate;
         fail = _fail;
     }
@@ -30,18 +24,18 @@ contract TestSwapper
     function swap(
         address tokenIn,
         address tokenOut,
-        uint    amountIn
-        )
-        external
-        payable
-        returns (uint amountOut)
-    {
+        uint amountIn
+    ) external payable returns (uint amountOut) {
         require(!fail, "FAIL_ENABLED");
 
         if (tokenIn == address(0)) {
             require(msg.value == amountIn, "INVALID_ETH_DEPOSIT");
         } else {
-            tokenIn.safeTransferFromAndVerify(msg.sender, address(this), amountIn);
+            tokenIn.safeTransferFromAndVerify(
+                msg.sender,
+                address(this),
+                amountIn
+            );
         }
 
         amountOut = getAmountOut(tokenIn, tokenOut, amountIn);
@@ -57,16 +51,9 @@ contract TestSwapper
         address /*tokenIn*/,
         address /*tokenOut*/,
         uint amountIn
-        )
-        public
-        view
-        returns (uint amountOut)
-    {
+    ) public view returns (uint amountOut) {
         amountOut = amountIn.mul(rate) / 1 ether;
     }
 
-    receive()
-        external
-        payable
-    {}
+    receive() external payable {}
 }

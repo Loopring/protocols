@@ -12,41 +12,32 @@ import "../../lib/ReentrancyGuard.sol";
 import "../token-sellers/ITokenSeller.sol";
 import "./IProtocolFeeVault.sol";
 
-
 /// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
-{
-    using AddressUtil       for address;
-    using AddressUtil       for address payable;
+contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault {
+    using AddressUtil for address;
+    using AddressUtil for address payable;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
+    using MathUint for uint;
 
     address public immutable override lrcAddress;
 
-    constructor(address _lrcAddress)
-        Claimable()
-    {
+    constructor(address _lrcAddress) Claimable() {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
     }
 
-    receive() external payable { }
+    receive() external payable {}
 
     function updateSettings(
         address _userStakingPoolAddress,
         address _tokenSellerAddress,
         address _daoAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    ) external override nonReentrant onlyOwner {
         require(
             userStakingPoolAddress != _userStakingPoolAddress ||
-            tokenSellerAddress != _tokenSellerAddress ||
-            daoAddress != _daoAddress,
+                tokenSellerAddress != _tokenSellerAddress ||
+                daoAddress != _daoAddress,
             "SAME_ADDRESSES"
         );
         userStakingPoolAddress = _userStakingPoolAddress;
@@ -56,13 +47,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         emit SettingsUpdated(block.timestamp);
     }
 
-    function claimStakingReward(
-        uint amount
-        )
-        external
-        override
-        nonReentrant
-    {
+    function claimStakingReward(uint amount) external override nonReentrant {
         require(amount > 0, "ZERO_VALUE");
         require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
         lrcAddress.safeTransferAndVerify(userStakingPoolAddress, amount);
@@ -70,11 +55,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         emit LRCClaimed(amount);
     }
 
-    function fundDAO()
-        external
-        override
-        nonReentrant
-    {
+    function fundDAO() external override nonReentrant {
         uint amountDAO;
         uint amountBurn;
         (, , , , , amountBurn, amountDAO, ) = getProtocolFeeStats();
@@ -97,16 +78,14 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
     function sellTokenForLRC(
         address token,
-        uint    amount
-        )
-        external
-        override
-        nonReentrant
-    {
+        uint amount
+    ) external override nonReentrant {
         require(amount > 0, "ZERO_AMOUNT");
         require(token != lrcAddress, "PROHIBITED");
 
-        address recipient = tokenSellerAddress == address(0) ? owner : tokenSellerAddress;
+        address recipient = tokenSellerAddress == address(0)
+            ? owner
+            : tokenSellerAddress;
 
         if (token == address(0)) {
             recipient.sendETHAndVerify(amount, gasleft());
@@ -116,7 +95,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
         require(
             tokenSellerAddress == address(0) ||
-            ITokenSeller(tokenSellerAddress).sellToken(token, lrcAddress),
+                ITokenSeller(tokenSellerAddress).sellToken(token, lrcAddress),
             "SELL_FAILURE"
         );
 
@@ -125,8 +104,8 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
     function getProtocolFeeStats()
         public
-        override
         view
+        override
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,
@@ -139,11 +118,16 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         )
     {
         remainingFees = ERC20(lrcAddress).balanceOf(address(this));
-        accumulatedFees = remainingFees.add(claimedReward).add(claimedDAOFund).add(claimedBurn);
+        accumulatedFees = remainingFees
+            .add(claimedReward)
+            .add(claimedDAOFund)
+            .add(claimedBurn);
 
         accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
         accumulatedDAOFund = accumulatedFees.mul(DAO_PERDENTAGE) / 100;
-        accumulatedBurn = accumulatedFees.sub(accumulatedReward).sub(accumulatedDAOFund);
+        accumulatedBurn = accumulatedFees.sub(accumulatedReward).sub(
+            accumulatedDAOFund
+        );
 
         remainingReward = accumulatedReward.sub(claimedReward);
         remainingDAOFund = accumulatedDAOFund.sub(claimedDAOFund);

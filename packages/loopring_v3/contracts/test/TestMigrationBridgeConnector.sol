@@ -12,60 +12,53 @@ import "../lib/MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 import "../aux/bridge/IBridge.sol";
 
-
 /// Migrates from Loopring to ... Loopring!
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestMigrationBridgeConnector is IBridgeConnector
-{
-    using AddressUtil       for address payable;
+contract TestMigrationBridgeConnector is IBridgeConnector {
+    using AddressUtil for address payable;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
-    using SafeCast          for uint;
+    using MathUint for uint;
+    using SafeCast for uint;
 
-    struct GroupSettings
-    {
+    struct GroupSettings {
         address token;
     }
 
-    struct UserSettings
-    {
+    struct UserSettings {
         address to;
     }
 
-    IExchangeV3        public immutable exchange;
-    IDepositContract   public immutable depositContract;
+    IExchangeV3 public immutable exchange;
+    IDepositContract public immutable depositContract;
 
-    IBridge            public immutable bridge;
+    IBridge public immutable bridge;
 
-    constructor(
-        IExchangeV3 _exchange,
-        IBridge     _bridge
-        )
-    {
+    constructor(IExchangeV3 _exchange, IBridge _bridge) {
         exchange = _exchange;
         depositContract = _exchange.getDepositContract();
 
         bridge = _bridge;
     }
 
-    function processTransactions(ConnectorTxGroup[] memory groups)
-        external
-        payable
-        override
-        returns (IBatchDepositor.Deposit[] memory)
-    {
+    function processTransactions(
+        ConnectorTxGroup[] memory groups
+    ) external payable override returns (IBatchDepositor.Deposit[] memory) {
         uint numDeposits = 0;
         for (uint g = 0; g < groups.length; g++) {
             numDeposits += groups[g].transactions.length;
         }
-        IBatchDepositor.Deposit[] memory transfers = new IBatchDepositor.Deposit[](numDeposits);
+        IBatchDepositor.Deposit[]
+            memory transfers = new IBatchDepositor.Deposit[](numDeposits);
         uint transferIdx = 0;
 
         // Total ETH to migrate
         uint totalAmountETH = 0;
         ConnectorTx memory bridgeCall;
         for (uint g = 0; g < groups.length; g++) {
-            GroupSettings memory settings = abi.decode(groups[g].groupData, (GroupSettings));
+            GroupSettings memory settings = abi.decode(
+                groups[g].groupData,
+                (GroupSettings)
+            );
 
             ConnectorTx[] memory txs = groups[g].transactions;
 
@@ -77,7 +70,10 @@ contract TestMigrationBridgeConnector is IBridgeConnector
 
                 address to = bridgeCall.owner;
                 if (bridgeCall.userData.length == 32) {
-                    UserSettings memory userSettings = abi.decode(bridgeCall.userData, (UserSettings));
+                    UserSettings memory userSettings = abi.decode(
+                        bridgeCall.userData,
+                        (UserSettings)
+                    );
                     to = userSettings.to;
                 }
 
@@ -93,8 +89,14 @@ contract TestMigrationBridgeConnector is IBridgeConnector
             if (settings.token == address(0)) {
                 totalAmountETH = totalAmountETH.add(totalAmount);
             } else {
-                uint allowance = ERC20(settings.token).allowance(address(this), address(depositContract));
-                ERC20(settings.token).approve(address(depositContract), allowance.add(totalAmount));
+                uint allowance = ERC20(settings.token).allowance(
+                    address(this),
+                    address(depositContract)
+                );
+                ERC20(settings.token).approve(
+                    address(depositContract),
+                    allowance.add(totalAmount)
+                );
             }
         }
 
@@ -104,15 +106,12 @@ contract TestMigrationBridgeConnector is IBridgeConnector
         return new IBatchDepositor.Deposit[](0);
     }
 
-    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
-        external
-        pure
-        override
-        returns (uint gasLimit)
-    {
+    function getMinGasLimit(
+        ConnectorTxGroup[] calldata groups
+    ) external pure override returns (uint gasLimit) {
         gasLimit = 40000;
         for (uint g = 0; g < groups.length; g++) {
-           gasLimit += 75000 + 2500 * groups[g].transactions.length;
+            gasLimit += 75000 + 2500 * groups[g].transactions.length;
         }
     }
 

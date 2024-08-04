@@ -10,57 +10,55 @@ import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeSignatures.sol";
 
-
 /// @title TransferTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library TransferTransaction
-{
-    using BytesUtil            for bytes;
-    using FloatUtil            for uint24;
-    using FloatUtil            for uint16;
-    using MathUint             for uint;
-    using ExchangeSignatures   for ExchangeData.State;
+library TransferTransaction {
+    using BytesUtil for bytes;
+    using FloatUtil for uint24;
+    using FloatUtil for uint16;
+    using MathUint for uint;
+    using ExchangeSignatures for ExchangeData.State;
 
-    bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address from,address to,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID)"
-    );
+    bytes32 public constant TRANSFER_TYPEHASH =
+        keccak256(
+            "Transfer(address from,address to,uint16 tokenID,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID)"
+        );
 
-    struct Transfer
-    {
-        uint32  fromAccountID;
-        uint32  toAccountID;
+    struct Transfer {
+        uint32 fromAccountID;
+        uint32 toAccountID;
         address from;
         address to;
-        uint16  tokenID;
-        uint96  amount;
-        uint16  feeTokenID;
-        uint96  maxFee;
-        uint96  fee;
-        uint32  validUntil;
-        uint32  storageID;
+        uint16 tokenID;
+        uint96 amount;
+        uint16 feeTokenID;
+        uint96 maxFee;
+        uint96 fee;
+        uint32 validUntil;
+        uint32 storageID;
     }
 
     // Auxiliary data for each transfer
-    struct TransferAuxiliaryData
-    {
-        bytes  signature;
+    struct TransferAuxiliaryData {
+        bytes signature;
         uint96 maxFee;
         uint32 validUntil;
     }
 
     function process(
-        ExchangeData.State        storage S,
-        ExchangeData.BlockContext memory  ctx,
-        bytes                     memory  data,
-        uint                              offset,
-        bytes                     memory  auxiliaryData
-        )
-        internal
-    {
+        ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
+        bytes memory data,
+        uint offset,
+        bytes memory auxiliaryData
+    ) internal {
         // Read the transfer
         Transfer memory transfer;
         readTx(data, offset, transfer);
-        TransferAuxiliaryData memory auxData = abi.decode(auxiliaryData, (TransferAuxiliaryData));
+        TransferAuxiliaryData memory auxData = abi.decode(
+            auxiliaryData,
+            (TransferAuxiliaryData)
+        );
 
         // Fill in withdrawal data missing from DA
         transfer.validUntil = auxData.validUntil;
@@ -78,15 +76,16 @@ library TransferTransaction
 
     function readTx(
         bytes memory data,
-        uint         offset,
+        uint offset,
         Transfer memory transfer
-        )
-        internal
-        pure
-    {
+    ) internal pure {
         uint _offset = offset;
 
-        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.TRANSFER), "INVALID_TX_TYPE");
+        require(
+            data.toUint8Unsafe(_offset) ==
+                uint8(ExchangeData.TransactionType.TRANSFER),
+            "INVALID_TX_TYPE"
+        );
         _offset += 1;
 
         // Check that this is a conditional transfer
@@ -119,26 +118,23 @@ library TransferTransaction
     function hashTx(
         bytes32 DOMAIN_SEPARATOR,
         Transfer memory transfer
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encode(
-                    TRANSFER_TYPEHASH,
-                    transfer.from,
-                    transfer.to,
-                    transfer.tokenID,
-                    transfer.amount,
-                    transfer.feeTokenID,
-                    transfer.maxFee,
-                    transfer.validUntil,
-                    transfer.storageID
+    ) internal pure returns (bytes32) {
+        return
+            EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        TRANSFER_TYPEHASH,
+                        transfer.from,
+                        transfer.to,
+                        transfer.tokenID,
+                        transfer.amount,
+                        transfer.feeTokenID,
+                        transfer.maxFee,
+                        transfer.validUntil,
+                        transfer.storageID
+                    )
                 )
-            )
-        );
+            );
     }
 }

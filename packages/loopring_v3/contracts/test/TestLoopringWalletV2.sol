@@ -5,18 +5,15 @@ pragma experimental ABIEncoderV2;
 
 import "../thirdparty/loopring-wallet/ILoopringWalletV2.sol";
 
-
-struct Wallet
-{
+struct Wallet {
     address owner;
-    uint64  creationTimestamp;
+    uint64 creationTimestamp;
 }
 
 /// @title Test SmartWallet
 /// @dev Test smart wallet contract
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TestLoopringWalletV2 is ILoopringWalletV2
-{
+contract TestLoopringWalletV2 is ILoopringWalletV2 {
     // WARNING: Do not delete wallet state data to make this implementation
     // compatible with early versions.
     //
@@ -28,42 +25,25 @@ contract TestLoopringWalletV2 is ILoopringWalletV2
     //  ----- DATA LAYOUT ENDS -----
 
     function initialize(
-        address             owner,
-        address[] calldata  /*guardians*/,
-        uint                /*quota*/,
-        address             /*inheritor*/,
-        address             /*feeRecipient*/,
-        address             /*feeToken*/,
-        uint                /*feeAmount*/
-        )
-        external
-        override
-    {
+        address owner,
+        address[] calldata /*guardians*/,
+        uint /*quota*/,
+        address /*inheritor*/,
+        address /*feeRecipient*/,
+        address /*feeToken*/,
+        uint /*feeAmount*/
+    ) external override {
         wallet.owner = owner;
         wallet.creationTimestamp = uint64(block.timestamp);
     }
 
-    function getCreationTimestamp()
-        public
-        view
-        override
-        returns (uint64)
-    {
+    function getCreationTimestamp() public view override returns (uint64) {
         return wallet.creationTimestamp;
     }
 
-    function getOwner()
-        public
-        view
-        override
-        returns (address)
-    {
+    function getOwner() public view override returns (address) {
         return wallet.owner;
     }
 
-    receive()
-        external
-        payable
-    {
-    }
+    receive() external payable {}
 }

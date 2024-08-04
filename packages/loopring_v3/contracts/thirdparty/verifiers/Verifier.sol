@@ -3,23 +3,16 @@
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates
 pragma solidity ^0.7.0;
 
-library Verifier
-{
-    function ScalarField ()
-        internal
-        pure
-        returns (uint256)
-    {
-        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+library Verifier {
+    function ScalarField() internal pure returns (uint256) {
+        return
+            21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
 
-    function NegateY( uint256 Y )
-        internal pure returns (uint256)
-    {
+    function NegateY(uint256 Y) internal pure returns (uint256) {
         uint q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
         return q - (Y % q);
     }
-
 
     /*
     * This implements the Solidity equivalent of the following Python code:
@@ -70,13 +63,12 @@ library Verifier
         uint256[4] memory vk_gammaABC,
         uint256[] memory in_proof,
         uint256[] memory proof_inputs
-        )
-        internal
-        view
-        returns (bool)
-    {
+    ) internal view returns (bool) {
         uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-        require(((vk_gammaABC.length / 2) - 1) == proof_inputs.length, "INVALID_VALUE");
+        require(
+            ((vk_gammaABC.length / 2) - 1) == proof_inputs.length,
+            "INVALID_VALUE"
+        );
 
         // Compute the linear combination vk_x
         uint256[3] memory mul_input;
@@ -97,7 +89,14 @@ library Verifier
 
             assembly {
                 // ECMUL, output to last 2 elements of `add_input`
-                success := staticcall(sub(gas(), 2000), 7, mul_input, 0x80, add(add_input, 0x40), 0x60)
+                success := staticcall(
+                    sub(gas(), 2000),
+                    7,
+                    mul_input,
+                    0x80,
+                    add(add_input, 0x40),
+                    0x60
+                )
             }
             if (!success) {
                 return false;
@@ -105,7 +104,14 @@ library Verifier
 
             assembly {
                 // ECADD
-                success := staticcall(sub(gas(), 2000), 6, add_input, 0xc0, add_input, 0x60)
+                success := staticcall(
+                    sub(gas(), 2000),
+                    6,
+                    add_input,
+                    0xc0,
+                    add_input,
+                    0x60
+                )
             }
             if (!success) {
                 return false;
@@ -114,20 +120,33 @@ library Verifier
 
         uint[24] memory input = [
             // (proof.A, proof.B)
-            in_proof[0], in_proof[1],                           // proof.A   (G1)
-            in_proof[2], in_proof[3], in_proof[4], in_proof[5], // proof.B   (G2)
-
+            in_proof[0],
+            in_proof[1], // proof.A   (G1)
+            in_proof[2],
+            in_proof[3],
+            in_proof[4],
+            in_proof[5], // proof.B   (G2)
             // (-vk.alpha, vk.beta)
-            in_vk[0], NegateY(in_vk[1]),                        // -vk.alpha (G1)
-            in_vk[2], in_vk[3], in_vk[4], in_vk[5],             // vk.beta   (G2)
-
+            in_vk[0],
+            NegateY(in_vk[1]), // -vk.alpha (G1)
+            in_vk[2],
+            in_vk[3],
+            in_vk[4],
+            in_vk[5], // vk.beta   (G2)
             // (-vk_x, vk.gamma)
-            add_input[0], NegateY(add_input[1]),                // -vk_x     (G1)
-            in_vk[6], in_vk[7], in_vk[8], in_vk[9],             // vk.gamma  (G2)
-
+            add_input[0],
+            NegateY(add_input[1]), // -vk_x     (G1)
+            in_vk[6],
+            in_vk[7],
+            in_vk[8],
+            in_vk[9], // vk.gamma  (G2)
             // (-proof.C, vk.delta)
-            in_proof[6], NegateY(in_proof[7]),                  // -proof.C  (G1)
-            in_vk[10], in_vk[11], in_vk[12], in_vk[13]          // vk.delta  (G2)
+            in_proof[6],
+            NegateY(in_proof[7]), // -proof.C  (G1)
+            in_vk[10],
+            in_vk[11],
+            in_vk[12],
+            in_vk[13] // vk.delta  (G2)
         ];
 
         uint[1] memory out;

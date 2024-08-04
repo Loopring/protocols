@@ -7,41 +7,26 @@ import "../../core/iface/ExchangeData.sol";
 import "../../thirdparty/opengsn2/BaseRelayRecipient.sol";
 import "../../thirdparty/opengsn2/IKnowForwarderAddress.sol";
 
-
-contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
-{
+contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress {
     address public immutable exchange;
 
     constructor(
         address _exchange,
         address _forwarder
-        )
-        BaseRelayRecipient(_forwarder)
-    {
+    ) BaseRelayRecipient(_forwarder) {
         exchange = _exchange;
     }
 
-    modifier onlyFrom(address addr)
-    {
+    modifier onlyFrom(address addr) {
         require(_msgSender() == addr, "ACCESS_DENIED");
         _;
     }
 
-    function versionRecipient()
-        external
-        override
-        pure
-        returns (string memory)
-    {
+    function versionRecipient() external pure override returns (string memory) {
         return "1.0";
     }
 
-    function getTrustedForwarder()
-        public
-        override
-        view
-        returns (address)
-    {
+    function getTrustedForwarder() public view override returns (address) {
         return trustedForwarder;
     }
 
@@ -49,36 +34,25 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         address from,
         address /* to */,
         address /* tokenAddress */,
-        uint96  /* amount */,
-        bytes   calldata /* auxiliaryData */
-        )
-        external
-        payable
-        onlyFrom(from)
-    {
+        uint96 /* amount */,
+        bytes calldata /* auxiliaryData */
+    ) external payable onlyFrom(from) {
         forwardCall();
     }
 
     function forceWithdraw(
         address owner,
         address /* token */,
-        uint24  /* accountID */
-        )
-        external
-        payable
-        onlyFrom(owner)
-    {
+        uint24 /* accountID */
+    ) external payable onlyFrom(owner) {
         forwardCall();
     }
 
     function withdrawFromDepositRequest(
         address owner,
         address /* token */,
-        uint    /* index */
-        )
-        external
-        onlyFrom(owner)
-    {
+        uint /* index */
+    ) external onlyFrom(owner) {
         forwardCall();
     }
 
@@ -86,67 +60,51 @@ contract OpenGSN2Agent is BaseRelayRecipient, IKnowForwarderAddress
         address from,
         address /* to */,
         address /* token */,
-        uint    /* amount */
-        )
-        external
-        onlyFrom(from)
-    {
+        uint /* amount */
+    ) external onlyFrom(from) {
         forwardCall();
     }
 
     function approveTransaction(
         address owner,
         bytes32 /* transactionHash */
-        )
-        external
-        onlyFrom(owner)
-    {
+    ) external onlyFrom(owner) {
         forwardCall();
     }
 
-    function withdrawProtocolFees(
-        address /* token */
-        )
-        external
-        payable
-    {
+    function withdrawProtocolFees(address /* token */) external payable {
         forwardCall();
     }
 
     function withdrawFromMerkleTree(
         ExchangeData.MerkleProof calldata /* merkleProof */
-        )
-        external
-    {
+    ) external {
         forwardCall();
     }
 
     function withdrawFromApprovedWithdrawals(
         address[] calldata /* owners */,
         address[] calldata /* tokens */
-        )
-        external
-    {
+    ) external {
         forwardCall();
     }
 
     function notifyForcedRequestTooOld(
-        uint24  /* accountID */,
+        uint24 /* accountID */,
         address /* token */
-        )
-        external
-    {
+    ) external {
         forwardCall();
     }
 
-    function forwardCall()
-        internal
-    {
-        (bool success, bytes memory returnData) =
-            exchange.call{value: msg.value}(msg.data);
+    function forwardCall() internal {
+        (bool success, bytes memory returnData) = exchange.call{
+            value: msg.value
+        }(msg.data);
 
         if (!success) {
-            assembly { revert(add(returnData, 32), mload(returnData)) }
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
         }
     }
 }

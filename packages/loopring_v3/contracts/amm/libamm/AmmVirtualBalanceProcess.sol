@@ -5,17 +5,13 @@ pragma experimental ABIEncoderV2;
 
 import "./AmmData.sol";
 
-
 /// @title AmmVirtualBalanceProcess
-library AmmVirtualBalanceProcess
-{
+library AmmVirtualBalanceProcess {
     function processSetVirtualBalances(
-        AmmData.State               storage /* S */,
-        AmmData.Context             memory  ctx,
-        AmmData.PoolVirtualBalances memory  poolVirtualBalances
-        )
-        internal
-    {
+        AmmData.State storage /* S */,
+        AmmData.Context memory ctx,
+        AmmData.PoolVirtualBalances memory poolVirtualBalances
+    ) internal {
         require(
             poolVirtualBalances.vBalancesNew.length == ctx.tokens.length,
             "INVALID_DATA"

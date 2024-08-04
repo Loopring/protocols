@@ -8,29 +8,26 @@ import "./IBatchDepositor.sol";
 
 /// @title  IBridge interface
 /// @author Brecht Devos - <brecht@loopring.org>
-abstract contract IBridge is IBatchDepositor,  ITransactionReceiver { }
+abstract contract IBridge is IBatchDepositor, ITransactionReceiver {}
 
-struct ConnectorTx
-{
+struct ConnectorTx {
     address owner;
     address token;
-    uint96  amount;
-    bytes   userData;
-    uint    minGas;
-    uint    maxFee;
-    uint    validUntil;
+    uint96 amount;
+    bytes userData;
+    uint minGas;
+    uint maxFee;
+    uint validUntil;
 }
 
-struct ConnectorTxGroup
-{
-    bytes         groupData;
+struct ConnectorTxGroup {
+    bytes groupData;
     ConnectorTx[] transactions;
 }
 
 /// @title  IBridgeConnector interface
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IBridgeConnector
-{
+interface IBridgeConnector {
     /// @dev Optimized L2 -> L1 (-> L2) path. Allows interacting with L1 dApps in an efficient way.
     ///
     ///     For a user to interact with L1 the user normally needs to first withdraw and then
@@ -55,10 +52,9 @@ interface IBridgeConnector
     ///     between different connector calls).
     ///
     /// @param groups The groups of bridge calls to process
-    function processTransactions(ConnectorTxGroup[] calldata groups)
-        external
-        payable
-        returns (IBatchDepositor.Deposit[] memory);
+    function processTransactions(
+        ConnectorTxGroup[] calldata groups
+    ) external payable returns (IBatchDepositor.Deposit[] memory);
 
     /// @dev Returns a rough estimate of the gas cost to do `processTransactions`. At least this much gas needs to be
     ///      provided by the caller of `processTransactions` before the ConnectorTxs of users are allowed to be used.
@@ -68,8 +64,7 @@ interface IBridgeConnector
     ///      `processTransactions` calls fail by e.g. not batching enough Bridge calls together (while still collecting the fee).
     ///
     /// @param groups The groups of bridge calls to process
-    function getMinGasLimit(ConnectorTxGroup[] calldata groups)
-        external
-        pure
-        returns (uint);
+    function getMinGasLimit(
+        ConnectorTxGroup[] calldata groups
+    ) external pure returns (uint);
 }

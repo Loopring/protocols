@@ -6,61 +6,36 @@ pragma experimental ABIEncoderV2;
 import "../lib/Claimable.sol";
 import "./libamm/IAmmSharedConfig.sol";
 
-contract LoopringAmmSharedConfig is Claimable, IAmmSharedConfig
-{
+contract LoopringAmmSharedConfig is Claimable, IAmmSharedConfig {
     uint _maxForcedExitAge;
     uint _maxForcedExitCount;
     uint _forcedExitFee;
 
     event ValueChanged(string name, uint value);
 
-    function maxForcedExitAge()
-        external
-        view
-        override
-        returns (uint)
-    {
+    function maxForcedExitAge() external view override returns (uint) {
         return _maxForcedExitAge;
     }
 
-    function maxForcedExitCount()
-        external
-        view
-        override
-        returns (uint)
-    {
+    function maxForcedExitCount() external view override returns (uint) {
         return _maxForcedExitCount;
     }
 
-    function forcedExitFee()
-        external
-        view
-        override
-        returns (uint)
-    {
+    function forcedExitFee() external view override returns (uint) {
         return _forcedExitFee;
     }
 
-    function setMaxForcedExitAge(uint v)
-        external
-        onlyOwner
-    {
+    function setMaxForcedExitAge(uint v) external onlyOwner {
         _maxForcedExitAge = v;
         emit ValueChanged("maxForcedExitAge", v);
     }
 
-    function setMaxForcedExitCount(uint v)
-        external
-        onlyOwner
-    {
+    function setMaxForcedExitCount(uint v) external onlyOwner {
         _maxForcedExitCount = v;
         emit ValueChanged("maxForcedExitCount", v);
     }
 
-    function setForcedExitFee(uint v)
-        external
-        onlyOwner
-    {
+    function setForcedExitFee(uint v) external onlyOwner {
         _forcedExitFee = v;
         emit ValueChanged("forcedExitFee", v);
     }

@@ -8,22 +8,17 @@ import "../../../lib/Poseidon.sol";
 import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeTokens.sol";
 
-
 /// @title ExchangeBalances.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
-library ExchangeBalances
-{
-    using ExchangeTokens  for uint16;
-    using MathUint        for uint;
+library ExchangeBalances {
+    using ExchangeTokens for uint16;
+    using MathUint for uint;
 
     function verifyAccountBalance(
-        uint                              merkleRoot,
+        uint merkleRoot,
         ExchangeData.MerkleProof calldata merkleProof
-        )
-        public
-        pure
-    {
+    ) public pure {
         require(
             isAccountBalanceCorrect(merkleRoot, merkleProof),
             "INVALID_MERKLE_TREE_DATA"
@@ -31,13 +26,9 @@ library ExchangeBalances
     }
 
     function isAccountBalanceCorrect(
-        uint                            merkleRoot,
+        uint merkleRoot,
         ExchangeData.MerkleProof memory merkleProof
-        )
-        public
-        pure
-        returns (bool)
-    {
+    ) public pure returns (bool) {
         // Calculate the Merkle root using the Merkle paths provided
         uint calculatedRoot = getBalancesRoot(
             merkleProof.balanceLeaf.tokenID,
@@ -62,7 +53,8 @@ library ExchangeBalances
             uint minter = uint(merkleProof.nft.minter);
             uint nftType = uint(merkleProof.nft.nftType);
             uint token = uint(merkleProof.nft.token);
-            uint nftIDLo = merkleProof.nft.nftID & 0xffffffffffffffffffffffffffffffff;
+            uint nftIDLo = merkleProof.nft.nftID &
+                0xffffffffffffffffffffffffffffffff;
             uint nftIDHi = merkleProof.nft.nftID >> 128;
             uint creatorFeeBips = merkleProof.nft.creatorFeeBips;
             Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(
@@ -74,7 +66,10 @@ library ExchangeBalances
                 creatorFeeBips,
                 0
             );
-            uint nftData = Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
+            uint nftData = Poseidon.hash_t7f6p52(
+                inputs,
+                ExchangeData.SNARK_SCALAR_FIELD
+            );
             if (nftData != merkleProof.balanceLeaf.weightAMM) {
                 return false;
             }
@@ -85,16 +80,12 @@ library ExchangeBalances
     }
 
     function getBalancesRoot(
-        uint16   tokenID,
-        uint     balance,
-        uint     weightAMM,
-        uint     storageRoot,
+        uint16 tokenID,
+        uint balance,
+        uint weightAMM,
+        uint storageRoot,
         uint[24] memory balanceMerkleProof
-        )
-        private
-        pure
-        returns (uint)
-    {
+    ) private pure returns (uint) {
         // Hash the balance leaf
         uint balanceItem = hashImpl(balance, weightAMM, storageRoot, 0);
         // Calculate the Merkle root of the balance quad Merkle tree
@@ -136,21 +127,24 @@ library ExchangeBalances
     }
 
     function getAccountInternalsRoot(
-        uint32   accountID,
-        address  owner,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint     nonce,
-        uint     feeBipsAMM,
-        uint     balancesRoot,
+        uint32 accountID,
+        address owner,
+        uint pubKeyX,
+        uint pubKeyY,
+        uint nonce,
+        uint feeBipsAMM,
+        uint balancesRoot,
         uint[48] memory accountMerkleProof
-        )
-        private
-        pure
-        returns (uint)
-    {
+    ) private pure returns (uint) {
         // Hash the account leaf
-        uint accountItem = hashAccountLeaf(uint(owner), pubKeyX, pubKeyY, nonce, feeBipsAMM, balancesRoot);
+        uint accountItem = hashAccountLeaf(
+            uint(owner),
+            pubKeyX,
+            pubKeyY,
+            nonce,
+            feeBipsAMM,
+            balancesRoot
+        );
         // Calculate the Merkle root of the account quad Merkle tree
         uint _id = accountID;
         for (uint depth = 0; depth < 16; depth++) {
@@ -196,12 +190,16 @@ library ExchangeBalances
         uint t3,
         uint t4,
         uint t5
-        )
-        public
-        pure
-        returns (uint)
-    {
-        Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(t0, t1, t2, t3, t4, t5, 0);
+    ) public pure returns (uint) {
+        Poseidon.HashInputs7 memory inputs = Poseidon.HashInputs7(
+            t0,
+            t1,
+            t2,
+            t3,
+            t4,
+            t5,
+            0
+        );
         return Poseidon.hash_t7f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
     }
 
@@ -210,12 +208,14 @@ library ExchangeBalances
         uint t1,
         uint t2,
         uint t3
-        )
-        private
-        pure
-        returns (uint)
-    {
-        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(t0, t1, t2, t3, 0);
+    ) private pure returns (uint) {
+        Poseidon.HashInputs5 memory inputs = Poseidon.HashInputs5(
+            t0,
+            t1,
+            t2,
+            t3,
+            0
+        );
         return Poseidon.hash_t5f6p52(inputs, ExchangeData.SNARK_SCALAR_FIELD);
     }
 }

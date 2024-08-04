@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-
 /// @title ZeroDecompressor
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Easy decompressor that compresses runs of zeros.
@@ -10,16 +9,11 @@ pragma solidity ^0.7.0;
 /// (uint16 numDataBytes, uint16 numZeroBytes) which will
 /// copy `numDataBytes` data bytes from `data` and will
 /// add an additional `numZeroBytes` after it.
-library ZeroDecompressor
-{
+library ZeroDecompressor {
     function decompress(
         bytes calldata /*data*/,
-        uint  parameterIdx
-        )
-        internal
-        pure
-        returns (bytes memory)
-    {
+        uint parameterIdx
+    ) internal pure returns (bytes memory) {
         bytes memory uncompressed;
         uint offsetPos = 4 + 32 * parameterIdx;
         assembly {
@@ -32,7 +26,11 @@ library ZeroDecompressor
             let numDataBytes := 0
             let numZeroBytes := 0
 
-            for {} lt(pos, dataLength) {} {
+            for {
+
+            } lt(pos, dataLength) {
+
+            } {
                 tupple := and(calldataload(pos), 0xFFFFFFFF)
                 numDataBytes := shr(16, tupple)
                 numZeroBytes := and(tupple, 0xFFFF)

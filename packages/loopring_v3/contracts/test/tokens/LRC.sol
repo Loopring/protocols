@@ -5,14 +5,5 @@ pragma solidity ^0.7.0;
 import "../DummyToken.sol";
 
 contract LRC is DummyToken {
-
-    constructor() DummyToken(
-        "LRC_TEST",
-        "LRC",
-        18,
-        10 ** 27
-    )
-    {
-    }
-
+    constructor() DummyToken("LRC_TEST", "LRC", 18, 10 ** 27) {}
 }

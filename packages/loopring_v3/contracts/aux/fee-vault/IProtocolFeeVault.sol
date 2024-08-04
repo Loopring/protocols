@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-
 /// @title IProtocolFeeVault
 /// @dev This smart contract manages the distribution of protocol fees.
 ///     Tokens other than LRC will be sold by TokenSeller,
@@ -11,10 +10,9 @@ pragma solidity ^0.7.0;
 ///     For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
 ///     to reward LRC stakers; 20% of them can be withdrawn to the Loopring DAO,
 ///     and the remaining 10% can be burned to reduce LRC's total supply.
-abstract contract IProtocolFeeVault
-{
-    uint public constant REWARD_PERCENTAGE      = 70;
-    uint public constant DAO_PERDENTAGE         = 20;
+abstract contract IProtocolFeeVault {
+    uint public constant REWARD_PERCENTAGE = 70;
+    uint public constant DAO_PERDENTAGE = 20;
 
     address public userStakingPoolAddress;
     address public tokenSellerAddress;
@@ -31,11 +29,7 @@ abstract contract IProtocolFeeVault
 
     /// @dev Returns the LRC token address
     /// @return the LRC token address
-    function lrcAddress()
-        external
-        view
-        virtual
-        returns (address);
+    function lrcAddress() external view virtual returns (address);
 
     /// @dev Sets depending contract addresses. All these addresses can be zero.
     /// @param _userStakingPoolAddress The address of the user staking pool.
@@ -45,35 +39,24 @@ abstract contract IProtocolFeeVault
         address _userStakingPoolAddress,
         address _tokenSellerAddress,
         address _daoAddress
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Claims LRC as staking reward to the IUserStakingPool contract.
     ///      Note that this function can only be called by
     ///      the IUserStakingPool contract.
     ///
     /// @param amount The amount of LRC to be claimed.
-    function claimStakingReward(uint amount)
-        external
-        virtual;
+    function claimStakingReward(uint amount) external virtual;
 
     /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
     ///      the predefined percentages.
-    function fundDAO()
-        external
-        virtual;
+    function fundDAO() external virtual;
 
     /// @dev Sells a non-LRC token or Ether to LRC. If no TokenSeller is set,
     ///      the tokens or Ether will be sent to the owner.
     /// @param token The token or ether (0x0) to sell.
     /// @param amount THe amout of token/ether to sell.
-    function sellTokenForLRC(
-        address token,
-        uint    amount
-        )
-        external
-        virtual;
+    function sellTokenForLRC(address token, uint amount) external virtual;
 
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
@@ -86,8 +69,8 @@ abstract contract IProtocolFeeVault
     /// @return remainingReward The remaining amount of LRC as staking reward.
     function getProtocolFeeStats()
         public
-        virtual
         view
+        virtual
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,

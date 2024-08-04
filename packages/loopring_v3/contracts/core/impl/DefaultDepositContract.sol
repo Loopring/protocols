@@ -10,7 +10,6 @@ import "../../lib/MathUint.sol";
 import "../../thirdparty/SafeCast.sol";
 import "../iface/IDepositContract.sol";
 
-
 /// @title DefaultDepositContract
 /// @dev   Default implementation of IDepositContract that just stores
 ///        all funds without doing anything with them.
@@ -20,39 +19,29 @@ import "../iface/IDepositContract.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DefaultDepositContract is IDepositContract, Claimable
-{
-    using AddressUtil       for address;
+contract DefaultDepositContract is IDepositContract, Claimable {
+    using AddressUtil for address;
     using ERC20SafeTransfer for address;
-    using MathUint          for uint;
-    using SafeCast          for uint;
+    using MathUint for uint;
+    using SafeCast for uint;
 
     address public exchange;
 
-    mapping (address => bool) needCheckBalance;
+    mapping(address => bool) needCheckBalance;
 
-    modifier onlyExchange()
-    {
+    modifier onlyExchange() {
         require(msg.sender == exchange, "UNAUTHORIZED");
         _;
     }
 
-    modifier ifNotZero(uint amount)
-    {
+    modifier ifNotZero(uint amount) {
         if (amount == 0) return;
-        else  _;
+        else _;
     }
 
-    event CheckBalance(
-        address indexed token,
-        bool            checkBalance
-    );
+    event CheckBalance(address indexed token, bool checkBalance);
 
-    function initialize(
-        address _exchange
-        )
-        external
-    {
+    function initialize(address _exchange) external {
         require(
             exchange == address(0) && _exchange != address(0),
             "INVALID_EXCHANGE"
@@ -63,35 +52,29 @@ contract DefaultDepositContract is IDepositContract, Claimable
 
     function setCheckBalance(
         address token,
-        bool    checkBalance
-        )
-        external
-        onlyOwner
-    {
+        bool checkBalance
+    ) external onlyOwner {
         require(needCheckBalance[token] != checkBalance, "INVALID_VALUE");
 
         needCheckBalance[token] = checkBalance;
         emit CheckBalance(token, checkBalance);
     }
 
-    function isTokenSupported(address /*token*/)
-        external
-        override
-        pure
-        returns (bool)
-    {
+    function isTokenSupported(
+        address /*token*/
+    ) external pure override returns (bool) {
         return true;
     }
 
     function deposit(
-        address          from,
-        address          token,
-        uint96           amount,
-        bytes   calldata /*extraData*/
-        )
+        address from,
+        address token,
+        uint96 amount,
+        bytes calldata /*extraData*/
+    )
         external
-        override
         payable
+        override
         onlyExchange
         ifNotZero(amount)
         returns (uint96 amountReceived)
@@ -108,11 +91,15 @@ contract DefaultDepositContract is IDepositContract, Claimable
             // the amount of tokens that is specified in the transferFrom call.
             // This is to support non-standard tokens which do custom transfer logic.
             bool checkBalance = needCheckBalance[token];
-            uint balanceBefore = checkBalance ? ERC20(token).balanceOf(address(this)) : 0;
+            uint balanceBefore = checkBalance
+                ? ERC20(token).balanceOf(address(this))
+                : 0;
 
             token.safeTransferFromAndVerify(from, address(this), uint(amount));
 
-            uint balanceAfter = checkBalance ? ERC20(token).balanceOf(address(this)) : amount;
+            uint balanceAfter = checkBalance
+                ? ERC20(token).balanceOf(address(this))
+                : amount;
             uint diff = balanceAfter.sub(balanceBefore);
             amountReceived = diff.toUint96();
 
@@ -125,18 +112,12 @@ contract DefaultDepositContract is IDepositContract, Claimable
     }
 
     function withdraw(
-        address          /*from*/,
-        address          to,
-        address          token,
-        uint             amount,
-        bytes   calldata /*extraData*/
-        )
-        external
-        override
-        payable
-        onlyExchange
-        ifNotZero(amount)
-    {
+        address /*from*/,
+        address to,
+        address token,
+        uint amount,
+        bytes calldata /*extraData*/
+    ) external payable override onlyExchange ifNotZero(amount) {
         if (isETHInternal(token)) {
             to.sendETHAndVerify(amount, gasleft());
         } else {
@@ -144,7 +125,7 @@ contract DefaultDepositContract is IDepositContract, Claimable
             // If this fails try to transfer the remaining balance in this contract.
             // This is to guard against non-standard token behavior where total supply
             // has changed in unexpected ways.
-            if (!token.safeTransfer(to, amount)){
+            if (!token.safeTransfer(to, amount)) {
                 uint amountPaid = ERC20(token).balanceOf(address(this));
                 require(amountPaid < amount, "UNEXPECTED");
                 token.safeTransferAndVerify(to, amountPaid);
@@ -156,33 +137,18 @@ contract DefaultDepositContract is IDepositContract, Claimable
         address from,
         address to,
         address token,
-        uint    amount
-        )
-        external
-        override
-        payable
-        onlyExchange
-        ifNotZero(amount)
-    {
+        uint amount
+    ) external payable override onlyExchange ifNotZero(amount) {
         token.safeTransferFromAndVerify(from, to, amount);
     }
 
-    function isETH(address addr)
-        external
-        override
-        pure
-        returns (bool)
-    {
+    function isETH(address addr) external pure override returns (bool) {
         return isETHInternal(addr);
     }
 
     // -- Internal --
 
-    function isETHInternal(address addr)
-        internal
-        pure
-        returns (bool)
-    {
+    function isETHInternal(address addr) internal pure returns (bool) {
         return addr == address(0);
     }
 }

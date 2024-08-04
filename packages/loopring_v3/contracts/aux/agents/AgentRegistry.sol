@@ -7,45 +7,31 @@ import "../../core/iface/IAgentRegistry.sol";
 import "../../lib/AddressSet.sol";
 import "../../lib/Claimable.sol";
 
-
-contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
-{
-    bytes32 internal constant UNIVERSAL_AGENTS = keccak256("__UNVERSAL_AGENTS__");
+contract AgentRegistry is IAgentRegistry, AddressSet, Claimable {
+    bytes32 internal constant UNIVERSAL_AGENTS =
+        keccak256("__UNVERSAL_AGENTS__");
 
     event AgentRegistered(
         address indexed user,
         address indexed agent,
-        bool            registered
+        bool registered
     );
 
-    event TrustUniversalAgents(
-        address indexed user,
-        bool            trust
-    );
+    event TrustUniversalAgents(address indexed user, bool trust);
 
     constructor() Claimable() {}
 
     function isAgent(
         address user,
         address agent
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+    ) external view override returns (bool) {
         return isUniversalAgent(agent) || isUserAgent(user, agent);
     }
 
     function isAgent(
         address[] calldata users,
-        address            agent
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+        address agent
+    ) external view override returns (bool) {
         if (isUniversalAgent(agent)) {
             return true;
         }
@@ -59,30 +45,19 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
 
     function registerUniversalAgent(
         address agent,
-        bool    toRegister
-        )
-        external
-        onlyOwner
-    {
+        bool toRegister
+    ) external onlyOwner {
         registerInternal(UNIVERSAL_AGENTS, agent, toRegister);
         emit AgentRegistered(address(0), agent, toRegister);
     }
 
-    function isUniversalAgent(address agent)
-        public
-        override
-        view
-        returns (bool)
-    {
+    function isUniversalAgent(
+        address agent
+    ) public view override returns (bool) {
         return isAddressInSet(UNIVERSAL_AGENTS, agent);
     }
 
-    function registerUserAgent(
-        address agent,
-        bool    toRegister
-        )
-        external
-    {
+    function registerUserAgent(address agent, bool toRegister) external {
         registerInternal(userKey(msg.sender), agent, toRegister);
         emit AgentRegistered(msg.sender, agent, toRegister);
     }
@@ -90,21 +65,15 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
     function isUserAgent(
         address user,
         address agent
-        )
-        public
-        view
-        returns (bool)
-    {
+    ) public view returns (bool) {
         return isAddressInSet(userKey(user), agent);
     }
 
     function registerInternal(
         bytes32 key,
         address agent,
-        bool    toRegister
-        )
-        private
-    {
+        bool toRegister
+    ) private {
         require(agent != address(0), "ZERO_ADDRESS");
         if (toRegister) {
             addAddressToSet(key, agent, false /* maintanList */);
@@ -113,11 +82,7 @@ contract AgentRegistry is IAgentRegistry, AddressSet, Claimable
         }
     }
 
-    function userKey(address addr)
-        private
-        pure
-        returns (bytes32)
-    {
+    function userKey(address addr) private pure returns (bytes32) {
         return keccak256(abi.encodePacked("__AGENT__", addr));
     }
 }

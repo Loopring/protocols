@@ -5,11 +5,9 @@ pragma solidity ^0.7.0;
 import "./MathUint.sol";
 import "../thirdparty/SafeCast.sol";
 
-
 /// @title Utility Functions for floats
 /// @author Brecht Devos - <brecht@loopring.org>
-library FloatUtil
-{
+library FloatUtil {
     using MathUint for uint;
     using SafeCast for uint;
 
@@ -23,11 +21,7 @@ library FloatUtil
     function decodeFloat(
         uint f,
         uint numBits
-        )
-        internal
-        pure
-        returns (uint96 value)
-    {
+    ) internal pure returns (uint96 value) {
         if (f == 0) {
             return 0;
         }
@@ -45,15 +39,9 @@ library FloatUtil
     // Will throw when the decoded value overflows an uint96
     /// @param f The float value with 5 bits exponent, 11 bits mantissa
     /// @return value The decoded integer value.
-    function decodeFloat16(
-        uint16 f
-        )
-        internal
-        pure
-        returns (uint96)
-    {
+    function decodeFloat16(uint16 f) internal pure returns (uint96) {
         uint value = ((uint(f) & 2047) * (10 ** (uint(f) >> 11)));
-        require(value < 2**96, "SafeCast: value doesn\'t fit in 96 bits");
+        require(value < 2 ** 96, "SafeCast: value doesn't fit in 96 bits");
         return uint96(value);
     }
 
@@ -63,15 +51,9 @@ library FloatUtil
     // Will throw when the decoded value overflows an uint96
     /// @param f The float value with 5 bits exponent, 19 bits mantissa
     /// @return value The decoded integer value.
-    function decodeFloat24(
-        uint24 f
-        )
-        internal
-        pure
-        returns (uint96)
-    {
+    function decodeFloat24(uint24 f) internal pure returns (uint96) {
         uint value = ((uint(f) & 524287) * (10 ** (uint(f) >> 19)));
-        require(value < 2**96, "SafeCast: value doesn\'t fit in 96 bits");
+        require(value < 2 ** 96, "SafeCast: value doesn't fit in 96 bits");
         return uint96(value);
     }
 
@@ -81,13 +63,7 @@ library FloatUtil
     // Will throw when the decoded value overflows an uint96
     /// @param f The float value with 5 bits exponent, 11 bits mantissa
     /// @return value The decoded integer value.
-    function decodeFloat16Unsafe(
-        uint f
-        )
-        internal
-        pure
-        returns (uint)
-    {
+    function decodeFloat16Unsafe(uint f) internal pure returns (uint) {
         return (f & 2047) * (10 ** (f >> 11));
     }
 
@@ -97,13 +73,7 @@ library FloatUtil
     // Will throw when the decoded value overflows an uint96
     /// @param f The float value with 5 bits exponent, 19 bits mantissa
     /// @return value The decoded integer value.
-    function decodeFloat24Unsafe(
-        uint f
-        )
-        internal
-        pure
-        returns (uint)
-    {
+    function decodeFloat24Unsafe(uint f) internal pure returns (uint) {
         return (f & 524287) * (10 ** (f >> 19));
     }
 }

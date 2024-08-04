@@ -12,55 +12,50 @@ import "../../iface/ExchangeData.sol";
 import "../libexchange/ExchangeSignatures.sol";
 import "./NftDataTransaction.sol";
 
-
 /// @title NftMintTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library NftMintTransaction
-{
-    using BytesUtil            for bytes;
-    using ExchangeSignatures   for ExchangeData.State;
-    using FloatUtil            for uint16;
-    using MathUint96           for uint96;
-    using MathUint             for uint;
+library NftMintTransaction {
+    using BytesUtil for bytes;
+    using ExchangeSignatures for ExchangeData.State;
+    using FloatUtil for uint16;
+    using MathUint96 for uint96;
+    using MathUint for uint;
 
-    bytes32 constant public NFTMINT_TYPEHASH = keccak256(
-        "NftMint(address minter,address to,uint8 nftType,address token,uint256 nftID,uint8 creatorFeeBips,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID)"
-    );
+    bytes32 public constant NFTMINT_TYPEHASH =
+        keccak256(
+            "NftMint(address minter,address to,uint8 nftType,address token,uint256 nftID,uint8 creatorFeeBips,uint96 amount,uint16 feeTokenID,uint96 maxFee,uint32 validUntil,uint32 storageID)"
+        );
 
     // This structure represents either a L2 NFT mint or a L1-to-L2 NFT deposit.
-    struct NftMint
-    {
-        uint                 mintType;
-        uint32               minterAccountID;
-        uint32               toAccountID;
-        uint16               toTokenID;   // slot
-        uint96               amount;
-        uint16               feeTokenID;
-        uint96               maxFee;
-        uint96               fee;
-        uint32               validUntil;
-        uint32               storageID;
-        address              to;
-        ExchangeData.Nft     nft;
+    struct NftMint {
+        uint mintType;
+        uint32 minterAccountID;
+        uint32 toAccountID;
+        uint16 toTokenID; // slot
+        uint96 amount;
+        uint16 feeTokenID;
+        uint96 maxFee;
+        uint96 fee;
+        uint32 validUntil;
+        uint32 storageID;
+        address to;
+        ExchangeData.Nft nft;
     }
 
     // Auxiliary data for each NFT mint
-    struct NftMintAuxiliaryData
-    {
-        bytes  signature;
+    struct NftMintAuxiliaryData {
+        bytes signature;
         uint96 maxFee;
         uint32 validUntil;
     }
 
     function process(
-        ExchangeData.State        storage S,
-        ExchangeData.BlockContext memory  ctx,
-        bytes                     memory  data,
-        uint                              offset,
-        bytes                     memory  auxiliaryData
-        )
-        internal
-    {
+        ExchangeData.State storage S,
+        ExchangeData.BlockContext memory ctx,
+        bytes memory data,
+        uint offset,
+        bytes memory auxiliaryData
+    ) internal {
         // Read in the mint
         NftMint memory mint;
         readTx(data, offset, mint);
@@ -91,10 +86,15 @@ library NftMintTransaction
             require(mint.nft.creatorFeeBips == 0, "CREATORFEEBIPS_NONZERO");
 
             // The minter should be the NFT token contract for deposits
-            require(mint.nft.minter == mint.nft.token, "MINTER_NOT_TOKEN_CONTRACT");
+            require(
+                mint.nft.minter == mint.nft.token,
+                "MINTER_NOT_TOKEN_CONTRACT"
+            );
 
             // Process the deposit
-            ExchangeData.Deposit memory pendingDeposit = S.pendingNFTDeposits[mint.to][mint.nft.nftType][mint.nft.token][mint.nft.nftID];
+            ExchangeData.Deposit memory pendingDeposit = S.pendingNFTDeposits[
+                mint.to
+            ][mint.nft.nftType][mint.nft.token][mint.nft.nftID];
 
             // Make sure the deposit was actually done
             require(pendingDeposit.timestamp > 0, "DEPOSIT_NOT_EXIST");
@@ -109,15 +109,25 @@ library NftMintTransaction
             // If the deposit was fully consumed, reset it so the storage is freed up
             // and the owner receives a gas refund.
             if (pendingDeposit.amount == 0) {
-                delete S.pendingNFTDeposits[mint.to][mint.nft.nftType][mint.nft.token][mint.nft.nftID];
+                delete S.pendingNFTDeposits[mint.to][mint.nft.nftType][
+                    mint.nft.token
+                ][mint.nft.nftID];
             } else {
-                S.pendingNFTDeposits[mint.to][mint.nft.nftType][mint.nft.token][mint.nft.nftID] = pendingDeposit;
+                S.pendingNFTDeposits[mint.to][mint.nft.nftType][mint.nft.token][
+                    mint.nft.nftID
+                ] = pendingDeposit;
             }
         } else {
             // The minter should NOT be the NFT token contract for L2 mints
-            require(mint.nft.minter != mint.nft.token, "MINTER_EQUALS_TOKEN_CONTRACT");
+            require(
+                mint.nft.minter != mint.nft.token,
+                "MINTER_EQUALS_TOKEN_CONTRACT"
+            );
 
-            NftMintAuxiliaryData memory auxData = abi.decode(auxiliaryData, (NftMintAuxiliaryData));
+            NftMintAuxiliaryData memory auxData = abi.decode(
+                auxiliaryData,
+                (NftMintAuxiliaryData)
+            );
 
             // Fill in mint data missing from DA
             mint.validUntil = auxData.validUntil;
@@ -135,17 +145,15 @@ library NftMintTransaction
     }
 
     function readTx(
-        bytes   memory data,
-        uint           offset,
+        bytes memory data,
+        uint offset,
         NftMint memory mint
-        )
-        internal
-        pure
-    {
+    ) internal pure {
         uint _offset = offset;
 
         require(
-            data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.NFT_MINT),
+            data.toUint8Unsafe(_offset) ==
+                uint8(ExchangeData.TransactionType.NFT_MINT),
             "INVALID_TX_TYPE"
         );
         _offset += 1;
@@ -176,31 +184,28 @@ library NftMintTransaction
     }
 
     function hashTx(
-        bytes32        DOMAIN_SEPARATOR,
+        bytes32 DOMAIN_SEPARATOR,
         NftMint memory mint
-        )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return EIP712.hashPacked(
-            DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encode(
-                    NFTMINT_TYPEHASH,
-                    mint.nft.minter,
-                    mint.to,
-                    mint.nft.nftType,
-                    mint.nft.token,
-                    mint.nft.nftID,
-                    mint.nft.creatorFeeBips,
-                    mint.amount,
-                    mint.feeTokenID,
-                    mint.maxFee,
-                    mint.validUntil,
-                    mint.storageID
+    ) internal pure returns (bytes32) {
+        return
+            EIP712.hashPacked(
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        NFTMINT_TYPEHASH,
+                        mint.nft.minter,
+                        mint.to,
+                        mint.nft.nftType,
+                        mint.nft.token,
+                        mint.nft.nftID,
+                        mint.nft.creatorFeeBips,
+                        mint.amount,
+                        mint.feeTokenID,
+                        mint.maxFee,
+                        mint.validUntil,
+                        mint.storageID
+                    )
                 )
-            )
-        );
+            );
     }
 }

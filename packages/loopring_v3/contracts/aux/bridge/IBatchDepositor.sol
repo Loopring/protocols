@@ -7,13 +7,11 @@ import "../access/ITransactionReceiver.sol";
 
 /// @title  IBatchDepositor interface
 /// @author Brecht Devos - <brecht@loopring.org>
-interface IBatchDepositor
-{
-    struct Deposit
-    {
+interface IBatchDepositor {
+    struct Deposit {
         address owner;
         address token;
-        uint96  amount;
+        uint96 amount;
     }
     /// @dev Optimized L1 -> L2 path. Allows doing many deposits in an efficient way.
     ///
@@ -27,7 +25,5 @@ interface IBatchDepositor
     ///      deposits the sender first has to approve token transfers on the deposit contract.
     ///
     /// @param deposits The L2 deposits from Bridge to owners
-    function batchDeposit(Deposit[] calldata deposits)
-        external
-        payable;
+    function batchDeposit(Deposit[] calldata deposits) external payable;
 }

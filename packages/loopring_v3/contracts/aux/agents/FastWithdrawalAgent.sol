@@ -41,39 +41,35 @@ import "../../lib/TransferUtil.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
-contract FastWithdrawalAgent is ReentrancyGuard, IAgent
-{
-    using AddressUtil       for address;
-    using AddressUtil       for address payable;
-    using MathUint          for uint;
-    using TransferUtil      for address;
+contract FastWithdrawalAgent is ReentrancyGuard, IAgent {
+    using AddressUtil for address;
+    using AddressUtil for address payable;
+    using MathUint for uint;
+    using TransferUtil for address;
 
     event Processed(
         address exchange,
         address from,
         address to,
         address token,
-        uint96  amount,
+        uint96 amount,
         address provider,
-        bool    success
+        bool success
     );
 
-    struct Withdrawal
-    {
+    struct Withdrawal {
         address exchange;
-        address from;                   // The owner of the account
-        address to;                     // The `to` address of the withdrawal
+        address from; // The owner of the account
+        address to; // The `to` address of the withdrawal
         address token;
-        uint96  amount;
-        uint32  storageID;
+        uint96 amount;
+        uint32 storageID;
     }
 
     // This method needs to be called by any liquidity provider
-    function executeFastWithdrawals(Withdrawal[] calldata withdrawals)
-        public
-        nonReentrant
-        payable
-    {
+    function executeFastWithdrawals(
+        Withdrawal[] calldata withdrawals
+    ) public payable nonReentrant {
         // Do all fast withdrawals
         for (uint i = 0; i < withdrawals.length; i++) {
             executeInternal(withdrawals[i]);
@@ -85,14 +81,12 @@ contract FastWithdrawalAgent is ReentrancyGuard, IAgent
 
     // -- Internal --
 
-    function executeInternal(Withdrawal calldata withdrawal)
-        internal
-    {
+    function executeInternal(Withdrawal calldata withdrawal) internal {
         require(
             withdrawal.exchange != address(0) &&
-            withdrawal.from != address(0) &&
-            withdrawal.to != address(0) &&
-            withdrawal.amount != 0,
+                withdrawal.from != address(0) &&
+                withdrawal.to != address(0) &&
+                withdrawal.amount != 0,
             "INVALID_WITHDRAWAL"
         );
 
@@ -101,14 +95,16 @@ contract FastWithdrawalAgent is ReentrancyGuard, IAgent
 
         bool success;
         // Override the destination address of a withdrawal to the address of the liquidity provider
-        try IExchangeV3(withdrawal.exchange).setWithdrawalRecipient(
-            withdrawal.from,
-            withdrawal.to,
-            withdrawal.token,
-            withdrawal.amount,
-            withdrawal.storageID,
-            liquidityProvider
-        ) {
+        try
+            IExchangeV3(withdrawal.exchange).setWithdrawalRecipient(
+                withdrawal.from,
+                withdrawal.to,
+                withdrawal.token,
+                withdrawal.amount,
+                withdrawal.storageID,
+                liquidityProvider
+            )
+        {
             // Transfer the tokens immediately to the requested address
             // using funds from the liquidity provider (`msg.sender`).
             withdrawal.token.transferFromOut(

@@ -9,31 +9,26 @@ import "../../../lib/SignatureUtil.sol";
 import "../../../thirdparty/BytesUtil.sol";
 import "../../iface/ExchangeData.sol";
 
-
 /// @title DepositTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-library DepositTransaction
-{
-    using BytesUtil   for bytes;
-    using MathUint96  for uint96;
+library DepositTransaction {
+    using BytesUtil for bytes;
+    using MathUint96 for uint96;
 
-    struct Deposit
-    {
+    struct Deposit {
         address to;
-        uint32  toAccountID;
-        uint16  tokenID;
-        uint96  amount;
+        uint32 toAccountID;
+        uint16 tokenID;
+        uint96 amount;
     }
 
     function process(
-        ExchangeData.State        storage S,
-        ExchangeData.BlockContext memory  /*ctx*/,
-        bytes                     memory  data,
-        uint                              offset,
-        bytes                     memory  /*auxiliaryData*/
-        )
-        internal
-    {
+        ExchangeData.State storage S,
+        ExchangeData.BlockContext memory /*ctx*/,
+        bytes memory data,
+        uint offset,
+        bytes memory /*auxiliaryData*/
+    ) internal {
         // Read in the deposit
         Deposit memory deposit;
         readTx(data, offset, deposit);
@@ -42,7 +37,9 @@ library DepositTransaction
         }
 
         // Process the deposit
-        ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[deposit.to][deposit.tokenID];
+        ExchangeData.Deposit memory pendingDeposit = S.pendingDeposits[
+            deposit.to
+        ][deposit.tokenID];
         // Make sure the deposit was actually done
         require(pendingDeposit.timestamp > 0, "DEPOSIT_NOT_EXIST");
 
@@ -50,7 +47,10 @@ library DepositTransaction
         // This is done to ensure the user can do multiple deposits after each other
         // without invalidating work done by the exchange owner for previous deposit amounts.
 
-        require(pendingDeposit.amount >= deposit.amount, "INVALID_DEPOSIT_AMOUNT");
+        require(
+            pendingDeposit.amount >= deposit.amount,
+            "INVALID_DEPOSIT_AMOUNT"
+        );
         pendingDeposit.amount = pendingDeposit.amount.sub(deposit.amount);
 
         // If the deposit was fully consumed, reset it so the storage is freed up
@@ -63,16 +63,17 @@ library DepositTransaction
     }
 
     function readTx(
-        bytes   memory data,
-        uint           offset,
+        bytes memory data,
+        uint offset,
         Deposit memory deposit
-        )
-        internal
-        pure
-    {
+    ) internal pure {
         uint _offset = offset;
 
-        require(data.toUint8Unsafe(_offset) == uint8(ExchangeData.TransactionType.DEPOSIT), "INVALID_TX_TYPE");
+        require(
+            data.toUint8Unsafe(_offset) ==
+                uint8(ExchangeData.TransactionType.DEPOSIT),
+            "INVALID_TX_TYPE"
+        );
         _offset += 1;
 
         // We don't use abi.decode for this because of the large amount of zero-padding

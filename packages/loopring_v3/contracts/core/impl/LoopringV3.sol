@@ -9,15 +9,13 @@ import "../../lib/ReentrancyGuard.sol";
 import "../iface/IExchangeV3.sol";
 import "../iface/ILoopringV3.sol";
 
-
 /// @title LoopringV3
 /// @dev This contract does NOT support proxy.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is ILoopringV3, ReentrancyGuard
-{
-    using AddressUtil       for address payable;
-    using MathUint          for uint;
+contract LoopringV3 is ILoopringV3, ReentrancyGuard {
+    using AddressUtil for address payable;
+    using MathUint for uint;
     using ERC20SafeTransfer for address;
 
     address public immutable override lrcAddress;
@@ -27,9 +25,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
         address _lrcAddress,
         address payable _protocolFeeVault,
         address _blockVerifierAddress
-        )
-        Claimable()
-    {
+    ) Claimable() {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
 
         lrcAddress = _lrcAddress;
@@ -41,13 +37,8 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
     function updateSettings(
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _forcedWithdrawalFee
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+        uint _forcedWithdrawalFee
+    ) external override nonReentrant onlyOwner {
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
@@ -59,37 +50,22 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
     function updateProtocolFeeSettings(
         uint8 _protocolTakerFeeBips,
         uint8 _protocolMakerFeeBips
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    ) external override nonReentrant onlyOwner {
         protocolTakerFeeBips = _protocolTakerFeeBips;
         protocolMakerFeeBips = _protocolMakerFeeBips;
 
-        emit SettingsUpdated(block.timestamp);
+        emit SettingsUpdated(block.timestamp, 0);
     }
 
     function getExchangeStake(
         address exchangeAddr
-        )
-        public
-        override
-        view
-        returns (uint)
-    {
+    ) public view override returns (uint) {
         return exchangeStake[exchangeAddr];
     }
 
     function burnExchangeStake(
         uint amount
-        )
-        external
-        override
-        nonReentrant
-        returns (uint burnedLRC)
-    {
+    ) external override nonReentrant returns (uint burnedLRC) {
         burnedLRC = exchangeStake[msg.sender];
 
         if (amount < burnedLRC) {
@@ -97,7 +73,9 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
         }
         if (burnedLRC > 0) {
             lrcAddress.safeTransferAndVerify(protocolFeeVault, burnedLRC);
-            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(burnedLRC);
+            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(
+                burnedLRC
+            );
             totalStake = totalStake.sub(burnedLRC);
         }
         emit ExchangeStakeBurned(msg.sender, burnedLRC);
@@ -105,16 +83,15 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
 
     function depositExchangeStake(
         address exchangeAddr,
-        uint    amountLRC
-        )
-        external
-        override
-        nonReentrant
-        returns (uint stakedLRC)
-    {
+        uint amountLRC
+    ) external override nonReentrant returns (uint stakedLRC) {
         require(amountLRC > 0, "ZERO_VALUE");
 
-        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
+        lrcAddress.safeTransferFromAndVerify(
+            msg.sender,
+            address(this),
+            amountLRC
+        );
 
         stakedLRC = exchangeStake[exchangeAddr].add(amountLRC);
         exchangeStake[exchangeAddr] = stakedLRC;
@@ -125,19 +102,16 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
 
     function withdrawExchangeStake(
         address recipient,
-        uint    requestedAmount
-        )
-        external
-        override
-        nonReentrant
-        returns (uint amountLRC)
-    {
+        uint requestedAmount
+    ) external override nonReentrant returns (uint amountLRC) {
         uint stake = exchangeStake[msg.sender];
         amountLRC = (stake > requestedAmount) ? requestedAmount : stake;
 
         if (amountLRC > 0) {
             lrcAddress.safeTransferAndVerify(recipient, amountLRC);
-            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(amountLRC);
+            exchangeStake[msg.sender] = exchangeStake[msg.sender].sub(
+                amountLRC
+            );
             totalStake = totalStake.sub(amountLRC);
         }
 
@@ -146,32 +120,30 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
 
     function getProtocolFeeValues()
         public
-        override
         view
-        returns (
-            uint8 takerFeeBips,
-            uint8 makerFeeBips
-        )
+        override
+        returns (uint8 takerFeeBips, uint8 makerFeeBips)
     {
         return (protocolTakerFeeBips, protocolMakerFeeBips);
     }
 
     // == Internal Functions ==
     function updateSettingsInternal(
-        address payable  _protocolFeeVault,
+        address payable _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _forcedWithdrawalFee,
+        uint _forcedWithdrawalFee,
         uint _nextEffectiveTime
-        )
-        private
-    {
+    ) private {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
-        require(_forcedWithdrawalFee <= 0.5 ether, "FORCED_WITHDRAWAL_FEE_TOO_HIGH");
+        require(
+            _forcedWithdrawalFee <= 0.5 ether,
+            "FORCED_WITHDRAWAL_FEE_TOO_HIGH"
+        );
 
-        if(_nextEffectiveTime==0) {
+        if (_nextEffectiveTime == 0) {
             // effect immediately
-            protocolFeeVault= _protocolFeeVault;
+            protocolFeeVault = _protocolFeeVault;
             blockVerifierAddress = _blockVerifierAddress;
             forcedWithdrawalFee = _forcedWithdrawalFee;
         } else {
@@ -179,22 +151,21 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
             cachedSettings = CachedSettings({
                 protocolFeeVault: _protocolFeeVault,
                 blockVerifierAddress: _blockVerifierAddress,
-                forcedWithdrawalFee: _forcedWithdrawalFee,
+                forcedWithdrawalFee: _forcedWithdrawalFee
             });
             nextEffectiveTime = _nextEffectiveTime;
         }
-
 
         emit SettingsUpdated(block.timestamp, _nextEffectiveTime);
     }
 
     function applyUpdate() external {
-        require(nextEffectiveTime>0, "NO_ANY_UPDATES");
-        require(nextEffectiveTime <= block.timestamp, 'NOT_ENABLED_YET');
+        require(nextEffectiveTime > 0, "NO_ANY_UPDATES");
+        require(nextEffectiveTime <= block.timestamp, "NOT_ENABLED_YET");
 
-        protocolFeeVault= cachedSettings._protocolFeeVault;
-        blockVerifierAddress = cachedSettings._blockVerifierAddress;
-        forcedWithdrawalFee = cachedSettings._forcedWithdrawalFee;
+        protocolFeeVault = payable(cachedSettings.protocolFeeVault);
+        blockVerifierAddress = cachedSettings.blockVerifierAddress;
+        forcedWithdrawalFee = cachedSettings.forcedWithdrawalFee;
 
         // clear updates
         nextEffectiveTime = 0;
