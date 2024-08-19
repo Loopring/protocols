@@ -74,7 +74,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.stop();
   });
 
-  describe("Blocks", function() {
+  describe("Blocks", function () {
     this.timeout(0);
 
     describe("Operator", () => {
@@ -98,7 +98,10 @@ contract("Exchange", (accounts: string[]) => {
           const bs = new Bitstream();
           bs.addAddress(exchangeTestUtil.blockVerifier.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-          bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+          bs.addBN(
+            exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)),
+            32
+          );
           bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
@@ -129,8 +132,14 @@ contract("Exchange", (accounts: string[]) => {
           );
           const bs = new Bitstream();
           bs.addAddress(exchange.address);
-          bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-          bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
+          bs.addBN(
+            exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)),
+            32
+          );
+          bs.addBN(
+            exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)),
+            32
+          );
           bs.addNumber(0, 1024);
           const block: OnchainBlock = {
             blockType: BlockType.UNIVERSAL,
@@ -163,7 +172,8 @@ contract("Exchange", (accounts: string[]) => {
             await web3.eth.getBlock(await web3.eth.getBlockNumber())
           ).timestamp;
           timestamp -=
-            exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
+            exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS +
+            1;
           const bs = new Bitstream();
           bs.addAddress(exchange.address);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -203,11 +213,15 @@ contract("Exchange", (accounts: string[]) => {
               await web3.eth.getBlock(await web3.eth.getBlockNumber())
             ).timestamp;
             timestamp -=
-              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
+              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS +
+              1;
             const bs = new Bitstream();
             bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addBN(
+              exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)),
+              32
+            );
             bs.addNumber(timestamp, 4);
             bs.addNumber(0, 1024);
             const block: OnchainBlock = {
@@ -233,11 +247,15 @@ contract("Exchange", (accounts: string[]) => {
               await web3.eth.getBlock(await web3.eth.getBlockNumber())
             ).timestamp;
             timestamp +=
-              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
+              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS +
+              15;
             const bs = new Bitstream();
             bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addBN(
+              exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)),
+              32
+            );
             bs.addNumber(timestamp, 4);
             bs.addNumber(0, 1024);
             const block: OnchainBlock = {
@@ -277,7 +295,10 @@ contract("Exchange", (accounts: string[]) => {
             const bs = new Bitstream();
             bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addBN(
+              exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)),
+              32
+            );
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
@@ -304,7 +325,10 @@ contract("Exchange", (accounts: string[]) => {
             const bs = new Bitstream();
             bs.addAddress(exchange.address);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addBN(
+              exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)),
+              32
+            );
             bs.addNumber(timestamp, 4);
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
@@ -376,17 +400,20 @@ contract("Exchange", (accounts: string[]) => {
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
-                assert(blocks.length === 1, "unexpected number of blocks");
-                const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
-                  blocks[0].blockInfoData
+                assert(
+                  blocks.length === 1,
+                  "unexpected number of blocks"
                 );
+                const auxiliaryData =
+                  exchangeTestUtil.getBlockAuxiliaryData(
+                    blocks[0].blockInfoData
+                  );
                 // Swap tx 0 and 1
                 const temp = auxiliaryData[1];
                 auxiliaryData[1] = auxiliaryData[0];
                 auxiliaryData[0] = temp;
-                onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
-                  auxiliaryData
-                );
+                onchainBlocks[0].auxiliaryData =
+                  exchangeTestUtil.encodeAuxiliaryData(auxiliaryData);
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -396,15 +423,18 @@ contract("Exchange", (accounts: string[]) => {
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
-                assert(blocks.length === 1, "unexpected number of blocks");
-                const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
-                  blocks[0].blockInfoData
+                assert(
+                  blocks.length === 1,
+                  "unexpected number of blocks"
                 );
+                const auxiliaryData =
+                  exchangeTestUtil.getBlockAuxiliaryData(
+                    blocks[0].blockInfoData
+                  );
                 // Set the idx of tx 0 on tx 1
                 auxiliaryData[1][0] = auxiliaryData[0][0];
-                onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
-                  auxiliaryData
-                );
+                onchainBlocks[0].auxiliaryData =
+                  exchangeTestUtil.encodeAuxiliaryData(auxiliaryData);
               }
             ),
             "AUXILIARYDATA_INVALID_ORDER"
@@ -414,14 +444,21 @@ contract("Exchange", (accounts: string[]) => {
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
               (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
-                assert(blocks.length === 1, "unexpected number of blocks");
-                const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
-                  blocks[0].blockInfoData
+                assert(
+                  blocks.length === 1,
+                  "unexpected number of blocks"
                 );
-                auxiliaryData.push([0, false, web3.utils.hexToBytes("0x")]);
-                onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
-                  auxiliaryData
-                );
+                const auxiliaryData =
+                  exchangeTestUtil.getBlockAuxiliaryData(
+                    blocks[0].blockInfoData
+                  );
+                auxiliaryData.push([
+                  0,
+                  false,
+                  web3.utils.hexToBytes("0x")
+                ]);
+                onchainBlocks[0].auxiliaryData =
+                  exchangeTestUtil.encodeAuxiliaryData(auxiliaryData);
               }
             ),
             "AUXILIARYDATA_INVALID_LENGTH"
@@ -430,13 +467,16 @@ contract("Exchange", (accounts: string[]) => {
           // Submit the transfers: everything alright
           await exchangeTestUtil.submitPendingBlocks(
             (onchainBlocks: OnchainBlock[], blocks: Block[]) => {
-              assert(blocks.length === 1, "unexpected number of blocks");
-              const auxiliaryData = exchangeTestUtil.getBlockAuxiliaryData(
-                blocks[0].blockInfoData
+              assert(
+                blocks.length === 1,
+                "unexpected number of blocks"
               );
-              onchainBlocks[0].auxiliaryData = exchangeTestUtil.encodeAuxiliaryData(
-                auxiliaryData
-              );
+              const auxiliaryData =
+                exchangeTestUtil.getBlockAuxiliaryData(
+                  blocks[0].blockInfoData
+                );
+              onchainBlocks[0].auxiliaryData =
+                exchangeTestUtil.encodeAuxiliaryData(auxiliaryData);
             }
           );
         });
@@ -459,21 +499,26 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
-              // Change a random proof
-              const blockToModify = exchangeTestUtil.getRandomInt(
-                blocks.length
-              );
-              const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
-              blocks[blockToModify].proof[proofIdxToModify] =
-                "0x" +
-                new BN(
-                  blocks[blockToModify].proof[proofIdxToModify].slice(2),
-                  16
-                )
-                  .add(new BN(1))
-                  .toString(16);
-            }),
+            exchangeTestUtil.submitPendingBlocks(
+              (blocks: OnchainBlock[]) => {
+                // Change a random proof
+                const blockToModify = exchangeTestUtil.getRandomInt(
+                  blocks.length
+                );
+                const proofIdxToModify =
+                  exchangeTestUtil.getRandomInt(8);
+                blocks[blockToModify].proof[proofIdxToModify] =
+                  "0x" +
+                  new BN(
+                    blocks[blockToModify].proof[
+                      proofIdxToModify
+                    ].slice(2),
+                    16
+                  )
+                    .add(new BN(1))
+                    .toString(16);
+              }
+            ),
             "INVALID_PROOF"
           );
         });
@@ -486,15 +531,18 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks((blocks: OnchainBlock[]) => {
-              // Change the data of a random block
-              const blockToModify = exchangeTestUtil.getRandomInt(
-                blocks.length
-              );
-              blocks[blockToModify].data = web3.utils.hexToBytes(
-                blocks[blockToModify].data + web3.utils.randomHex(1).slice(2)
-              );
-            }),
+            exchangeTestUtil.submitPendingBlocks(
+              (blocks: OnchainBlock[]) => {
+                // Change the data of a random block
+                const blockToModify = exchangeTestUtil.getRandomInt(
+                  blocks.length
+                );
+                blocks[blockToModify].data = web3.utils.hexToBytes(
+                  blocks[blockToModify].data +
+                    web3.utils.randomHex(1).slice(2)
+                );
+              }
+            ),
             "INVALID_PROOF"
           );
         });

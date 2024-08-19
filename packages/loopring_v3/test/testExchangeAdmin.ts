@@ -10,7 +10,7 @@ contract("Exchange", (accounts: string[]) => {
   const createExchange = async (setupTestState: boolean = true) => {
     await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState, useOwnerContract: false}
+      { setupTestState, useOwnerContract: false }
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -24,7 +24,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.stop();
   });
 
-  describe("Admin", function() {
+  describe("Admin", function () {
     this.timeout(0);
 
     describe("Exchange owner", () => {
@@ -34,7 +34,8 @@ contract("Exchange", (accounts: string[]) => {
           from: exchangeTestUtil.exchangeOwner
         });
 
-        const maxAgeOnchain = await exchange.getMaxAgeDepositUntilWithdrawable();
+        const maxAgeOnchain =
+          await exchange.getMaxAgeDepositUntilWithdrawable();
         assert.equal(maxAgeOnchain, maxAge, "max age unexpected");
       });
     });

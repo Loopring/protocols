@@ -27,7 +27,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.stop();
   });
 
-  describe("Reentrancy", function() {
+  describe("Reentrancy", function () {
     this.timeout(0);
 
     // Load IExchange ABI
@@ -65,10 +65,12 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
 
         // Enable expensive token transfer testing on the TEST token
-        const testTokenAddress = await exchangeTestUtil.getTokenAddress("TEST");
-        const TestToken = await exchangeTestUtil.contracts.TESTToken.at(
-          testTokenAddress
-        );
+        const testTokenAddress =
+          await exchangeTestUtil.getTokenAddress("TEST");
+        const TestToken =
+          await exchangeTestUtil.contracts.TESTToken.at(
+            testTokenAddress
+          );
         const owner = exchangeTestUtil.testContext.orderOwners[0];
         const amount = new BN(web3.utils.toWei("7", "ether"));
 
@@ -81,7 +83,9 @@ contract("Exchange", (accounts: string[]) => {
 
         // Enable the test
         await TestToken.setExchangeAddress(exchange.address);
-        await TestToken.setTestCase(await TestToken.TEST_REENTRANCY());
+        await TestToken.setTestCase(
+          await TestToken.TEST_REENTRANCY()
+        );
 
         const values: any[] = [];
         for (const input of externalFunction.inputs) {
@@ -100,7 +104,9 @@ contract("Exchange", (accounts: string[]) => {
           } else if (input.type === "bytes32[]") {
             values.push(["0x0"]);
           } else if (
-            input.internalType.startsWith("struct ExchangeData.Block[]")
+            input.internalType.startsWith(
+              "struct ExchangeData.Block[]"
+            )
           ) {
             const block: OnchainBlock = {
               blockType: BlockType.UNIVERSAL,
@@ -114,15 +120,20 @@ contract("Exchange", (accounts: string[]) => {
             };
             values.push([block]);
           } else if (
-            input.internalType.startsWith("struct ExchangeData.MerkleProof")
+            input.internalType.startsWith(
+              "struct ExchangeData.MerkleProof"
+            )
           ) {
-            const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(
-              0,
-              0
-            );
+            const proof =
+              await exchangeTestUtil.createMerkleTreeInclusionProof(
+                0,
+                0
+              );
             values.push(proof);
           } else if (
-            input.internalType.startsWith("struct ExchangeData.FlashDeposit[]")
+            input.internalType.startsWith(
+              "struct ExchangeData.FlashDeposit[]"
+            )
           ) {
             const flashDeposit: FlashDeposit = {
               to: Constants.zeroAddress,

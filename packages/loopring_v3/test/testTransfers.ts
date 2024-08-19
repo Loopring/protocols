@@ -17,7 +17,9 @@ contract("Transfers", (accounts: string[]) => {
 
   before(async () => {
     contracts = new Artifacts(artifacts);
-    transferContract = await contracts.TransferContract.new({ from: deployer });
+    transferContract = await contracts.TransferContract.new({
+      from: deployer
+    });
     testToken = await contracts.TESTToken.new({ from: deployer });
     noDefaultFunctionContract = await contracts.PoseidonContract.new({
       from: deployer
@@ -49,7 +51,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should succeed when a token transfer does not throw and returns nothing", async () => {
-      await testToken.setTestCase(await testToken.TEST_NO_RETURN_VALUE());
+      await testToken.setTestCase(
+        await testToken.TEST_NO_RETURN_VALUE()
+      );
       await transferContract.safeTransferFromWithGasLimit(
         testToken.address,
         deployer,
@@ -60,7 +64,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should succeed when a token transfer returns nothing and the call succeeds", async () => {
-      await testToken.setTestCase(await testToken.TEST_NO_RETURN_VALUE());
+      await testToken.setTestCase(
+        await testToken.TEST_NO_RETURN_VALUE()
+      );
       transferContract.safeTransferFromWithGasLimit(
         testToken.address,
         deployer,
@@ -71,7 +77,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer 'require' fails", async () => {
-      await testToken.setTestCase(await testToken.TEST_REQUIRE_FAIL());
+      await testToken.setTestCase(
+        await testToken.TEST_REQUIRE_FAIL()
+      );
       await expectThrow(
         transferContract.safeTransferFromWithGasLimit(
           testToken.address,
@@ -85,7 +93,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer returns false", async () => {
-      await testToken.setTestCase(await testToken.TEST_RETURN_FALSE());
+      await testToken.setTestCase(
+        await testToken.TEST_RETURN_FALSE()
+      );
       await expectThrow(
         transferContract.safeTransferFromWithGasLimit(
           testToken.address,
@@ -99,7 +109,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer returns more than 32 bytes", async () => {
-      await testToken.setTestCase(await testToken.TEST_INVALID_RETURN_SIZE());
+      await testToken.setTestCase(
+        await testToken.TEST_INVALID_RETURN_SIZE()
+      );
       await expectThrow(
         transferContract.safeTransferFromWithGasLimit(
           testToken.address,
@@ -113,7 +125,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer consumes more gas than allowed", async () => {
-      await testToken.setTestCase(await testToken.TEST_EXPENSIVE_TRANSFER());
+      await testToken.setTestCase(
+        await testToken.TEST_EXPENSIVE_TRANSFER()
+      );
       // Low gas limit
       await expectThrow(
         transferContract.safeTransferFromWithGasLimit(
@@ -148,7 +162,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should succeed when a token transfer does not throw and returns nothing", async () => {
-      await testToken.setTestCase(await testToken.TEST_NO_RETURN_VALUE());
+      await testToken.setTestCase(
+        await testToken.TEST_NO_RETURN_VALUE()
+      );
       await transferContract.safeTransferWithGasLimit(
         testToken.address,
         accountA,
@@ -158,7 +174,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should succeed when a token transfer returns nothing and the call succeeds", async () => {
-      await testToken.setTestCase(await testToken.TEST_NO_RETURN_VALUE());
+      await testToken.setTestCase(
+        await testToken.TEST_NO_RETURN_VALUE()
+      );
       transferContract.safeTransferWithGasLimit(
         testToken.address,
         accountA,
@@ -168,7 +186,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer 'require' fails", async () => {
-      await testToken.setTestCase(await testToken.TEST_REQUIRE_FAIL());
+      await testToken.setTestCase(
+        await testToken.TEST_REQUIRE_FAIL()
+      );
       await expectThrow(
         transferContract.safeTransferWithGasLimit(
           testToken.address,
@@ -181,7 +201,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer returns false", async () => {
-      await testToken.setTestCase(await testToken.TEST_RETURN_FALSE());
+      await testToken.setTestCase(
+        await testToken.TEST_RETURN_FALSE()
+      );
       await expectThrow(
         transferContract.safeTransferWithGasLimit(
           testToken.address,
@@ -194,7 +216,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer returns more than 32 bytes", async () => {
-      await testToken.setTestCase(await testToken.TEST_INVALID_RETURN_SIZE());
+      await testToken.setTestCase(
+        await testToken.TEST_INVALID_RETURN_SIZE()
+      );
       await expectThrow(
         transferContract.safeTransferWithGasLimit(
           testToken.address,
@@ -207,7 +231,9 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     it("should fail when a token transfer consumes more gas than allowed", async () => {
-      await testToken.setTestCase(await testToken.TEST_EXPENSIVE_TRANSFER());
+      await testToken.setTestCase(
+        await testToken.TEST_EXPENSIVE_TRANSFER()
+      );
       // Low gas limit
       await expectThrow(
         transferContract.safeTransferWithGasLimit(
@@ -256,7 +282,11 @@ contract("Transfers", (accounts: string[]) => {
         await transferContract.TEST_REQUIRE_FAIL()
       );
       await expectThrow(
-        transferContract.sendETH(transferContract.address, new BN(1), maxGas),
+        transferContract.sendETH(
+          transferContract.address,
+          new BN(1),
+          maxGas
+        ),
         "TRANSFER_FAILURE"
       );
     });
@@ -267,11 +297,19 @@ contract("Transfers", (accounts: string[]) => {
       );
       // Low gas limit
       await expectThrow(
-        transferContract.sendETH(transferContract.address, new BN(1), 5000),
+        transferContract.sendETH(
+          transferContract.address,
+          new BN(1),
+          5000
+        ),
         "TRANSFER_FAILURE"
       );
       // High gas limit
-      transferContract.sendETH(transferContract.address, new BN(1), maxGas);
+      transferContract.sendETH(
+        transferContract.address,
+        new BN(1),
+        maxGas
+      );
     });
   });
 });

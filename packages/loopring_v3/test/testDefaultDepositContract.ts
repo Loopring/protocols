@@ -41,9 +41,15 @@ contract("DefaultDepositContract", (accounts: string[]) => {
       const exchange = exchange1;
       await depositContract.initialize(exchange1);
 
-      await depositContract.deposit(owner1, token.address, new BN(0), "0x", {
-        from: exchange
-      });
+      await depositContract.deposit(
+        owner1,
+        token.address,
+        new BN(0),
+        "0x",
+        {
+          from: exchange
+        }
+      );
       await depositContract.withdraw(
         owner1,
         owner1,
@@ -54,9 +60,15 @@ contract("DefaultDepositContract", (accounts: string[]) => {
           from: exchange
         }
       );
-      await depositContract.transfer(owner1, owner2, token.address, new BN(0), {
-        from: exchange
-      });
+      await depositContract.transfer(
+        owner1,
+        owner2,
+        token.address,
+        new BN(0),
+        {
+          from: exchange
+        }
+      );
     });
 
     // it("should not be able to send a wrong amount of ETH in a deposit", async () => {
@@ -88,7 +100,10 @@ contract("DefaultDepositContract", (accounts: string[]) => {
 
   describe("anyone", () => {
     it("should be able to check if an address is used for ETH", async () => {
-      assert(await depositContract.isETH(Constants.zeroAddress), "0x0 is ETH");
+      assert(
+        await depositContract.isETH(Constants.zeroAddress),
+        "0x0 is ETH"
+      );
       assert(
         !(await depositContract.isETH(token.address)),
         "should not be ETH"
@@ -106,9 +121,15 @@ contract("DefaultDepositContract", (accounts: string[]) => {
     it("should not be able to call the interface functions", async () => {
       await depositContract.initialize(exchange1);
       await expectThrow(
-        depositContract.deposit(owner1, token.address, new BN(0), "0x", {
-          from: exchange2
-        }),
+        depositContract.deposit(
+          owner1,
+          token.address,
+          new BN(0),
+          "0x",
+          {
+            from: exchange2
+          }
+        ),
         "UNAUTHORIZED"
       );
       await expectThrow(
@@ -125,9 +146,15 @@ contract("DefaultDepositContract", (accounts: string[]) => {
         "UNAUTHORIZED"
       );
       await expectThrow(
-        depositContract.transfer(owner1, owner2, token.address, new BN(0), {
-          from: exchange2
-        }),
+        depositContract.transfer(
+          owner1,
+          owner2,
+          token.address,
+          new BN(0),
+          {
+            from: exchange2
+          }
+        ),
         "UNAUTHORIZED"
       );
     });
@@ -138,11 +165,15 @@ contract("DefaultDepositContract", (accounts: string[]) => {
       await createExchange();
 
       const amount = new BN(web3.utils.toWei("100", "ether"));
-      const amountTransfered = amount.mul(new BN(99)).div(new BN(100));
+      const amountTransfered = amount
+        .mul(new BN(99))
+        .div(new BN(100));
 
       // Enable transfer mode that will transfer less than expected
       const testTokenAddress = await ctx.getTokenAddress("TEST");
-      const TestToken = await ctx.contracts.TESTToken.at(testTokenAddress);
+      const TestToken = await ctx.contracts.TESTToken.at(
+        testTokenAddress
+      );
       await TestToken.setTestCase(
         await TestToken.TEST_DIFFERENT_TRANSFER_AMOUNT()
       );
@@ -158,13 +189,24 @@ contract("DefaultDepositContract", (accounts: string[]) => {
       }
 
       // Enable balance checking
-      await ctx.depositContract.setCheckBalance(testTokenAddress, true);
+      await ctx.depositContract.setCheckBalance(
+        testTokenAddress,
+        true
+      );
       const event = await ctx.assertEventEmitted(
         ctx.depositContract,
         "CheckBalance"
       );
-      assert.equal(event.token, testTokenAddress, "unexpected token address");
-      assert.equal(event.checkBalance, true, "unexpected checkBalance");
+      assert.equal(
+        event.token,
+        testTokenAddress,
+        "unexpected token address"
+      );
+      assert.equal(
+        event.checkBalance,
+        true,
+        "unexpected checkBalance"
+      );
 
       // Deposit again, but with checking the balance change, the amount deposited is correct
       {
@@ -175,7 +217,10 @@ contract("DefaultDepositContract", (accounts: string[]) => {
           ctx.exchange,
           "DepositRequested"
         );
-        assert(event.amount.eq(amountTransfered), "unexpected amount");
+        assert(
+          event.amount.eq(amountTransfered),
+          "unexpected amount"
+        );
       }
 
       // Submit

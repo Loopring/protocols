@@ -1,17 +1,24 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { Constants } from "loopringV3.js";
-import { AccountUpdateUtils, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  AccountUpdateUtils,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 import { AuthMethod } from "./types";
 import * as sigUtil from "eth-sig-util";
 import { SignatureType, sign } from "../util/Signature";
 import { KeyPair } from "loopringV3.js";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
-const TestLoopringWalletV2 = artifacts.require("TestLoopringWalletV2");
+const TestLoopringWalletV2 = artifacts.require(
+  "TestLoopringWalletV2"
+);
 const WalletFactory = artifacts.require("WalletFactory");
 const LoopringWalletAgent = artifacts.require("LoopringWalletAgent");
-const DestroyableWalletAgent = artifacts.require("DestroyableWalletAgent");
+const DestroyableWalletAgent = artifacts.require(
+  "DestroyableWalletAgent"
+);
 
 interface WalletSignatureData {
   signature: string;
@@ -23,7 +30,10 @@ interface WalletSignatureData {
 }
 
 export namespace WalletUtils {
-  export function toTypedData(walletConfig: any, verifyingContract: string) {
+  export function toTypedData(
+    walletConfig: any,
+    verifyingContract: string
+  ) {
     const typedData = {
       types: {
         EIP712Domain: [
@@ -64,8 +74,14 @@ export namespace WalletUtils {
     return typedData;
   }
 
-  export function getHash(walletConfig: any, verifyingContract: string) {
-    const typedData = this.toTypedData(walletConfig, verifyingContract);
+  export function getHash(
+    walletConfig: any,
+    verifyingContract: string
+  ) {
+    const typedData = this.toTypedData(
+      walletConfig,
+      verifyingContract
+    );
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
@@ -87,7 +103,9 @@ contract("SmartWallet", (accounts: string[]) => {
 
   const setupSmartWallet = async () => {
     walletImplementation = await TestLoopringWalletV2.new();
-    walletFactory = await WalletFactory.new(walletImplementation.address);
+    walletFactory = await WalletFactory.new(
+      walletImplementation.address
+    );
 
     loopringWalletAgent = await LoopringWalletAgent.new(
       walletImplementation.address,
@@ -95,7 +113,8 @@ contract("SmartWallet", (accounts: string[]) => {
       ctx.exchange.address
     );
 
-    MAX_TIME_VALID_AFTER_CREATION = await loopringWalletAgent.MAX_TIME_VALID_AFTER_CREATION();
+    MAX_TIME_VALID_AFTER_CREATION =
+      await loopringWalletAgent.MAX_TIME_VALID_AFTER_CREATION();
 
     await agentRegistry.registerUniversalAgent(
       loopringWalletAgent.address,
@@ -132,13 +151,20 @@ contract("SmartWallet", (accounts: string[]) => {
       SignatureType.EIP_712
     );
     await walletFactory.createWallet(walletConfig, salt);
-    const event = await ctx.assertEventEmitted(walletFactory, "WalletCreated");
+    const event = await ctx.assertEventEmitted(
+      walletFactory,
+      "WalletCreated"
+    );
     assert.equal(
       event.wallet,
       expectedWalletAddress,
       "wallet address doesn't match"
     );
-    assert.equal(event.owner, walletOwner, "wallet owner doesn't match");
+    assert.equal(
+      event.owner,
+      walletOwner,
+      "wallet owner doesn't match"
+    );
   };
 
   const requestAccountUpdateWithAgent = async (
@@ -232,7 +258,9 @@ contract("SmartWallet", (accounts: string[]) => {
     agentRegistry = await AgentRegistry.new({ from: registryOwner });
 
     // Register it on the exchange contract
-    const wrapper = await ctx.contracts.ExchangeV3.at(ctx.operator.address);
+    const wrapper = await ctx.contracts.ExchangeV3.at(
+      ctx.operator.address
+    );
     await wrapper.setAgentRegistry(agentRegistry.address, {
       from: ctx.exchangeOwner
     });
@@ -250,10 +278,10 @@ contract("SmartWallet", (accounts: string[]) => {
     );
   });
 
-  describe("SmartWallet", function() {
+  describe("SmartWallet", function () {
     this.timeout(0);
 
-    [true, false].forEach(function(valid) {
+    [true, false].forEach(function (valid) {
       it(
         "Authorize L2 transaction in block callback (" + valid + ")",
         async () => {
@@ -269,10 +297,11 @@ contract("SmartWallet", (accounts: string[]) => {
           const walletOwner = ownerB;
           const salt = new BN("123456789");
 
-          const walletAddress = await walletFactory.computeWalletAddress(
-            walletOwner,
-            salt
-          );
+          const walletAddress =
+            await walletFactory.computeWalletAddress(
+              walletOwner,
+              salt
+            );
 
           // Do a transfer the the smart wallet
           await ctx.transfer(
@@ -296,20 +325,30 @@ contract("SmartWallet", (accounts: string[]) => {
             valid ? walletOwner : ownerA
           );
 
-          const validUntilBefore = await loopringWalletAgent.getSignatureExpiry(
-            walletAddress,
-            requestData.txHash,
-            requestData.auxiliaryData
-          );
+          const validUntilBefore =
+            await loopringWalletAgent.getSignatureExpiry(
+              walletAddress,
+              requestData.txHash,
+              requestData.auxiliaryData
+            );
           assert(
             validUntilBefore.eq(
-              valid ? new BN(2).pow(new BN(256)).sub(new BN(1)) : new BN(0)
+              valid
+                ? new BN(2).pow(new BN(256)).sub(new BN(1))
+                : new BN(0)
             ),
             "unexpected valid until"
           );
 
           // Do a transfer on L2
-          await ctx.transfer(walletOwner, ownerA, token, fee, token, fee);
+          await ctx.transfer(
+            walletOwner,
+            ownerA,
+            token,
+            fee,
+            token,
+            fee
+          );
 
           // Withdraw to L1 (while still undeployed)
           await ctx.requestWithdrawal(
@@ -324,31 +363,37 @@ contract("SmartWallet", (accounts: string[]) => {
           if (valid) {
             await ctx.submitPendingBlocks();
           } else {
-            await expectThrow(ctx.submitPendingBlocks(), "INVALID_SIGNATURE");
+            await expectThrow(
+              ctx.submitPendingBlocks(),
+              "INVALID_SIGNATURE"
+            );
           }
 
           await deploySmartWallet(walletOwner, salt, walletAddress);
           const wallet = await TestLoopringWalletV2.at(walletAddress);
 
-          const creationTimestamp = await wallet.getCreationTimestamp();
+          const creationTimestamp =
+            await wallet.getCreationTimestamp();
           const validUntil = creationTimestamp.add(
             MAX_TIME_VALID_AFTER_CREATION
           );
 
-          const ownerValidUntil = await loopringWalletAgent.getInitialOwnerExpiry(
-            walletAddress
-          );
+          const ownerValidUntil =
+            await loopringWalletAgent.getInitialOwnerExpiry(
+              walletAddress
+            );
           assert(
             ownerValidUntil.eq(validUntil),
             "unexpected valid until owner"
           );
 
           const expectedValidUntil = valid ? validUntil : new BN(0);
-          const validUntilAfter = await loopringWalletAgent.getSignatureExpiry(
-            walletAddress,
-            requestData.txHash,
-            requestData.auxiliaryData
-          );
+          const validUntilAfter =
+            await loopringWalletAgent.getSignatureExpiry(
+              walletAddress,
+              requestData.txHash,
+              requestData.auxiliaryData
+            );
           assert(
             validUntilAfter.eq(expectedValidUntil),
             "unexpected valid until signature"
@@ -395,7 +440,9 @@ contract("SmartWallet", (accounts: string[]) => {
       );
     });
 
-    [AuthMethod.APPROVE, AuthMethod.ECDSA].forEach(function(authMethod) {
+    [AuthMethod.APPROVE, AuthMethod.ECDSA].forEach(function (
+      authMethod
+    ) {
       it(
         "Authorize L2 transaction using approved transaction (" +
           authMethod +
@@ -413,10 +460,11 @@ contract("SmartWallet", (accounts: string[]) => {
           const walletOwner = ownerB;
           const salt = new BN("123456789");
 
-          const walletAddress = await walletFactory.computeWalletAddress(
-            walletOwner,
-            salt
-          );
+          const walletAddress =
+            await walletFactory.computeWalletAddress(
+              walletOwner,
+              salt
+            );
 
           // Do a transfer the the smart wallet
           await ctx.transfer(
@@ -480,11 +528,20 @@ contract("SmartWallet", (accounts: string[]) => {
             [walletAddress],
             [requestData.txHash],
             [requestData.auxiliaryData],
-            { from: authMethod === AuthMethod.ECDSA ? ownerA : ownerB }
+            {
+              from: authMethod === AuthMethod.ECDSA ? ownerA : ownerB
+            }
           );
 
           // Do a transfer on L2
-          await ctx.transfer(walletOwner, ownerA, token, fee, token, fee);
+          await ctx.transfer(
+            walletOwner,
+            ownerA,
+            token,
+            fee,
+            token,
+            fee
+          );
 
           // Withdraw to L1 (while still undeployed)
           await ctx.requestWithdrawal(
@@ -513,7 +570,10 @@ contract("SmartWallet", (accounts: string[]) => {
               [walletAddress],
               [requestData.txHash],
               [requestData.auxiliaryData],
-              { from: authMethod === AuthMethod.ECDSA ? ownerA : ownerB }
+              {
+                from:
+                  authMethod === AuthMethod.ECDSA ? ownerA : ownerB
+              }
             ),
             "INVALID_SIGNATURE"
           );
@@ -522,7 +582,7 @@ contract("SmartWallet", (accounts: string[]) => {
     });
   });
 
-  describe("DestructableSmartWallet", function() {
+  describe("DestructableSmartWallet", function () {
     this.timeout(0);
 
     it("Authorize L2 transaction in block callback", async () => {
@@ -536,10 +596,11 @@ contract("SmartWallet", (accounts: string[]) => {
       const walletOwner = ownerB;
       const salt = new BN("123456789");
 
-      const walletAddress = await destroyableWalletAgent.computeWalletAddress(
-        walletOwner,
-        salt
-      );
+      const walletAddress =
+        await destroyableWalletAgent.computeWalletAddress(
+          walletOwner,
+          salt
+        );
 
       // Setup the account
       const requestDataA = await requestAccountUpdateWithAgent(
@@ -582,11 +643,12 @@ contract("SmartWallet", (accounts: string[]) => {
         salt
       );
 
-      const usableBefore = await destroyableWalletAgent.isUsableSignatureForWallet(
-        walletAddress,
-        requestDataA.txHash,
-        requestDataA.auxiliaryData
-      );
+      const usableBefore =
+        await destroyableWalletAgent.isUsableSignatureForWallet(
+          walletAddress,
+          requestDataA.txHash,
+          requestDataA.auxiliaryData
+        );
       assert.equal(usableBefore, true);
 
       await ctx.submitTransactions();
@@ -596,11 +658,12 @@ contract("SmartWallet", (accounts: string[]) => {
         await destroyableWalletAgent.isDestroyed(walletAddress),
         true
       );
-      const usableAfter = await destroyableWalletAgent.isUsableSignatureForWallet(
-        walletAddress,
-        requestDataA.txHash,
-        requestDataA.auxiliaryData
-      );
+      const usableAfter =
+        await destroyableWalletAgent.isUsableSignatureForWallet(
+          walletAddress,
+          requestDataA.txHash,
+          requestDataA.auxiliaryData
+        );
       assert.equal(usableAfter, false);
     });
   });

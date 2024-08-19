@@ -9,11 +9,7 @@ const abi = require("ethereumjs-abi");
 const isAmountCloseEnough = (bn1: BN, bn2: BN) => {
   const result =
     bn1.lte(bn2) &&
-    bn2
-      .sub(bn1)
-      .mul(new BN(100000))
-      .div(bn2)
-      .lte(new BN(1));
+    bn2.sub(bn1).mul(new BN(100000)).div(bn2).lte(new BN(1));
   if (!result) {
     console.error(bn1.toString(10) + " vs " + bn2.toString(10));
   }
@@ -60,8 +56,12 @@ contract("UserStakingPool", (accounts: string[]) => {
       mockProtocolFeeVault = await MockContract.new();
       userStakingPool = await UserStakingPool.new(mockLRC.address);
 
-      MIN_WITHDRAW_DELAY = (await userStakingPool.MIN_WITHDRAW_DELAY()).toNumber();
-      MIN_CLAIM_DELAY = (await userStakingPool.MIN_CLAIM_DELAY()).toNumber();
+      MIN_WITHDRAW_DELAY = (
+        await userStakingPool.MIN_WITHDRAW_DELAY()
+      ).toNumber();
+      MIN_CLAIM_DELAY = (
+        await userStakingPool.MIN_CLAIM_DELAY()
+      ).toNumber();
 
       assert.equal(
         MIN_WITHDRAW_DELAY,
@@ -85,7 +85,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(alice);
 
         assert(
-          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(
+            withdrawalWaitTime,
+            new BN(MIN_WITHDRAW_DELAY)
+          ),
           "withdrawalWaitTime"
         );
         assert(
@@ -117,7 +120,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(bob);
 
         assert(
-          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(
+            withdrawalWaitTime,
+            new BN(MIN_WITHDRAW_DELAY)
+          ),
           "withdrawalWaitTime"
         );
         assert(
@@ -140,7 +146,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(bob);
 
         assert(
-          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY / 2)),
+          isTimeCloseEnough(
+            withdrawalWaitTime,
+            new BN(MIN_WITHDRAW_DELAY / 2)
+          ),
           "withdrawalWaitTime: " +
             withdrawalWaitTime.toString(10) +
             " vs " +
@@ -172,7 +181,10 @@ contract("UserStakingPool", (accounts: string[]) => {
           isTimeCloseEnough(withdrawalWaitTime, new BN(10)),
           "withdrawalWaitTime"
         );
-        assert(isTimeCloseEnough(rewardWaitTime, new BN(10)), "rewardWaitTime");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(10)),
+          "rewardWaitTime"
+        );
         assert(balance.eq(amount), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
 
@@ -201,7 +213,9 @@ contract("UserStakingPool", (accounts: string[]) => {
       });
 
       it("can withdraw all LRC", async () => {
-        const tx = await userStakingPool.withdraw(ZERO, { from: bob });
+        const tx = await userStakingPool.withdraw(ZERO, {
+          from: bob
+        });
 
         // - Check: LRCWithdrawn event emitted
         truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
@@ -221,7 +235,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(bob);
 
         assert(
-          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(
+            withdrawalWaitTime,
+            new BN(MIN_WITHDRAW_DELAY)
+          ),
           "withdrawalWaitTime"
         );
         assert(
@@ -237,7 +254,9 @@ contract("UserStakingPool", (accounts: string[]) => {
       const amount = new BN(web3.utils.toWei("1000", "ether"));
 
       it("can stake 1000 LRC", async () => {
-        const tx = await userStakingPool.stake(amount, { from: charles });
+        const tx = await userStakingPool.stake(amount, {
+          from: charles
+        });
 
         // - Check: LRCStaked emitted
         truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
@@ -256,7 +275,10 @@ contract("UserStakingPool", (accounts: string[]) => {
           withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
           "withdrawalWaitTime"
         );
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+        assert(
+          rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
         assert(balance.eq(amount), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
@@ -283,7 +305,9 @@ contract("UserStakingPool", (accounts: string[]) => {
       it("then withdraw 1/4 LRC", async () => {
         // - Action: Withdraw all 1/4 LRC
 
-        const tx = await userStakingPool.withdraw(oneForth, { from: charles });
+        const tx = await userStakingPool.withdraw(oneForth, {
+          from: charles
+        });
 
         // - Check: LRCWithdrawn event emitted
         truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
@@ -309,7 +333,9 @@ contract("UserStakingPool", (accounts: string[]) => {
       });
 
       it("then withdraw all remaining LRC", async () => {
-        const tx = await userStakingPool.withdraw(amount, { from: charles });
+        const tx = await userStakingPool.withdraw(amount, {
+          from: charles
+        });
 
         // - Check: LRCWithdrawn event emitted
         truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
@@ -332,7 +358,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(charles);
 
         assert(
-          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(
+            withdrawalWaitTime,
+            new BN(MIN_WITHDRAW_DELAY)
+          ),
           "withdrawalWaitTime"
         );
         assert(
@@ -353,8 +382,12 @@ contract("UserStakingPool", (accounts: string[]) => {
         from: owner
       });
 
-      MIN_WITHDRAW_DELAY = (await userStakingPool.MIN_WITHDRAW_DELAY()).toNumber();
-      MIN_CLAIM_DELAY = (await userStakingPool.MIN_CLAIM_DELAY()).toNumber();
+      MIN_WITHDRAW_DELAY = (
+        await userStakingPool.MIN_WITHDRAW_DELAY()
+      ).toNumber();
+      MIN_CLAIM_DELAY = (
+        await userStakingPool.MIN_CLAIM_DELAY()
+      ).toNumber();
 
       assert.equal(
         MIN_WITHDRAW_DELAY,
@@ -396,7 +429,16 @@ contract("UserStakingPool", (accounts: string[]) => {
         await mockProtocolFeeVault.givenMethodReturn(
           getProtocolFeeStats,
           abi.rawEncode(
-            ["uint", "uint", "uint", "uint", "uint", "uint", "uint", "uint"],
+            [
+              "uint",
+              "uint",
+              "uint",
+              "uint",
+              "uint",
+              "uint",
+              "uint",
+              "uint"
+            ],
             [0, 0, 0, 0, 0, 0, 0, totalReward]
           )
         );
@@ -408,7 +450,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         truffleAssert.eventEmitted(tx, "LRCRewarded", (evt: any) => {
           return (
             alice === evt.user &&
-            isAmountCloseEnough(evt.amount, totalReward.div(new BN(2)))
+            isAmountCloseEnough(
+              evt.amount,
+              totalReward.div(new BN(2))
+            )
           );
         });
 
@@ -424,7 +469,10 @@ contract("UserStakingPool", (accounts: string[]) => {
           "rewardWaitTime"
         );
         assert(
-          isAmountCloseEnough(balance, amount.add(totalReward.div(new BN(2)))),
+          isAmountCloseEnough(
+            balance,
+            amount.add(totalReward.div(new BN(2)))
+          ),
           "balance"
         );
         assert(claimableReward.eq(ZERO), "claimableReward");
@@ -435,7 +483,8 @@ contract("UserStakingPool", (accounts: string[]) => {
         const tx = await userStakingPool.claim({ from: bob });
         truffleAssert.eventEmitted(tx, "LRCRewarded", (evt: any) => {
           return (
-            bob === evt.user && isAmountCloseEnough(evt.amount, totalReward)
+            bob === evt.user &&
+            isAmountCloseEnough(evt.amount, totalReward)
           );
         });
 

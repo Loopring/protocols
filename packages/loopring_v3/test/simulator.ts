@@ -63,14 +63,19 @@ export class Balance {
     this.storage = {};
   }
 
-  public init(balance: BN, weightAMM: BN, storage: { [key: number]: Storage }) {
+  public init(
+    balance: BN,
+    weightAMM: BN,
+    storage: { [key: number]: Storage }
+  ) {
     this.balance = new BN(balance.toString(10));
     this.weightAMM = new BN(weightAMM.toString(10));
     this.storage = storage;
   }
 
   public getStorage(storageID: number) {
-    const address = storageID % 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
+    const address =
+      storageID % 2 ** Constants.BINARY_TREE_DEPTH_STORAGE;
     if (this.storage[address] === undefined) {
       this.storage[address] = new Storage();
     }
@@ -154,13 +159,19 @@ export interface SimulatorReport {
 }
 
 export class Simulator {
-  public static async loadExchangeState(exchangeID: number, blockIdx: number) {
+  public static async loadExchangeState(
+    exchangeID: number,
+    blockIdx: number
+  ) {
     const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
-      const stateFile = "states/state_" + exchangeID + "_" + blockIdx + ".json";
+      const stateFile =
+        "states/state_" + exchangeID + "_" + blockIdx + ".json";
       const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
-      const accountsKeys: string[] = Object.keys(jState.accounts_values);
+      const accountsKeys: string[] = Object.keys(
+        jState.accounts_values
+      );
       let numAccounts = 1;
       for (const accountKey of accountsKeys) {
         numAccounts =
@@ -175,12 +186,16 @@ export class Simulator {
         const jAccount = jState.accounts_values[accountKey];
 
         const balances: { [key: number]: Balance } = {};
-        const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
+        const balancesKeys: string[] = Object.keys(
+          jAccount._balancesLeafs
+        );
         for (const balanceKey of balancesKeys) {
           const jBalance = jAccount._balancesLeafs[balanceKey];
 
           const storage: { [key: number]: Storage } = {};
-          const storageKeys: string[] = Object.keys(jBalance._storageLeafs);
+          const storageKeys: string[] = Object.keys(
+            jBalance._storageLeafs
+          );
           for (const storageKey of storageKeys) {
             const jStorage = jBalance._storageLeafs[storageKey];
             storage[Number(storageKey)] = {
@@ -217,13 +232,20 @@ export class Simulator {
     return exchangeState;
   }
 
-  public static compareStates(stateA: ExchangeState, stateB: ExchangeState) {
+  public static compareStates(
+    stateA: ExchangeState,
+    stateB: ExchangeState
+  ) {
     assert.equal(
       stateA.accounts.length,
       stateA.accounts.length,
       "number of accounts does not match"
     );
-    for (let accountID = 0; accountID < stateA.accounts.length; accountID++) {
+    for (
+      let accountID = 0;
+      accountID < stateA.accounts.length;
+      accountID++
+    ) {
       const accountA = stateA.accounts[accountID];
       const accountB = stateB.accounts[accountID];
       this.compareAccounts(accountA, accountB);
@@ -239,7 +261,11 @@ export class Simulator {
   }
 
   public static compareAccounts(accountA: any, accountB: any) {
-    for (let tokenID = 0; tokenID < Constants.MAX_NUM_TOKENS; tokenID++) {
+    for (
+      let tokenID = 0;
+      tokenID < Constants.MAX_NUM_TOKENS;
+      tokenID++
+    ) {
       let balanceValueA = accountA.balances[tokenID];
       let balanceValueB = accountB.balances[tokenID];
 
@@ -254,9 +280,9 @@ export class Simulator {
         storage: {}
       };
 
-      for (const storageID of Object.keys(balanceValueA.storage).concat(
-        Object.keys(balanceValueB.storage)
-      )) {
+      for (const storageID of Object.keys(
+        balanceValueA.storage
+      ).concat(Object.keys(balanceValueB.storage))) {
         let storageValueA = balanceValueA.storage[Number(storageID)];
         let storageValueB = balanceValueB.storage[Number(storageID)];
 
@@ -321,7 +347,11 @@ export class Simulator {
       accountB.publicKeyY,
       "pubKeyY does not match"
     );
-    assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
+    assert.equal(
+      accountA.nonce,
+      accountB.nonce,
+      "nonce does not match"
+    );
     assert.equal(
       accountA.feeBipsAMM,
       accountB.feeBipsAMM,
@@ -351,7 +381,9 @@ export class Simulator {
         report = this.deposit(state, block, deposit);
 
         logInfo("#" + index + " Deposit");
-        const accountBefore = previousState.getAccount(deposit.accountID);
+        const accountBefore = previousState.getAccount(
+          deposit.accountID
+        );
         const accountAfter = state.getAccount(deposit.accountID);
         this.prettyPrintBalanceChange(
           deposit.accountID,
@@ -364,7 +396,9 @@ export class Simulator {
         report = this.updateAccount(state, block, tx);
 
         logInfo("#" + index + " AccountUpdate");
-        const accountBefore = previousState.getAccount(update.accountID);
+        const accountBefore = previousState.getAccount(
+          update.accountID
+        );
         const accountAfter = state.getAccount(update.accountID);
         if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
           logInfo(
@@ -395,15 +429,21 @@ export class Simulator {
         const accountFromBefore = previousState.getAccount(
           transfer.fromAccountID
         );
-        const accountFromAfter = state.getAccount(transfer.fromAccountID);
+        const accountFromAfter = state.getAccount(
+          transfer.fromAccountID
+        );
 
-        const accountToBefore = previousState.getAccount(transfer.toAccountID);
+        const accountToBefore = previousState.getAccount(
+          transfer.toAccountID
+        );
         const accountToAfter = state.getAccount(transfer.toAccountID);
 
         const accountOperatorBefore = previousState.getAccount(
           block.operatorAccountID
         );
-        const accountOperatorAfter = state.getAccount(block.operatorAccountID);
+        const accountOperatorAfter = state.getAccount(
+          block.operatorAccountID
+        );
 
         /*for (const detailedTransfer of report.detailedTransfers) {
           this.logDetailedTokenTransfer(detailedTransfer, {});
@@ -435,7 +475,8 @@ export class Simulator {
         this.prettyPrintBalanceChange(
           block.operatorAccountID,
           transfer.feeTokenID,
-          accountOperatorBefore.getBalance(transfer.feeTokenID).balance,
+          accountOperatorBefore.getBalance(transfer.feeTokenID)
+            .balance,
           accountOperatorAfter.getBalance(transfer.feeTokenID).balance
         );
         logInfo("----");
@@ -456,7 +497,9 @@ export class Simulator {
         report = this.withdraw(state, block, tx);
 
         logInfo("#" + index + " Withdraw");
-        const accountBefore = previousState.getAccount(withdrawal.accountID);
+        const accountBefore = previousState.getAccount(
+          withdrawal.accountID
+        );
         const accountAfter = state.getAccount(withdrawal.accountID);
         this.prettyPrintBalanceChange(
           withdrawal.accountID,
@@ -469,7 +512,9 @@ export class Simulator {
         report = this.updateAMM(state, block, update);
 
         logInfo("#" + index + " AMM Update");
-        const accountBefore = previousState.getAccount(update.accountID);
+        const accountBefore = previousState.getAccount(
+          update.accountID
+        );
         const accountAfter = state.getAccount(update.accountID);
       } else if (tx.txType === "SignatureVerification") {
         logInfo("#" + index + " Signature Verification");
@@ -478,7 +523,9 @@ export class Simulator {
         report = this.nftMint(state, block, tx);
 
         logInfo("#" + index + " NftMint");
-        const accountBefore = previousState.getAccount(mint.toAccountID);
+        const accountBefore = previousState.getAccount(
+          mint.toAccountID
+        );
         const accountAfter = state.getAccount(mint.toAccountID);
         this.prettyPrintBalanceChange(
           mint.toAccountID,
@@ -600,7 +647,9 @@ export class Simulator {
     storage.storageID = transfer.storageID;
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(transfer.feeTokenID).balance.iadd(transfer.fee);
+    operator
+      .getBalance(transfer.feeTokenID)
+      .balance.iadd(transfer.fee);
 
     const simulatorReport: SimulatorReport = {
       exchangeStateAfter: state
@@ -622,7 +671,9 @@ export class Simulator {
       amount = new BN(0);
     }
     account.getBalance(withdrawal.tokenID).balance.isub(amount);
-    account.getBalance(withdrawal.feeTokenID).balance.isub(withdrawal.fee);
+    account
+      .getBalance(withdrawal.feeTokenID)
+      .balance.isub(withdrawal.fee);
 
     if (
       withdrawal.type === 2 ||
@@ -633,11 +684,14 @@ export class Simulator {
     }
 
     const operator = state.getAccount(block.operatorAccountID);
-    operator.getBalance(withdrawal.feeTokenID).balance.iadd(withdrawal.fee);
+    operator
+      .getBalance(withdrawal.feeTokenID)
+      .balance.iadd(withdrawal.fee);
 
     if (withdrawal.type === 0 || withdrawal.type === 1) {
       // Nonce
-      const storageSlot = withdrawal.storageID % Constants.NUM_STORAGE_SLOTS;
+      const storageSlot =
+        withdrawal.storageID % Constants.NUM_STORAGE_SLOTS;
       const storage = account
         .getBalance(withdrawal.tokenID)
         .getStorage(storageSlot);
@@ -651,7 +705,11 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public static nftMint(state: ExchangeState, block: TxBlock, mint: NftMint) {
+  public static nftMint(
+    state: ExchangeState,
+    block: TxBlock,
+    mint: NftMint
+  ) {
     const minter = state.getAccount(mint.minterAccountID);
     mint.minter = minter.owner;
 
@@ -661,7 +719,10 @@ export class Simulator {
     }
 
     to.getBalance(mint.toTokenID).balance.iadd(mint.amount);
-    to.getBalance(mint.toTokenID).weightAMM = new BN(mint.nftData, 10);
+    to.getBalance(mint.toTokenID).weightAMM = new BN(
+      mint.nftData,
+      10
+    );
 
     minter.getBalance(mint.feeTokenID).balance.isub(mint.fee);
 
@@ -725,10 +786,20 @@ export class Simulator {
     let valid = matchResult.matchable;
     valid =
       valid &&
-      this.checkValid(spotTrade.orderA, fillA.S, fillA.B, block.timestamp);
+      this.checkValid(
+        spotTrade.orderA,
+        fillA.S,
+        fillA.B,
+        block.timestamp
+      );
     valid =
       valid &&
-      this.checkValid(spotTrade.orderB, fillB.S, fillB.B, block.timestamp);
+      this.checkValid(
+        spotTrade.orderB,
+        fillB.S,
+        fillB.B,
+        block.timestamp
+      );
 
     if (!valid) {
       fillA.S = new BN(0);
@@ -801,7 +872,9 @@ export class Simulator {
           -3
         );
         if (spotTrade.expected.orderA.spread !== undefined) {
-          const nSpread = Number(spotTrade.expected.orderA.spread.toString(10));
+          const nSpread = Number(
+            spotTrade.expected.orderA.spread.toString(10)
+          );
           this.assertAlmostEqual(
             Number(matchResult.spread.toString(10)),
             nSpread,
@@ -928,7 +1001,8 @@ export class Simulator {
     const feeBipsSB = !Constants.isNFT(tokenAS) ? 0 : feeBipsB;
     const feeBipsBB = !Constants.isNFT(tokenAS) ? feeBipsB : 0;
 
-    const allNFT = Constants.isNFT(tokenAS) && Constants.isNFT(tokenBS);
+    const allNFT =
+      Constants.isNFT(tokenAS) && Constants.isNFT(tokenBS);
     const _protocolTakerFeeBips = allNFT ? 0 : protocolFeeTakerBips;
     const _protocolMakerFeeBips = allNFT ? 0 : protocolFeeMakerBips;
     const protocolFeeBipsSA = !Constants.isNFT(tokenBS)
@@ -1046,9 +1120,13 @@ export class Simulator {
         accountA.getBalance(tokenAB).weightAMM.iadd(s.fillBA);
       }
 
-      const tradeHistoryA = accountA.getBalance(tokenAS).getStorage(storageIdA);
+      const tradeHistoryA = accountA
+        .getBalance(tokenAS)
+        .getStorage(storageIdA);
       tradeHistoryA.data =
-        storageIdA > tradeHistoryA.storageID ? new BN(0) : tradeHistoryA.data;
+        storageIdA > tradeHistoryA.storageID
+          ? new BN(0)
+          : tradeHistoryA.data;
       tradeHistoryA.data.iadd(fillAmountBorSA ? s.fillBA : s.fillSA);
       tradeHistoryA.storageID = storageIdA;
 
@@ -1084,9 +1162,13 @@ export class Simulator {
         accountB.getBalance(tokenBB).weightAMM.iadd(s.fillSA);
       }
 
-      const tradeHistoryB = accountB.getBalance(tokenBS).getStorage(storageIdB);
+      const tradeHistoryB = accountB
+        .getBalance(tokenBS)
+        .getStorage(storageIdB);
       tradeHistoryB.data =
-        storageIdB > tradeHistoryB.storageID ? new BN(0) : tradeHistoryB.data;
+        storageIdB > tradeHistoryB.storageID
+          ? new BN(0)
+          : tradeHistoryB.data;
       tradeHistoryB.data.iadd(fillAmountBorSB ? s.fillBB : s.fillSB);
       tradeHistoryB.storageID = storageIdB;
 
@@ -1181,7 +1263,9 @@ export class Simulator {
       const filled = this.getFilled(order, account);
       if (!fillS.isZero() || !fillB.isZero()) {
         const multiplier = new BN(web3.utils.toWei("1000", "ether"));
-        const orderRate = order.amountS.mul(multiplier).div(order.amountB);
+        const orderRate = order.amountS
+          .mul(multiplier)
+          .div(order.amountB);
         const rate = fillS.mul(multiplier).div(fillB);
         let targetRate: BN;
         if (isMakerOrder) {
@@ -1204,7 +1288,11 @@ export class Simulator {
         assert(
           rate
             .mul(multiplier)
-            .lte(orderRate.mul(multiplier.add(multiplier.div(new BN(100))))),
+            .lte(
+              orderRate.mul(
+                multiplier.add(multiplier.div(new BN(100)))
+              )
+            ),
           "fill rate needs to match or be better than the order rate"
         );
       }
@@ -1259,15 +1347,24 @@ export class Simulator {
       .getStorage(order.storageID);
     // Trade history trimming
     const leafStorageID =
-      tradeHistory.storageID === 0 ? storageSlot : tradeHistory.storageID;
+      tradeHistory.storageID === 0
+        ? storageSlot
+        : tradeHistory.storageID;
     const filled =
-      leafStorageID === order.storageID ? tradeHistory.data : new BN(0);
+      leafStorageID === order.storageID
+        ? tradeHistory.data
+        : new BN(0);
     return filled;
   }
 
-  private static getMaxFillAmounts(order: OrderInfo, accountData: any) {
+  private static getMaxFillAmounts(
+    order: OrderInfo,
+    accountData: any
+  ) {
     const tradeHistoryFilled = this.getFilled(order, accountData);
-    const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
+    const balanceS = new BN(
+      accountData.balances[order.tokenIdS].balance
+    );
 
     let remainingS = new BN(0);
     if (order.fillAmountBorS) {
@@ -1282,8 +1379,12 @@ export class Simulator {
         : tradeHistoryFilled;
       remainingS = order.amountS.sub(filled);
     }
-    const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
-    const fillAmountB = fillAmountS.mul(order.amountB).div(order.amountS);
+    const fillAmountS = balanceS.lt(remainingS)
+      ? balanceS
+      : remainingS;
+    const fillAmountB = fillAmountS
+      .mul(order.amountB)
+      .div(order.amountS);
     const fill: Fill = {
       S: fillAmountS,
       B: fillAmountB
@@ -1299,10 +1400,14 @@ export class Simulator {
   ) {
     if (takerFill.B.lt(makerFill.S)) {
       makerFill.S = takerFill.B;
-      makerFill.B = makerFill.S.mul(makerOrder.amountB).div(makerOrder.amountS);
+      makerFill.B = makerFill.S.mul(makerOrder.amountB).div(
+        makerOrder.amountS
+      );
     } else {
       takerFill.B = makerFill.S;
-      takerFill.S = takerFill.B.mul(takerOrder.amountS).div(takerOrder.amountB);
+      takerFill.S = takerFill.B.mul(takerOrder.amountS).div(
+        takerOrder.amountB
+      );
     }
     const spread = takerFill.S.sub(makerFill.B);
     const matchable = this.ensure(
@@ -1321,7 +1426,9 @@ export class Simulator {
     protocolFeeBips: number,
     feeBips: number
   ) {
-    const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
+    const protocolFee = fillB
+      .mul(new BN(protocolFeeBips))
+      .div(new BN(100000));
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
     return [fee, protocolFee];
   }
@@ -1347,7 +1454,8 @@ export class Simulator {
     let valid = true;
 
     valid =
-      valid && this.ensure(timestamp <= order.validUntil, "order too late");
+      valid &&
+      this.ensure(timestamp <= order.validUntil, "order too late");
     valid =
       valid &&
       this.ensure(
@@ -1359,8 +1467,10 @@ export class Simulator {
         ),
         "invalid fill rate"
       );
-    valid = valid && this.ensure(!fillAmountS.eq(0), "no tokens sold");
-    valid = valid && this.ensure(!fillAmountB.eq(0), "no tokens bought");
+    valid =
+      valid && this.ensure(!fillAmountS.eq(0), "no tokens sold");
+    valid =
+      valid && this.ensure(!fillAmountB.eq(0), "no tokens bought");
 
     return valid;
   }
@@ -1404,7 +1514,9 @@ export class Simulator {
       accountID < exchangeState.accounts.length;
       accountID++
     ) {
-      accounts[accountID] = this.copyAccount(exchangeState.accounts[accountID]);
+      accounts[accountID] = this.copyAccount(
+        exchangeState.accounts[accountID]
+      );
     }
     const exchangeStateCopy = new ExchangeState(accounts);
     return exchangeStateCopy;
@@ -1444,10 +1556,20 @@ export class Simulator {
     balanceBefore: BN,
     balanceAfter: BN
   ) {
-    const prettyBalanceBefore = this.getPrettyAmount(tokenID, balanceBefore);
-    const prettyBalanceAfter = this.getPrettyAmount(tokenID, balanceAfter);
+    const prettyBalanceBefore = this.getPrettyAmount(
+      tokenID,
+      balanceBefore
+    );
+    const prettyBalanceAfter = this.getPrettyAmount(
+      tokenID,
+      balanceAfter
+    );
     logInfo(
-      accountID + ": " + prettyBalanceBefore + " -> " + prettyBalanceAfter
+      accountID +
+        ": " +
+        prettyBalanceBefore +
+        " -> " +
+        prettyBalanceAfter
     );
   }
 
@@ -1456,12 +1578,20 @@ export class Simulator {
     addressBook: { [id: number]: string } = {},
     depth: number = 0
   ) {
-    if (payment.amount.eq(new BN(0)) && payment.subPayments.length === 0) {
+    if (
+      payment.amount.eq(new BN(0)) &&
+      payment.subPayments.length === 0
+    ) {
       return;
     }
     const whiteSpace = " ".repeat(depth);
-    const description = payment.description ? payment.description : "";
-    const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
+    const description = payment.description
+      ? payment.description
+      : "";
+    const prettyAmount = this.getPrettyAmount(
+      payment.token,
+      payment.amount
+    );
     if (payment.subPayments.length === 0) {
       const toName =
         addressBook[payment.to] !== undefined
@@ -1480,7 +1610,11 @@ export class Simulator {
     } else {
       logInfo(whiteSpace + "+ " + " [" + description + "] ");
       for (const subPayment of payment.subPayments) {
-        this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
+        this.logDetailedTokenTransfer(
+          subPayment,
+          addressBook,
+          depth + 1
+        );
       }
     }
   }

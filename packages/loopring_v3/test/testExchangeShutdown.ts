@@ -8,10 +8,9 @@ contract("Exchange", (accounts: string[]) => {
   let loopringV3: any;
 
   const createExchange = async () => {
-    await ctx.createExchange(
-      ctx.testContext.stateOwners[0],
-      {useOwnerContract: false}
-    );
+    await ctx.createExchange(ctx.testContext.stateOwners[0], {
+      useOwnerContract: false
+    });
     exchange = ctx.exchange;
   };
 
@@ -25,7 +24,7 @@ contract("Exchange", (accounts: string[]) => {
     await ctx.stop();
   });
 
-  describe("Shutdown", function() {
+  describe("Shutdown", function () {
     this.timeout(0);
 
     it("Withdraw exchange stake", async () => {
@@ -35,7 +34,9 @@ contract("Exchange", (accounts: string[]) => {
 
       // Deposit some LRC to stake for the exchange
       const depositer = ctx.testContext.operators[2];
-      const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+      const stakeAmount = new BN(
+        web3.utils.toWei("1234567", "ether")
+      );
       await ctx.setBalanceAndApprove(
         depositer,
         "LRC",
@@ -44,10 +45,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Stake it
-      await ctx.depositExchangeStakeChecked(
-        stakeAmount,
-        depositer
-      );
+      await ctx.depositExchangeStakeChecked(stakeAmount, depositer);
 
       // Try to withdraw before the exchange is shutdown
       await expectThrow(

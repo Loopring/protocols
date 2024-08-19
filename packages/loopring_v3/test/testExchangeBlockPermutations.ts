@@ -33,7 +33,9 @@ contract("Exchange", (accounts: string[]) => {
   const doRandomDeposit = async () => {
     const orderOwners = exchangeTestUtil.testContext.orderOwners;
     const owner =
-      orderOwners[Number(exchangeTestUtil.getRandomInt(orderOwners.length))];
+      orderOwners[
+        Number(exchangeTestUtil.getRandomInt(orderOwners.length))
+      ];
     const amount = new BN(
       web3.utils.toWei(
         "" + exchangeTestUtil.getRandomInt(100000000) / 1000,
@@ -41,7 +43,12 @@ contract("Exchange", (accounts: string[]) => {
       )
     );
     const token = exchangeTestUtil.getTokenAddress("LRC");
-    return await exchangeTestUtil.deposit(owner, owner, token, amount);
+    return await exchangeTestUtil.deposit(
+      owner,
+      owner,
+      token,
+      amount
+    );
   };
 
   const doRandomOnchainWithdrawal = async (deposit: Deposit) => {
@@ -82,7 +89,7 @@ contract("Exchange", (accounts: string[]) => {
   const createExchange = async (deterministic: boolean = false) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {deterministic}
+      { deterministic }
     );
   };
 
@@ -102,7 +109,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.stop();
   });
 
-  describe("Permutations", function() {
+  describe("Permutations", function () {
     this.timeout(0);
 
     it("Spot trade", async () => {
@@ -170,7 +177,10 @@ contract("Exchange", (accounts: string[]) => {
             deposits[exchangeTestUtil.getRandomInt(numDeposits)];
           const randomDepositB =
             deposits[exchangeTestUtil.getRandomInt(numDeposits)];
-          await doRandomInternalTransfer(randomDepositA, randomDepositB);
+          await doRandomInternalTransfer(
+            randomDepositA,
+            randomDepositB
+          );
         }
         await exchangeTestUtil.submitTransactions();
       }
@@ -248,7 +258,7 @@ contract("Exchange", (accounts: string[]) => {
         token,
         15,
         new BN(123),
-        {authMethod: AuthMethod.APPROVE}
+        { authMethod: AuthMethod.APPROVE }
       );
 
       // Do a transfer
@@ -259,7 +269,7 @@ contract("Exchange", (accounts: string[]) => {
         amount,
         feeToken,
         fee,
-        {authMethod: AuthMethod.ECDSA}
+        { authMethod: AuthMethod.ECDSA }
       );
 
       // Do a withdrawal
@@ -333,7 +343,13 @@ contract("Exchange", (accounts: string[]) => {
           rings.push(ring);
         }
         for (const ring of rings) {
-          await exchangeTestUtil.setupRing(ring, true, true, false, false);
+          await exchangeTestUtil.setupRing(
+            ring,
+            true,
+            true,
+            false,
+            false
+          );
           await exchangeTestUtil.sendRing(ring);
         }
         await exchangeTestUtil.submitTransactions(blockSize);

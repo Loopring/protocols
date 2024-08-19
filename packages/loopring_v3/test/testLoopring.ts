@@ -25,8 +25,10 @@ contract("Loopring", (accounts: string[]) => {
     takerFeeBips: number,
     makerFeeBips: number
   ) => {
-    const protocolTakerFeeBips = await loopring.protocolTakerFeeBips();
-    const protocolMakerFeeBips = await loopring.protocolMakerFeeBips();
+    const protocolTakerFeeBips =
+      await loopring.protocolTakerFeeBips();
+    const protocolMakerFeeBips =
+      await loopring.protocolMakerFeeBips();
 
     assert.equal(
       protocolTakerFeeBips,
@@ -52,8 +54,10 @@ contract("Loopring", (accounts: string[]) => {
 
   describe("Owner", () => {
     it("should be able to update settings", async () => {
-      const protocolFeeVaultBefore = await loopring.protocolFeeVault();
-      const newProtocolFeeVault = exchangeTestUtil.testContext.orderOwners[2];
+      const protocolFeeVaultBefore =
+        await loopring.protocolFeeVault();
+      const newProtocolFeeVault =
+        exchangeTestUtil.testContext.orderOwners[2];
       assert(newProtocolFeeVault !== protocolFeeVaultBefore);
 
       await loopring.updateSettings(
@@ -73,9 +77,13 @@ contract("Loopring", (accounts: string[]) => {
     it("should be able to update protocol fee settings", async () => {
       const takerFeeBips = 12;
       const makerFeeBips = 34;
-      await loopring.updateProtocolFeeSettings(takerFeeBips, makerFeeBips, {
-        from: exchangeTestUtil.testContext.deployer
-      });
+      await loopring.updateProtocolFeeSettings(
+        takerFeeBips,
+        makerFeeBips,
+        {
+          from: exchangeTestUtil.testContext.deployer
+        }
+      );
       await checkProtocolFees(takerFeeBips, makerFeeBips);
     });
   });

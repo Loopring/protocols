@@ -1,6 +1,9 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
-import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  BalanceSnapshot,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -8,10 +11,14 @@ contract("Exchange", (accounts: string[]) => {
   let loopring: any;
   let exchangeID = 0;
 
-  const registerTokenChecked = async (token: string, user: string) => {
+  const registerTokenChecked = async (
+    token: string,
+    user: string
+  ) => {
     const tokenAddress = exchangeTestUtil.getTokenAddress(token);
 
-    const lrc = (await exchangeTestUtil.contracts.LRCToken.deployed()).address;
+    const lrc = (await exchangeTestUtil.contracts.LRCToken.deployed())
+      .address;
     const snapshot = new BalanceSnapshot(exchangeTestUtil);
     await snapshot.watchBalance(exchange.address, lrc, "exchange");
     await snapshot.watchBalance(
@@ -31,13 +38,19 @@ contract("Exchange", (accounts: string[]) => {
       "TokenRegistered"
     );
     const tokenIdContract = await exchange.getTokenID(tokenAddress);
-    const tokenAddressContract = await exchange.getTokenAddress(event.tokenId);
+    const tokenAddressContract = await exchange.getTokenAddress(
+      event.tokenId
+    );
     assert.equal(
       event.tokenId.toNumber(),
       tokenIdContract,
       "Token ID does not match"
     );
-    assert.equal(event.token, tokenAddress, "Token adress does not match");
+    assert.equal(
+      event.token,
+      tokenAddress,
+      "Token adress does not match"
+    );
     assert.equal(
       event.token,
       tokenAddressContract,
@@ -48,7 +61,7 @@ contract("Exchange", (accounts: string[]) => {
   const createExchange = async (setupTestState: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState, useOwnerContract: false}
+      { setupTestState, useOwnerContract: false }
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -65,7 +78,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.stop();
   });
 
-  describe("Tokens", function() {
+  describe("Tokens", function () {
     this.timeout(0);
 
     describe("exchange owner", () => {
@@ -73,20 +86,29 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange(false);
 
         // Register the token
-        await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
+        await registerTokenChecked(
+          "GTO",
+          exchangeTestUtil.exchangeOwner
+        );
       });
 
       it("should not be able to register a token multiple times", async () => {
         await createExchange(false);
 
         // Register the token
-        await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
+        await registerTokenChecked(
+          "GTO",
+          exchangeTestUtil.exchangeOwner
+        );
 
         // Try to register the token again
         await expectThrow(
-          exchange.registerToken(exchangeTestUtil.getTokenAddress("GTO"), {
-            from: exchangeTestUtil.exchangeOwner
-          }),
+          exchange.registerToken(
+            exchangeTestUtil.getTokenAddress("GTO"),
+            {
+              from: exchangeTestUtil.exchangeOwner
+            }
+          ),
           "TOKEN_ALREADY_EXIST"
         );
       });
@@ -107,12 +129,18 @@ contract("Exchange", (accounts: string[]) => {
       it("should not be able to get the token ID for an unregistered token", async () => {
         await createExchange(false);
         const token = exchangeTestUtil.getTokenAddress("GTO");
-        await expectThrow(exchange.getTokenID(token), "TOKEN_NOT_FOUND");
+        await expectThrow(
+          exchange.getTokenID(token),
+          "TOKEN_NOT_FOUND"
+        );
       });
 
       it("should not be able to get the token address for an invalid token ID", async () => {
         await createExchange(false);
-        await expectThrow(exchange.getTokenAddress(123), "INVALID_TOKEN_ID");
+        await expectThrow(
+          exchange.getTokenAddress(123),
+          "INVALID_TOKEN_ID"
+        );
       });
     });
 
@@ -121,16 +149,22 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to register LRC
       await expectThrow(
-        exchange.registerToken(exchangeTestUtil.getTokenAddress("LRC"), {
-          from: exchangeTestUtil.exchangeOwner
-        }),
+        exchange.registerToken(
+          exchangeTestUtil.getTokenAddress("LRC"),
+          {
+            from: exchangeTestUtil.exchangeOwner
+          }
+        ),
         "TOKEN_ALREADY_EXIST"
       );
       // Try to register ETH
       await expectThrow(
-        exchange.registerToken(exchangeTestUtil.getTokenAddress("ETH"), {
-          from: exchangeTestUtil.exchangeOwner
-        }),
+        exchange.registerToken(
+          exchangeTestUtil.getTokenAddress("ETH"),
+          {
+            from: exchangeTestUtil.exchangeOwner
+          }
+        ),
         "TOKEN_ALREADY_EXIST"
       );
     });

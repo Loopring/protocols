@@ -5,7 +5,9 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
   let forcedWithdrawalAgent: any;
 
-  const ForcedWithdrawalAgent = artifacts.require("ForcedWithdrawalAgent");
+  const ForcedWithdrawalAgent = artifacts.require(
+    "ForcedWithdrawalAgent"
+  );
   const AgentRegistry = artifacts.require("AgentRegistry");
 
   const fakeToken = "0x" + "10".repeat(20);
@@ -15,7 +17,9 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
   before(async () => {
     ctx = new ExchangeTestUtil();
     await ctx.initialize(accounts);
-    await ctx.createExchange(accounts[0], { useOwnerContract: false });
+    await ctx.createExchange(accounts[0], {
+      useOwnerContract: false
+    });
 
     forcedWithdrawalAgent = await ForcedWithdrawalAgent.new();
 
@@ -61,7 +65,9 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       }
     );
 
-    const tokenID = (await ctx.exchange.getTokenID(fakeToken)).toNumber();
+    const tokenID = (
+      await ctx.exchange.getTokenID(fakeToken)
+    ).toNumber();
 
     const forcedWithdrawalEvent = events[0];
     assert(
@@ -107,7 +113,9 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       }
     );
 
-    const tokenID = (await ctx.exchange.getTokenID(fakeToken)).toNumber();
+    const tokenID = (
+      await ctx.exchange.getTokenID(fakeToken)
+    ).toNumber();
 
     const forcedWithdrawalEvent = events[0];
     assert(
@@ -144,7 +152,10 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       assert(false, "other user can do forced withdrawals");
     } catch (err) {
       // console.log("err:", err);
-      assert(err.message.includes("NOT_OWNER_OR_MANAGER"), "unexpected_error");
+      assert(
+        err.message.includes("NOT_OWNER_OR_MANAGER"),
+        "unexpected_error"
+      );
     }
   });
 
@@ -158,7 +169,10 @@ contract("ForcedWithdrawalAgent", (accounts: string[]) => {
       forcedWithdrawalAgent.address
     );
     assert(balanceBefore > 0, "invalid balance");
-    await forcedWithdrawalAgent.drain(accounts[0], "0x" + "00".repeat(20));
+    await forcedWithdrawalAgent.drain(
+      accounts[0],
+      "0x" + "00".repeat(20)
+    );
     const balanceAfter = await web3.eth.getBalance(
       forcedWithdrawalAgent.address
     );

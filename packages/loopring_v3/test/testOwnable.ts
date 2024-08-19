@@ -21,14 +21,21 @@ contract("Ownable", (accounts: string[]) => {
     });
 
     it("should not be able to transfer ownership to an invalid address", async () => {
-      await expectThrow(ownable.transferOwnership(emptyAddr), "ZERO_ADDRESS");
+      await expectThrow(
+        ownable.transferOwnership(emptyAddr),
+        "ZERO_ADDRESS"
+      );
     });
   });
 
   describe("anyone", () => {
     it("should be able to get the owner", async () => {
       const contractOwner = await ownable.owner();
-      assert.equal(contractOwner, owner1, "Owner should match expected value");
+      assert.equal(
+        contractOwner,
+        owner1,
+        "Owner should match expected value"
+      );
     });
 
     it("should not be able to transfer ownership", async () => {

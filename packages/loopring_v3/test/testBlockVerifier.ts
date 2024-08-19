@@ -19,7 +19,7 @@ contract("BlockVerifier", (accounts: string[]) => {
   const createExchange = async (setupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      {setupTestState}
+      { setupTestState }
     );
     exchange = exchangeTestUtil.exchange;
   };
@@ -54,11 +54,12 @@ contract("BlockVerifier", (accounts: string[]) => {
     verificationKey: string[],
     owner: string
   ) => {
-    const isRegisteredBefore = await blockVerifier.isCircuitRegistered(
-      blockType,
-      blockSize,
-      blockVersion
-    );
+    const isRegisteredBefore =
+      await blockVerifier.isCircuitRegistered(
+        blockType,
+        blockSize,
+        blockVersion
+      );
     const isEnabledBefore = await blockVerifier.isCircuitEnabled(
       blockType,
       blockSize,
@@ -93,7 +94,11 @@ contract("BlockVerifier", (accounts: string[]) => {
       blockSize,
       blockVersion
     );
-    assert.equal(isRegisteredAfter, true, "circuit should be registered");
+    assert.equal(
+      isRegisteredAfter,
+      true,
+      "circuit should be registered"
+    );
     assert.equal(isEnabledAfter, true, "circuit should be enabled");
 
     // Get the CircuitRegistered event
@@ -101,9 +106,21 @@ contract("BlockVerifier", (accounts: string[]) => {
       blockVerifier,
       "CircuitRegistered"
     );
-    assert.equal(event.blockType, blockType, "blockType should match");
-    assert.equal(event.blockSize, blockSize, "blockSize should match");
-    assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
+    assert.equal(
+      event.blockType,
+      blockType,
+      "blockType should match"
+    );
+    assert.equal(
+      event.blockSize,
+      blockSize,
+      "blockSize should match"
+    );
+    assert.equal(
+      event.blockVersion,
+      blockVersion,
+      "blockVersion should match"
+    );
   };
 
   const disableCircuitChecked = async (
@@ -112,11 +129,12 @@ contract("BlockVerifier", (accounts: string[]) => {
     blockVersion: number,
     owner: string
   ) => {
-    const isRegisteredBefore = await blockVerifier.isCircuitRegistered(
-      blockType,
-      blockSize,
-      blockVersion
-    );
+    const isRegisteredBefore =
+      await blockVerifier.isCircuitRegistered(
+        blockType,
+        blockSize,
+        blockVersion
+      );
     const isEnabledBefore = await blockVerifier.isCircuitEnabled(
       blockType,
       blockSize,
@@ -127,11 +145,20 @@ contract("BlockVerifier", (accounts: string[]) => {
       true,
       "circuit should be registered already"
     );
-    assert.equal(isEnabledBefore, true, "circuit should still be enabled");
+    assert.equal(
+      isEnabledBefore,
+      true,
+      "circuit should still be enabled"
+    );
 
-    await blockVerifier.disableCircuit(blockType, blockSize, blockVersion, {
-      from: owner
-    });
+    await blockVerifier.disableCircuit(
+      blockType,
+      blockSize,
+      blockVersion,
+      {
+        from: owner
+      }
+    );
 
     const isRegisteredAfter = await blockVerifier.isCircuitRegistered(
       blockType,
@@ -143,7 +170,11 @@ contract("BlockVerifier", (accounts: string[]) => {
       blockSize,
       blockVersion
     );
-    assert.equal(isRegisteredAfter, true, "circuit should be registered");
+    assert.equal(
+      isRegisteredAfter,
+      true,
+      "circuit should be registered"
+    );
     assert.equal(isEnabledAfter, false, "circuit should be disabled");
 
     // Get the CircuitDisabled event
@@ -151,9 +182,21 @@ contract("BlockVerifier", (accounts: string[]) => {
       blockVerifier,
       "CircuitDisabled"
     );
-    assert.equal(event.blockType, blockType, "blockType should match");
-    assert.equal(event.blockSize, blockSize, "blockSize should match");
-    assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
+    assert.equal(
+      event.blockType,
+      blockType,
+      "blockType should match"
+    );
+    assert.equal(
+      event.blockSize,
+      blockSize,
+      "blockSize should match"
+    );
+    assert.equal(
+      event.blockVersion,
+      blockVersion,
+      "blockVersion should match"
+    );
   };
 
   before(async () => {
@@ -218,7 +261,12 @@ contract("BlockVerifier", (accounts: string[]) => {
         new Array(18).fill("0x123"),
         owner
       );
-      await disableCircuitChecked(blockType, blockSize, blockVersion, owner);
+      await disableCircuitChecked(
+        blockType,
+        blockSize,
+        blockVersion,
+        owner
+      );
     });
 
     it("should not be able to disable a circuit that wasn't registered", async () => {
@@ -226,9 +274,14 @@ contract("BlockVerifier", (accounts: string[]) => {
       const blockSize = 128;
       const blockVersion = 3;
       await expectThrow(
-        blockVerifier.disableCircuit(blockType, blockSize, blockVersion, {
-          from: owner
-        }),
+        blockVerifier.disableCircuit(
+          blockType,
+          blockSize,
+          blockVersion,
+          {
+            from: owner
+          }
+        ),
         "NOT_REGISTERED"
       );
     });
@@ -267,15 +320,20 @@ contract("BlockVerifier", (accounts: string[]) => {
         owner
       );
       await expectThrow(
-        blockVerifier.disableCircuit(blockType, blockSize, blockVersion, {
-          from: anyone
-        }),
+        blockVerifier.disableCircuit(
+          blockType,
+          blockSize,
+          blockVersion,
+          {
+            from: anyone
+          }
+        ),
         "UNAUTHORIZED"
       );
     });
   });
 
-  describe("Block verification", function() {
+  describe("Block verification", function () {
     this.timeout(0);
 
     const commitBlocksSize1: Block[] = [];
@@ -292,7 +350,9 @@ contract("BlockVerifier", (accounts: string[]) => {
         const ring = await setupRandomRing();
         await exchangeTestUtil.sendRing(ring);
       }
-      commitBlocksSize1.push(...(await exchangeTestUtil.submitTransactions(2)));
+      commitBlocksSize1.push(
+        ...(await exchangeTestUtil.submitTransactions(2))
+      );
       for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
         await exchangeTestUtil.sendRing(ring);
@@ -305,7 +365,9 @@ contract("BlockVerifier", (accounts: string[]) => {
         const ring = await setupRandomRing();
         await exchangeTestUtil.sendRing(ring);
       }
-      commitBlocksSize2.push(...(await exchangeTestUtil.submitTransactions(4)));
+      commitBlocksSize2.push(
+        ...(await exchangeTestUtil.submitTransactions(4))
+      );
       for (let i = 0; i < 2; i++) {
         const ring = await setupRandomRing();
         await exchangeTestUtil.sendRing(ring);
@@ -411,8 +473,10 @@ contract("BlockVerifier", (accounts: string[]) => {
         commitBlocksSize1[0].blockType,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        commitBlocksSize1.map(x => x.publicInput),
-        exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
+        commitBlocksSize1.map((x) => x.publicInput),
+        exchangeTestUtil.flattenList(
+          commitBlocksSize1.map((x) => x.proof)
+        ),
         { from: anyone }
       );
       assert(success, "verification should be succesful");
@@ -421,8 +485,10 @@ contract("BlockVerifier", (accounts: string[]) => {
         settlementBlocksSize2[0].blockType,
         settlementBlocksSize2[0].blockSize,
         settlementBlocksSize2[0].blockVersion,
-        settlementBlocksSize2.map(x => x.publicInput),
-        exchangeTestUtil.flattenList(settlementBlocksSize2.map(x => x.proof)),
+        settlementBlocksSize2.map((x) => x.publicInput),
+        exchangeTestUtil.flattenList(
+          settlementBlocksSize2.map((x) => x.proof)
+        ),
         { from: anyone }
       );
       assert(success, "verification should be succesful");
@@ -430,15 +496,18 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to verify multiple blocks of different circuits with valid proofs", async () => {
       // Add a proof for a different circuit to a random location
-      const mixedBlocks = [...commitBlocksSize1, commitBlocksSize2[0]];
+      const mixedBlocks = [
+        ...commitBlocksSize1,
+        commitBlocksSize2[0]
+      ];
       exchangeTestUtil.shuffle(mixedBlocks);
 
       const success = await blockVerifier.verifyProofs(
         commitBlocksSize1[0].blockType,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        mixedBlocks.map(x => x.publicInput),
-        exchangeTestUtil.flattenList(mixedBlocks.map(x => x.proof)),
+        mixedBlocks.map((x) => x.publicInput),
+        exchangeTestUtil.flattenList(mixedBlocks.map((x) => x.proof)),
         { from: anyone }
       );
       assert(!success, "verification should not be succesful");
@@ -447,9 +516,11 @@ contract("BlockVerifier", (accounts: string[]) => {
     it("should not be able to verify multiple blocks of the same circuits with invalid proofs", async () => {
       // Change a single proof element
       const proofs = exchangeTestUtil.flattenList(
-        commitBlocksSize1.map(x => x.proof)
+        commitBlocksSize1.map((x) => x.proof)
       );
-      const proofIdxToModify = exchangeTestUtil.getRandomInt(proofs.length);
+      const proofIdxToModify = exchangeTestUtil.getRandomInt(
+        proofs.length
+      );
       proofs[proofIdxToModify] =
         "0x" +
         new BN(proofs[proofIdxToModify].slice(2), 16)
@@ -460,7 +531,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         commitBlocksSize1[0].blockType,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        commitBlocksSize1.map(x => x.publicInput),
+        commitBlocksSize1.map((x) => x.publicInput),
         proofs,
         { from: anyone }
       );
@@ -469,7 +540,9 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to verify multiple blocks of the same circuits with invalid public inputs", async () => {
       // Change a single public input
-      const publicInputs = commitBlocksSize1.map(x => x.publicInput);
+      const publicInputs = commitBlocksSize1.map(
+        (x) => x.publicInput
+      );
       const publicDataIdxToModify = exchangeTestUtil.getRandomInt(
         publicInputs.length
       );
@@ -484,7 +557,9 @@ contract("BlockVerifier", (accounts: string[]) => {
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
         publicInputs,
-        exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
+        exchangeTestUtil.flattenList(
+          commitBlocksSize1.map((x) => x.proof)
+        ),
         { from: anyone }
       );
       assert(!success, "verification should not be succesful");
@@ -492,7 +567,9 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to verify multiple blocks of the same circuits with public input >= scalar field", async () => {
       // Change a single public input
-      const publicInputs = commitBlocksSize1.map(x => x.publicInput);
+      const publicInputs = commitBlocksSize1.map(
+        (x) => x.publicInput
+      );
       const publicDataIdxToModify = exchangeTestUtil.getRandomInt(
         publicInputs.length
       );
@@ -505,7 +582,9 @@ contract("BlockVerifier", (accounts: string[]) => {
           commitBlocksSize1[0].blockSize,
           commitBlocksSize1[0].blockVersion,
           publicInputs,
-          exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
+          exchangeTestUtil.flattenList(
+            commitBlocksSize1.map((x) => x.proof)
+          ),
           { from: anyone }
         ),
         "INVALID_INPUT"

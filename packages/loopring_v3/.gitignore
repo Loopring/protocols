@@ -22,3 +22,7 @@ genkeys/
 EDDSA_KeyPair.json
 *.deployed
 .tmp.*
+typechain-types/
+
+cache/
+artifacts/

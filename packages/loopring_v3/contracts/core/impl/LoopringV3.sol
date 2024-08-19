@@ -159,7 +159,8 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard {
         emit SettingsUpdated(block.timestamp, _nextEffectiveTime);
     }
 
-    function applyUpdate() external {
+    function applyUpdate() external onlyOwner {
+        // TODO(add ownership check)
         require(nextEffectiveTime > 0, "NO_ANY_UPDATES");
         require(nextEffectiveTime <= block.timestamp, "NOT_ENABLED_YET");
 

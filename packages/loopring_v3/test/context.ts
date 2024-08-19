@@ -8,7 +8,11 @@ export class Context {
 
   public ERC20Contract: any;
 
-  constructor(blockNumber: number, blockTimestamp: number, lrcAddress: string) {
+  constructor(
+    blockNumber: number,
+    blockTimestamp: number,
+    lrcAddress: string
+  ) {
     this.blockNumber = blockNumber;
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;

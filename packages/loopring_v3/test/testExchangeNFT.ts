@@ -1,7 +1,10 @@
 import BN = require("bn.js");
 import { Constants, NftType } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
-import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  BalanceSnapshot,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 import { AuthMethod, OrderInfo, SpotTrade, NftMint } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
@@ -51,13 +54,14 @@ contract("Exchange", (accounts: string[]) => {
     );
 
     // Check how much will be withdrawn
-    const onchainAmountWithdrawableBefore = await ctx.exchange.getAmountWithdrawableNFT(
-      owner,
-      token,
-      nftType,
-      nftID,
-      minter
-    );
+    const onchainAmountWithdrawableBefore =
+      await ctx.exchange.getAmountWithdrawableNFT(
+        owner,
+        token,
+        nftType,
+        nftID,
+        minter
+      );
     assert(
       onchainAmountWithdrawableBefore.eq(expectedAmount),
       "unexpected withdrawable amount"
@@ -75,13 +79,14 @@ contract("Exchange", (accounts: string[]) => {
     );
 
     // Complete amount needs to be withdrawn
-    const onchainAmountWithdrawableAfter = await ctx.exchange.getAmountWithdrawableNFT(
-      owner,
-      token,
-      nftType,
-      nftID,
-      minter
-    );
+    const onchainAmountWithdrawableAfter =
+      await ctx.exchange.getAmountWithdrawableNFT(
+        owner,
+        token,
+        nftType,
+        nftID,
+        minter
+      );
     assert(
       onchainAmountWithdrawableAfter.eq(new BN(0)),
       "unexpected withdrawable amount"
@@ -98,8 +103,15 @@ contract("Exchange", (accounts: string[]) => {
     assert.equal(event.from, owner, "from unexpected");
     assert.equal(event.to, owner, "to unexpected");
     assert.equal(event.token, token, "token unexpected");
-    assert(event.nftID.eq(new BN(nftID.slice(2), 16)), "nftID should match");
-    assert.equal(event.tokenID.toNumber(), tokenID, "tokenID should match");
+    assert(
+      event.nftID.eq(new BN(nftID.slice(2), 16)),
+      "nftID should match"
+    );
+    assert.equal(
+      event.tokenID.toNumber(),
+      tokenID,
+      "tokenID should match"
+    );
     assert(event.amount.eq(expectedAmount), "amount unexpected");
   };
 
@@ -165,7 +177,7 @@ contract("Exchange", (accounts: string[]) => {
     );
   });
 
-  describe("NFT", function() {
+  describe("NFT", function () {
     this.timeout(0);
 
     it("L2 minting", async () => {
@@ -371,10 +383,20 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.submitTransactions(16);
 
       await checkBalanceNFT(NFTA, ownerC, nftID, new BN(0));
-      await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+      await checkBalanceNFT(
+        NFTA,
+        ctx.exchange.address,
+        nftID,
+        new BN(0)
+      );
       await verify();
       await checkBalanceNFT(NFTA, ownerC, nftID, withdrawal.amount);
-      await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+      await checkBalanceNFT(
+        NFTA,
+        ctx.exchange.address,
+        nftID,
+        new BN(0)
+      );
     });
 
     it("NFT Forced withdrawal (NFT exists, correct owner)", async () => {
@@ -417,7 +439,12 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.submitTransactions(16);
       await verify();
       await checkBalanceNFT(NFTA, ownerA, nftID, withdrawal.amount);
-      await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+      await checkBalanceNFT(
+        NFTA,
+        ctx.exchange.address,
+        nftID,
+        new BN(0)
+      );
     });
 
     it("NFT Forced withdrawal (NFT exists, incorrect owner)", async () => {
@@ -461,7 +488,12 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.submitTransactions(16);
       await verify();
       await checkBalanceNFT(NFTA, ownerA, nftID, new BN(0));
-      await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+      await checkBalanceNFT(
+        NFTA,
+        ctx.exchange.address,
+        nftID,
+        new BN(0)
+      );
     });
 
     it("NFT Forced withdrawal (NFT doesn't exist, correct owner)", async () => {
@@ -509,7 +541,12 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.submitTransactions(16);
       await verify();
       await checkBalanceNFT(NFTA, ownerA, nftID, withdrawal.amount);
-      await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+      await checkBalanceNFT(
+        NFTA,
+        ctx.exchange.address,
+        nftID,
+        new BN(0)
+      );
     });
 
     it("NFT Forced withdrawal (NFT doesn't exist, incorrect owner)", async () => {
@@ -558,7 +595,12 @@ contract("Exchange", (accounts: string[]) => {
       await ctx.submitTransactions(16);
       await verify();
       await checkBalanceNFT(NFTA, ownerA, nftID, withdrawal.amount);
-      await checkBalanceNFT(NFTA, ctx.exchange.address, nftID, new BN(0));
+      await checkBalanceNFT(
+        NFTA,
+        ctx.exchange.address,
+        nftID,
+        new BN(0)
+      );
     });
 
     it("NFT Forced withdrawal (NFT doesn't exist, account doesn't exist)", async () => {
@@ -758,8 +800,15 @@ contract("Exchange", (accounts: string[]) => {
       assert.equal(event.to, ownerB, "to should match");
       assert.equal(event.token, NFTA.address, "token should match");
       assert(event.nftID.eq(nftIDBN), "nftID should match");
-      assert.equal(event.tokenID, withdrawal.tokenID, "tokenID should match");
-      assert(event.amount.eq(withdrawal.amount), "amount should match");
+      assert.equal(
+        event.tokenID,
+        withdrawal.tokenID,
+        "tokenID should match"
+      );
+      assert(
+        event.amount.eq(withdrawal.amount),
+        "amount should match"
+      );
 
       await snapshot.verifyBalances();
 
@@ -774,7 +823,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    describe("Transfers", function() {
+    describe("Transfers", function () {
       it("NFT transfers", async () => {
         const feeToken = "WETH";
         const balance = new BN(web3.utils.toWei("100.0", "ether"));
@@ -815,37 +864,77 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // Do a partial transfer
-        await ctx.transfer(ownerA, ownerB, "NFT", new BN(4), feeToken, fee, {
-          tokenID: nftMintA.toTokenID,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 1,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerB,
+          "NFT",
+          new BN(4),
+          feeToken,
+          fee,
+          {
+            tokenID: nftMintA.toTokenID,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 1,
+            amountToDeposit: new BN(0)
+          }
+        );
         // now transfer the remaining amount out
-        await ctx.transfer(ownerA, ownerB, "NFT", new BN(6), feeToken, fee, {
-          tokenID: nftMintA.toTokenID,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 1,
-          amountToDeposit: new BN(0),
-          authMethod: AuthMethod.ECDSA
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerB,
+          "NFT",
+          new BN(6),
+          feeToken,
+          fee,
+          {
+            tokenID: nftMintA.toTokenID,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 1,
+            amountToDeposit: new BN(0),
+            authMethod: AuthMethod.ECDSA
+          }
+        );
         // reuse the slot to store a different NFT
-        await ctx.transfer(ownerB, ownerA, "NFT", new BN(4), feeToken, fee, {
-          tokenID: nftMintB.toTokenID,
-          toTokenID: nftMintA.toTokenID,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerB,
+          ownerA,
+          "NFT",
+          new BN(4),
+          feeToken,
+          fee,
+          {
+            tokenID: nftMintB.toTokenID,
+            toTokenID: nftMintA.toTokenID,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         // Now transfer some different tokens to another address
-        await ctx.transfer(ownerB, ownerC, "NFT", new BN(2), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 1,
-          amountToDeposit: new BN(0),
-          authMethod: AuthMethod.ECDSA
-        });
-        await ctx.transfer(ownerB, ownerC, "NFT", new BN(1), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START + 1,
-          toTokenID: Constants.NFT_TOKEN_ID_START,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerB,
+          ownerC,
+          "NFT",
+          new BN(2),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 1,
+            amountToDeposit: new BN(0),
+            authMethod: AuthMethod.ECDSA
+          }
+        );
+        await ctx.transfer(
+          ownerB,
+          ownerC,
+          "NFT",
+          new BN(1),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START + 1,
+            toTokenID: Constants.NFT_TOKEN_ID_START,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         await ctx.submitTransactions();
         await verify();
@@ -880,39 +969,79 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // To different slot fully
-        await ctx.transfer(ownerA, ownerA, "NFT", new BN(10), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 1,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerA,
+          "NFT",
+          new BN(10),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 1,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         // To different slot partially, 1st part
-        await ctx.transfer(ownerA, ownerA, "NFT", new BN(4), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START + 1,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 2,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerA,
+          "NFT",
+          new BN(4),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START + 1,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 2,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         // To different slot partially, 2nd part (now fully)
-        await ctx.transfer(ownerA, ownerA, "NFT", new BN(6), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START + 1,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 2,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerA,
+          "NFT",
+          new BN(6),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START + 1,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 2,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         // To same slot, partially
-        await ctx.transfer(ownerA, ownerA, "NFT", new BN(3), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START + 2,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 2,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerA,
+          "NFT",
+          new BN(3),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START + 2,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 2,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         // To same slot, fully
-        await ctx.transfer(ownerA, ownerA, "NFT", new BN(10), feeToken, fee, {
-          tokenID: Constants.NFT_TOKEN_ID_START + 2,
-          toTokenID: Constants.NFT_TOKEN_ID_START + 2,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerA,
+          "NFT",
+          new BN(10),
+          feeToken,
+          fee,
+          {
+            tokenID: Constants.NFT_TOKEN_ID_START + 2,
+            toTokenID: Constants.NFT_TOKEN_ID_START + 2,
+            amountToDeposit: new BN(0)
+          }
+        );
 
         await ctx.submitTransactions();
         await verify();
@@ -957,17 +1086,28 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // Do a transfer to a tokenID that already contains a different NFT
-        await ctx.transfer(ownerA, ownerB, "NFT", new BN(4), feeToken, fee, {
-          tokenID: nftMintA.toTokenID,
-          toTokenID: Constants.NFT_TOKEN_ID_START,
-          amountToDeposit: new BN(0)
-        });
+        await ctx.transfer(
+          ownerA,
+          ownerB,
+          "NFT",
+          new BN(4),
+          feeToken,
+          fee,
+          {
+            tokenID: nftMintA.toTokenID,
+            toTokenID: Constants.NFT_TOKEN_ID_START,
+            amountToDeposit: new BN(0)
+          }
+        );
 
-        await expectThrow(ctx.submitTransactions(12), "invalid block");
+        await expectThrow(
+          ctx.submitTransactions(12),
+          "invalid block"
+        );
       });
     });
 
-    describe("Trade", function() {
+    describe("Trade", function () {
       it("NFT <-> ERC20", async () => {
         const feeToken = "WETH";
         const balance = new BN(web3.utils.toWei("100.0", "ether"));
@@ -1379,7 +1519,9 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "NFT",
             amountS: new BN(web3.utils.toWei("10", "ether")),
             amountB: new BN(2),
-            nftDataB: new BN(mintA.nftData).add(new BN(1)).toString(10),
+            nftDataB: new BN(mintA.nftData)
+              .add(new BN(1))
+              .toString(10),
             feeBips: 0
           },
           expected: {

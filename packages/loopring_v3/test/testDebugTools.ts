@@ -18,7 +18,7 @@ contract("Exchange", (accounts: string[]) => {
     await ctx.stop();
   });
 
-  describe("Debug Tools", function() {
+  describe("Debug Tools", function () {
     this.timeout(0);
 
     it.skip("submitBlocks tx data compressor", async () => {
@@ -64,14 +64,20 @@ contract("Exchange", (accounts: string[]) => {
     it.skip("submitBlocks tx data", async () => {
       const blockDirectory = "./blocks/";
 
-      const blockNames = ["block_2_1", "block_2_2", "block_2_3", "block_2_4"];
+      const blockNames = [
+        "block_2_1",
+        "block_2_2",
+        "block_2_3",
+        "block_2_4"
+      ];
       const outputFilename = "./blocks/result.json";
 
       const onlyUseInfoFile = true;
       const useCompression = false;
 
       const onchainBlocks: OnchainBlock[] = [];
-      const transactionReceiverCallback: TransactionReceiverCallback[][] = [];
+      const transactionReceiverCallback: TransactionReceiverCallback[][] =
+        [];
       for (const blockName of blockNames) {
         const baseFilename = blockDirectory + blockName;
         //const auxDataFilename = baseFilename + "_auxiliaryData.json";
@@ -104,10 +110,15 @@ contract("Exchange", (accounts: string[]) => {
 
         let blockData: string;
         if (onlyUseInfoFile) {
-          blockData = ctx.getBlockData(blockInfo, auxiliaryData.length);
+          blockData = ctx.getBlockData(
+            blockInfo,
+            auxiliaryData.length
+          );
         } else {
           // Read in the block
-          const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+          const block = JSON.parse(
+            fs.readFileSync(blockFilename, "ascii")
+          );
           blockData = ctx.getBlockData(block, auxiliaryData.length);
         }
 
@@ -126,7 +137,9 @@ contract("Exchange", (accounts: string[]) => {
         // Read the AMM transactions
         const callbacks: TransactionReceiverCallback[] = [];
         for (const ammTx of blockInfo.ammTransactions) {
-          callbacks.push(AmmPool.getTransactionReceiverCallback(ammTx));
+          callbacks.push(
+            AmmPool.getTransactionReceiverCallback(ammTx)
+          );
         }
         //console.log(callbacks);
 
@@ -134,22 +147,23 @@ contract("Exchange", (accounts: string[]) => {
         transactionReceiverCallback.push(callbacks);
       }
 
-      const submitBlocksTxData = ctx.getSubmitCallbackData(onchainBlocks);
+      const submitBlocksTxData =
+        ctx.getSubmitCallbackData(onchainBlocks);
       console.log(submitBlocksTxData);
 
       // LoopringIOExchangeOwner.submitBlocksWithCallbacks
-      const withCallbacksParameters = ctx.getSubmitBlocksWithCallbacksData(
-        useCompression,
-        submitBlocksTxData,
-        transactionReceiverCallback,
-        [],
-        []
-      );
+      const withCallbacksParameters =
+        ctx.getSubmitBlocksWithCallbacksData(
+          useCompression,
+          submitBlocksTxData,
+          transactionReceiverCallback,
+          [],
+          []
+        );
       console.log(withCallbacksParameters);
 
-      const submitBlocksWithCallbacksBlocksTxData = ctx.getSubmitBlocksWithCallbacks(
-        withCallbacksParameters
-      );
+      const submitBlocksWithCallbacksBlocksTxData =
+        ctx.getSubmitBlocksWithCallbacks(withCallbacksParameters);
       console.log(submitBlocksWithCallbacksBlocksTxData);
 
       // Write the  output to a file as well

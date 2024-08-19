@@ -9,7 +9,9 @@ contract("Poseidon", (accounts: string[]) => {
 
   const getRand = () => {
     const entropy = crypto.randomBytes(32);
-    return new BN(entropy.toString("hex"), 16).mod(Constants.scalarField);
+    return new BN(entropy.toString("hex"), 16).mod(
+      Constants.scalarField
+    );
   };
 
   before(async () => {
@@ -17,7 +19,7 @@ contract("Poseidon", (accounts: string[]) => {
     poseidonContract = await contracts.PoseidonContract.new();
   });
 
-  describe("Poseidon", function() {
+  describe("Poseidon", function () {
     this.timeout(0);
 
     it("Poseidon t5/f6/p52", async () => {

@@ -2,9 +2,16 @@ import BN = require("bn.js");
 import { AmmPool, Permit, PermitUtils } from "./ammUtils";
 import { expectThrow } from "./expectThrow";
 import { Constants } from "loopringV3.js";
-import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  BalanceSnapshot,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 import { AuthMethod, SpotTrade } from "./types";
-import { SignatureType, sign, verifySignature } from "../util/Signature";
+import {
+  SignatureType,
+  sign,
+  verifySignature
+} from "../util/Signature";
 
 contract("LoopringAmmPool", (accounts: string[]) => {
   let ctx: ExchangeTestUtil;
@@ -30,7 +37,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
   ) => {
     let amountInWithFee = amountIn.mul(new BN(10000 - fee));
     let numerator = amountInWithFee.mul(reserveOut);
-    let denominator = reserveIn.mul(new BN(10000)).add(amountInWithFee);
+    let denominator = reserveIn
+      .mul(new BN(10000))
+      .add(amountInWithFee);
     let amountOut = numerator.div(denominator);
     return amountOut;
   };
@@ -80,9 +89,13 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       );
     }
 
-    await agentRegistry.registerUniversalAgent(pool.contract.address, true, {
-      from: registryOwner
-    });
+    await agentRegistry.registerUniversalAgent(
+      pool.contract.address,
+      true,
+      {
+        from: registryOwner
+      }
+    );
 
     return pool;
   };
@@ -111,9 +124,13 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
     await sharedConfig.setMaxForcedExitAge(3600 * 24 * 7);
     await sharedConfig.setMaxForcedExitCount(100);
-    await sharedConfig.setForcedExitFee(web3.utils.toWei("0.001", "ether"));
+    await sharedConfig.setForcedExitFee(
+      web3.utils.toWei("0.001", "ether")
+    );
 
-    const amplifiedAmmController = artifacts.require("AmplifiedAmmController");
+    const amplifiedAmmController = artifacts.require(
+      "AmplifiedAmmController"
+    );
     ammController = await amplifiedAmmController.new();
 
     const TestAssetManager = artifacts.require("TestAssetManager");
@@ -137,13 +154,15 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     agentRegistry = await AgentRegistry.new({ from: registryOwner });
 
     // Register it on the exchange contract
-    const wrapper = await ctx.contracts.ExchangeV3.at(ctx.operator.address);
+    const wrapper = await ctx.contracts.ExchangeV3.at(
+      ctx.operator.address
+    );
     await wrapper.setAgentRegistry(agentRegistry.address, {
       from: ctx.exchangeOwner
     });
   });
 
-  describe("AMM", function() {
+  describe("AMM", function () {
     this.timeout(0);
 
     it("Benchmark", async () => {
@@ -363,7 +382,11 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           pool.contract,
           "ForcedExitProcessed"
         );
-        assert.equal(event.owner, exit.owner, "unexpected exit owner");
+        assert.equal(
+          event.owner,
+          exit.owner,
+          "unexpected exit owner"
+        );
         assert(
           event.burnAmount.eq(exit.burnAmount),
           "unexpected exit burn amount"
@@ -413,9 +436,20 @@ contract("LoopringAmmPool", (accounts: string[]) => {
           pool.contract,
           "ForcedExitProcessed"
         );
-        assert.equal(event.owner, exit.owner, "unexpected exit owner");
-        assert(event.burnAmount.eq(new BN(0)), "unexpected exit burn amount");
-        assert.equal(event.amounts.length, 0, "unexpected exit num amounts");
+        assert.equal(
+          event.owner,
+          exit.owner,
+          "unexpected exit owner"
+        );
+        assert(
+          event.burnAmount.eq(new BN(0)),
+          "unexpected exit burn amount"
+        );
+        assert.equal(
+          event.amounts.length,
+          0,
+          "unexpected exit num amounts"
+        );
       }
       await pool.verifySupply();
     });
@@ -805,7 +839,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         authMethod: AuthMethod.NONE
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "INVALID_ONCHAIN_APPROVAL");
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "INVALID_ONCHAIN_APPROVAL"
+      );
     });
 
     it("Invalid join signature (ECDSA)", async () => {
@@ -844,7 +881,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         authMethod: AuthMethod.NONE
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "INVALID_ONCHAIN_APPROVAL");
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "INVALID_ONCHAIN_APPROVAL"
+      );
     });
 
     it("Invalid exit signature (ECDSA)", async () => {
@@ -856,7 +896,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         signer: ownerB
       });
       await ctx.submitTransactions();
-      await expectThrow(ctx.submitPendingBlocks(), "INVALID_OFFCHAIN_APPROVAL");
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "INVALID_OFFCHAIN_APPROVAL"
+      );
     });
 
     it("Invalid exit signature (EDDSA)", async () => {
@@ -881,11 +924,19 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(10)), amountsB, {
-        authMethod: AuthMethod.ECDSA
-      });
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(10)),
+        amountsB,
+        {
+          authMethod: AuthMethod.ECDSA
+        }
+      );
       await ctx.submitTransactions(16);
-      await expectThrow(ctx.submitPendingBlocks(), "JOIN_SLIPPAGE_INVALID");
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "JOIN_SLIPPAGE_INVALID"
+      );
     });
 
     it("Invalid exit slippage", async () => {
@@ -895,9 +946,14 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(11)), amountsA, {
-        authMethod: AuthMethod.ECDSA
-      });
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        amountsA,
+        {
+          authMethod: AuthMethod.ECDSA
+        }
+      );
       await ctx.submitTransactions(16);
 
       await pool.prePoolTransactions();
@@ -914,7 +970,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         { authMethod: AuthMethod.ECDSA }
       );
       await ctx.submitTransactions(16);
-      await expectThrow(ctx.submitPendingBlocks(), "EXIT_SLIPPAGE_INVALID");
+      await expectThrow(
+        ctx.submitPendingBlocks(),
+        "EXIT_SLIPPAGE_INVALID"
+      );
     });
 
     it("Unsatisfied forced exit", async () => {
@@ -965,7 +1024,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         pool.contract,
         "ForcedExitProcessed"
       );
-      assert(event.burnAmount.eq(new BN(0)), "unexpected burn amount");
+      assert(
+        event.burnAmount.eq(new BN(0)),
+        "unexpected burn amount"
+      );
     });
 
     it("Expired join", async () => {
@@ -975,10 +1037,15 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(10)), amountsB, {
-        authMethod: AuthMethod.ECDSA,
-        validUntil: 123
-      });
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(10)),
+        amountsB,
+        {
+          authMethod: AuthMethod.ECDSA,
+          validUntil: 123
+        }
+      );
       await ctx.submitTransactions(16);
       await expectThrow(ctx.submitPendingBlocks(), "EXPIRED");
     });
@@ -990,9 +1057,14 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await pool.join(ownerA, pool.POOL_TOKEN_BASE, amountsA, {
         authMethod: AuthMethod.ECDSA
       });
-      await pool.join(ownerB, pool.POOL_TOKEN_BASE.div(new BN(11)), amountsB, {
-        authMethod: AuthMethod.ECDSA
-      });
+      await pool.join(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        amountsB,
+        {
+          authMethod: AuthMethod.ECDSA
+        }
+      );
       await ctx.submitTransactions(16);
 
       await pool.prePoolTransactions();
@@ -1000,17 +1072,24 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         authMethod: AuthMethod.ECDSA,
         validUntil: 456
       });
-      await pool.exit(ownerB, pool.POOL_TOKEN_BASE.div(new BN(11)), amountsB, {
-        authMethod: AuthMethod.ECDSA
-      });
+      await pool.exit(
+        ownerB,
+        pool.POOL_TOKEN_BASE.div(new BN(11)),
+        amountsB,
+        {
+          authMethod: AuthMethod.ECDSA
+        }
+      );
       await ctx.submitTransactions(16);
       await expectThrow(ctx.submitPendingBlocks(), "EXPIRED");
     });
 
-    [false, true].forEach(function(withForcedWithdrawals) {
+    [false, true].forEach(function (withForcedWithdrawals) {
       it(
         "Shutdown " +
-          (withForcedWithdrawals ? "(forced withdrawal)" : "(withdrawal mode)"),
+          (withForcedWithdrawals
+            ? "(forced withdrawal)"
+            : "(withdrawal mode)"),
         async () => {
           const pool = await setupDefaultPool();
 
@@ -1081,7 +1160,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               "INVALID_CHALLENGE"
             );
 
-            const maxForcedExitAge = (await sharedConfig.maxForcedExitAge()).toNumber();
+            const maxForcedExitAge = (
+              await sharedConfig.maxForcedExitAge()
+            ).toNumber();
             // Wait
             await ctx.advanceBlockTimestamp(maxForcedExitAge - 100);
 
@@ -1107,7 +1188,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
             await ctx.assertEventEmitted(pool.contract, "Shutdown");
 
             // Try to shutdown again
-            await expectThrow(pool.contract.shutdown(ownerA), "NOT_ONLINE");
+            await expectThrow(
+              pool.contract.shutdown(ownerA),
+              "NOT_ONLINE"
+            );
 
             // Try to withdraw before the forced withdrawals are processed
             await expectThrow(
@@ -1142,8 +1226,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
 
             // Withdraw the approved withdrawals to the pool contract
             await ctx.exchange.withdrawFromApprovedWithdrawals(
-              new Array(pool.tokens.length).fill(pool.contract.address),
-              pool.tokens.map(token => ctx.getTokenAddress(token))
+              new Array(pool.tokens.length).fill(
+                pool.contract.address
+              ),
+              pool.tokens.map((token) => ctx.getTokenAddress(token))
             );
 
             forcedExitAmountA = exitA.burnAmount;
@@ -1168,8 +1254,12 @@ contract("LoopringAmmPool", (accounts: string[]) => {
               withdrawal.accountID,
               Constants.zeroAddress
             );
-            const inWithdrawalMode = await ctx.exchange.isInWithdrawalMode();
-            assert(inWithdrawalMode, "exchange not in withdrawal mode");
+            const inWithdrawalMode =
+              await ctx.exchange.isInWithdrawalMode();
+            assert(
+              inWithdrawalMode,
+              "exchange not in withdrawal mode"
+            );
 
             // Can immediately shutdown the pool
             await pool.contract.shutdown(Constants.zeroAddress);
@@ -1273,7 +1363,7 @@ contract("LoopringAmmPool", (accounts: string[]) => {
     });
   });
 
-  describe("Pool ERC20", function() {
+  describe("Pool ERC20", function () {
     this.timeout(0);
 
     let pool: AmmPool;
@@ -1302,9 +1392,15 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       const spender = ctx.exchange.address;
       const value = new BN(web3.utils.toWei("123", "ether"));
 
-      const allowanceBefore = await pool.contract.allowance(ownerA, spender);
+      const allowanceBefore = await pool.contract.allowance(
+        ownerA,
+        spender
+      );
       await pool.contract.approve(spender, value, { from: ownerA });
-      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      const allowanceAfter = await pool.contract.allowance(
+        ownerA,
+        spender
+      );
       assert(
         allowanceAfter.eq(allowanceBefore.add(value)),
         "allowance expected"
@@ -1322,7 +1418,9 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       await snapshot.verifyBalances();
 
       await expectThrow(
-        pool.contract.transfer(to, pool.POOL_TOKEN_BASE, { from: ownerA }),
+        pool.contract.transfer(to, pool.POOL_TOKEN_BASE, {
+          from: ownerA
+        }),
         "SUB_UNDERFLOW"
       );
     });
@@ -1338,15 +1436,22 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       // Use up allowance
       const snapshot = new BalanceSnapshot(ctx);
       await snapshot.transfer(from, to, pool.contract.address, value);
-      await pool.contract.transferFrom(from, to, value, { from: spender });
+      await pool.contract.transferFrom(from, to, value, {
+        from: spender
+      });
       await snapshot.verifyBalances();
 
-      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
+      const allowanceAfter = await pool.contract.allowance(
+        ownerA,
+        spender
+      );
       assert(allowanceAfter.eq(new BN(0)), "allowance unexpected");
 
       // Try to spend more
       await expectThrow(
-        pool.contract.transferFrom(from, to, value, { from: spender }),
+        pool.contract.transferFrom(from, to, value, {
+          from: spender
+        }),
         "SUB_UNDERFLOW"
       );
     });
@@ -1356,7 +1461,10 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       const value = new BN(web3.utils.toWei("123", "ether"));
 
       const nonceBefore = await pool.contract.nonces(ownerA);
-      const allowanceBefore = await pool.contract.allowance(ownerA, spender);
+      const allowanceBefore = await pool.contract.allowance(
+        ownerA,
+        spender
+      );
 
       const permit: Permit = {
         owner: ownerA,
@@ -1366,7 +1474,11 @@ contract("LoopringAmmPool", (accounts: string[]) => {
         deadline: new BN(0xffffffff)
       };
       const hash = PermitUtils.getHash(permit, pool.contract.address);
-      const signature = await sign(ownerA, hash, SignatureType.EIP_712);
+      const signature = await sign(
+        ownerA,
+        hash,
+        SignatureType.EIP_712
+      );
       await verifySignature(ownerA, hash, signature);
       await pool.contract.permit(
         permit.owner,
@@ -1377,8 +1489,14 @@ contract("LoopringAmmPool", (accounts: string[]) => {
       );
 
       const nonceAfter = await pool.contract.nonces(ownerA);
-      const allowanceAfter = await pool.contract.allowance(ownerA, spender);
-      assert(nonceAfter.eq(nonceBefore.add(new BN(1))), "nonce expected");
+      const allowanceAfter = await pool.contract.allowance(
+        ownerA,
+        spender
+      );
+      assert(
+        nonceAfter.eq(nonceBefore.add(new BN(1))),
+        "nonce expected"
+      );
       assert(
         allowanceAfter.eq(allowanceBefore.add(value)),
         "allowance expected"

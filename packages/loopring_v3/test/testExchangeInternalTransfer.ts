@@ -20,7 +20,9 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.testContext.stateOwners[0],
       { setupTestState }
     );
-    operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
+    operatorAccountID = await exchangeTestUtil.getActiveOperator(
+      exchangeID
+    );
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
   };
 
@@ -39,10 +41,10 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.stop();
   });
 
-  describe("InternalTransfer", function() {
+  describe("InternalTransfer", function () {
     this.timeout(0);
 
-    describe("Conditional transfers", function() {
+    describe("Conditional transfers", function () {
       const tokenA = "ETH";
       const tokenB = "LRC";
       const amountA = new BN(web3.utils.toWei("1.8", "ether"));
@@ -393,7 +395,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
     });
 
-    [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function(authMethod) {
+    [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function (
+      authMethod
+    ) {
       it(
         "should not be able to do transfer with fee > maxFee (" +
           authMethod +
@@ -500,7 +504,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("should be able to authorize a transfer using an onchain signature", async () => {
@@ -544,7 +551,8 @@ contract("Exchange", (accounts: string[]) => {
         fee,
         { authMethod: AuthMethod.ECDSA, signer: ownerD }
       );
-      transfer.onchainSignature = await exchangeTestUtil.submitTransactions();
+      transfer.onchainSignature =
+        await exchangeTestUtil.submitTransactions();
       await expectThrow(
         exchangeTestUtil.submitPendingBlocks(),
         "INVALID_SIGNATURE"
@@ -649,7 +657,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("insufficient balance (token, token != feeToken)", async () => {
@@ -675,7 +686,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("insufficient balance (feeToken, token != feeToken)", async () => {
@@ -701,7 +715,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("transfer (parallel transfers)", async () => {
@@ -844,7 +861,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("transfer (reuse old storageID)", async () => {
@@ -889,7 +909,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the transfers
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
   });
 });

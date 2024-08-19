@@ -34,11 +34,13 @@ contract("Exchange", (accounts: string[]) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0]
     );
-    operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
+    operatorAccountID = await exchangeTestUtil.getActiveOperator(
+      exchangeID
+    );
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
   });
 
-  describe("Trade", function() {
+  describe("Trade", function () {
     this.timeout(0);
 
     it("Perfect match", async () => {
@@ -397,7 +399,9 @@ contract("Exchange", (accounts: string[]) => {
         .add(spread)
         .mul(new BN(order.maxFeeBips))
         .div(new BN(10000));
-      const exptectedBalance = order.amountB.add(spread).sub(expectedFee);
+      const exptectedBalance = order.amountB
+        .add(spread)
+        .sub(expectedFee);
       await exchangeTestUtil.checkOffchainBalance(
         order.accountID,
         order.tokenIdB,
@@ -490,7 +494,9 @@ contract("Exchange", (accounts: string[]) => {
         .add(spread)
         .mul(new BN(order.maxFeeBips))
         .div(new BN(10000));
-      const exptectedBalance = order.amountB.add(spread).sub(expectedFee);
+      const exptectedBalance = order.amountB
+        .add(spread)
+        .sub(expectedFee);
       await exchangeTestUtil.checkOffchainBalance(
         order.accountID,
         order.tokenIdB,
@@ -670,7 +676,9 @@ contract("Exchange", (accounts: string[]) => {
         .add(spread)
         .mul(new BN(order.maxFeeBips))
         .div(new BN(10000));
-      const exptectedBalance = order.amountB.add(spread).sub(expectedFee);
+      const exptectedBalance = order.amountB
+        .add(spread)
+        .sub(expectedFee);
       await exchangeTestUtil.checkOffchainBalance(
         order.accountID,
         order.tokenIdB,
@@ -742,7 +750,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("Specific taker (correct)", async () => {
@@ -800,7 +811,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("No funds available", async () => {
@@ -984,7 +998,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("fillAmountB is 0 because of rounding error", async () => {
@@ -1011,7 +1028,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("operator == order owner", async () => {
@@ -1056,7 +1076,9 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("10", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
-        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("WETH"),
+        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress(
+          "WETH"
+        ),
         expected: {
           orderA: {
             filledFraction: 1.0,
@@ -1100,7 +1122,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("tokenS == tokenB", async () => {
@@ -1122,7 +1147,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("Wrong order signature", async () => {
@@ -1132,7 +1160,11 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "LRC",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
-          signature: { Rx: "4564565564545", Ry: "456445648974", s: "445644894" }
+          signature: {
+            Rx: "4564565564545",
+            Ry: "456445648974",
+            s: "445644894"
+          }
         },
         orderB: {
           tokenS: "LRC",
@@ -1145,7 +1177,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("validUntil < now", async () => {
@@ -1172,7 +1207,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(ring);
 
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("Multiple rings", async () => {
@@ -1340,7 +1378,10 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(ringB);
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("Trimmed storageID (order.storageID > storage.storageID)", async () => {
@@ -1484,7 +1525,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          storageID: storageID + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
+          storageID:
+            storageID + 2 ** Constants.BINARY_TREE_DEPTH_STORAGE
         },
         orderB: {
           tokenS: "GTO",
@@ -1527,7 +1569,10 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(ringB);
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
   });
 });

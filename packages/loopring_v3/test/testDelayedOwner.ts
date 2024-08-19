@@ -22,11 +22,13 @@ contract("DelayedOwner", (accounts: string[]) => {
     return functionCall.encodeABI().slice(0, 10);
   };
 
-  const getFunctionDelay = async (to: string, functionSelector: string) => {
-    return (await delayedContract.getFunctionDelay(
-      to,
-      functionSelector
-    )).toNumber();
+  const getFunctionDelay = async (
+    to: string,
+    functionSelector: string
+  ) => {
+    return (
+      await delayedContract.getFunctionDelay(to, functionSelector)
+    ).toNumber();
   };
 
   const checkFunctionDelay = async (
@@ -34,7 +36,10 @@ contract("DelayedOwner", (accounts: string[]) => {
     functionSelector: string,
     delay: number
   ) => {
-    const functionDelay = await getFunctionDelay(to, functionSelector);
+    const functionDelay = await getFunctionDelay(
+      to,
+      functionSelector
+    );
     assert.equal(functionDelay, delay, "invalid function delay");
   };
 
@@ -63,7 +68,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumDelayedFunctions = async (numExpected: number) => {
-    const numDelayedFunctions = (await delayedContract.getNumDelayedFunctions()).toNumber();
+    const numDelayedFunctions = (
+      await delayedContract.getNumDelayedFunctions()
+    ).toNumber();
     assert.equal(
       numDelayedFunctions,
       numExpected,
@@ -72,7 +79,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumPendingTransactions = async (numExpected: number) => {
-    const numPendingTransactions = (await delayedContract.getNumPendingTransactions()).toNumber();
+    const numPendingTransactions = (
+      await delayedContract.getNumPendingTransactions()
+    ).toNumber();
     assert.equal(
       numPendingTransactions,
       numExpected,
@@ -295,7 +304,9 @@ contract("DelayedOwner", (accounts: string[]) => {
     );
 
     // Wait
-    await exchangeTestUtil.advanceBlockTimestamp(event.delay.toNumber() + 100);
+    await exchangeTestUtil.advanceBlockTimestamp(
+      event.delay.toNumber() + 100
+    );
 
     // Make sure the expected revert message is thrown
     await expectThrow(
@@ -341,7 +352,9 @@ contract("DelayedOwner", (accounts: string[]) => {
     );
 
     // Execute the last non-cancelled transaction
-    await exchangeTestUtil.advanceBlockTimestamp(eventB.delay.toNumber() + 100);
+    await exchangeTestUtil.advanceBlockTimestamp(
+      eventB.delay.toNumber() + 100
+    );
     await delayedContract.executeTransaction(eventB.id);
     assert(
       (await targetContract.value()).eq(new BN(1)),
@@ -381,7 +394,12 @@ contract("DelayedOwner", (accounts: string[]) => {
     await checkNumPendingTransactions(4);
 
     // Put all pending transactions in a list
-    const transactionIds = [eventA.id, eventB.id, eventC.id, eventD.id];
+    const transactionIds = [
+      eventA.id,
+      eventB.id,
+      eventC.id,
+      eventD.id
+    ];
 
     // Cancel all transactions
     await delayedContract.cancelAllTransactions();
@@ -444,7 +462,9 @@ contract("DelayedOwner", (accounts: string[]) => {
     );
 
     // Wait
-    await exchangeTestUtil.advanceBlockTimestamp(functionDelayA + TTL + 100);
+    await exchangeTestUtil.advanceBlockTimestamp(
+      functionDelayA + TTL + 100
+    );
 
     // Try to execute the transaction too late
     await expectThrow(

@@ -1,6 +1,9 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
-import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  BalanceSnapshot,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 import { Constants } from "loopringV3.js";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
@@ -43,7 +46,9 @@ contract("Exchange", (accounts: string[]) => {
     );
 
     // Allow all agent functions
-    await exchange.setAllowOnchainTransferFrom(true, { from: exchangeOwner });
+    await exchange.setAllowOnchainTransferFrom(true, {
+      from: exchangeOwner
+    });
   };
 
   const registerUserAgentChecked = async (
@@ -51,14 +56,20 @@ contract("Exchange", (accounts: string[]) => {
     registered: boolean,
     from: string
   ) => {
-    await agentRegistry.registerUserAgent(agent, registered, { from });
+    await agentRegistry.registerUserAgent(agent, registered, {
+      from
+    });
     const event = await ctx.assertEventEmitted(
       agentRegistry,
       "AgentRegistered"
     );
     assert.equal(event.user, from, "user unexpected");
     assert.equal(event.agent, agent, "agent unexpected");
-    assert.equal(event.registered, registered, "registered unexpected");
+    assert.equal(
+      event.registered,
+      registered,
+      "registered unexpected"
+    );
 
     const isUserAgent = await agentRegistry.isUserAgent(from, agent);
     assert.equal(isUserAgent, registered, "isUserAgent unexpected");
@@ -72,17 +83,33 @@ contract("Exchange", (accounts: string[]) => {
     registered: boolean,
     from: string
   ) => {
-    await agentRegistry.registerUniversalAgent(agent, registered, { from });
+    await agentRegistry.registerUniversalAgent(agent, registered, {
+      from
+    });
     const event = await ctx.assertEventEmitted(
       agentRegistry,
       "AgentRegistered"
     );
-    assert.equal(event.user, Constants.zeroAddress, "user unexpected");
+    assert.equal(
+      event.user,
+      Constants.zeroAddress,
+      "user unexpected"
+    );
     assert.equal(event.agent, agent, "agent unexpected");
-    assert.equal(event.registered, registered, "registered unexpected");
+    assert.equal(
+      event.registered,
+      registered,
+      "registered unexpected"
+    );
 
-    const isUniversalAgent = await agentRegistry.isUniversalAgent(agent);
-    assert.equal(isUniversalAgent, registered, "isUniversalAgent unexpected");
+    const isUniversalAgent = await agentRegistry.isUniversalAgent(
+      agent
+    );
+    assert.equal(
+      isUniversalAgent,
+      registered,
+      "isUniversalAgent unexpected"
+    );
 
     for (const owner of [ownerA, ownerB, ownerC, ownerD]) {
       const isAgent = await agentRegistry.isAgent(owner, agent);
@@ -126,7 +153,7 @@ contract("Exchange", (accounts: string[]) => {
     await ctx.stop();
   });
 
-  describe("Agents", function() {
+  describe("Agents", function () {
     this.timeout(0);
 
     it("should be able to whitelist and dewhitelist agents", async () => {
@@ -139,13 +166,25 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Whitelist an agent
-      await registerUniversalAgentChecked(ownerA, true, registryOwner);
+      await registerUniversalAgentChecked(
+        ownerA,
+        true,
+        registryOwner
+      );
 
       // Whitelist new agent
-      await registerUniversalAgentChecked(ownerD, true, registryOwner);
+      await registerUniversalAgentChecked(
+        ownerD,
+        true,
+        registryOwner
+      );
 
       // Dewhitelist agent
-      await registerUniversalAgentChecked(ownerA, false, registryOwner);
+      await registerUniversalAgentChecked(
+        ownerA,
+        false,
+        registryOwner
+      );
 
       // User stops trusting universal agents
       // await agentRegistry.trustUniversalAgents(false, { from: ownerB });
@@ -169,7 +208,8 @@ contract("Exchange", (accounts: string[]) => {
     it("should be able to call agent functions", async () => {
       await createExchange();
 
-      const withdrawalFee = await ctx.loopringV3.forcedWithdrawalFee();
+      const withdrawalFee =
+        await ctx.loopringV3.forcedWithdrawalFee();
 
       const agent = ownerC;
 

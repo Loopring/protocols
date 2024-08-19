@@ -9,7 +9,7 @@ import {
 import { CompressionSpeed } from "loopringV3.js";
 
 contract("Compression", (accounts: string[]) => {
-  describe("LZ compression", function() {
+  describe("LZ compression", function () {
     this.timeout(0);
 
     let lzDecompressor: any;
@@ -17,7 +17,11 @@ contract("Compression", (accounts: string[]) => {
     const compressLZChecked = (data: string) => {
       const compressed = compressLZ(data);
       const decompressed = decompressLZ(compressed);
-      assert.equal(data, decompressed, "decompressed data differs from input");
+      assert.equal(
+        data,
+        decompressed,
+        "decompressed data differs from input"
+      );
       return compressed;
     };
 
@@ -30,7 +34,9 @@ contract("Compression", (accounts: string[]) => {
         "decompressed data from EVM differs from CPU"
       );
 
-      const gasUsed = await lzDecompressor.decompress.estimateGas(data);
+      const gasUsed = await lzDecompressor.decompress.estimateGas(
+        data
+      );
       // console.log("\x1b[46m%s\x1b[0m", "[Decompress] Gas used: " + gasUsed);
 
       return decompressedEVM;
@@ -153,7 +159,11 @@ contract("Compression", (accounts: string[]) => {
     const compressZerosChecked = (data: string) => {
       const compressed = compressZeros(data);
       const decompressed = decompressZeros(compressed);
-      assert.equal(data, decompressed, "decompressed data differs from input");
+      assert.equal(
+        data,
+        decompressed,
+        "decompressed data differs from input"
+      );
       return compressed;
     };
 
@@ -166,13 +176,17 @@ contract("Compression", (accounts: string[]) => {
         "decompressed data from EVM differs from CPU"
       );
 
-      const gasUsed = await zeroDecompressor.decompress.estimateGas(data);
+      const gasUsed = await zeroDecompressor.decompress.estimateGas(
+        data
+      );
       // console.log("\x1b[46m%s\x1b[0m", "[Decompress] Gas used: " + gasUsed);
 
       return decompressedEVM;
     };
 
-    const compressAndDecompressZerosChecked = async (data: string) => {
+    const compressAndDecompressZerosChecked = async (
+      data: string
+    ) => {
       const compressed = compressZerosChecked(data);
       await decompressZerosChecked(compressed);
 

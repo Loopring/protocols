@@ -7,7 +7,11 @@ import http = require("http");
 import { performance } from "perf_hooks";
 import { SHA256 } from "sha2";
 import { Artifacts } from "../util/Artifacts";
-import { SignatureType, sign, verifySignature } from "../util/Signature";
+import {
+  SignatureType,
+  sign,
+  verifySignature
+} from "../util/Signature";
 import {
   Bitstream,
   BlockType,
@@ -50,7 +54,9 @@ import {
   NftData
 } from "./types";
 
-const LoopringIOExchangeOwner = artifacts.require("LoopringIOExchangeOwner");
+const LoopringIOExchangeOwner = artifacts.require(
+  "LoopringIOExchangeOwner"
+);
 
 const version = "3.9.0";
 
@@ -229,7 +235,10 @@ export namespace AccountUpdateUtils {
         accountID: update.accountID,
         feeTokenID: update.feeTokenID,
         maxFee: update.maxFee,
-        publicKey: new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
+        publicKey: new BN(
+          EdDSA.pack(update.publicKeyX, update.publicKeyY),
+          16
+        ),
         validUntil: update.validUntil,
         nonce: update.nonce
       }
@@ -237,7 +246,10 @@ export namespace AccountUpdateUtils {
     return typedData;
   }
 
-  export function getHash(update: AccountUpdate, verifyingContract: string) {
+  export function getHash(
+    update: AccountUpdate,
+    verifyingContract: string
+  ) {
     const typedData = this.toTypedData(update, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
@@ -359,7 +371,10 @@ export namespace WithdrawalUtils {
 }
 
 export namespace TransferUtils {
-  export function toTypedData(transfer: Transfer, verifyingContract: string) {
+  export function toTypedData(
+    transfer: Transfer,
+    verifyingContract: string
+  ) {
     const typedData = {
       types: {
         EIP712Domain: [
@@ -400,12 +415,19 @@ export namespace TransferUtils {
     return typedData;
   }
 
-  export function getHash(transfer: Transfer, verifyingContract: string) {
+  export function getHash(
+    transfer: Transfer,
+    verifyingContract: string
+  ) {
     const typedData = this.toTypedData(transfer, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 
-  export function sign(keyPair: any, transfer: Transfer, payer: boolean) {
+  export function sign(
+    keyPair: any,
+    transfer: Transfer,
+    payer: boolean
+  ) {
     // Calculate hash
     const hasher = Poseidon.createHash(13, 6, 53);
     const inputs = [
@@ -439,7 +461,10 @@ export namespace TransferUtils {
 }
 
 export namespace AmmUpdateUtils {
-  export function toTypedData(update: AmmUpdate, verifyingContract: string) {
+  export function toTypedData(
+    update: AmmUpdate,
+    verifyingContract: string
+  ) {
     const typedData = {
       types: {
         EIP712Domain: [
@@ -478,16 +503,25 @@ export namespace AmmUpdateUtils {
     return typedData;
   }
 
-  export function getHash(update: AmmUpdate, verifyingContract: string) {
+  export function getHash(
+    update: AmmUpdate,
+    verifyingContract: string
+  ) {
     const typedData = this.toTypedData(update, verifyingContract);
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
 
 export namespace SignatureVerificationUtils {
-  export function sign(keyPair: any, verification: SignatureVerification) {
+  export function sign(
+    keyPair: any,
+    verification: SignatureVerification
+  ) {
     // Create signature
-    const signature = EdDSA.sign(keyPair.secretKey, verification.data);
+    const signature = EdDSA.sign(
+      keyPair.secretKey,
+      verification.data
+    );
 
     // Verify signature
     const success = EdDSA.verify(verification.data, signature, [
@@ -501,7 +535,10 @@ export namespace SignatureVerificationUtils {
 }
 
 export namespace NftMintUtils {
-  export function toTypedData(nftMint: NftMint, verifyingContract: string) {
+  export function toTypedData(
+    nftMint: NftMint,
+    verifyingContract: string
+  ) {
     const typedData = {
       types: {
         EIP712Domain: [
@@ -660,7 +697,8 @@ export class ExchangeTestUtil {
   public deterministic: boolean = false;
 
   private pendingTransactions: TxType[][] = [];
-  private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
+  private pendingTransactionReceiverCallbacks: TransactionReceiverCallback[][] =
+    [];
   private pendingFlashDeposits: FlashDeposit[][] = [];
   private pendingCallbacks: Callback[][] = [];
 
@@ -683,9 +721,10 @@ export class ExchangeTestUtil {
     await this.explorer.initialize(web3, 0);
 
     // Initialize LoopringV3
-    this.protocolFeeVault = this.testContext.orderOwners[
-      this.testContext.orderOwners.length - 1
-    ];
+    this.protocolFeeVault =
+      this.testContext.orderOwners[
+        this.testContext.orderOwners.length - 1
+      ];
 
     await this.loopringV3.updateSettings(
       this.protocolFeeVault,
@@ -750,7 +789,10 @@ export class ExchangeTestUtil {
     ).toNumber();
   }
 
-  public async setProtocolFees(takerFeeBips: number, makerFeeBips: number) {
+  public async setProtocolFees(
+    takerFeeBips: number,
+    makerFeeBips: number
+  ) {
     await this.loopringV3.updateProtocolFeeSettings(
       takerFeeBips,
       makerFeeBips,
@@ -820,7 +862,10 @@ export class ExchangeTestUtil {
     );
     const items = eventArr.map((eventObj: any) => {
       if (filter !== undefined) {
-        assert(filter(eventObj.args), "Event values unexpected: " + eventObj);
+        assert(
+          filter(eventObj.args),
+          "Event values unexpected: " + eventObj
+        );
       }
       return eventObj.args;
     });
@@ -833,8 +878,14 @@ export class ExchangeTestUtil {
     return items;
   }
 
-  public async assertEventEmitted(contract: any, event: string, filter?: any) {
-    return (await this.assertEventsEmitted(contract, event, 1, filter))[0];
+  public async assertEventEmitted(
+    contract: any,
+    event: string,
+    filter?: any
+  ) {
+    return (
+      await this.assertEventsEmitted(contract, event, 1, filter)
+    )[0];
   }
 
   public async assertNoEventEmitted(contract: any, event: string) {
@@ -857,26 +908,41 @@ export class ExchangeTestUtil {
     const amountToDeposit = options.amountToDeposit
       ? options.amountToDeposit
       : amount;
-    const feeToDeposit = options.feeToDeposit ? options.feeToDeposit : fee;
+    const feeToDeposit = options.feeToDeposit
+      ? options.feeToDeposit
+      : fee;
     const authMethod =
-      options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
+      options.authMethod !== undefined
+        ? options.authMethod
+        : AuthMethod.EDDSA;
     const useDualAuthoring =
-      options.useDualAuthoring !== undefined ? options.useDualAuthoring : false;
+      options.useDualAuthoring !== undefined
+        ? options.useDualAuthoring
+        : false;
     const secretKnown =
       options.secretKnown !== undefined ? options.secretKnown : true;
     const transferToNew =
-      options.transferToNew !== undefined ? options.transferToNew : false;
-    const signer = options.signer !== undefined ? options.signer : from;
+      options.transferToNew !== undefined
+        ? options.transferToNew
+        : false;
+    const signer =
+      options.signer !== undefined ? options.signer : from;
     const validUntil =
-      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+      options.validUntil !== undefined
+        ? options.validUntil
+        : 0xffffffff;
     const storageID =
       options.storageID !== undefined
         ? options.storageID
         : this.storageIDGenerator++;
-    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
+    const maxFee =
+      options.maxFee !== undefined ? options.maxFee : fee;
     const putAddressesInDA =
-      options.putAddressesInDA !== undefined ? options.putAddressesInDA : false;
-    let tokenID = options.tokenID !== undefined ? options.tokenID : undefined;
+      options.putAddressesInDA !== undefined
+        ? options.putAddressesInDA
+        : false;
+    let tokenID =
+      options.tokenID !== undefined ? options.tokenID : undefined;
     let toTokenID =
       options.tokenID !== undefined ? options.toTokenID : undefined;
 
@@ -970,7 +1036,11 @@ export class ExchangeTestUtil {
 
     // Authorize the tx
     if (authMethod === AuthMethod.EDDSA) {
-      transfer.signature = TransferUtils.sign(accountFrom, transfer, true);
+      transfer.signature = TransferUtils.sign(
+        accountFrom,
+        transfer,
+        true
+      );
       if (useDualAuthoring) {
         const dualKeyPair = secretKnown
           ? dualAuthorkeyPair
@@ -982,7 +1052,10 @@ export class ExchangeTestUtil {
         );
       }
     } else if (authMethod === AuthMethod.ECDSA) {
-      const hash = TransferUtils.getHash(transfer, this.exchange.address);
+      const hash = TransferUtils.getHash(
+        transfer,
+        this.exchange.address
+      );
       transfer.onchainSignature = await sign(
         signer,
         hash,
@@ -990,7 +1063,10 @@ export class ExchangeTestUtil {
       );
       await verifySignature(signer, hash, transfer.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
-      const txHash = TransferUtils.getHash(transfer, this.exchange.address);
+      const txHash = TransferUtils.getHash(
+        transfer,
+        this.exchange.address
+      );
 
       // Approve
       await this.exchange.approveTransaction(signer, txHash, {
@@ -1037,30 +1113,43 @@ export class ExchangeTestUtil {
     fee: BN,
     options: NftMintOptions = {}
   ) {
-    assert(nftID.startsWith("0x") && nftID.length == 66, "invalid nftID");
+    assert(
+      nftID.startsWith("0x") && nftID.length == 66,
+      "invalid nftID"
+    );
     fee = roundToFloatValue(fee, Constants.Float16Encoding);
 
     // Fill in defaults
     const authMethod =
-      options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
+      options.authMethod !== undefined
+        ? options.authMethod
+        : AuthMethod.EDDSA;
     /*const transferToNew =
       options.transferToNew !== undefined ? options.transferToNew : false;*/
-    const signer = options.signer !== undefined ? options.signer : minter;
+    const signer =
+      options.signer !== undefined ? options.signer : minter;
     const validUntil =
-      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+      options.validUntil !== undefined
+        ? options.validUntil
+        : 0xffffffff;
     const storageID =
       options.storageID !== undefined
         ? options.storageID
         : this.storageIDGenerator++;
-    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
+    const maxFee =
+      options.maxFee !== undefined ? options.maxFee : fee;
     const toTokenID =
       options.toTokenID !== undefined
         ? options.toTokenID
         : this.tokenIDGenerator++;
     const nftType =
-      options.nftType !== undefined ? options.nftType : NftType.ERC1155;
+      options.nftType !== undefined
+        ? options.nftType
+        : NftType.ERC1155;
     const creatorFeeBips =
-      options.creatorFeeBips !== undefined ? options.creatorFeeBips : 0;
+      options.creatorFeeBips !== undefined
+        ? options.creatorFeeBips
+        : 0;
 
     // Minter
     let minterAccountID = this.getAccountID(minter);
@@ -1138,7 +1227,10 @@ export class ExchangeTestUtil {
     if (authMethod === AuthMethod.EDDSA) {
       nftMint.signature = NftMintUtils.sign(account, nftMint);
     } else if (authMethod === AuthMethod.ECDSA) {
-      const hash = NftMintUtils.getHash(nftMint, this.exchange.address);
+      const hash = NftMintUtils.getHash(
+        nftMint,
+        this.exchange.address
+      );
       nftMint.onchainSignature = await sign(
         signer,
         hash,
@@ -1174,7 +1266,8 @@ export class ExchangeTestUtil {
 
       type,
 
-      accountID: accountID !== undefined ? accountID : nftMint.toAccountID,
+      accountID:
+        accountID !== undefined ? accountID : nftMint.toAccountID,
       tokenID: tokenID !== undefined ? tokenID : nftMint.toTokenID,
 
       minterAccountID: nftMint.minterAccountID,
@@ -1200,16 +1293,26 @@ export class ExchangeTestUtil {
     bDepositB: boolean = true
   ) {
     if (bSetupOrderA) {
-      await this.setupOrder(ring.orderA, this.storageIDGenerator++, bDepositA);
+      await this.setupOrder(
+        ring.orderA,
+        this.storageIDGenerator++,
+        bDepositA
+      );
     }
     if (bSetupOrderB) {
-      await this.setupOrder(ring.orderB, this.storageIDGenerator++, bDepositB);
+      await this.setupOrder(
+        ring.orderB,
+        this.storageIDGenerator++,
+        bDepositB
+      );
     }
     ring.tokenID =
       ring.tokenID !== undefined
         ? ring.tokenID
         : await this.getTokenIdFromNameOrAddress("LRC");
-    ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
+    ring.fee = ring.fee
+      ? ring.fee
+      : new BN(web3.utils.toWei("1", "ether"));
   }
 
   public async setupOrder(
@@ -1218,21 +1321,30 @@ export class ExchangeTestUtil {
     bDeposit: boolean = true
   ) {
     if (order.owner === undefined) {
-      const accountIndex = index % this.testContext.orderOwners.length;
+      const accountIndex =
+        index % this.testContext.orderOwners.length;
       order.owner = this.testContext.orderOwners[accountIndex];
-    } else if (order.owner !== undefined && !order.owner.startsWith("0x")) {
+    } else if (
+      order.owner !== undefined &&
+      !order.owner.startsWith("0x")
+    ) {
       const accountIndex = parseInt(order.owner, 10);
       assert(
-        accountIndex >= 0 && accountIndex < this.testContext.orderOwners.length,
+        accountIndex >= 0 &&
+          accountIndex < this.testContext.orderOwners.length,
         "Invalid owner index"
       );
       order.owner = this.testContext.orderOwners[accountIndex];
     }
     if (!order.tokenS.startsWith("0x")) {
-      order.tokenS = this.testContext.tokenSymbolAddrMap.get(order.tokenS);
+      order.tokenS = this.testContext.tokenSymbolAddrMap.get(
+        order.tokenS
+      );
     }
     if (!order.tokenB.startsWith("0x")) {
-      order.tokenB = this.testContext.tokenSymbolAddrMap.get(order.tokenB);
+      order.tokenB = this.testContext.tokenSymbolAddrMap.get(
+        order.tokenB
+      );
     }
     if (!order.validUntil) {
       // Set the order validUntil time to a bit after the current timestamp;
@@ -1242,22 +1354,28 @@ export class ExchangeTestUtil {
     }
 
     order.exchange =
-      order.exchange !== undefined ? order.exchange : this.exchange.address;
+      order.exchange !== undefined
+        ? order.exchange
+        : this.exchange.address;
 
     order.fillAmountBorS =
-      order.fillAmountBorS !== undefined ? order.fillAmountBorS : true;
+      order.fillAmountBorS !== undefined
+        ? order.fillAmountBorS
+        : true;
 
     order.taker =
       order.taker !== undefined ? order.taker : Constants.zeroAddress;
 
-    order.maxFeeBips = order.maxFeeBips !== undefined ? order.maxFeeBips : 20;
+    order.maxFeeBips =
+      order.maxFeeBips !== undefined ? order.maxFeeBips : 20;
 
     order.feeBips =
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
 
     order.amm = order.amm !== undefined ? order.amm : false;
 
-    order.storageID = order.storageID !== undefined ? order.storageID : index;
+    order.storageID =
+      order.storageID !== undefined ? order.storageID : index;
 
     order.tokenIdS =
       order.tokenIdS !== undefined
@@ -1329,7 +1447,8 @@ export class ExchangeTestUtil {
     }
 
     const hasher = Poseidon.createHash(3, 6, 51);
-    const account = this.accounts[this.exchangeId][block.operatorAccountID];
+    const account =
+      this.accounts[this.exchangeId][block.operatorAccountID];
 
     // Calculate hash
     const inputs = [new BN(publicDataInput, 10), account.nonce++];
@@ -1357,7 +1476,8 @@ export class ExchangeTestUtil {
     );
     order.accountID = deposit.accountID;
 
-    const balanceB = order.balanceB !== undefined ? order.balanceB : new BN(0);
+    const balanceB =
+      order.balanceB !== undefined ? order.balanceB : new BN(0);
     if (balanceB.gt(new BN(0)) || order.accountID === undefined) {
       const deposit = await this.deposit(
         order.owner,
@@ -1452,7 +1572,11 @@ export class ExchangeTestUtil {
   };
 
   public flattenProof = (proof: any) => {
-    return this.flattenList([proof.A, this.flattenList(proof.B), proof.C]);
+    return this.flattenList([
+      proof.A,
+      this.flattenList(proof.B),
+      proof.C
+    ]);
   };
 
   public async deposit(
@@ -1493,9 +1617,12 @@ export class ExchangeTestUtil {
     let ethToSend = new BN(0);
     if (amount.gt(0)) {
       if (token !== Constants.zeroAddress) {
-        const Token = this.testContext.tokenAddrInstanceMap.get(token);
+        const Token =
+          this.testContext.tokenAddrInstanceMap.get(token);
         await Token.setBalance(from, amount);
-        await Token.approve(this.depositContract.address, amount, { from });
+        await Token.approve(this.depositContract.address, amount, {
+          from
+        });
       } else {
         ethToSend = ethToSend.add(web3.utils.toBN(amount));
       }
@@ -1515,7 +1642,10 @@ export class ExchangeTestUtil {
       { from: caller, value: ethToSend, gasPrice: 0 }
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
-    logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
+    logInfo(
+      "\x1b[46m%s\x1b[0m",
+      "[Deposit] Gas used: " + tx.receipt.gasUsed
+    );
 
     // Check if the correct fee amount was paid
     const callerEthBalanceAfter = await this.getOnchainBalance(
@@ -1660,7 +1790,11 @@ export class ExchangeTestUtil {
     return account.accountID;
   }
 
-  public async flashDeposit(owner: string, token: string, amount: BN) {
+  public async flashDeposit(
+    owner: string,
+    token: string,
+    amount: BN
+  ) {
     this.requestDeposit(owner, token, amount);
     this.addFlashDeposit(owner, token, amount);
   }
@@ -1699,30 +1833,45 @@ export class ExchangeTestUtil {
   ) {
     // Fill in defaults
     const authMethod =
-      options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
+      options.authMethod !== undefined
+        ? options.authMethod
+        : AuthMethod.EDDSA;
     const to = options.to !== undefined ? options.to : owner;
     const minGas = options.minGas !== undefined ? options.minGas : 0;
     const gas =
-      options.gas !== undefined ? options.gas : minGas > 0 ? minGas : 100000;
-    const signer = options.signer !== undefined ? options.signer : owner;
+      options.gas !== undefined
+        ? options.gas
+        : minGas > 0
+        ? minGas
+        : 100000;
+    const signer =
+      options.signer !== undefined ? options.signer : owner;
     const extraData =
       options.extraData !== undefined ? options.extraData : "0x";
     const validUntil =
-      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
-    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
+      options.validUntil !== undefined
+        ? options.validUntil
+        : 0xffffffff;
+    const maxFee =
+      options.maxFee !== undefined ? options.maxFee : fee;
     let storageID =
       options.storageID !== undefined
         ? options.storageID
         : this.storageIDGenerator++;
     let storeRecipient =
-      options.storeRecipient !== undefined ? options.storeRecipient : false;
+      options.storeRecipient !== undefined
+        ? options.storeRecipient
+        : false;
     let skipForcedAuthentication =
       options.skipForcedAuthentication !== undefined
         ? options.skipForcedAuthentication
         : false;
-    let tokenID = options.tokenID !== undefined ? options.tokenID : undefined;
+    let tokenID =
+      options.tokenID !== undefined ? options.tokenID : undefined;
     let forceUseNftData =
-      options.forceUseNftData !== undefined ? options.forceUseNftData : false;
+      options.forceUseNftData !== undefined
+        ? options.forceUseNftData
+        : false;
 
     let type = 1;
     if (authMethod === AuthMethod.EDDSA) {
@@ -1747,15 +1896,28 @@ export class ExchangeTestUtil {
     }
 
     let accountID = this.getAccountID(owner);
-    if (authMethod === AuthMethod.FORCE && !skipForcedAuthentication) {
-      const withdrawalFee = await this.loopringV3.forcedWithdrawalFee();
+    if (
+      authMethod === AuthMethod.FORCE &&
+      !skipForcedAuthentication
+    ) {
+      const withdrawalFee =
+        await this.loopringV3.forcedWithdrawalFee();
       if (owner != Constants.zeroAddress) {
-        const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
-        await this.exchange.forceWithdrawByTokenID(signer, tokenID, accountID, {
-          from: signer,
-          value: withdrawalFee
-        });
-        const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+        const numAvailableSlotsBefore = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
+        await this.exchange.forceWithdrawByTokenID(
+          signer,
+          tokenID,
+          accountID,
+          {
+            from: signer,
+            value: withdrawalFee
+          }
+        );
+        const numAvailableSlotsAfter = (
+          await this.exchange.getNumAvailableForcedSlots()
+        ).toNumber();
         assert.equal(
           numAvailableSlotsAfter,
           numAvailableSlotsBefore - 1,
@@ -1820,13 +1982,19 @@ export class ExchangeTestUtil {
         hash,
         SignatureType.EIP_712
       );
-      await verifySignature(owner, hash, withdrawalRequest.onchainSignature);
+      await verifySignature(
+        owner,
+        hash,
+        withdrawalRequest.onchainSignature
+      );
     } else if (authMethod === AuthMethod.APPROVE) {
       const hash = WithdrawalUtils.getHash(
         withdrawalRequest,
         this.exchange.address
       );
-      await this.exchange.approveTransaction(owner, hash, { from: owner });
+      await this.exchange.approveTransaction(owner, hash, {
+        from: owner
+      });
     }
 
     if (authMethod !== AuthMethod.EDDSA) {
@@ -1867,11 +2035,17 @@ export class ExchangeTestUtil {
 
     // Fill in defaults
     const authMethod =
-      options.authMethod !== undefined ? options.authMethod : AuthMethod.EDDSA;
+      options.authMethod !== undefined
+        ? options.authMethod
+        : AuthMethod.EDDSA;
     const validUntil =
-      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
-    const maxFee = options.maxFee !== undefined ? options.maxFee : fee;
-    const signer = options.signer !== undefined ? options.signer : owner;
+      options.validUntil !== undefined
+        ? options.validUntil
+        : 0xffffffff;
+    const maxFee =
+      options.maxFee !== undefined ? options.maxFee : fee;
+    const signer =
+      options.signer !== undefined ? options.signer : owner;
 
     // Type
     let type = 0;
@@ -1933,13 +2107,19 @@ export class ExchangeTestUtil {
         hash,
         SignatureType.EIP_712
       );
-      await verifySignature(signer, hash, accountUpdate.onchainSignature);
+      await verifySignature(
+        signer,
+        hash,
+        accountUpdate.onchainSignature
+      );
     } else if (authMethod === AuthMethod.APPROVE) {
       const hash = AccountUpdateUtils.getHash(
         accountUpdate,
         this.exchange.address
       );
-      await this.exchange.approveTransaction(owner, hash, { from: owner });
+      await this.exchange.approveTransaction(owner, hash, {
+        from: owner
+      });
     }
 
     if (authMethod !== AuthMethod.EDDSA) {
@@ -1966,9 +2146,13 @@ export class ExchangeTestUtil {
   ) {
     // Fill in defaults
     const authMethod =
-      options.authMethod !== undefined ? options.authMethod : AuthMethod.ECDSA;
+      options.authMethod !== undefined
+        ? options.authMethod
+        : AuthMethod.ECDSA;
     const validUntil =
-      options.validUntil !== undefined ? options.validUntil : 0xffffffff;
+      options.validUntil !== undefined
+        ? options.validUntil
+        : 0xffffffff;
 
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -1991,7 +2175,10 @@ export class ExchangeTestUtil {
 
     // Aprove
     if (authMethod === AuthMethod.ECDSA) {
-      const hash = AmmUpdateUtils.getHash(ammUpdate, this.exchange.address);
+      const hash = AmmUpdateUtils.getHash(
+        ammUpdate,
+        this.exchange.address
+      );
       ammUpdate.onchainSignature = await sign(
         owner,
         hash,
@@ -1999,8 +2186,13 @@ export class ExchangeTestUtil {
       );
       await verifySignature(owner, hash, ammUpdate.onchainSignature);
     } else if (authMethod === AuthMethod.APPROVE) {
-      const hash = AmmUpdateUtils.getHash(ammUpdate, this.exchange.address);
-      await this.exchange.approveTransaction(owner, hash, { from: owner });
+      const hash = AmmUpdateUtils.getHash(
+        ammUpdate,
+        this.exchange.address
+      );
+      await this.exchange.approveTransaction(owner, hash, {
+        from: owner
+      });
     }
 
     this.pendingTransactions[this.exchangeId].push(ammUpdate);
@@ -2038,7 +2230,9 @@ export class ExchangeTestUtil {
     );
 
     signatureVerification.data = data;
-    this.pendingTransactions[this.exchangeId].push(signatureVerification);
+    this.pendingTransactions[this.exchangeId].push(
+      signatureVerification
+    );
 
     return signatureVerification;
   }
@@ -2065,7 +2259,11 @@ export class ExchangeTestUtil {
   ) {
     const nextBlockIdx = this.blocks[exchangeID].length;
     const inputFilename =
-      "./blocks/block_" + exchangeID + "_" + nextBlockIdx + "_info.json";
+      "./blocks/block_" +
+      exchangeID +
+      "_" +
+      nextBlockIdx +
+      "_info.json";
     const outputFilename =
       "./blocks/block_" + exchangeID + "_" + nextBlockIdx + ".json";
 
@@ -2105,7 +2303,8 @@ export class ExchangeTestUtil {
 
   public getPublicDataHashAndInput(data: string) {
     const publicDataHash =
-      "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
+      "0x" +
+      SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
     return {
       publicDataHash,
       publicInput: this.hashToFieldElement(publicDataHash)
@@ -2131,7 +2330,8 @@ export class ExchangeTestUtil {
     txBlock: TxBlock,
     auxiliaryData: any[]
   ) {
-    const publicDataHashAndInput = this.getPublicDataHashAndInput(data);
+    const publicDataHashAndInput =
+      this.getPublicDataHashAndInput(data);
     const publicDataHash = publicDataHashAndInput.publicDataHash;
     const publicInput = publicDataHashAndInput.publicInput;
     logDebug("- " + filename);
@@ -2159,10 +2359,13 @@ export class ExchangeTestUtil {
       blockType,
       blockSize,
       blockVersion,
-      operator: this.operator ? this.operator.address : this.exchangeOperator,
+      operator: this.operator
+        ? this.operator.address
+        : this.exchangeOperator,
       origin: this.exchangeOperator,
       operatorId,
-      merkleRoot: "0x" + new BN(blockFile.merkleRootAfter, 10).toString(16, 64),
+      merkleRoot:
+        "0x" + new BN(blockFile.merkleRootAfter, 10).toString(16, 64),
       data,
       auxiliaryData,
       offchainData,
@@ -2172,7 +2375,8 @@ export class ExchangeTestUtil {
       timestamp: 0,
       transactionHash: "0",
       internalBlock: txBlock,
-      callbacks: this.pendingTransactionReceiverCallbacks[this.exchangeId]
+      callbacks:
+        this.pendingTransactionReceiverCallbacks[this.exchangeId]
     };
     this.pendingBlocks[this.exchangeId].push(block);
     this.blocks[this.exchangeId].push(block);
@@ -2186,7 +2390,11 @@ export class ExchangeTestUtil {
     blockVersion: number
   ) {
     const blockFilename =
-      "./blocks/protoblock_" + blockType + "_blockSize_" + blockSize + ".json";
+      "./blocks/protoblock_" +
+      blockType +
+      "_blockSize_" +
+      blockSize +
+      ".json";
 
     const block: any = {};
     block.blockType = blockType;
@@ -2197,25 +2405,31 @@ export class ExchangeTestUtil {
       "ascii"
     );
 
-    const isCircuitRegistered = await this.blockVerifier.isCircuitRegistered(
-      block.blockType,
-      block.blockSize,
-      blockVersion
-    );
+    const isCircuitRegistered =
+      await this.blockVerifier.isCircuitRegistered(
+        block.blockType,
+        block.blockSize,
+        blockVersion
+      );
     if (!isCircuitRegistered) {
       const result = childProcess.spawnSync(
         "build/circuit/dex_circuit",
         ["-createkeys", blockFilename],
         { stdio: doDebugLogging() ? "inherit" : "ignore" }
       );
-      assert(result.status === 0, "generateKeys failed: " + blockFilename);
+      assert(
+        result.status === 0,
+        "generateKeys failed: " + blockFilename
+      );
 
       let verificationKeyFilename = "keys/";
       verificationKeyFilename += "all_";
       verificationKeyFilename += block.blockSize + "_vk.json";
 
       // Read the verification key and set it in the smart contract
-      const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
+      const vk = JSON.parse(
+        fs.readFileSync(verificationKeyFilename, "ascii")
+      );
       const vkFlattened = this.flattenList(this.flattenVK(vk));
       // console.log(vkFlattened);
 
@@ -2239,16 +2453,16 @@ export class ExchangeTestUtil {
   }
 
   public sleep(millis: number) {
-    return new Promise(resolve => setTimeout(resolve, millis));
+    return new Promise((resolve) => setTimeout(resolve, millis));
   }
 
   // function returns a Promise
   public async httpGetSync(url: string, port: number) {
     return new Promise((resolve, reject) => {
-      http.get(url, { port, timeout: 600 }, response => {
+      http.get(url, { port, timeout: 600 }, (response) => {
         let chunks_of_data: Buffer[] = [];
 
-        response.on("data", fragments => {
+        response.on("data", (fragments) => {
           chunks_of_data.push(fragments);
         });
 
@@ -2257,7 +2471,7 @@ export class ExchangeTestUtil {
           resolve(response_body.toString());
         });
 
-        response.on("error", error => {
+        response.on("error", (error) => {
           reject(error);
         });
       });
@@ -2290,11 +2504,12 @@ export class ExchangeTestUtil {
       beforeBlockSubmission: boolean;
     }
 
-    const transactionReceiverCallbacks: TransactionReceiverCallbacks = {
-      callbacks: [],
-      receivers: [],
-      beforeBlockSubmission: true
-    };
+    const transactionReceiverCallbacks: TransactionReceiverCallbacks =
+      {
+        callbacks: [],
+        receivers: [],
+        beforeBlockSubmission: true
+      };
 
     //console.log("Block callbacks: ");
     for (const [blockIdx, callbacks] of calls.entries()) {
@@ -2305,16 +2520,22 @@ export class ExchangeTestUtil {
           blockIdx,
           txCallbacks: []
         };
-        transactionReceiverCallbacks.callbacks.push(onchainBlockCallback);
+        transactionReceiverCallbacks.callbacks.push(
+          onchainBlockCallback
+        );
 
         for (const blockCallback of callbacks) {
           // Find receiver index
-          let receiverIdx = transactionReceiverCallbacks.receivers.findIndex(
-            target => target === blockCallback.target
-          );
+          let receiverIdx =
+            transactionReceiverCallbacks.receivers.findIndex(
+              (target) => target === blockCallback.target
+            );
           if (receiverIdx === -1) {
-            receiverIdx = transactionReceiverCallbacks.receivers.length;
-            transactionReceiverCallbacks.receivers.push(blockCallback.target);
+            receiverIdx =
+              transactionReceiverCallbacks.receivers.length;
+            transactionReceiverCallbacks.receivers.push(
+              blockCallback.target
+            );
           }
           // Add the block callback to the list
           onchainBlockCallback.txCallbacks.push({
@@ -2341,11 +2562,14 @@ export class ExchangeTestUtil {
       for (const blockCallback of block.callbacks) {
         for (let i = 0; i < blockCallback.numTxs; i++) {
           for (const auxiliaryData of block.auxiliaryData) {
-            if (auxiliaryData[0] === Number(blockCallback.txIdx) + i) {
+            if (
+              auxiliaryData[0] ===
+              Number(blockCallback.txIdx) + i
+            ) {
               auxiliaryData[1] = true;
               if (
-                block.internalBlock.transactions[auxiliaryData[0]].txType !==
-                "Withdraw"
+                block.internalBlock.transactions[auxiliaryData[0]]
+                  .txType !== "Withdraw"
               ) {
                 // No auxiliary data needed for the tx
                 auxiliaryData[2] = "0x";
@@ -2409,11 +2633,15 @@ export class ExchangeTestUtil {
   }
 
   public getSubmitCallbackData(blocks: OnchainBlock[]) {
-    return this.exchange.contract.methods.submitBlocks(blocks).encodeABI();
+    return this.exchange.contract.methods
+      .submitBlocks(blocks)
+      .encodeABI();
   }
 
   public getSubmitBlocksWithCallbacks(parameters: any) {
-    const operatorContract = this.operator ? this.operator : this.exchange;
+    const operatorContract = this.operator
+      ? this.operator
+      : this.exchange;
     return operatorContract.contract.methods
       .submitBlocksWithCallbacks(
         parameters.isDataCompressed,
@@ -2450,7 +2678,9 @@ export class ExchangeTestUtil {
   }
 
   public readProof(filename: string) {
-    return this.flattenProof(JSON.parse(fs.readFileSync(filename, "ascii")));
+    return this.flattenProof(
+      JSON.parse(fs.readFileSync(filename, "ascii"))
+    );
   }
 
   public async submitBlocks(blocks: Block[], testCallback?: any) {
@@ -2460,7 +2690,9 @@ export class ExchangeTestUtil {
 
     // Generate proofs
     for (const [i, block] of blocks.entries()) {
-      const blockData = JSON.parse(fs.readFileSync(block.filename, "ascii"));
+      const blockData = JSON.parse(
+        fs.readFileSync(block.filename, "ascii")
+      );
 
       const proofFilename =
         "./blocks/block_" +
@@ -2478,21 +2710,27 @@ export class ExchangeTestUtil {
           const process = childProcess.spawn(
             "build/circuit/dex_circuit",
             ["-server", block.filename, "" + port],
-            { detached: false, stdio: doDebugLogging() ? "inherit" : "ignore" }
+            {
+              detached: false,
+              stdio: doDebugLogging() ? "inherit" : "ignore"
+            }
           );
           let connected = false;
           let numTries = 0;
           while (!connected) {
             // Wait for the prover server to start up
             http
-              .get("http://localhost/status", { port }, res => {
+              .get("http://localhost/status", { port }, (res) => {
                 connected = true;
                 this.proverPorts.set(key, port);
               })
-              .on("error", e => {
+              .on("error", (e) => {
                 numTries++;
                 if (numTries > 240) {
-                  assert(false, "prover server failed to start: " + e);
+                  assert(
+                    false,
+                    "prover server failed to start: " + e
+                  );
                 }
               });
             await this.sleep(1000);
@@ -2528,7 +2766,8 @@ export class ExchangeTestUtil {
 
     // Prepare block data
     const onchainBlocks: OnchainBlock[] = [];
-    const transactionReceiverCallbacks: TransactionReceiverCallback[][] = [];
+    const transactionReceiverCallbacks: TransactionReceiverCallback[][] =
+      [];
     for (const block of blocks) {
       //console.log(block.blockIdx);
       const onchainBlock = this.getOnchainBlock(
@@ -2550,10 +2789,14 @@ export class ExchangeTestUtil {
       testCallback(onchainBlocks, blocks);
     }
 
-    const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedBefore = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
 
     // Forced requests
-    const numAvailableSlotsBefore = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsBefore = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
 
     // SubmitBlocks raw tx data
     const txData = this.getSubmitCallbackData(onchainBlocks);
@@ -2568,7 +2811,9 @@ export class ExchangeTestUtil {
     );
 
     // Submit the blocks onchain
-    const operatorContract = this.operator ? this.operator : this.exchange;
+    const operatorContract = this.operator
+      ? this.operator
+      : this.exchange;
 
     let numDeposits = 0;
     for (const block of blocks) {
@@ -2625,7 +2870,9 @@ export class ExchangeTestUtil {
     this.pendingCallbacks[this.exchangeId] = [];
 
     // Check number of blocks submitted
-    const numBlocksSubmittedAfter = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksSubmittedAfter = (
+      await this.exchange.getBlockHeight()
+    ).toNumber();
     assert.equal(
       numBlocksSubmittedAfter,
       numBlocksSubmittedBefore + blocks.length,
@@ -2641,7 +2888,11 @@ export class ExchangeTestUtil {
       );
       for (const [i, event] of events.entries()) {
         const blockIdx = event.blockIdx.toNumber();
-        assert.equal(blockIdx, blocks[i].blockIdx, "unexpected block idx");
+        assert.equal(
+          blockIdx,
+          blocks[i].blockIdx,
+          "unexpected block idx"
+        );
         assert.equal(
           event.merkleRoot,
           blocks[i].merkleRoot,
@@ -2652,7 +2903,8 @@ export class ExchangeTestUtil {
           blocks[i].publicDataHash,
           "unexpected public data hash"
         );
-        const block = this.blocks[this.exchangeId][event.blockIdx.toNumber()];
+        const block =
+          this.blocks[this.exchangeId][event.blockIdx.toNumber()];
         block.transactionHash = tx.receipt.transactionHash;
         block.timestamp = ethBlock.timestamp;
         block.blockFee = new BN(event.blockFee);
@@ -2669,7 +2921,9 @@ export class ExchangeTestUtil {
 
     // Check the Block info stored onchain
     for (const [i, block] of blocks.entries()) {
-      const blockInfo = await this.exchange.getBlockInfo(block.blockIdx);
+      const blockInfo = await this.exchange.getBlockInfo(
+        block.blockIdx
+      );
       const expectedHash = onchainBlocks[i].storeBlockInfoOnchain
         ? block.publicDataHash.slice(0, 2 + 28 * 2)
         : "0x" + "00".repeat(28);
@@ -2689,7 +2943,9 @@ export class ExchangeTestUtil {
     }
 
     // Forced requests
-    const numAvailableSlotsAfter = (await this.exchange.getNumAvailableForcedSlots()).toNumber();
+    const numAvailableSlotsAfter = (
+      await this.exchange.getNumAvailableForcedSlots()
+    ).toNumber();
     let numForcedRequestsProcessed = 0;
     for (const block of blocks) {
       for (const tx of block.internalBlock.transactions) {
@@ -2708,7 +2964,10 @@ export class ExchangeTestUtil {
     await this.checkExplorerState();
   }
 
-  public addBlockCallback(target: string, beforeBlockSubmission: boolean) {
+  public addBlockCallback(
+    target: string,
+    beforeBlockSubmission: boolean
+  ) {
     const transactionReceiverCallback: TransactionReceiverCallback = {
       target,
       auxiliaryData: Constants.emptyBytes,
@@ -2723,7 +2982,10 @@ export class ExchangeTestUtil {
   }
 
   public async submitPendingBlocks(testCallback?: any) {
-    await this.submitBlocks(this.pendingBlocks[this.exchangeId], testCallback);
+    await this.submitBlocks(
+      this.pendingBlocks[this.exchangeId],
+      testCallback
+    );
     this.pendingBlocks[this.exchangeId] = [];
   }
 
@@ -2742,21 +3004,31 @@ export class ExchangeTestUtil {
   }
 
   public getTransferAuxData(transfer: Transfer) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
-      transfer.onchainSignature ? transfer.onchainSignature : "0x",
-      transfer.originalMaxFee ? transfer.originalMaxFee : transfer.maxFee,
-      transfer.validUntil
-    ]);
+    return web3.eth.abi.encodeParameter(
+      "tuple(bytes,uint96,uint32)",
+      [
+        transfer.onchainSignature ? transfer.onchainSignature : "0x",
+        transfer.originalMaxFee
+          ? transfer.originalMaxFee
+          : transfer.maxFee,
+        transfer.validUntil
+      ]
+    );
   }
 
   public getAccountUpdateAuxData(accountUpdate: AccountUpdate) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
-      accountUpdate.onchainSignature ? accountUpdate.onchainSignature : "0x",
-      accountUpdate.originalMaxFee
-        ? accountUpdate.originalMaxFee
-        : accountUpdate.maxFee,
-      accountUpdate.validUntil
-    ]);
+    return web3.eth.abi.encodeParameter(
+      "tuple(bytes,uint96,uint32)",
+      [
+        accountUpdate.onchainSignature
+          ? accountUpdate.onchainSignature
+          : "0x",
+        accountUpdate.originalMaxFee
+          ? accountUpdate.originalMaxFee
+          : accountUpdate.maxFee,
+        accountUpdate.validUntil
+      ]
+    );
   }
 
   public getAmmUpdateAuxData(ammUpdate: AmmUpdate) {
@@ -2776,7 +3048,9 @@ export class ExchangeTestUtil {
       [
         withdrawal.storeRecipient,
         withdrawal.gas,
-        withdrawal.onchainSignature ? withdrawal.onchainSignature : "0x",
+        withdrawal.onchainSignature
+          ? withdrawal.onchainSignature
+          : "0x",
         withdrawal.minGas,
         withdrawal.to,
         withdrawal.extraData ? withdrawal.extraData : "0x",
@@ -2789,11 +3063,14 @@ export class ExchangeTestUtil {
   }
 
   public getNftMintAuxData(mint: NftMint) {
-    return web3.eth.abi.encodeParameter("tuple(bytes,uint96,uint32)", [
-      mint.onchainSignature ? mint.onchainSignature : "0x",
-      mint.originalMaxFee ? mint.originalMaxFee : mint.maxFee,
-      mint.validUntil
-    ]);
+    return web3.eth.abi.encodeParameter(
+      "tuple(bytes,uint96,uint32)",
+      [
+        mint.onchainSignature ? mint.onchainSignature : "0x",
+        mint.originalMaxFee ? mint.originalMaxFee : mint.maxFee,
+        mint.validUntil
+      ]
+    );
   }
 
   public async submitTransactions(forcedBlockSize?: number) {
@@ -2805,7 +3082,8 @@ export class ExchangeTestUtil {
 
     // Generate the token transfers for the ring
     const blockNumber = await web3.eth.getBlockNumber();
-    const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
+    const timestamp =
+      (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
     let numTransactionsDone = 0;
     const blocks: Block[] = [];
@@ -2838,8 +3116,10 @@ export class ExchangeTestUtil {
       const currentBlockIdx = this.blocks[exchangeID].length - 1;
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
-      const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
-      const protocolMakerFeeBips = protocolFees.makerFeeBips.toNumber();
+      const protocolTakerFeeBips =
+        protocolFees.takerFeeBips.toNumber();
+      const protocolMakerFeeBips =
+        protocolFees.makerFeeBips.toNumber();
 
       for (const tx of transactions) {
         logDebug(tx.txType);
@@ -2870,26 +3150,40 @@ export class ExchangeTestUtil {
       );
 
       // Create the block
-      const { blockIdx, infoFilename, blockFilename } = await this.createBlock(
-        exchangeID,
-        0,
-        JSON.stringify(txBlock, replacer, 4),
-        false
-      );
+      const { blockIdx, infoFilename, blockFilename } =
+        await this.createBlock(
+          exchangeID,
+          0,
+          JSON.stringify(txBlock, replacer, 4),
+          false
+        );
 
-      const blockInfoData = JSON.parse(fs.readFileSync(infoFilename, "ascii"));
-      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+      const blockInfoData = JSON.parse(
+        fs.readFileSync(infoFilename, "ascii")
+      );
+      const block = JSON.parse(
+        fs.readFileSync(blockFilename, "ascii")
+      );
 
       // Create the auxiliary data
       const auxiliaryData = this.getBlockAuxiliaryData(blockInfoData);
-      const blockData = this.getBlockData(block, auxiliaryData.length);
+      const blockData = this.getBlockData(
+        block,
+        auxiliaryData.length
+      );
 
       // Write the block signature
-      const publicDataHashAndInput = this.getPublicDataHashAndInput(blockData);
+      const publicDataHashAndInput =
+        this.getPublicDataHashAndInput(blockData);
 
       logDebug("[EVM]PublicData: " + blockData);
-      logDebug("[EVM]PublicDataHash: " + publicDataHashAndInput.publicDataHash);
-      logDebug("[EVM]PublicInput: " + publicDataHashAndInput.publicInput);
+      logDebug(
+        "[EVM]PublicDataHash: " +
+          publicDataHashAndInput.publicDataHash
+      );
+      logDebug(
+        "[EVM]PublicInput: " + publicDataHashAndInput.publicInput
+      );
 
       this.signRingBlock(block, publicDataHashAndInput.publicInput);
       fs.writeFileSync(
@@ -2948,23 +3242,25 @@ export class ExchangeTestUtil {
     for (const [i, transaction] of block.transactions.entries()) {
       if (transaction.txType === "Transfer") {
         if (transaction.type > 0) {
-          const encodedTransferData = this.getTransferAuxData(transaction);
+          const encodedTransferData =
+            this.getTransferAuxData(transaction);
           auxiliaryData.push([i, false, encodedTransferData]);
         }
       } else if (transaction.txType === "Withdraw") {
-        const encodedWithdrawalData = this.getWithdrawalAuxData(transaction);
+        const encodedWithdrawalData =
+          this.getWithdrawalAuxData(transaction);
         auxiliaryData.push([i, false, encodedWithdrawalData]);
       } else if (transaction.txType === "Deposit") {
         auxiliaryData.push([i, false, "0x"]);
       } else if (transaction.txType === "AccountUpdate") {
         if (transaction.type > 0) {
-          const encodedAccountUpdateData = this.getAccountUpdateAuxData(
-            transaction
-          );
+          const encodedAccountUpdateData =
+            this.getAccountUpdateAuxData(transaction);
           auxiliaryData.push([i, false, encodedAccountUpdateData]);
         }
       } else if (transaction.txType === "AmmUpdate") {
-        const encodedAmmUpdateData = this.getAmmUpdateAuxData(transaction);
+        const encodedAmmUpdateData =
+          this.getAmmUpdateAuxData(transaction);
         auxiliaryData.push([i, false, encodedAmmUpdateData]);
       } else if (transaction.txType === "NftMint") {
         if (transaction.type > 0) {
@@ -2979,7 +3275,10 @@ export class ExchangeTestUtil {
     return auxiliaryData;
   }
 
-  public getBlockData(block: any, numConditionalTransactions: number) {
+  public getBlockData(
+    block: any,
+    numConditionalTransactions: number
+  ) {
     // Pack the data that needs to be committed onchain
     const bs = new Bitstream();
     bs.addBN(new BN(block.exchange), 20);
@@ -3001,10 +3300,18 @@ export class ExchangeTestUtil {
         const orderA = spotTrade.orderA;
         const orderB = spotTrade.orderB;
 
-        const tokenAS = orderA.tokenIdS ? orderA.tokenIdS : orderA.tokenS;
-        const tokenAB = orderA.tokenIdB ? orderA.tokenIdB : orderA.tokenB;
-        const tokenBS = orderB.tokenIdS ? orderB.tokenIdS : orderB.tokenS;
-        const tokenBB = orderB.tokenIdB ? orderB.tokenIdB : orderB.tokenB;
+        const tokenAS = orderA.tokenIdS
+          ? orderA.tokenIdS
+          : orderA.tokenS;
+        const tokenAB = orderA.tokenIdB
+          ? orderA.tokenIdB
+          : orderA.tokenB;
+        const tokenBS = orderB.tokenIdS
+          ? orderB.tokenIdS
+          : orderB.tokenS;
+        const tokenBB = orderB.tokenIdB
+          ? orderB.tokenIdB
+          : orderB.tokenB;
 
         da.addNumber(TransactionType.SPOT_TRADE, 1);
         da.addNumber(orderA.storageID, 4);
@@ -3051,10 +3358,13 @@ export class ExchangeTestUtil {
           transfer.toNewAccount ||
           transfer.putAddressesInDA;
         da.addBN(new BN(needsToAddress ? transfer.to : "0"), 20);
-        const needsFromAddress = transfer.type > 0 || transfer.putAddressesInDA;
+        const needsFromAddress =
+          transfer.type > 0 || transfer.putAddressesInDA;
         da.addBN(new BN(needsFromAddress ? transfer.from : "0"), 20);
         da.addNumber(
-          transfer.tokenID === transfer.toTokenID ? 0 : transfer.toTokenID,
+          transfer.tokenID === transfer.toTokenID
+            ? 0
+            : transfer.toTokenID,
           2
         );
       } else if (tx.withdraw || tx.txType === "Withdraw") {
@@ -3086,9 +3396,15 @@ export class ExchangeTestUtil {
         da.addBN(new BN(update.owner), 20);
         da.addNumber(update.accountID, 4);
         da.addNumber(update.feeTokenID, 2);
-        da.addNumber(toFloat(new BN(update.fee), Constants.Float16Encoding), 2);
+        da.addNumber(
+          toFloat(new BN(update.fee), Constants.Float16Encoding),
+          2
+        );
         da.addBN(
-          new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
+          new BN(
+            EdDSA.pack(update.publicKeyX, update.publicKeyY),
+            16
+          ),
           32
         );
         da.addNumber(update.nonce, 4);
@@ -3174,7 +3490,9 @@ export class ExchangeTestUtil {
       transformedDa.addHex(allDa.extractData(i * size, size1));
     }
     for (let i = 0; i < block.transactions.length; i++) {
-      transformedDa.addHex(allDa.extractData(i * size + size1, size2));
+      transformedDa.addHex(
+        allDa.extractData(i * size + size1, size2)
+      );
     }
     bs.addHex(transformedDa.getData());
 
@@ -3184,8 +3502,13 @@ export class ExchangeTestUtil {
   public async registerToken(tokenAddress: string, symbol?: string) {
     const onchainExchangeOwner = await this.exchange.owner();
     let contract = this.exchange;
-    if (this.operator && this.operator.address == onchainExchangeOwner) {
-      contract = await this.contracts.ExchangeV3.at(this.operator.address);
+    if (
+      this.operator &&
+      this.operator.address == onchainExchangeOwner
+    ) {
+      contract = await this.contracts.ExchangeV3.at(
+        this.operator.address
+      );
     }
 
     // Register it on the exchange contract
@@ -3204,7 +3527,8 @@ export class ExchangeTestUtil {
     for (const token of this.testContext.allTokens) {
       const tokenAddress =
         token === null ? Constants.zeroAddress : token.address;
-      const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+      const symbol =
+        this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "LRC") {
@@ -3255,13 +3579,22 @@ export class ExchangeTestUtil {
     return undefined;
   }
 
-  public async createExchange(owner: string, options: ExchangeOptions = {}) {
+  public async createExchange(
+    owner: string,
+    options: ExchangeOptions = {}
+  ) {
     const setupTestState =
-      options.setupTestState !== undefined ? options.setupTestState : true;
+      options.setupTestState !== undefined
+        ? options.setupTestState
+        : true;
     const deterministic =
-      options.deterministic !== undefined ? options.deterministic : false;
+      options.deterministic !== undefined
+        ? options.deterministic
+        : false;
     const useOwnerContract =
-      options.useOwnerContract !== undefined ? options.useOwnerContract : true;
+      options.useOwnerContract !== undefined
+        ? options.useOwnerContract
+        : true;
 
     this.deterministic = deterministic;
 
@@ -3291,27 +3624,37 @@ export class ExchangeTestUtil {
     await this.explorer.addExchange(this.exchange.address, owner);
 
     // Create a deposit contract impl
-    const depositContractImpl = await this.contracts.DefaultDepositContract.new();
+    const depositContractImpl =
+      await this.contracts.DefaultDepositContract.new();
     // Create the proxy contract for the exchange using the implementation
-    const depositContractProxy = await this.contracts.OwnedUpgradabilityProxy.new(
-      { from: owner }
+    const depositContractProxy =
+      await this.contracts.OwnedUpgradabilityProxy.new({
+        from: owner
+      });
+    await depositContractProxy.upgradeTo(
+      depositContractImpl.address,
+      {
+        from: owner
+      }
     );
-    await depositContractProxy.upgradeTo(depositContractImpl.address, {
-      from: owner
-    });
     // Wrap the proxy contract
-    this.depositContract = await this.contracts.DefaultDepositContract.at(
-      depositContractProxy.address
-    );
+    this.depositContract =
+      await this.contracts.DefaultDepositContract.at(
+        depositContractProxy.address
+      );
     // Initialize the deposit contract
     await this.depositContract.initialize(this.exchange.address);
 
     // Set the deposit contract on the exchange
-    await this.exchange.setDepositContract(this.depositContract.address, {
-      from: owner
-    });
+    await this.exchange.setDepositContract(
+      this.depositContract.address,
+      {
+        from: owner
+      }
+    );
     // Check the deposit contract
-    const onchainDepositContract = await this.exchange.getDepositContract();
+    const onchainDepositContract =
+      await this.exchange.getDepositContract();
     assert.equal(
       onchainDepositContract,
       this.depositContract.address,
@@ -3323,8 +3666,9 @@ export class ExchangeTestUtil {
     this.exchangeId = exchangeId;
     this.activeOperator = undefined;
 
-    const exchangeCreationTimestamp = (await this.exchange.getBlockInfo(0))
-      .timestamp;
+    const exchangeCreationTimestamp = (
+      await this.exchange.getBlockInfo(0)
+    ).timestamp;
     this.GENESIS_MERKLE_ROOT = new BN(
       (await this.exchange.getMerkleRoot()).slice(2),
       16
@@ -3392,7 +3736,9 @@ export class ExchangeTestUtil {
       const txData = this.exchange.contract.methods
         .claimOwnership()
         .encodeABI();
-      await ownerContract.transact(txData, { from: this.exchangeOwner });
+      await ownerContract.transact(txData, {
+        from: this.exchangeOwner
+      });
     }
 
     return exchangeId;
@@ -3426,7 +3772,10 @@ export class ExchangeTestUtil {
       this.exchange.address
     );
     explorerExchange.buildMerkleTreeForWithdrawalMode();
-    return explorerExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
+    return explorerExchange.getWithdrawFromMerkleTreeData(
+      accountID,
+      tokenID
+    );
   }
 
   public async withdrawFromMerkleTreeWithProof(
@@ -3439,8 +3788,14 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async withdrawFromMerkleTree(accountID: number, tokenID: number) {
-    const proof = await this.createMerkleTreeInclusionProof(accountID, tokenID);
+  public async withdrawFromMerkleTree(
+    accountID: number,
+    tokenID: number
+  ) {
+    const proof = await this.createMerkleTreeInclusionProof(
+      accountID,
+      tokenID
+    );
     await this.withdrawFromMerkleTreeWithProof(proof);
   }
 
@@ -3456,16 +3811,25 @@ export class ExchangeTestUtil {
     const Token = await this.getTokenContract(token);
     if (owner !== this.testContext.deployer) {
       // Burn complete existing balance
-      const existingBalance = await this.getOnchainBalance(owner, token);
+      const existingBalance = await this.getOnchainBalance(
+        owner,
+        token
+      );
       await Token.transfer(Constants.zeroAddress, existingBalance, {
         from: owner
       });
     }
-    await Token.transfer(owner, amount, { from: this.testContext.deployer });
+    await Token.transfer(owner, amount, {
+      from: this.testContext.deployer
+    });
     await Token.approve(contractAddress, amount, { from: owner });
   }
 
-  public async transferBalance(to: string, token: string, amount: BN) {
+  public async transferBalance(
+    to: string,
+    token: string,
+    amount: BN
+  ) {
     if (token === "ETH" || token === Constants.zeroAddress) {
       await web3.eth.sendTransaction({
         from: this.testContext.deployer,
@@ -3474,7 +3838,9 @@ export class ExchangeTestUtil {
       });
     } else {
       const Token = await this.getTokenContract(token);
-      await Token.transfer(to, amount, { from: this.testContext.deployer });
+      await Token.transfer(to, amount, {
+        from: this.testContext.deployer
+      });
     }
   }
 
@@ -3517,14 +3883,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const previousTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const currentTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -3546,7 +3912,10 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async getOffchainVirtualBalance(owner: string, token: string) {
+  public async getOffchainVirtualBalance(
+    owner: string,
+    token: string
+  ) {
     const accountID = this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
     const latestBlockIdx = this.blocks[this.exchangeId].length - 1;
@@ -3568,7 +3937,11 @@ export class ExchangeTestUtil {
     return await this.contracts.DummyToken.at(token);
   }
 
-  public async getOnchainBalance(owner: string, token: string, nftID?: string) {
+  public async getOnchainBalance(
+    owner: string,
+    token: string,
+    nftID?: string
+  ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -3681,7 +4054,9 @@ export class ExchangeTestUtil {
     );
 
     await this.syncExplorer();
-    const exchange = this.explorer.getExchangeByAddress(this.exchange.address);
+    const exchange = this.explorer.getExchangeByAddress(
+      this.exchange.address
+    );
 
     // Compare accounts
     assert.equal(
@@ -3689,7 +4064,11 @@ export class ExchangeTestUtil {
       state.accounts.length,
       "number of accounts does not match"
     );
-    for (let accountID = 0; accountID < state.accounts.length; accountID++) {
+    for (
+      let accountID = 0;
+      accountID < state.accounts.length;
+      accountID++
+    ) {
       const accountA = state.accounts[accountID];
       const accountB = exchange.getAccount(accountID);
       Simulator.compareAccounts(accountA, accountB);
@@ -3701,7 +4080,11 @@ export class ExchangeTestUtil {
       this.blocks[this.exchangeId].length,
       "number of blocks does not match"
     );
-    for (let blockIdx = 0; blockIdx < exchange.getNumBlocks(); blockIdx++) {
+    for (
+      let blockIdx = 0;
+      blockIdx < exchange.getNumBlocks();
+      blockIdx++
+    ) {
       //console.log("Testing blockIdx: " + blockIdx);
       const explorerBlock = exchange.getBlock(blockIdx);
       const testBlock = this.blocks[this.exchangeId][blockIdx];
@@ -3725,7 +4108,11 @@ export class ExchangeTestUtil {
         testBlock.blockVersion,
         "unexpected blockVersion"
       );
-      assert.equal(explorerBlock.data, testBlock.data, "unexpected data");
+      assert.equal(
+        explorerBlock.data,
+        testBlock.data,
+        "unexpected data"
+      );
       assert.equal(
         explorerBlock.offchainData,
         testBlock.offchainData,
@@ -3861,24 +4248,35 @@ export class ExchangeTestUtil {
   }
 
   public getRandomBool() {
-    return this.deterministic ? false : this.getRandomInt(1000) >= 500;
+    return this.deterministic
+      ? false
+      : this.getRandomInt(1000) >= 500;
   }
 
   public getRandomAmount() {
-    return new BN(web3.utils.toWei("" + this.getRandomInt(100000000) / 1000));
+    return new BN(
+      web3.utils.toWei("" + this.getRandomInt(100000000) / 1000)
+    );
   }
 
   public getRandomSmallAmount() {
-    return new BN(web3.utils.toWei("" + this.getRandomInt(1000) / 1000));
+    return new BN(
+      web3.utils.toWei("" + this.getRandomInt(1000) / 1000)
+    );
   }
 
   public getRandomFee() {
     return this.deterministic
       ? new BN(0)
-      : new BN(web3.utils.toWei("" + this.getRandomInt(10000) / 1000000));
+      : new BN(
+          web3.utils.toWei("" + this.getRandomInt(10000) / 1000000)
+        );
   }
 
-  public async depositExchangeStakeChecked(amount: BN, owner: string) {
+  public async depositExchangeStakeChecked(
+    amount: BN,
+    owner: string
+  ) {
     const snapshot = new BalanceSnapshot(this);
     await snapshot.transfer(
       owner,
@@ -3892,9 +4290,13 @@ export class ExchangeTestUtil {
     const stakeBefore = await this.exchange.getExchangeStake();
     const totalStakeBefore = await this.loopringV3.totalStake();
 
-    await this.loopringV3.depositExchangeStake(this.exchange.address, amount, {
-      from: owner
-    });
+    await this.loopringV3.depositExchangeStake(
+      this.exchange.address,
+      amount,
+      {
+        from: owner
+      }
+    );
 
     await snapshot.verifyBalances();
 
@@ -3923,7 +4325,10 @@ export class ExchangeTestUtil {
     assert(event.amount.eq(amount), "amount should match");
   }
 
-  public async withdrawExchangeStakeChecked(recipient: string, amount: BN) {
+  public async withdrawExchangeStakeChecked(
+    recipient: string,
+    amount: BN
+  ) {
     const snapshot = new BalanceSnapshot(this);
     await snapshot.transfer(
       this.loopringV3.address,
@@ -3968,7 +4373,10 @@ export class ExchangeTestUtil {
     assert(event.amount.eq(amount), "amount should match");
   }
 
-  public async depositProtocolFeeStakeChecked(amount: BN, owner: string) {
+  public async depositProtocolFeeStakeChecked(
+    amount: BN,
+    owner: string
+  ) {
     const snapshot = new BalanceSnapshot(this);
     await snapshot.transfer(
       owner,
@@ -3984,9 +4392,13 @@ export class ExchangeTestUtil {
     );
     const totalStakeBefore = await this.loopringV3.totalStake();
 
-    await this.loopringV3.depositProtocolFeeStake(this.exchangeId, amount, {
-      from: owner
-    });
+    await this.loopringV3.depositProtocolFeeStake(
+      this.exchangeId,
+      amount,
+      {
+        from: owner
+      }
+    );
 
     await snapshot.verifyBalances();
 
@@ -4017,7 +4429,10 @@ export class ExchangeTestUtil {
     assert(event.amount.eq(amount), "amount should match");
   }
 
-  public async withdrawProtocolFeeStakeChecked(recipient: string, amount: BN) {
+  public async withdrawProtocolFeeStakeChecked(
+    recipient: string,
+    amount: BN
+  ) {
     const snapshot = new BalanceSnapshot(this);
     await snapshot.transfer(
       this.loopringV3.address,
@@ -4068,24 +4483,20 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [
-      loopringV3,
-      exchange,
-      blockVerifier,
-      lrcToken,
-      wethToken
-    ] = await Promise.all([
-      this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeV3.deployed(),
-      this.contracts.BlockVerifier.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.WETHToken.deployed()
-    ]);
+    const [loopringV3, exchange, blockVerifier, lrcToken, wethToken] =
+      await Promise.all([
+        this.contracts.LoopringV3.deployed(),
+        this.contracts.ExchangeV3.deployed(),
+        this.contracts.BlockVerifier.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.WETHToken.deployed()
+      ]);
 
-    const [userStakingPool, protocolFeeVaultContract] = await Promise.all([
-      this.contracts.UserStakingPool.deployed(),
-      this.contracts.ProtocolFeeVault.deployed()
-    ]);
+    const [userStakingPool, protocolFeeVaultContract] =
+      await Promise.all([
+        this.contracts.UserStakingPool.deployed(),
+        this.contracts.ProtocolFeeVault.deployed()
+      ]);
 
     this.userStakingPool = userStakingPool;
     this.protocolFeeVaultContract = protocolFeeVaultContract;
@@ -4098,9 +4509,14 @@ export class ExchangeTestUtil {
     this.wethAddress = wethToken.address;
 
     const currBlockNumber = await web3.eth.getBlockNumber();
-    const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber))
-      .timestamp;
-    return new Context(currBlockNumber, currBlockTimestamp, lrcToken.address);
+    const currBlockTimestamp = (
+      await web3.eth.getBlock(currBlockNumber)
+    ).timestamp;
+    return new Context(
+      currBlockNumber,
+      currBlockTimestamp,
+      lrcToken.address
+    );
   }
 
   private async createExchangeTestContext(accounts: string[]) {
@@ -4109,8 +4525,8 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
-      [
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] =
+      await Promise.all([
         null,
         this.contracts.WETHToken.deployed(),
         this.contracts.LRCToken.deployed(),
@@ -4120,10 +4536,19 @@ export class ExchangeTestUtil {
         this.contracts.INDAToken.deployed(),
         this.contracts.INDBToken.deployed(),
         this.contracts.TESTToken.deployed()
-      ]
-    );
+      ]);
 
-    const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
+    const allTokens = [
+      eth,
+      weth,
+      lrc,
+      gto,
+      rdn,
+      rep,
+      inda,
+      indb,
+      test
+    ];
 
     tokenSymbolAddrMap.set("ETH", Constants.zeroAddress);
     tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
@@ -4139,7 +4564,10 @@ export class ExchangeTestUtil {
       if (token === null) {
         tokenAddrDecimalsMap.set(Constants.zeroAddress, 18);
       } else {
-        tokenAddrDecimalsMap.set(token.address, await token.decimals());
+        tokenAddrDecimalsMap.set(
+          token.address,
+          await token.decimals()
+        );
       }
     }
 
@@ -4257,22 +4685,25 @@ export class BalanceSnapshot {
     for (const [token, nftIDs] of this.balances.entries()) {
       for (const [nftID, balances] of nftIDs.entries()) {
         for (const [owner, balance] of balances.entries()) {
-          const symbol = this.exchangeTestUtil.testContext.tokenAddrSymbolMap.get(
-            this.exchangeTestUtil.getTokenAddress(token)
-          );
-          const currentBalance = await this.exchangeTestUtil.getOnchainBalance(
-            owner,
-            token,
-            nftID
-          );
+          const symbol =
+            this.exchangeTestUtil.testContext.tokenAddrSymbolMap.get(
+              this.exchangeTestUtil.getTokenAddress(token)
+            );
+          const currentBalance =
+            await this.exchangeTestUtil.getOnchainBalance(
+              owner,
+              token,
+              nftID
+            );
           const ownerName = this.addressBook.get(owner);
-          let descr = symbol + " balance of " + ownerName + " does not match: ";
-          descr += currentBalance.toString(10) + " != " + balance.toString(10);
+          let descr =
+            symbol + " balance of " + ownerName + " does not match: ";
+          descr +=
+            currentBalance.toString(10) +
+            " != " +
+            balance.toString(10);
           assert(
-            balance
-              .sub(currentBalance)
-              .abs()
-              .lte(allowedDelta),
+            balance.sub(currentBalance).abs().lte(allowedDelta),
             descr
           );
         }

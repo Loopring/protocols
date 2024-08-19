@@ -2,9 +2,16 @@ import BN = require("bn.js");
 import { AmmPool, Permit, PermitUtils } from "./ammUtils";
 import { expectThrow } from "./expectThrow";
 import { Constants } from "loopringV3.js";
-import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  BalanceSnapshot,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 import { AuthMethod, SpotTrade } from "./types";
-import { SignatureType, sign, verifySignature } from "../util/Signature";
+import {
+  SignatureType,
+  sign,
+  verifySignature
+} from "../util/Signature";
 
 const AgentRegistry = artifacts.require("AgentRegistry");
 
@@ -69,7 +76,10 @@ export class Converter {
   public async verifySupply(expectedTotalSupply: BN) {
     const totalSupply = await this.contract.totalSupply();
     //console.log("totalSupply: " + totalSupply.toString(10));
-    assert(totalSupply.eq(expectedTotalSupply), "unexpected total supply");
+    assert(
+      totalSupply.eq(expectedTotalSupply),
+      "unexpected total supply"
+    );
   }
 }
 
@@ -181,7 +191,11 @@ contract("LoopringConverter", (accounts: string[]) => {
       await ctx.addCallback(
         converter.address,
         converter.contract.contract.methods
-          .convert(amountIn, minAmountOut, web3.utils.hexToBytes("0x"))
+          .convert(
+            amountIn,
+            minAmountOut,
+            web3.utils.hexToBytes("0x")
+          )
           .encodeABI(),
         false
       );
@@ -199,7 +213,11 @@ contract("LoopringConverter", (accounts: string[]) => {
     // Check result of phase 1 on the vault
     const failed = await converter.contract.failed();
     //console.log("failed: " + failed);
-    assert.equal(failed, !expectedSuccess, "Conversion status unexpected!");
+    assert.equal(
+      failed,
+      !expectedSuccess,
+      "Conversion status unexpected!"
+    );
 
     const tokenOut = failed ? converter.tokenIn : converter.tokenOut;
     //const balance = await ctx.getOnchainBalance(
@@ -209,7 +227,9 @@ contract("LoopringConverter", (accounts: string[]) => {
     //console.log("Token: " + tokenOut);
     //console.log("Balance: " + balance.toString(10));
 
-    const amountOut = failed ? amountIn : amountIn.mul(rate).div(RATE_BASE);
+    const amountOut = failed
+      ? amountIn
+      : amountIn.mul(rate).div(RATE_BASE);
     const tradeAmountOutA = amountOut.div(new BN(4));
     const tradeAmountOutB = amountOut.div(new BN(4)).mul(new BN(3));
 
@@ -330,21 +350,23 @@ contract("LoopringConverter", (accounts: string[]) => {
     agentRegistry = await AgentRegistry.new({ from: registryOwner });
 
     // Register it on the exchange contract
-    const wrapper = await ctx.contracts.ExchangeV3.at(ctx.operator.address);
+    const wrapper = await ctx.contracts.ExchangeV3.at(
+      ctx.operator.address
+    );
     await wrapper.setAgentRegistry(agentRegistry.address, {
       from: ctx.exchangeOwner
     });
   });
 
-  describe("Converter", function() {
+  describe("Converter", function () {
     this.timeout(0);
 
-    [true, false].forEach(function(success) {
+    [true, false].forEach(function (success) {
       [
         new BN(web3.utils.toWei("1.0", "ether")),
         new BN(web3.utils.toWei("0.5", "ether")),
         new BN(web3.utils.toWei("2.0", "ether"))
-      ].forEach(function(rate) {
+      ].forEach(function (rate) {
         it(
           (success ? "Successful" : "Failed") +
             " conversion ERC20 -> ERC20 - rate: " +
@@ -407,9 +429,14 @@ contract("LoopringConverter", (accounts: string[]) => {
       );
 
       await converter.verifySupply(amountIn);
-      await converter.contract.withdraw(ownerA, tradeAmountInA, new BN(0), {
-        from: ownerA
-      });
+      await converter.contract.withdraw(
+        ownerA,
+        tradeAmountInA,
+        new BN(0),
+        {
+          from: ownerA
+        }
+      );
       await converter.verifySupply(amountIn.sub(tradeAmountInA));
 
       // Verify balances

@@ -8,7 +8,11 @@ import {
   TransferUtils
 } from "./testExchangeUtil";
 import { AuthMethod, Transfer } from "./types";
-import { SignatureType, sign, verifySignature } from "../util/Signature";
+import {
+  SignatureType,
+  sign,
+  verifySignature
+} from "../util/Signature";
 import * as sigUtil from "eth-sig-util";
 import { Bitstream } from "loopringV3.js";
 import { logDebug } from "./logs";
@@ -140,7 +144,10 @@ export namespace CollectTransferUtils {
     callWrapper: ConnectorTxWrapper,
     verifyingContract: string
   ) {
-    const typedData = this.toTypedData(callWrapper, verifyingContract);
+    const typedData = this.toTypedData(
+      callWrapper,
+      verifyingContract
+    );
     return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
@@ -178,12 +185,17 @@ export class Bridge {
       new BN(1),
       { autoSetKeys: false }
     );
-    assert(deposit.accountID === this.accountID, "unexpected accountID");
+    assert(
+      deposit.accountID === this.accountID,
+      "unexpected accountID"
+    );
 
     this.address = this.contract.address;
   }
 
-  public async setMigrationConnectorAddress(migrationConnector: string) {
+  public async setMigrationConnectorAddress(
+    migrationConnector: string
+  ) {
     this.migrationConnector = migrationConnector;
   }
 
@@ -204,7 +216,11 @@ export class Bridge {
       if (token === Constants.zeroAddress) {
         ethValue = tokens.get(Constants.zeroAddress);
       } else {
-        await this.ctx.setBalanceAndApprove(this.relayer, token, amount);
+        await this.ctx.setBalanceAndApprove(
+          this.relayer,
+          token,
+          amount
+        );
       }
     }
 
@@ -281,7 +297,10 @@ export class Bridge {
       tokens: []
     };
 
-    const blockCallback = this.ctx.addBlockCallback(this.address, false);
+    const blockCallback = this.ctx.addBlockCallback(
+      this.address,
+      false
+    );
 
     for (const event of transferEvents) {
       const amounts: string[] = [];
@@ -335,8 +354,15 @@ export class Bridge {
     // Sort the calls on connector and group
     for (const call of calls) {
       let connectorCall: ConnectorCall;
-      for (let c = 0; c < bridgeOperation.connectorCalls.length; c++) {
-        if (bridgeOperation.connectorCalls[c].connector === call.connector) {
+      for (
+        let c = 0;
+        c < bridgeOperation.connectorCalls.length;
+        c++
+      ) {
+        if (
+          bridgeOperation.connectorCalls[c].connector ===
+          call.connector
+        ) {
           connectorCall = bridgeOperation.connectorCalls[c];
           break;
         }
@@ -444,8 +470,10 @@ export class Bridge {
     }
 
     // Set the pool transaction data on the callback
-    blockCallback.auxiliaryData = this.encodeBridgeOperation(bridgeOperation);
-    blockCallback.numTxs = calls.length * 2 + bridgeOperation.tokens.length;
+    blockCallback.auxiliaryData =
+      this.encodeBridgeOperation(bridgeOperation);
+    blockCallback.numTxs =
+      calls.length * 2 + bridgeOperation.tokens.length;
     for (const batch of bridgeOperation.transferBatches) {
       blockCallback.numTxs += batch.amounts.length;
     }
@@ -453,16 +481,17 @@ export class Bridge {
     await this.ctx.submitTransactions();
     await this.ctx.submitPendingBlocks();
 
-    const connectorCallResultEvents = await this.ctx.assertEventsEmitted(
-      this.contract,
-      "ConnectorTransacted",
-      bridgeOperation.connectorCalls.length
-    );
+    const connectorCallResultEvents =
+      await this.ctx.assertEventsEmitted(
+        this.contract,
+        "ConnectorTransacted",
+        bridgeOperation.connectorCalls.length
+      );
 
     if (expectedSuccess === undefined) {
-      expectedSuccess = new Array(bridgeOperation.connectorCalls.length).fill(
-        true
-      );
+      expectedSuccess = new Array(
+        bridgeOperation.connectorCalls.length
+      ).fill(true);
     }
 
     for (let i = 0; i < connectorCallResultEvents.length; i++) {
@@ -484,9 +513,13 @@ export class Bridge {
         for (const transaction of group.transactions) {
           if (transaction.expectedDeposit) {
             if (connectorCall.connector === this.migrationConnector) {
-              expectedMigrationTransfers.push(transaction.expectedDeposit);
+              expectedMigrationTransfers.push(
+                transaction.expectedDeposit
+              );
             } else {
-              expectedDepositTransfers.push(transaction.expectedDeposit);
+              expectedDepositTransfers.push(
+                transaction.expectedDeposit
+              );
             }
           }
         }
@@ -498,7 +531,8 @@ export class Bridge {
       "BatchDeposited"
     );
     if (
-      expectedDepositTransfers.length + expectedMigrationTransfers.length >
+      expectedDepositTransfers.length +
+        expectedMigrationTransfers.length >
       0
     ) {
       assert.equal(
@@ -724,21 +758,25 @@ contract("Bridge", (accounts: string[]) => {
 
     failingSwapper = await TestSwapper.new(rate, true);
 
-    failingSwappperBridgeConnector = await TestSwappperBridgeConnector.new(
-      failingSwapper.address
-    );
+    failingSwappperBridgeConnector =
+      await TestSwappperBridgeConnector.new(failingSwapper.address);
 
     migrationBridgeConnector = await TestMigrationBridgeConnector.new(
       ctx.exchange.address,
       bridge.address
     );
 
-    bridge.setMigrationConnectorAddress(migrationBridgeConnector.address);
+    bridge.setMigrationConnectorAddress(
+      migrationBridgeConnector.address
+    );
 
     return bridge;
   };
 
-  const encodeSwapGroupSettings = (tokenIn: string, tokenOut: string) => {
+  const encodeSwapGroupSettings = (
+    tokenIn: string,
+    tokenOut: string
+  ) => {
     return web3.eth.abi.encodeParameter(
       {
         "struct GroupSettings": {
@@ -793,17 +831,15 @@ contract("Bridge", (accounts: string[]) => {
   };
 
   const round = (value: string) => {
-    return roundToFloatValue(new BN(value), Constants.Float24Encoding).toString(
-      10
-    );
+    return roundToFloatValue(
+      new BN(value),
+      Constants.Float24Encoding
+    ).toString(10);
   };
 
   const convert = (amount: string) => {
     const RATE_BASE = new BN(web3.utils.toWei("1", "ether"));
-    return new BN(amount)
-      .mul(rate)
-      .div(RATE_BASE)
-      .toString(10);
+    return new BN(amount).mul(rate).div(RATE_BASE).toString(10);
   };
 
   const withdrawFromPendingBatchDepositsChecked = async (
@@ -866,13 +902,15 @@ contract("Bridge", (accounts: string[]) => {
     agentRegistry = await AgentRegistry.new({ from: registryOwner });
 
     // Register it on the exchange contract
-    const wrapper = await ctx.contracts.ExchangeV3.at(ctx.operator.address);
+    const wrapper = await ctx.contracts.ExchangeV3.at(
+      ctx.operator.address
+    );
     await wrapper.setAgentRegistry(agentRegistry.address, {
       from: ctx.exchangeOwner
     });
   });
 
-  describe("Bridge", function() {
+  describe("Bridge", function () {
     this.timeout(0);
 
     it("Batch deposit", async () => {
@@ -958,7 +996,12 @@ contract("Bridge", (accounts: string[]) => {
       const transferEventsC = await bridge.batchDeposit(depositsC);
       // Try to different transfers
       await expectThrow(
-        bridge.submitBridgeOperation(transferEventsC, [], undefined, true),
+        bridge.submitBridgeOperation(
+          transferEventsC,
+          [],
+          undefined,
+          true
+        ),
         "UNKNOWN_TRANSFERS"
       );
     });
@@ -1023,7 +1066,9 @@ contract("Bridge", (accounts: string[]) => {
         expectedDeposit: {
           owner: ownerB,
           token: "LRC",
-          amount: convert(round(web3.utils.toWei("2.0456546565", "ether")))
+          amount: convert(
+            round(web3.utils.toWei("2.0456546565", "ether"))
+          )
         }
       });
       calls.push({
@@ -1042,7 +1087,9 @@ contract("Bridge", (accounts: string[]) => {
         expectedDeposit: {
           owner: ownerC,
           token: "ETH",
-          amount: convert(round(web3.utils.toWei("3.458415454541", "ether")))
+          amount: convert(
+            round(web3.utils.toWei("3.458415454541", "ether"))
+          )
         }
       });
       // WETH -> LRC
@@ -1062,7 +1109,9 @@ contract("Bridge", (accounts: string[]) => {
         expectedDeposit: {
           owner: ownerC,
           token: "LRC",
-          amount: convert(round(web3.utils.toWei("6.458415454541", "ether")))
+          amount: convert(
+            round(web3.utils.toWei("6.458415454541", "ether"))
+          )
         }
       });
 
@@ -1083,7 +1132,9 @@ contract("Bridge", (accounts: string[]) => {
         expectedDeposit: {
           owner: ownerD,
           token: "LRC",
-          amount: convert(round(web3.utils.toWei("1.458415454541", "ether")))
+          amount: convert(
+            round(web3.utils.toWei("1.458415454541", "ether"))
+          )
         }
       });
       calls.push({
@@ -1251,7 +1302,12 @@ contract("Bridge", (accounts: string[]) => {
       });
 
       await bridge.setupCalls(calls);
-      await bridge.submitBridgeOperation([], calls, [true, true, false, true]);
+      await bridge.submitBridgeOperation([], calls, [
+        true,
+        true,
+        false,
+        true
+      ]);
 
       // Handle resulting batched deposits
       const depositEvents = await ctx.getEvents(
@@ -1312,7 +1368,8 @@ contract("Bridge", (accounts: string[]) => {
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
 
-      const withdrawalFee = await ctx.loopringV3.forcedWithdrawalFee();
+      const withdrawalFee =
+        await ctx.loopringV3.forcedWithdrawalFee();
       await bridge.contract.forceWithdraw(
         [ctx.getTokenAddress("ETH"), ctx.getTokenAddress("LRC")],
         {
@@ -1347,25 +1404,44 @@ contract("Bridge", (accounts: string[]) => {
       await ctx.submitTransactions();
       await ctx.submitPendingBlocks();
 
-      const transfers = bridge.decodeTransfers(transferEvents[0].transfersData);
+      const transfers = bridge.decodeTransfers(
+        transferEvents[0].transfersData
+      );
 
       await expectThrow(
-        bridge.contract.withdrawFromPendingBatchDeposits(0, transfers, [1]),
+        bridge.contract.withdrawFromPendingBatchDeposits(
+          0,
+          transfers,
+          [1]
+        ),
         "BATCH_DEPOSITS_STILL_YOUNG"
       );
 
-      const MAX_AGE_PENDING_DEPOSITS = (await bridge.contract.MAX_AGE_PENDING_DEPOSITS()).toNumber();
+      const MAX_AGE_PENDING_DEPOSITS = (
+        await bridge.contract.MAX_AGE_PENDING_DEPOSITS()
+      ).toNumber();
       await ctx.advanceBlockTimestamp(MAX_AGE_PENDING_DEPOSITS + 1);
 
-      await withdrawFromPendingBatchDepositsChecked(bridge, 0, transfers, [
-        1,
-        3
-      ]);
+      await withdrawFromPendingBatchDepositsChecked(
+        bridge,
+        0,
+        transfers,
+        [1, 3]
+      );
 
-      await withdrawFromPendingBatchDepositsChecked(bridge, 0, transfers, [0]);
+      await withdrawFromPendingBatchDepositsChecked(
+        bridge,
+        0,
+        transfers,
+        [0]
+      );
 
       await expectThrow(
-        bridge.contract.withdrawFromPendingBatchDeposits(0, transfers, [1, 2]),
+        bridge.contract.withdrawFromPendingBatchDeposits(
+          0,
+          transfers,
+          [1, 2]
+        ),
         "ALREADY_WITHDRAWN"
       );
     });
@@ -1396,7 +1472,9 @@ contract("Bridge", (accounts: string[]) => {
           expectedDeposit: {
             owner: ownerA,
             token: "LRC",
-            amount: convert(round(web3.utils.toWei("1.0132", "ether")))
+            amount: convert(
+              round(web3.utils.toWei("1.0132", "ether"))
+            )
           }
         });
       }

@@ -27,11 +27,13 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.testContext.stateOwners[0],
       { setupTestState: true }
     );
-    operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
+    operatorAccountID = await exchangeTestUtil.getActiveOperator(
+      exchangeID
+    );
     operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
   });
 
-  describe("AMM", function() {
+  describe("AMM", function () {
     this.timeout(0);
 
     it("Should be able to set AMM feeBips and token weights", async () => {
@@ -114,7 +116,12 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.deposit(owner, owner, token, balance);
 
       // Setup the AMM
-      await exchangeTestUtil.requestAmmUpdate(owner, token, 15, tokenWeight);
+      await exchangeTestUtil.requestAmmUpdate(
+        owner,
+        token,
+        15,
+        tokenWeight
+      );
 
       // Request forced withdrawal
       await exchangeTestUtil.requestWithdrawal(
@@ -526,7 +533,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await exchangeTestUtil.sendRing(ring);
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
 
     it("Weights not set", async () => {
@@ -573,7 +583,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await exchangeTestUtil.sendRing(ring);
-      await expectThrow(exchangeTestUtil.submitTransactions(), "invalid block");
+      await expectThrow(
+        exchangeTestUtil.submitTransactions(),
+        "invalid block"
+      );
     });
   });
 });

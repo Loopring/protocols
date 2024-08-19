@@ -1,7 +1,10 @@
 import BN = require("bn.js");
 import { Constants, NftType } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
-import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
+import {
+  BalanceSnapshot,
+  ExchangeTestUtil
+} from "./testExchangeUtil";
 import { AuthMethod, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
@@ -9,7 +12,9 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let loopring: any;
 
-  const checkWithdrawalMode = async (expectedInWithdrawalMode: boolean) => {
+  const checkWithdrawalMode = async (
+    expectedInWithdrawalMode: boolean
+  ) => {
     const inWithdrawalMode = await exchange.isInWithdrawalMode();
     assert.equal(
       inWithdrawalMode,
@@ -120,7 +125,10 @@ contract("Exchange", (accounts: string[]) => {
     );
 
     // Do the withdrawal
-    await exchangeTestUtil.exchange.withdrawFromDepositRequest(owner, token);
+    await exchangeTestUtil.exchange.withdrawFromDepositRequest(
+      owner,
+      token
+    );
 
     // Verify balances
     await snapshot.verifyBalances();
@@ -157,7 +165,7 @@ contract("Exchange", (accounts: string[]) => {
     await snapshot.verifyBalances();
   };
 
-  describe("Withdrawal Mode", function() {
+  describe("Withdrawal Mode", function () {
     this.timeout(0);
 
     it("should go into withdrawal mode when a forced withdrawal request isn't processed", async () => {
@@ -173,18 +181,19 @@ contract("Exchange", (accounts: string[]) => {
       //console.log(exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 100
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE +
+          100
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Do a forced withdrawal
-      const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(
-        deposit
-      );
+      const withdrawal =
+        await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
       const tokenID = withdrawal.tokenID;
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE - 100
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE -
+          100
       );
       // We shouldn't be in withdrawal mode yet
       await checkNotifyForcedRequestTooOld(
@@ -198,7 +207,11 @@ contract("Exchange", (accounts: string[]) => {
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Enter withdrawal mode
-      await checkNotifyForcedRequestTooOld(withdrawal.accountID, tokenID, true);
+      await checkNotifyForcedRequestTooOld(
+        withdrawal.accountID,
+        tokenID,
+        true
+      );
       // We should be in withdrawal mode
       await checkWithdrawalMode(true);
     });
@@ -211,13 +224,16 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE - 10
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE -
+          10
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
 
       // Shut down the exchange
-      await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
+      await exchange.shutdown({
+        from: exchangeTestUtil.exchangeOwner
+      });
 
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
@@ -269,7 +285,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(deposit.accountID, tokenID),
+        exchangeTestUtil.withdrawFromMerkleTree(
+          deposit.accountID,
+          tokenID
+        ),
         "NOT_IN_WITHDRAW_MODE"
       );
 
@@ -285,17 +304,23 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE +
+          1
       );
 
       // Enter withdrawal mode
-      await checkNotifyForcedRequestTooOld(deposit.accountID, tokenID, true);
+      await checkNotifyForcedRequestTooOld(
+        deposit.accountID,
+        tokenID,
+        true
+      );
 
       // Try to withdraw with an incorrect proof
-      const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(
-        deposit.accountID,
-        tokenID
-      );
+      const proof =
+        await exchangeTestUtil.createMerkleTreeInclusionProof(
+          deposit.accountID,
+          tokenID
+        );
       proof.balanceLeaf.balance = new BN(proof.balanceLeaf.balance)
         .mul(new BN(2))
         .toString(10);
@@ -305,7 +330,11 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await withdrawFromMerkleTreeChecked(deposit.accountID, tokenID, balance);
+      await withdrawFromMerkleTreeChecked(
+        deposit.accountID,
+        tokenID,
+        balance
+      );
     });
 
     it("ETH: withdraw from merkle tree", async () => {
@@ -327,7 +356,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks();
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(deposit.accountID, tokenID),
+        exchangeTestUtil.withdrawFromMerkleTree(
+          deposit.accountID,
+          tokenID
+        ),
         "NOT_IN_WITHDRAW_MODE"
       );
 
@@ -346,15 +378,24 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE +
+          1
       );
 
       // Enter withdrawal mode
-      await checkNotifyForcedRequestTooOld(deposit.accountID, tokenID, true);
+      await checkNotifyForcedRequestTooOld(
+        deposit.accountID,
+        tokenID,
+        true
+      );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       // (Only the first deposit was submitted, so only that amount can be withdrawn from the Merkle tree)
-      await withdrawFromMerkleTreeChecked(deposit.accountID, tokenID, balance);
+      await withdrawFromMerkleTreeChecked(
+        deposit.accountID,
+        tokenID,
+        balance
+      );
     });
 
     it("NFT: withdraw from merkle tree", async () => {
@@ -368,16 +409,22 @@ contract("Exchange", (accounts: string[]) => {
         "0x0123456789012345678901234567890123456789012345678901234567891234";
       const nftIDBN = new BN(nftID.slice(2), 16);
 
-      const L2MintableERC1155 = artifacts.require("L2MintableERC1155");
+      const L2MintableERC1155 = artifacts.require(
+        "L2MintableERC1155"
+      );
       const NFTA = await L2MintableERC1155.new(
         "loopring",
         "loopring.nft",
         exchangeTestUtil.exchange.address
       );
       await NFTA.mint(ownerA, nftID, new BN(25), "0x");
-      await NFTA.setApprovalForAll(exchangeTestUtil.exchange.address, true, {
-        from: ownerA
-      });
+      await NFTA.setApprovalForAll(
+        exchangeTestUtil.exchange.address,
+        true,
+        {
+          from: ownerA
+        }
+      );
 
       const nftMint = await exchangeTestUtil.depositNFT(
         ownerA,
@@ -430,7 +477,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE +
+          1
       );
 
       // Enter withdrawal mode
@@ -487,7 +535,10 @@ contract("Exchange", (accounts: string[]) => {
         .div(new BN(100000));
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(0, ring.orderA.tokenIdB),
+        exchangeTestUtil.withdrawFromMerkleTree(
+          0,
+          ring.orderA.tokenIdB
+        ),
         "NOT_IN_WITHDRAW_MODE"
       );
 
@@ -503,11 +554,16 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE +
+          1
       );
 
       // Enter withdrawal mode
-      await checkNotifyForcedRequestTooOld(0, ring.orderA.tokenIdB, true);
+      await checkNotifyForcedRequestTooOld(
+        0,
+        ring.orderA.tokenIdB,
+        true
+      );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(
@@ -530,16 +586,22 @@ contract("Exchange", (accounts: string[]) => {
         "0x0123456789012345678901234567890123456789012345678901234567891234";
       const nftBalance = new BN(12);
 
-      const L2MintableERC1155 = artifacts.require("L2MintableERC1155");
+      const L2MintableERC1155 = artifacts.require(
+        "L2MintableERC1155"
+      );
       const NFTA = await L2MintableERC1155.new(
         "loopring",
         "loopring.nft",
         exchangeTestUtil.exchange.address
       );
       await NFTA.mint(owner, nftID, new BN(25), "0x");
-      await NFTA.setApprovalForAll(exchangeTestUtil.exchange.address, true, {
-        from: owner
-      });
+      await NFTA.setApprovalForAll(
+        exchangeTestUtil.exchange.address,
+        true,
+        {
+          from: owner
+        }
+      );
 
       const tokenA = "LRC";
       const balanceA = new BN(web3.utils.toWei("2300.7", "ether"));
@@ -609,7 +671,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't process the deposits
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND + 1
+        exchangeTestUtil.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND +
+          1
       );
 
       // We should be in withdrawal mode and able to withdraw from the pending deposits

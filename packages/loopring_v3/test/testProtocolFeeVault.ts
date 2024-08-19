@@ -42,8 +42,12 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         from: owner
       });
 
-      REWARD_PERCENTAGE = (await protocolFeeVault.REWARD_PERCENTAGE()).toNumber();
-      DAO_PERDENTAGE = (await protocolFeeVault.DAO_PERDENTAGE()).toNumber();
+      REWARD_PERCENTAGE = (
+        await protocolFeeVault.REWARD_PERCENTAGE()
+      ).toNumber();
+      DAO_PERDENTAGE = (
+        await protocolFeeVault.DAO_PERDENTAGE()
+      ).toNumber();
       claimReward = amount
         .add(amount2)
         .mul(new BN(REWARD_PERCENTAGE))
@@ -155,7 +159,10 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       });
 
       it("claimStakingReward", async () => {
-        await expectThrow(protocolFeeVault.claimStakingReward(0), "ZERO_VALUE");
+        await expectThrow(
+          protocolFeeVault.claimStakingReward(0),
+          "ZERO_VALUE"
+        );
         await expectThrow(
           protocolFeeVault.claimStakingReward(amount),
           "UNAUTHORIZED"
@@ -233,10 +240,16 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       });
 
       it("sellTokenForLRC when tokenSellerAddress not set", async () => {
-        await protocolFeeVault.sellTokenForLRC(mockToken.address, amount);
+        await protocolFeeVault.sellTokenForLRC(
+          mockToken.address,
+          amount
+        );
 
         await expectThrow(
-          protocolFeeVault.sellTokenForLRC(Constants.zeroAddress, amount),
+          protocolFeeVault.sellTokenForLRC(
+            Constants.zeroAddress,
+            amount
+          ),
           "TRANSFER_FAILURE"
         );
       });
@@ -255,7 +268,10 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
           .slice(0, 10);
         await mockTokenSeller.givenMethodReturnBool(sellToken, true);
 
-        await protocolFeeVault.sellTokenForLRC(mockToken.address, amount);
+        await protocolFeeVault.sellTokenForLRC(
+          mockToken.address,
+          amount
+        );
       });
     });
   });

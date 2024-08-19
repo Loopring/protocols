@@ -15,9 +15,12 @@ contract("Exchange", (accounts: string[]) => {
   let ownerD: string;
 
   const createExchange = async (setupTestState: boolean = true) => {
-    exchangeID = await ctx.createExchange(ctx.testContext.stateOwners[0], {
-      setupTestState
-    });
+    exchangeID = await ctx.createExchange(
+      ctx.testContext.stateOwners[0],
+      {
+        setupTestState
+      }
+    );
     operatorAccountID = await ctx.getActiveOperator(exchangeID);
     operator = ctx.getAccount(operatorAccountID).owner;
   };
@@ -37,7 +40,7 @@ contract("Exchange", (accounts: string[]) => {
     await ctx.stop();
   });
 
-  describe("Accounts", function() {
+  describe("Accounts", function () {
     this.timeout(0);
 
     it("Should be able to create an account", async () => {
@@ -172,7 +175,9 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(ctx.submitTransactions(), "invalid block");
     });
 
-    [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function(authMethod) {
+    [AuthMethod.EDDSA, AuthMethod.ECDSA].forEach(function (
+      authMethod
+    ) {
       it(
         "Should not be able to update an account with fee > maxFee (" +
           authMethod +
@@ -180,7 +185,9 @@ contract("Exchange", (accounts: string[]) => {
         async () => {
           await createExchange();
 
-          const balance = new BN(web3.utils.toWei("5484.24", "ether"));
+          const balance = new BN(
+            web3.utils.toWei("5484.24", "ether")
+          );
           const token = ctx.getTokenAddress("LRC");
           const fee = ctx.getRandomFee();
 
@@ -189,14 +196,23 @@ contract("Exchange", (accounts: string[]) => {
 
           // Update the key pair of the new account
           let newKeyPair = ctx.getKeyPairEDDSA();
-          await ctx.requestAccountUpdate(ownerA, token, fee, newKeyPair, {
-            maxFee: fee.div(new BN(2)),
-            authMethod
-          });
+          await ctx.requestAccountUpdate(
+            ownerA,
+            token,
+            fee,
+            newKeyPair,
+            {
+              maxFee: fee.div(new BN(2)),
+              authMethod
+            }
+          );
 
           // Commit the transfers
           if (authMethod === AuthMethod.EDDSA) {
-            await expectThrow(ctx.submitTransactions(), "invalid block");
+            await expectThrow(
+              ctx.submitTransactions(),
+              "invalid block"
+            );
           } else {
             await ctx.submitTransactions();
             await expectThrow(

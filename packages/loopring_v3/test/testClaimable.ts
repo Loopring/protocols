@@ -33,7 +33,10 @@ contract("Claimable", (accounts: string[]) => {
     });
 
     it("should not be able to transfer ownership to the current owner", async () => {
-      await expectThrow(claimable.transferOwnership(owner1), "INVALID_ADDRESS");
+      await expectThrow(
+        claimable.transferOwnership(owner1),
+        "INVALID_ADDRESS"
+      );
     });
   });
 
@@ -45,7 +48,11 @@ contract("Claimable", (accounts: string[]) => {
     it("should be able to claim ownership", async () => {
       await claimable.claimOwnership({ from: owner2 });
       const contractOwner = await claimable.owner();
-      assert.equal(contractOwner, owner2, "Owner should match expected value");
+      assert.equal(
+        contractOwner,
+        owner2,
+        "Owner should match expected value"
+      );
     });
   });
 
