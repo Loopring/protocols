@@ -42,11 +42,17 @@ entryPointScope
 
 entryPointScope
   .task(TASK_VERIFY, 'verify entrypoint code')
-  .setAction(async (_, { ethers, network, run }) => {
+  .setAction(async (_, { ethers, network, run, deployResults }) => {
     // only verify contract that is not deployed by official
     if (
       !(await checkIfContractAddress(entrypointAddr, ethers.provider))
     ) {
+      // check exist before verify the non-official entrypoint contract deployed by ourself
+      await checkValidContractAddress(
+        deployResults.EntryPoint,
+        ethers.provider,
+        'entrypoint'
+      )
       const tasks: DeployTask[] = [
         {
           contractName: 'EntryPoint'
