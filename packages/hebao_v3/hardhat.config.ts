@@ -154,6 +154,14 @@ const config: HardhatUserConfig = {
           apiURL: 'https://api.taikoscan.io/api',
           browserURL: 'https://taikoscan.io'
         }
+      },
+      {
+        network: 'taiko7',
+        chainId: 167009,
+        urls: {
+          apiURL: 'https://blockscoutapi.hekla.taiko.xyz/api',
+          browserURL: 'https://blockscoutapi.hekla.taiko.xyz/'
+        }
       }
     ]
   }
