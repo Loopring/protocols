@@ -24,30 +24,32 @@ import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
 import "./libtransactions/TransferTransaction.sol";
 
-
 /// @title An Implementation of IExchangeV3.
 /// @dev This contract supports upgradability proxy, therefore its constructor
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
+contract ExchangeV3 is
+    IExchangeV3,
+    ReentrancyGuard,
+    ERC1155Holder,
+    ERC721Holder
 {
-    using AddressUtil           for address;
-    using ERC20SafeTransfer     for address;
-    using MathUint              for uint;
-    using ExchangeAdmins        for ExchangeData.State;
-    using ExchangeBalances      for ExchangeData.State;
-    using ExchangeBlocks        for ExchangeData.State;
-    using ExchangeDeposits      for ExchangeData.State;
-    using ExchangeGenesis       for ExchangeData.State;
-    using ExchangeMode          for ExchangeData.State;
-    using ExchangeTokens        for ExchangeData.State;
-    using ExchangeWithdrawals   for ExchangeData.State;
+    using AddressUtil for address;
+    using ERC20SafeTransfer for address;
+    using MathUint for uint;
+    using ExchangeAdmins for ExchangeData.State;
+    using ExchangeBalances for ExchangeData.State;
+    using ExchangeBlocks for ExchangeData.State;
+    using ExchangeDeposits for ExchangeData.State;
+    using ExchangeGenesis for ExchangeData.State;
+    using ExchangeMode for ExchangeData.State;
+    using ExchangeTokens for ExchangeData.State;
+    using ExchangeWithdrawals for ExchangeData.State;
 
     ExchangeData.State private state;
 
-    modifier onlyWhenUninitialized()
-    {
+    modifier onlyWhenUninitialized() {
         require(
             state.loopringAddr == address(0) && state.merkleRoot == bytes32(0),
             "INITIALIZED"
@@ -55,8 +57,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         _;
     }
 
-    modifier onlyFromUserOrAgent(address owner)
-    {
+    modifier onlyFromUserOrAgent(address owner) {
         require(isUserOrAgent(owner), "UNAUTHORIZED");
         _;
     }
@@ -64,19 +65,11 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() {}
 
-    function version()
-        public
-        pure
-        returns (string memory)
-    {
+    function version() public pure returns (string memory) {
         return "3.6.0";
     }
 
-    function domainSeparator()
-        public
-        view
-        returns (bytes32)
-    {
+    function domainSeparator() public view returns (bytes32) {
         return state.DOMAIN_SEPARATOR;
     }
 
@@ -85,12 +78,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         address _loopring,
         address _owner,
         bytes32 _genesisMerkleRoot
-        )
-        external
-        override
-        nonReentrant
-        onlyWhenUninitialized
-    {
+    ) external override nonReentrant onlyWhenUninitialized {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
         state.loopringAddr = _loopring;
@@ -98,46 +86,81 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         state.initializeGenesisBlock(
             _loopring,
             _genesisMerkleRoot,
-            EIP712.hash(EIP712.Domain("Loopring Protocol", version(), address(this)))
+            EIP712.hash(
+                EIP712.Domain("Loopring Protocol", version(), address(this))
+            )
         );
     }
 
-    function setAgentRegistry(address _agentRegistry)
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    function upgradeLoopring(
+        address _loopringAddr
+    ) external override nonReentrant onlyOwner {
+        require(_loopringAddr != address(0), "ZERO_ADDRESS");
+        require(
+            _loopringAddr != state.cachedLoopringSetting.loopringAddr,
+            "ALREADY_SET"
+        );
+
+        state.cachedLoopringSetting = ExchangeData.CachedLoopringSetting({
+            loopringAddr: _loopringAddr,
+            nextEffectiveTime: block.timestamp +
+                ExchangeData.SETTING_UPDATE_DELAY
+        });
+    }
+
+    function applyLoopringUpgrade() external override nonReentrant onlyOwner {
+        require(
+            state.cachedLoopringSetting.nextEffectiveTime > 0,
+            "NO_ANY_UPDATES"
+        );
+        require(
+            state.cachedLoopringSetting.nextEffectiveTime <= block.timestamp,
+            "NOT_ENABLED_YET"
+        );
+
+        // update loopring
+        state.loopringAddr = state.cachedLoopringSetting.loopringAddr;
+        state.loopring = ILoopringV3(state.loopringAddr);
+
+        // clean cache
+        state.cachedLoopringSetting.nextEffectiveTime = 0;
+        state.cachedLoopringSetting.loopringAddr = address(0);
+    }
+
+    function getLoopring() external view override returns (address) {
+        return state.loopringAddr;
+    }
+
+    function setAgentRegistry(
+        address _agentRegistry
+    ) external override nonReentrant onlyOwner {
         require(_agentRegistry != address(0), "ZERO_ADDRESS");
         require(state.agentRegistry == IAgentRegistry(0), "ALREADY_SET");
         state.agentRegistry = IAgentRegistry(_agentRegistry);
     }
 
-    function refreshBlockVerifier()
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        require(state.loopring.blockVerifierAddress() != address(0), "ZERO_ADDRESS");
-        state.blockVerifier = IBlockVerifier(state.loopring.blockVerifierAddress());
+    function refreshBlockVerifier() external override nonReentrant onlyOwner {
+        require(
+            state.loopring.blockVerifierAddress() != address(0),
+            "ZERO_ADDRESS"
+        );
+        state.blockVerifier = IBlockVerifier(
+            state.loopring.blockVerifierAddress()
+        );
     }
 
     function getAgentRegistry()
         external
-        override
         view
+        override
         returns (IAgentRegistry)
     {
         return state.agentRegistry;
     }
 
-    function setDepositContract(address _depositContract)
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    function setDepositContract(
+        address _depositContract
+    ) external override nonReentrant onlyOwner {
         require(_depositContract != address(0), "ZERO_ADDRESS");
         // Only used for initialization
         require(state.depositContract == IDepositContract(0), "ALREADY_SET");
@@ -146,8 +169,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
 
     function getDepositContract()
         external
-        override
         view
+        override
         returns (IDepositContract)
     {
         return state.depositContract;
@@ -156,12 +179,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     function withdrawExchangeFees(
         address token,
         address recipient
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    ) external override nonReentrant onlyOwner {
         require(recipient != address(0), "INVALID_ADDRESS");
 
         // Does not call a standard NFT transfer function so we can allow any contract address.
@@ -177,53 +195,41 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         }
     }
 
-    function isUserOrAgent(address owner)
-        public
-        view
-        returns (bool)
-    {
-         return owner == msg.sender ||
-            state.agentRegistry != IAgentRegistry(address(0)) &&
-            state.agentRegistry.isAgent(owner, msg.sender);
+    function isUserOrAgent(address owner) public view returns (bool) {
+        return
+            owner == msg.sender ||
+            (state.agentRegistry != IAgentRegistry(address(0)) &&
+                state.agentRegistry.isAgent(owner, msg.sender));
     }
 
     // -- Constants --
     function getConstants()
         external
-        override
         pure
-        returns(ExchangeData.Constants memory)
+        override
+        returns (ExchangeData.Constants memory)
     {
-        return ExchangeData.Constants(
-            uint(ExchangeData.SNARK_SCALAR_FIELD),
-            uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS),
-            uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE),
-            uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS),
-            uint(ExchangeData.MAX_NUM_ACCOUNTS),
-            uint(ExchangeData.MAX_NUM_TOKENS),
-            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED),
-            uint(ExchangeData.MIN_TIME_IN_SHUTDOWN),
-            uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE),
-            uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND)
-        );
+        return
+            ExchangeData.Constants(
+                uint(ExchangeData.SNARK_SCALAR_FIELD),
+                uint(ExchangeData.MAX_OPEN_FORCED_REQUESTS),
+                uint(ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE),
+                uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS),
+                uint(ExchangeData.MAX_NUM_ACCOUNTS),
+                uint(ExchangeData.MAX_NUM_TOKENS),
+                uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED),
+                uint(ExchangeData.MIN_TIME_IN_SHUTDOWN),
+                uint(ExchangeData.TX_DATA_AVAILABILITY_SIZE),
+                uint(ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE_UPPERBOUND)
+            );
     }
 
     // -- Mode --
-    function isInWithdrawalMode()
-        external
-        override
-        view
-        returns (bool)
-    {
+    function isInWithdrawalMode() external view override returns (bool) {
         return state.isInWithdrawalMode();
     }
 
-    function isShutdown()
-        external
-        override
-        view
-        returns (bool)
-    {
+    function isShutdown() external view override returns (bool) {
         return state.isShutdown();
     }
 
@@ -231,77 +237,40 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
 
     function registerToken(
         address tokenAddress
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-        returns (uint16)
-    {
+    ) external override nonReentrant onlyOwner returns (uint16) {
         return state.registerToken(tokenAddress);
     }
 
     function getTokenID(
         address tokenAddress
-        )
-        external
-        override
-        view
-        returns (uint16)
-    {
+    ) external view override returns (uint16) {
         return state.getTokenID(tokenAddress);
     }
 
     function getTokenAddress(
         uint16 tokenID
-        )
-        external
-        override
-        view
-        returns (address)
-    {
+    ) external view override returns (address) {
         return state.getTokenAddress(tokenID);
     }
 
     // -- Stakes --
-    function getExchangeStake()
-        external
-        override
-        view
-        returns (uint)
-    {
+    function getExchangeStake() external view override returns (uint) {
         return state.loopring.getExchangeStake(address(this));
     }
 
     function withdrawExchangeStake(
         address recipient
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-        returns (uint)
-    {
+    ) external override nonReentrant onlyOwner returns (uint) {
         return state.withdrawExchangeStake(recipient);
     }
 
-
     function getProtocolFeeLastWithdrawnTime(
         address tokenAddress
-        )
-        external
-        override
-        view
-        returns (uint)
-    {
+    ) external view override returns (uint) {
         return state.protocolFeeLastWithdrawnTime[tokenAddress];
     }
 
-    function burnExchangeStake()
-        external
-        override
-        nonReentrant
-    {
+    function burnExchangeStake() external override nonReentrant {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
         if (state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
@@ -311,46 +280,30 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     }
 
     // -- Blocks --
-    function getMerkleRoot()
-        external
-        override
-        view
-        returns (bytes32)
-    {
+    function getMerkleRoot() external view override returns (bytes32) {
         return state.merkleRoot;
     }
 
-    function getBlockHeight()
-        external
-        override
-        view
-        returns (uint)
-    {
+    function getBlockHeight() external view override returns (uint) {
         return state.numBlocks;
     }
 
-    function getBlockInfo(uint blockIdx)
-        external
-        override
-        view
-        returns (ExchangeData.BlockInfo memory)
-    {
+    function getBlockInfo(
+        uint blockIdx
+    ) external view override returns (ExchangeData.BlockInfo memory) {
         return state.blocks[blockIdx];
     }
 
-    function submitBlocks(ExchangeData.Block[] calldata blocks)
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    function submitBlocks(
+        ExchangeData.Block[] calldata blocks
+    ) external override nonReentrant onlyOwner {
         state.submitBlocks(blocks);
     }
 
     function getNumAvailableForcedSlots()
         external
-        override
         view
+        override
         returns (uint)
     {
         return state.getNumAvailableForcedSlots();
@@ -362,59 +315,46 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         address from,
         address to,
         address tokenAddress,
-        uint96  amount,
-        bytes   calldata extraData
-        )
-        external
-        payable
-        override
-        nonReentrant
-        onlyFromUserOrAgent(from)
-    {
+        uint96 amount,
+        bytes calldata extraData
+    ) external payable override nonReentrant onlyFromUserOrAgent(from) {
         state.deposit(from, to, tokenAddress, amount, extraData);
     }
 
     function depositNFT(
-        address              from,
-        address              to,
+        address from,
+        address to,
         ExchangeData.NftType nftType,
-        address              tokenAddress,
-        uint256              nftID,
-        uint96               amount,
-        bytes    calldata    extraData
-        )
-        external
-        override
-        nonReentrant
-        onlyFromUserOrAgent(from)
-    {
-        state.depositNFT(from, to, nftType, tokenAddress, nftID, amount, extraData);
+        address tokenAddress,
+        uint256 nftID,
+        uint96 amount,
+        bytes calldata extraData
+    ) external override nonReentrant onlyFromUserOrAgent(from) {
+        state.depositNFT(
+            from,
+            to,
+            nftType,
+            tokenAddress,
+            nftID,
+            amount,
+            extraData
+        );
     }
 
     function getPendingDepositAmount(
         address owner,
         address tokenAddress
-        )
-        public
-        override
-        view
-        returns (uint96)
-    {
+    ) public view override returns (uint96) {
         uint16 tokenID = state.getTokenID(tokenAddress);
         return state.pendingDeposits[owner][tokenID].amount;
     }
 
     function getPendingNFTDepositAmount(
-        address               owner,
-        address               token,
-        ExchangeData.NftType  nftType,
-        uint256               nftID
-        )
-        public
-        override
-        view
-        returns (uint96)
-    {
+        address owner,
+        address token,
+        ExchangeData.NftType nftType,
+        uint256 nftID
+    ) public view override returns (uint96) {
         return state.pendingNFTDeposits[owner][nftType][token][nftID].amount;
     }
 
@@ -422,78 +362,52 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
 
     function forceWithdrawByTokenID(
         address owner,
-        uint16  tokenID,
-        uint32  accountID
-        )
-        external
-        override
-        nonReentrant
-        payable
-        onlyFromUserOrAgent(owner)
-    {
+        uint16 tokenID,
+        uint32 accountID
+    ) external payable override nonReentrant onlyFromUserOrAgent(owner) {
         state.forceWithdraw(owner, tokenID, accountID);
     }
 
     function forceWithdraw(
         address owner,
         address token,
-        uint32  accountID
-        )
-        external
-        override
-        nonReentrant
-        payable
-        onlyFromUserOrAgent(owner)
-    {
+        uint32 accountID
+    ) external payable override nonReentrant onlyFromUserOrAgent(owner) {
         uint16 tokenID = state.getTokenID(token);
         state.forceWithdraw(owner, tokenID, accountID);
     }
 
     function isForcedWithdrawalPending(
-        uint32  accountID,
+        uint32 accountID,
         address token
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+    ) external view override returns (bool) {
         uint16 tokenID = state.getTokenID(token);
-        return state.pendingForcedWithdrawals[accountID][tokenID].timestamp != 0;
+        return
+            state.pendingForcedWithdrawals[accountID][tokenID].timestamp != 0;
     }
 
     function withdrawProtocolFees(
         address token
-        )
-        external
-        override
-        nonReentrant
-        payable
-    {
+    ) external payable override nonReentrant {
         uint16 tokenID = state.getTokenID(token);
-        state.forceWithdraw(address(0), tokenID, ExchangeData.ACCOUNTID_PROTOCOLFEE);
+        state.forceWithdraw(
+            address(0),
+            tokenID,
+            ExchangeData.ACCOUNTID_PROTOCOLFEE
+        );
     }
 
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
         ExchangeData.MerkleProof calldata merkleProof
-        )
-        external
-        override
-        nonReentrant
-    {
+    ) external override nonReentrant {
         state.withdrawFromMerkleTree(merkleProof);
     }
 
     function isWithdrawnInWithdrawalMode(
-        uint32  accountID,
+        uint32 accountID,
         address token
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+    ) external view override returns (bool) {
         uint16 tokenID = state.getTokenID(token);
         return state.withdrawnInWithdrawMode[accountID][tokenID];
     }
@@ -501,60 +415,33 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     function withdrawFromDepositRequest(
         address owner,
         address token
-        )
-        external
-        override
-        nonReentrant
-    {
-        state.withdrawFromDepositRequest(
-            owner,
-            token
-        );
+    ) external override nonReentrant {
+        state.withdrawFromDepositRequest(owner, token);
     }
 
     function withdrawFromNFTDepositRequest(
-        address               owner,
-        address               token,
-        ExchangeData.NftType  nftType,
-        uint256               nftID
-        )
-        external
-        override
-        nonReentrant
-    {
-        state.withdrawFromNFTDepositRequest(
-            owner,
-            token,
-            nftType,
-            nftID
-        );
+        address owner,
+        address token,
+        ExchangeData.NftType nftType,
+        uint256 nftID
+    ) external override nonReentrant {
+        state.withdrawFromNFTDepositRequest(owner, token, nftType, nftID);
     }
 
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
         address[] calldata tokens
-        )
-        external
-        override
-        nonReentrant
-    {
-        state.withdrawFromApprovedWithdrawals(
-            owners,
-            tokens
-        );
+    ) external override nonReentrant {
+        state.withdrawFromApprovedWithdrawals(owners, tokens);
     }
 
     function withdrawFromApprovedWithdrawalsNFT(
-        address[]              memory  owners,
-        address[]              memory  minters,
-        ExchangeData.NftType[] memory  nftTypes,
-        address[]              memory  tokens,
-        uint256[]              memory  nftIDs
-        )
-        external
-        override
-        nonReentrant
-    {
+        address[] memory owners,
+        address[] memory minters,
+        ExchangeData.NftType[] memory nftTypes,
+        address[] memory tokens,
+        uint256[] memory nftIDs
+    ) external override nonReentrant {
         state.withdrawFromApprovedWithdrawalsNFT(
             owners,
             minters,
@@ -567,44 +454,37 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     function getAmountWithdrawable(
         address owner,
         address token
-        )
-        external
-        override
-        view
-        returns (uint)
-    {
+    ) external view override returns (uint) {
         uint16 tokenID = state.getTokenID(token);
         return state.amountWithdrawable[owner][tokenID];
     }
 
     function getAmountWithdrawableNFT(
-        address              owner,
-        address              token,
+        address owner,
+        address token,
         ExchangeData.NftType nftType,
-        uint256              nftID,
-        address              minter
-        )
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.amountWithdrawableNFT[owner][minter][nftType][token][nftID];
+        uint256 nftID,
+        address minter
+    ) external view override returns (uint) {
+        return
+            state.amountWithdrawableNFT[owner][minter][nftType][token][nftID];
     }
 
     function notifyForcedRequestTooOld(
         uint32 accountID,
         uint16 tokenID
-        )
-        external
-        override
-        nonReentrant
-    {
-        ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
+    ) external override nonReentrant {
+        ExchangeData.ForcedWithdrawal storage withdrawal = state
+            .pendingForcedWithdrawals[accountID][tokenID];
         require(withdrawal.timestamp != 0, "WITHDRAWAL_NOT_TOO_OLD");
 
         // Check if the withdrawal has indeed exceeded the time limit
-        require(block.timestamp >= withdrawal.timestamp + ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE, "WITHDRAWAL_NOT_TOO_OLD");
+        require(
+            block.timestamp >=
+                withdrawal.timestamp +
+                    ExchangeData.MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE,
+            "WITHDRAWAL_NOT_TOO_OLD"
+        );
 
         // Enter withdrawal mode
         state.withdrawalModeStartTime = block.timestamp;
@@ -616,33 +496,29 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         address from,
         address to,
         address token,
-        uint96  amount,
-        uint32  storageID,
+        uint96 amount,
+        uint32 storageID,
         address newRecipient
-        )
-        external
-        override
-        nonReentrant
-        onlyFromUserOrAgent(from)
-    {
+    ) external override nonReentrant onlyFromUserOrAgent(from) {
         require(newRecipient != address(0), "INVALID_DATA");
         uint16 tokenID = state.getTokenID(token);
-        require(state.withdrawalRecipient[from][to][tokenID][amount][storageID] == address(0), "CANNOT_OVERRIDE_RECIPIENT_ADDRESS");
-        state.withdrawalRecipient[from][to][tokenID][amount][storageID] = newRecipient;
+        require(
+            state.withdrawalRecipient[from][to][tokenID][amount][storageID] ==
+                address(0),
+            "CANNOT_OVERRIDE_RECIPIENT_ADDRESS"
+        );
+        state.withdrawalRecipient[from][to][tokenID][amount][
+            storageID
+        ] = newRecipient;
     }
 
     function getWithdrawalRecipient(
         address from,
         address to,
         address token,
-        uint96  amount,
-        uint32  storageID
-        )
-        external
-        override
-        view
-        returns (address)
-    {
+        uint96 amount,
+        uint32 storageID
+    ) external view override returns (address) {
         uint16 tokenID = state.getTokenID(token);
         return state.withdrawalRecipient[from][to][tokenID][amount][storageID];
     }
@@ -651,13 +527,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         address from,
         address to,
         address token,
-        uint    amount
-        )
-        external
-        override
-        nonReentrant
-        onlyFromUserOrAgent(from)
-    {
+        uint amount
+    ) external override nonReentrant onlyFromUserOrAgent(from) {
         require(state.allowOnchainTransferFrom, "NOT_ALLOWED");
         state.depositContract.transfer(from, to, token, amount);
     }
@@ -665,12 +536,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     function approveTransaction(
         address owner,
         bytes32 transactionHash
-        )
-        external
-        override
-        nonReentrant
-        onlyFromUserOrAgent(owner)
-    {
+    ) external override nonReentrant onlyFromUserOrAgent(owner) {
         state.approvedTx[owner][transactionHash] = true;
         emit TransactionApproved(owner, transactionHash);
     }
@@ -678,13 +544,12 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     function approveTransactions(
         address[] calldata owners,
         bytes32[] calldata transactionHashes
-        )
-        external
-        override
-        nonReentrant
-    {
+    ) external override nonReentrant {
         require(owners.length == transactionHashes.length, "INVALID_DATA");
-        require(state.agentRegistry.isAgent(owners, msg.sender), "UNAUTHORIZED");
+        require(
+            state.agentRegistry.isAgent(owners, msg.sender),
+            "UNAUTHORIZED"
+        );
         for (uint i = 0; i < owners.length; i++) {
             state.approvedTx[owners[i]][transactionHashes[i]] = true;
         }
@@ -693,41 +558,25 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     function isTransactionApproved(
         address owner,
         bytes32 transactionHash
-        )
-        external
-        override
-        view
-        returns (bool)
-    {
+    ) external view override returns (bool) {
         return state.approvedTx[owner][transactionHash];
     }
 
-    function getDomainSeparator()
-        external
-        override
-        view
-        returns (bytes32)
-    {
+    function getDomainSeparator() external view override returns (bytes32) {
         return state.DOMAIN_SEPARATOR;
     }
 
     // -- Admins --
     function setMaxAgeDepositUntilWithdrawable(
         uint32 newValue
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-        returns (uint32)
-    {
+    ) external override nonReentrant onlyOwner returns (uint32) {
         return state.setMaxAgeDepositUntilWithdrawable(newValue);
     }
 
     function getMaxAgeDepositUntilWithdrawable()
         external
-        override
         view
+        override
         returns (uint32)
     {
         return state.maxAgeDepositUntilWithdrawable;
@@ -749,14 +598,14 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
 
     function getProtocolFeeValues()
         external
-        override
         view
+        override
         returns (
             uint32 syncedAt,
-            uint8  takerFeeBips,
-            uint8  makerFeeBips,
-            uint8  previousTakerFeeBips,
-            uint8  previousMakerFeeBips
+            uint8 takerFeeBips,
+            uint8 makerFeeBips,
+            uint8 previousTakerFeeBips,
+            uint8 previousMakerFeeBips
         )
     {
         syncedAt = state.protocolFeeData.syncedAt;
@@ -766,29 +615,20 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
     }
 
-    function setAmmFeeBips(uint8 _feeBips)
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
+    function setAmmFeeBips(
+        uint8 _feeBips
+    ) external override nonReentrant onlyOwner {
         require(_feeBips <= 200, "INVALID_VALUE");
         state.ammFeeBips = _feeBips;
     }
 
-    function getAmmFeeBips()
-        external
-        override
-        view
-        returns (uint8) {
+    function getAmmFeeBips() external view override returns (uint8) {
         return state.ammFeeBips;
     }
 
-    function setAllowOnchainTransferFrom(bool value)
-        external
-        nonReentrant
-        onlyOwner
-    {
+    function setAllowOnchainTransferFrom(
+        bool value
+    ) external nonReentrant onlyOwner {
         require(state.allowOnchainTransferFrom != value, "SAME_VALUE");
         state.allowOnchainTransferFrom = value;
     }

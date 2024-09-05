@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "../../lib/Claimable.sol";
 import "./ExchangeData.sol";
 
-
 /// @title IExchangeV3
 /// @dev Note that Claimable and RentrancyGuard are inherited here to
 ///      ensure all data members are declared on IExchangeV3 to make it
@@ -17,8 +16,7 @@ import "./ExchangeData.sol";
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-abstract contract IExchangeV3 is Claimable
-{
+abstract contract IExchangeV3 is Claimable {
     // -- Events --
 
     event ExchangeCloned(
@@ -27,82 +25,75 @@ abstract contract IExchangeV3 is Claimable
         bytes32 genesisMerkleRoot
     );
 
-    event TokenRegistered(
-        address token,
-        uint16  tokenId
-    );
+    event TokenRegistered(address token, uint16 tokenId);
 
-    event Shutdown(
-        uint timestamp
-    );
+    event Shutdown(uint timestamp);
 
-    event WithdrawalModeActivated(
-        uint timestamp
-    );
+    event WithdrawalModeActivated(uint timestamp);
 
     event BlockSubmitted(
-        uint    indexed blockIdx,
-        bytes32         merkleRoot,
-        bytes32         publicDataHash
+        uint indexed blockIdx,
+        bytes32 merkleRoot,
+        bytes32 publicDataHash
     );
 
     event DepositRequested(
         address from,
         address to,
         address token,
-        uint16  tokenId,
-        uint96  amount
+        uint16 tokenId,
+        uint96 amount
     );
 
     event NFTDepositRequested(
         address from,
         address to,
-        uint8   nftType,
+        uint8 nftType,
         address token,
         uint256 nftID,
-        uint96  amount
+        uint96 amount
     );
 
     event ForcedWithdrawalRequested(
         address owner,
-        uint16  tokenID,
-        uint32  accountID
+        uint16 tokenID,
+        uint32 accountID
     );
 
     event WithdrawalCompleted(
-        uint8   category,
+        uint8 category,
         address from,
         address to,
         address token,
-        uint    amount
+        uint amount
     );
 
     event WithdrawalFailed(
-        uint8   category,
+        uint8 category,
         address from,
         address to,
         address token,
-        uint    amount
+        uint amount
     );
 
     event NftWithdrawalCompleted(
-        uint8   category,
+        uint8 category,
         address from,
         address to,
-        uint16  tokenID,
+        uint16 tokenID,
         address token,
         uint256 nftID,
-        uint    amount
+        uint amount
     );
 
     event NftWithdrawalFailed(
-        uint8   category,
+        uint8 category,
         address from,
         address to,
-        uint16  tokenID,
+        uint16 tokenID,
         address token,
         uint256 nftID,
-        uint    amount
+        uint amount
     );
 
     event ProtocolFeesUpdated(
@@ -112,11 +103,7 @@ abstract contract IExchangeV3 is Claimable
         uint8 previousMakerFeeBips
     );
 
-    event TransactionApproved(
-        address owner,
-        bytes32 transactionHash
-    );
-
+    event TransactionApproved(address owner, bytes32 transactionHash);
 
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
@@ -127,42 +114,34 @@ abstract contract IExchangeV3 is Claimable
         address loopring,
         address owner,
         bytes32 genesisMerkleRoot
-        )
-        virtual
-        external;
+    ) external virtual;
+
+    function getLoopring() external view virtual returns (address);
+    function upgradeLoopring(address _loopringAddr) external virtual;
+    function applyLoopringUpgrade() external virtual;
 
     /// @dev Initialized the agent registry contract used by the exchange.
     ///      Can only be called by the exchange owner once.
     /// @param agentRegistry The agent registry contract to be used
-    function setAgentRegistry(address agentRegistry)
-        external
-        virtual;
+    function setAgentRegistry(address agentRegistry) external virtual;
 
     /// @dev Gets the agent registry contract used by the exchange.
     /// @return the agent registry contract
-    function getAgentRegistry()
-        external
-        virtual
-        view
-        returns (IAgentRegistry);
+    function getAgentRegistry() external view virtual returns (IAgentRegistry);
 
     ///      Can only be called by the exchange owner once.
     /// @param depositContract The deposit contract to be used
-    function setDepositContract(address depositContract)
-        external
-        virtual;
+    function setDepositContract(address depositContract) external virtual;
 
     /// @dev refresh the blockVerifier contract which maybe changed in loopringV3 contract.
-    function refreshBlockVerifier()
-        external
-        virtual;
+    function refreshBlockVerifier() external virtual;
 
     /// @dev Gets the deposit contract used by the exchange.
     /// @return the deposit contract
     function getDepositContract()
         external
-        virtual
         view
+        virtual
         returns (IDepositContract);
 
     // @dev Exchange owner withdraws fees from the exchange.
@@ -171,35 +150,25 @@ abstract contract IExchangeV3 is Claimable
     function withdrawExchangeFees(
         address token,
         address feeRecipient
-        )
-        external
-        virtual;
+    ) external virtual;
 
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants.
     function getConstants()
         external
-        virtual
         pure
-        returns(ExchangeData.Constants memory);
+        virtual
+        returns (ExchangeData.Constants memory);
 
     // -- Mode --
     /// @dev Returns hether the exchange is in withdrawal mode.
     /// @return Returns true if the exchange is in withdrawal mode, else false.
-    function isInWithdrawalMode()
-        external
-        virtual
-        view
-        returns (bool);
+    function isInWithdrawalMode() external view virtual returns (bool);
 
     /// @dev Returns whether the exchange is shutdown.
     /// @return Returns true if the exchange is shutdown, else false.
-    function isShutdown()
-        external
-        virtual
-        view
-        returns (bool);
+    function isShutdown() external view virtual returns (bool);
 
     // -- Tokens --
     /// @dev Registers an ERC20 token for a token id. Note that different exchanges may have
@@ -214,32 +183,21 @@ abstract contract IExchangeV3 is Claimable
     /// @return tokenID The token's ID in this exchanges.
     function registerToken(
         address tokenAddress
-        )
-        external
-        virtual
-        returns (uint16 tokenID);
+    ) external virtual returns (uint16 tokenID);
 
     /// @dev Returns the id of a registered token.
     /// @param  tokenAddress The token's address
     /// @return tokenID The token's ID in this exchanges.
     function getTokenID(
         address tokenAddress
-        )
-        external
-        virtual
-        view
-        returns (uint16 tokenID);
+    ) external view virtual returns (uint16 tokenID);
 
     /// @dev Returns the address of a registered token.
     /// @param  tokenID The token's ID in this exchanges.
     /// @return tokenAddress The token's address
     function getTokenAddress(
         uint16 tokenID
-        )
-        external
-        virtual
-        view
-        returns (address tokenAddress);
+    ) external view virtual returns (address tokenAddress);
 
     // -- Stakes --
     /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
@@ -248,11 +206,7 @@ abstract contract IExchangeV3 is Claimable
     ///      performed by another party and is not part of the exchange's duty.
     ///
     /// @return The amount of LRC staked
-    function getExchangeStake()
-        external
-        virtual
-        view
-        returns (uint);
+    function getExchangeStake() external view virtual returns (uint);
 
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can only be done if the exchange has been correctly shutdown:
@@ -265,48 +219,33 @@ abstract contract IExchangeV3 is Claimable
     /// @return amountLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
         address recipient
-        )
-        external
-        virtual
-        returns (uint amountLRC);
+    ) external virtual returns (uint amountLRC);
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.
     ///
     ///      Currently this will only burn the stake of the exchange if
     ///      the exchange is in withdrawal mode.
-    function burnExchangeStake()
-        external
-        virtual;
+    function burnExchangeStake() external virtual;
 
     // -- Blocks --
 
     /// @dev Gets the current Merkle root of this exchange's virtual blockchain.
     /// @return The current Merkle root.
-    function getMerkleRoot()
-        external
-        virtual
-        view
-        returns (bytes32);
+    function getMerkleRoot() external view virtual returns (bytes32);
 
     /// @dev Gets the height of this exchange's virtual blockchain. The block height for a
     ///      new exchange is 1.
     /// @return The virtual blockchain height which is the index of the last block.
-    function getBlockHeight()
-        external
-        virtual
-        view
-        returns (uint);
+    function getBlockHeight() external view virtual returns (uint);
 
     /// @dev Gets some minimal info of a previously submitted block that's kept onchain.
     ///      A DEX can use this function to implement a payment receipt verification
     ///      contract with a challange-response scheme.
     /// @param blockIdx The block index.
-    function getBlockInfo(uint blockIdx)
-        external
-        virtual
-        view
-        returns (ExchangeData.BlockInfo memory);
+    function getBlockInfo(
+        uint blockIdx
+    ) external view virtual returns (ExchangeData.BlockInfo memory);
 
     /// @dev Sumbits new blocks to the rollup blockchain.
     ///
@@ -321,17 +260,13 @@ abstract contract IExchangeV3 is Claimable
     ///      - data: The data for this block
     ///      - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
-    function submitBlocks(ExchangeData.Block[] calldata blocks)
-        external
-        virtual;
+    function submitBlocks(
+        ExchangeData.Block[] calldata blocks
+    ) external virtual;
 
     /// @dev Gets the number of available forced request slots.
     /// @return The number of available slots.
-    function getNumAvailableForcedSlots()
-        external
-        virtual
-        view
-        returns (uint);
+    function getNumAvailableForcedSlots() external view virtual returns (uint);
 
     // -- Deposits --
 
@@ -350,12 +285,9 @@ abstract contract IExchangeV3 is Claimable
         address from,
         address to,
         address tokenAddress,
-        uint96  amount,
-        bytes   calldata extraData
-        )
-        external
-        virtual
-        payable;
+        uint96 amount,
+        bytes calldata extraData
+    ) external payable virtual;
 
     /// @dev Deposits an NFT to the specified account.
     ///
@@ -371,16 +303,14 @@ abstract contract IExchangeV3 is Claimable
     /// @param amount The amount of tokens to deposit.
     /// @param extraData Optional extra data used by the deposit contract.
     function depositNFT(
-        address              from,
-        address              to,
+        address from,
+        address to,
         ExchangeData.NftType nftType,
-        address              tokenAddress,
-        uint256              nftID,
-        uint96               amount,
-        bytes    calldata    extraData
-        )
-        external
-        virtual;
+        address tokenAddress,
+        uint256 nftID,
+        uint96 amount,
+        bytes calldata extraData
+    ) external virtual;
 
     /// @dev Gets the amount of tokens that may be added to the owner's account.
     /// @param owner The destination address for the amount deposited.
@@ -389,11 +319,7 @@ abstract contract IExchangeV3 is Claimable
     function getPendingDepositAmount(
         address owner,
         address tokenAddress
-        )
-        public
-        virtual
-        view
-        returns (uint96);
+    ) public view virtual returns (uint96);
 
     /// @dev Gets the amount of tokens that may be added to the owner's account.
     /// @param owner The destination address for the amount deposited.
@@ -402,15 +328,11 @@ abstract contract IExchangeV3 is Claimable
     /// @param nftID The token type 'id`.
     /// @return The amount of tokens pending.
     function getPendingNFTDepositAmount(
-        address               owner,
-        address               tokenAddress,
-        ExchangeData.NftType  nftType,
-        uint256               nftID
-        )
-        public
-        virtual
-        view
-        returns (uint96);
+        address owner,
+        address tokenAddress,
+        ExchangeData.NftType nftType,
+        uint256 nftID
+    ) public view virtual returns (uint96);
 
     // -- Withdrawals --
 
@@ -431,12 +353,9 @@ abstract contract IExchangeV3 is Claimable
     /// @param accountID The address the account in the Merkle tree.
     function forceWithdrawByTokenID(
         address owner,
-        uint16  tokenID,
-        uint32  accountID
-        )
-        external
-        virtual
-        payable;
+        uint16 tokenID,
+        uint32 accountID
+    ) external payable virtual;
 
     /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
     ///      This request always withdraws the full balance.
@@ -456,24 +375,17 @@ abstract contract IExchangeV3 is Claimable
     function forceWithdraw(
         address owner,
         address tokenAddress,
-        uint32  accountID
-        )
-        external
-        virtual
-        payable;
+        uint32 accountID
+    ) external payable virtual;
 
     /// @dev Checks if a forced withdrawal is pending for an account balance.
     /// @param  accountID The accountID of the account to check.
     /// @param  token The token address
     /// @return True if a request is pending, false otherwise
     function isForcedWithdrawalPending(
-        uint32  accountID,
+        uint32 accountID,
         address token
-        )
-        external
-        virtual
-        view
-        returns (bool);
+    ) external view virtual returns (bool);
 
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens from the
     ///      protocol fees account. The complete balance is always withdrawn.
@@ -487,21 +399,14 @@ abstract contract IExchangeV3 is Claimable
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     function withdrawProtocolFees(
         address tokenAddress
-        )
-        external
-        virtual
-        payable;
+    ) external payable virtual;
 
     /// @dev Gets the time the protocol fee for a token was last withdrawn.
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @return The time the protocol fee was last withdrawn.
     function getProtocolFeeLastWithdrawnTime(
         address tokenAddress
-        )
-        external
-        virtual
-        view
-        returns (uint);
+    ) external view virtual returns (uint);
 
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
     ///      in the Merkle tree. The funds will be sent to the owner of the acount.
@@ -516,22 +421,16 @@ abstract contract IExchangeV3 is Claimable
     /// @param  merkleProof The Merkle inclusion proof
     function withdrawFromMerkleTree(
         ExchangeData.MerkleProof calldata merkleProof
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Checks if the balance for the account was withdrawn with `withdrawFromMerkleTree`.
     /// @param  accountID The accountID of the balance to check.
     /// @param  token The token address
     /// @return True if it was already withdrawn, false otherwise
     function isWithdrawnInWithdrawalMode(
-        uint32  accountID,
+        uint32 accountID,
         address token
-        )
-        external
-        virtual
-        view
-        returns (bool);
+    ) external view virtual returns (bool);
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
     ///      it was never processed by the owner within the maximum time allowed.
@@ -544,9 +443,7 @@ abstract contract IExchangeV3 is Claimable
     function withdrawFromDepositRequest(
         address owner,
         address token
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
     ///      it was never processed by the owner within the maximum time allowed.
@@ -559,13 +456,11 @@ abstract contract IExchangeV3 is Claimable
     /// @param nftType The type of NFT contract address (ERC721/ERC1155/...)
     /// @param nftID The token type 'id`.
     function withdrawFromNFTDepositRequest(
-        address              owner,
-        address              token,
+        address owner,
+        address token,
         ExchangeData.NftType nftType,
-        uint256              nftID
-        )
-        external
-        virtual;
+        uint256 nftID
+    ) external virtual;
 
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
     ///      or offchain) was submitted in a block by the operator.
@@ -585,9 +480,7 @@ abstract contract IExchangeV3 is Claimable
     function withdrawFromApprovedWithdrawals(
         address[] calldata owners,
         address[] calldata tokens
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Allows withdrawing funds after an NFT withdrawal request (either onchain
     ///      or offchain) was submitted in a block by the operator.
@@ -608,14 +501,12 @@ abstract contract IExchangeV3 is Claimable
     /// @param  tokens The token addresses
     /// @param  nftIDs The token ids
     function withdrawFromApprovedWithdrawalsNFT(
-        address[]              memory  owners,
-        address[]              memory  minters,
-        ExchangeData.NftType[] memory  nftTypes,
-        address[]              memory  tokens,
-        uint256[]              memory  nftIDs
-        )
-        external
-        virtual;
+        address[] memory owners,
+        address[] memory minters,
+        ExchangeData.NftType[] memory nftTypes,
+        address[] memory tokens,
+        uint256[] memory nftIDs
+    ) external virtual;
 
     /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawals`.
     /// @param  owner The address of the account the withdrawal was done for.
@@ -624,11 +515,7 @@ abstract contract IExchangeV3 is Claimable
     function getAmountWithdrawable(
         address owner,
         address token
-        )
-        external
-        virtual
-        view
-        returns (uint);
+    ) external view virtual returns (uint);
 
     /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawalsNFT`.
     /// @param  owner The address of the account the withdrawal was done for.
@@ -638,16 +525,12 @@ abstract contract IExchangeV3 is Claimable
     /// @param  minter The NFT minter
     /// @return The amount withdrawable
     function getAmountWithdrawableNFT(
-        address              owner,
-        address              token,
+        address owner,
+        address token,
         ExchangeData.NftType nftType,
-        uint256              nftID,
-        address              minter
-        )
-        external
-        virtual
-        view
-        returns (uint);
+        uint256 nftID,
+        address minter
+    ) external view virtual returns (uint);
 
     /// @dev Notifies the exchange that the owner did not process a forced request.
     ///      If this is indeed the case, the exchange will enter withdrawal mode.
@@ -659,9 +542,7 @@ abstract contract IExchangeV3 is Claimable
     function notifyForcedRequestTooOld(
         uint32 accountID,
         uint16 tokenID
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Allows a withdrawal to be done to an adddresss that is different
     ///      than initialy specified in the withdrawal request. This can be used to
@@ -679,12 +560,10 @@ abstract contract IExchangeV3 is Claimable
         address from,
         address to,
         address token,
-        uint96  amount,
-        uint32  storageID,
+        uint96 amount,
+        uint32 storageID,
         address newRecipient
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Gets the withdrawal recipient.
     ///
@@ -697,13 +576,9 @@ abstract contract IExchangeV3 is Claimable
         address from,
         address to,
         address token,
-        uint96  amount,
-        uint32  storageID
-        )
-        external
-        virtual
-        view
-        returns (address);
+        uint96 amount,
+        uint32 storageID
+    ) external view virtual returns (address);
 
     /// @dev Allows an agent to transfer ERC-20 tokens for a user using the allowance
     ///      the user has set for the exchange. This way the user only needs to approve a single exchange contract
@@ -719,10 +594,8 @@ abstract contract IExchangeV3 is Claimable
         address from,
         address to,
         address token,
-        uint    amount
-        )
-        external
-        virtual;
+        uint amount
+    ) external virtual;
 
     /// @dev Allows an agent to approve a rollup tx.
     ///
@@ -730,12 +603,7 @@ abstract contract IExchangeV3 is Claimable
     ///
     /// @param owner The owner of the account
     /// @param txHash The hash of the transaction
-    function approveTransaction(
-        address owner,
-        bytes32 txHash
-        )
-        external
-        virtual;
+    function approveTransaction(address owner, bytes32 txHash) external virtual;
 
     /// @dev Allows an agent to approve multiple rollup txs.
     ///
@@ -746,9 +614,7 @@ abstract contract IExchangeV3 is Claimable
     function approveTransactions(
         address[] calldata owners,
         bytes32[] calldata txHashes
-        )
-        external
-        virtual;
+    ) external virtual;
 
     /// @dev Checks if a rollup tx is approved using the tx's hash.
     ///
@@ -758,11 +624,7 @@ abstract contract IExchangeV3 is Claimable
     function isTransactionApproved(
         address owner,
         bytes32 txHash
-        )
-        external
-        virtual
-        view
-        returns (bool);
+    ) external view virtual returns (bool);
 
     // -- Admins --
     /// @dev Sets the max time deposits have to wait before becoming withdrawable.
@@ -770,17 +632,14 @@ abstract contract IExchangeV3 is Claimable
     /// @return  The old value.
     function setMaxAgeDepositUntilWithdrawable(
         uint32 newValue
-        )
-        external
-        virtual
-        returns (uint32);
+    ) external virtual returns (uint32);
 
     /// @dev Returns the max time deposits have to wait before becoming withdrawable.
     /// @return The value.
     function getMaxAgeDepositUntilWithdrawable()
         external
-        virtual
         view
+        virtual
         returns (uint32);
 
     /// @dev Shuts down the exchange.
@@ -796,10 +655,7 @@ abstract contract IExchangeV3 is Claimable
     ///      Can only be called by the exchange owner.
     ///
     /// @return success True if the exchange is shutdown, else False
-    function shutdown()
-        external
-        virtual
-        returns (bool success);
+    function shutdown() external virtual returns (bool success);
 
     /// @dev Gets the protocol fees for this exchange.
     /// @return syncedAt The timestamp the protocol fees were last updated
@@ -809,8 +665,8 @@ abstract contract IExchangeV3 is Claimable
     /// @return previousMakerFeeBips The previous protocol maker fee
     function getProtocolFeeValues()
         external
-        virtual
         view
+        virtual
         returns (
             uint32 syncedAt,
             uint8 takerFeeBips,
@@ -820,21 +676,11 @@ abstract contract IExchangeV3 is Claimable
         );
 
     /// @dev Gets the domain separator used in this exchange.
-    function getDomainSeparator()
-        external
-        virtual
-        view
-        returns (bytes32);
+    function getDomainSeparator() external view virtual returns (bytes32);
 
     /// @dev set amm pool feeBips value.
-    function setAmmFeeBips(uint8 _feeBips)
-        external
-        virtual;
+    function setAmmFeeBips(uint8 _feeBips) external virtual;
 
     /// @dev get amm pool feeBips value.
-    function getAmmFeeBips()
-        external
-        virtual
-        view
-        returns (uint8);
+    function getAmmFeeBips() external view virtual returns (uint8);
 }
