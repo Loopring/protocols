@@ -34,7 +34,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
 
         lrcAddress = _lrcAddress;
 
-        updateSettingsInternal(_protocolFeeVault, _blockVerifierAddress, 0);
+        updateSettingsInternal(_protocolFeeVault, _blockVerifierAddress, 0, 0);
     }
 
     // == Public Functions ==
@@ -51,7 +51,8 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _forcedWithdrawalFee
+            _forcedWithdrawalFee,
+            SETTING_UPDATE_DELAY + block.timestamp
         );
     }
 
@@ -67,7 +68,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
         protocolTakerFeeBips = _protocolTakerFeeBips;
         protocolMakerFeeBips = _protocolMakerFeeBips;
 
-        emit SettingsUpdated(block.timestamp);
+        emit SettingsUpdated(block.timestamp, 0);
     }
 
     function getExchangeStake(
@@ -159,17 +160,50 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
-        uint    _forcedWithdrawalFee
+        uint    _forcedWithdrawalFee,
+        uint _nextEffectiveTime
         )
         private
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
+        require(
+            _forcedWithdrawalFee <= 0.5 ether,
+            "FORCED_WITHDRAWAL_FEE_TOO_HIGH"
+        );
 
-        protocolFeeVault = _protocolFeeVault;
-        blockVerifierAddress = _blockVerifierAddress;
-        forcedWithdrawalFee = _forcedWithdrawalFee;
+        if (_nextEffectiveTime == 0) {
+            // effect immediately
+            protocolFeeVault = _protocolFeeVault;
+            blockVerifierAddress = _blockVerifierAddress;
+            forcedWithdrawalFee = _forcedWithdrawalFee;
+        } else {
+            // delayed effect
+            cachedSettings = CachedSettings({
+                protocolFeeVault: _protocolFeeVault,
+                blockVerifierAddress: _blockVerifierAddress,
+                forcedWithdrawalFee: _forcedWithdrawalFee
+            });
+            nextEffectiveTime = _nextEffectiveTime;
+        }
 
-        emit SettingsUpdated(block.timestamp);
+        emit SettingsUpdated(block.timestamp, _nextEffectiveTime);
+    }
+
+    function applyUpdate() external onlyOwner {
+        // TODO(add ownership check)
+        require(nextEffectiveTime > 0, "NO_ANY_UPDATES");
+        require(nextEffectiveTime <= block.timestamp, "NOT_ENABLED_YET");
+
+        protocolFeeVault = payable(cachedSettings.protocolFeeVault);
+        blockVerifierAddress = cachedSettings.blockVerifierAddress;
+        forcedWithdrawalFee = cachedSettings.forcedWithdrawalFee;
+
+        // clear updates
+        nextEffectiveTime = 0;
+
+        delete cachedSettings;
+
+        emit SettingsApplied(block.timestamp);
     }
 }

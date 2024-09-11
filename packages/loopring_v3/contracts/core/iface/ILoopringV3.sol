@@ -14,11 +14,14 @@ abstract contract ILoopringV3 is Claimable
     event ExchangeStakeDeposited(address exchangeAddr, uint amount);
     event ExchangeStakeWithdrawn(address exchangeAddr, uint amount);
     event ExchangeStakeBurned(address exchangeAddr, uint amount);
-    event SettingsUpdated(uint time);
+    event SettingsUpdated(uint time, uint effectTime);
+    event SettingsApplied(uint time);
 
     // == Public Variables ==
+    uint256 internal constant SETTING_UPDATE_DELAY = 7 days;
     mapping (address => uint) internal exchangeStake;
 
+    uint public nextEffectiveTime;
     uint    public totalStake;
     address public blockVerifierAddress;
     uint    public forcedWithdrawalFee;
@@ -28,6 +31,14 @@ abstract contract ILoopringV3 is Claimable
     uint8   public protocolMakerFeeBips;
 
     address payable public protocolFeeVault;
+
+    struct CachedSettings {
+        address protocolFeeVault;
+        address blockVerifierAddress;
+        uint forcedWithdrawalFee;
+    }
+
+    CachedSettings internal cachedSettings;
 
     // == Public Functions ==
 
