@@ -55,6 +55,16 @@ abstract contract IBlockVerifier is Claimable
         external
         virtual;
 
+    /// @dev Enables the use of the specified circuit.
+    /// @param blockType The type of the block
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    function enableCircuit(
+        uint8 blockType,
+        uint16 blockSize,
+        uint8 blockVersion
+    ) external virtual;
+
     /// @dev Verifies blocks with the given public data and proofs.
     ///      Verifying a block makes sure all requests handled in the block
     ///      are correctly handled by the operator.
