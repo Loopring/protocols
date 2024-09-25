@@ -124,6 +124,8 @@ library ExchangeData
     // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
     uint public constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
+    // 0.1% of pending deposited amount
+    uint public constant MIN_DEPOSIT_PERCENTAGE = 1;
     uint public constant MAX_OPEN_FORCED_REQUESTS = 4096;
     uint public constant MAX_AGE_FORCED_REQUEST_UNTIL_WITHDRAW_MODE = 15 days;
     uint public constant TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = 7 days;
@@ -185,6 +187,11 @@ library ExchangeData
         uint32  timestamp;
         Block   block;
         uint    txIndex;
+    }
+
+    struct CachedLoopringSetting {
+        address loopringAddr;
+        uint nextEffectiveTime;
     }
 
     // Represents the entire exchange state except the owner of the exchange.
@@ -263,5 +270,8 @@ library ExchangeData
         // owner => minter => NFT type => token address => nftID => amount withdrawable
         // This is only used when the automatic distribution of the withdrawal failed.
         mapping (address => mapping (address => mapping (NftType => mapping (address => mapping(uint256 => uint))))) amountWithdrawableNFT;
+
+        // cached loopring address to delayed upgrade
+        CachedLoopringSetting cachedLoopringSetting;
     }
 }

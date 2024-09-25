@@ -57,6 +57,13 @@ library ExchangeDeposits
         // Allow depositing with amount == 0 to allow updating the deposit timestamp
 
         uint16 tokenID = S.getTokenID(tokenAddress);
+        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
+        // prevent from attackers to deposit too little tokens
+        require(
+            amount * 1000 >=
+                _deposit.amount * ExchangeData.MIN_DEPOSIT_PERCENTAGE,
+            "DEPOSIT_TOO_LITTLE"
+        );
 
         if (tokenID == 0 && amount == 0) {
             require(msg.value == 0), "INVALID_ETH_DEPOSIT");
@@ -71,7 +78,6 @@ library ExchangeDeposits
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
-        ExchangeData.Deposit memory _deposit = S.pendingDeposits[to][tokenID];
         _deposit.timestamp = uint64(block.timestamp);
         _deposit.amount = _deposit.amount.add(amountDeposited);
         S.pendingDeposits[to][tokenID] = _deposit;
