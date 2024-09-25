@@ -189,11 +189,6 @@ library ExchangeData
         uint    txIndex;
     }
 
-    struct CachedLoopringSetting {
-        address loopringAddr;
-        uint nextEffectiveTime;
-    }
-
     // Represents the entire exchange state except the owner of the exchange.
     struct State
     {
@@ -270,8 +265,5 @@ library ExchangeData
         // owner => minter => NFT type => token address => nftID => amount withdrawable
         // This is only used when the automatic distribution of the withdrawal failed.
         mapping (address => mapping (address => mapping (NftType => mapping (address => mapping(uint256 => uint))))) amountWithdrawableNFT;
-
-        // cached loopring address to delayed upgrade
-        CachedLoopringSetting cachedLoopringSetting;
     }
 }
