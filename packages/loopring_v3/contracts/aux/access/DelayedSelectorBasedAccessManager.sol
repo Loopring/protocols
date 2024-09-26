@@ -47,7 +47,13 @@ contract DelayedSelectorBasedAccessManager is DelayedTransaction, Claimable {
     receive() external payable {}
 
     fallback() external payable {
-        transactInternal(target, msg.value, msg.data);
+        transact(msg.data);
+    }
+
+    function transact(
+        bytes memory data
+    ) public payable withAccess(data.toBytes4(0)) {
+        transactInternal(target, msg.value, data);
     }
 
     function hasAccessTo(
