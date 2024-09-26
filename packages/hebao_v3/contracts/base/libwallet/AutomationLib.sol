@@ -16,8 +16,6 @@ library AutomationLib {
         uint validUntils
     );
 
-    event AutomationUnapproveExecutor(address wallet, address executor);
-
     function _spell(
         address _target,
         bytes memory _data
@@ -86,19 +84,10 @@ library AutomationLib {
         address executor,
         uint256 validUntil
     ) internal {
-        require(
-            wallet.executorsPermission[executor] < validUntil,
-            "approve failed"
-        );
+        uint256 curValidUntil = wallet.executorsPermission[executor];
+        require(curValidUntil == 0 || validUntil == 0, "approve failed");
         wallet.executorsPermission[executor] = validUntil;
-        emit AutomationApproveExecutor(address(this), executor, validUntil);
-    }
 
-    function unApproveExecutor(
-        Wallet storage wallet,
-        address executor
-    ) internal {
-        wallet.executorsPermission[executor] = 0;
-        emit AutomationUnapproveExecutor(address(this), executor);
+        emit AutomationApproveExecutor(address(this), executor, validUntil);
     }
 }
