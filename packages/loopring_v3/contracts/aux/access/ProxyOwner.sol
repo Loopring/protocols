@@ -5,6 +5,8 @@ pragma solidity ^0.7.0;
 import "../../core/iface/ILoopringV3.sol";
 import "./DelayedOwner.sol";
 
+/// @title IProxy
+/// @author Break Xiong  - <kl456123@outlook.com>
 interface IProxy {
     function transferProxyOwnership(address newOwner) external;
     function upgradeTo(address implementation) external;
