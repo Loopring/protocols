@@ -5,8 +5,8 @@ pragma solidity ^0.7.0;
 import "../../core/iface/ILoopringV3.sol";
 import "./DelayedOwner.sol";
 
-/// @title  LoopringOwner
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title  LoopringV3Owner
+/// @author Break Xiong - <kl456123@outlook.com>
 contract LoopringV3Owner is DelayedOwner {
     constructor(
         ILoopringV3 loopringV3

@@ -7,8 +7,8 @@ import "../../lib/Claimable.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./DelayedTransaction.sol";
 
-/// @title  SelectorBasedAccessManager
-/// @author Daniel Wang - <daniel@loopring.org>
+/// @title  DelayedSelectorBasedAccessManager
+/// @author Break Xiong - <kl456123@outlook.com>
 contract DelayedSelectorBasedAccessManager is DelayedTransaction, Claimable {
     using BytesUtil for bytes;
 

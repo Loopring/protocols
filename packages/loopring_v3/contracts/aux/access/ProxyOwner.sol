@@ -14,8 +14,8 @@ interface IProxy {
     ) external payable;
 }
 
-/// @title  LoopringOwner
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title  ProxyOwner
+/// @author Break Xiong - <kl456123@outlook.com>
 contract ProxyOwner is DelayedOwner {
     constructor(IProxy proxy) DelayedOwner(address(proxy), 3 days) {
         setFunctionDelay(proxy.transferProxyOwnership.selector, 7 days);
