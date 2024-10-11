@@ -55,7 +55,7 @@ contract LoopringIOExchangeOwner is DelayedSelectorBasedAccessManager, ERC1271, 
         )
         DelayedSelectorBasedAccessManager(_exchange, 3 days)
     {
-        setFunctionDelay(IExchangeV3.upgradeLoopring.selector, 7 days);
+        setFunctionDelay(IExchangeV3.setLoopring.selector, 7 days);
         setFunctionDelay(IExchangeV3.refreshBlockVerifier.selector, 7 days);
     }
 

@@ -102,7 +102,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         );
     }
 
-	function setLoopring(address loopringAddr)
+	function setLoopring(address _loopringAddr)
         external
         override
         nonReentrant
@@ -110,8 +110,8 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
     {
         require(loopringAddr != address(0), "ZERO_ADDRESS");
         // set loopring
-        state.loopringAddr = loopringAddr;
-        state.loopring = ILoopringV3(loopringAddr);
+        state.loopringAddr = _loopringAddr;
+        state.loopring = ILoopringV3(_loopringAddr);
     }
 
     function getLoopring()
