@@ -66,7 +66,7 @@ library ExchangeDeposits
         );
 
         if (tokenID == 0 && amount == 0) {
-            require(msg.value == 0), "INVALID_ETH_DEPOSIT");
+            require(msg.value == 0, "INVALID_ETH_DEPOSIT");
         }
 
         // Transfer the tokens to this contract
