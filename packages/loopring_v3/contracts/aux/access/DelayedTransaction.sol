@@ -49,9 +49,10 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         bytes   calldata data
         )
         external
+        payable
+        virtual
         override
         nonReentrant
-        payable
         onlyAuthorized
     {
         transactInternal(to, msg.value, data);

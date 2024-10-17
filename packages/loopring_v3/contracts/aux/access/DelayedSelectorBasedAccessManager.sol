@@ -56,6 +56,13 @@ contract DelayedSelectorBasedAccessManager is DelayedTransaction, Claimable {
         transactInternal(target, msg.value, data);
     }
 
+    function transact(
+        address,
+        bytes calldata
+    ) external payable override nonReentrant onlyAuthorized {
+        revert("Deprecated");
+    }
+
     function hasAccessTo(
         address user,
         bytes4 selector
