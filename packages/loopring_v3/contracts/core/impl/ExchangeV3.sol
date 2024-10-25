@@ -102,6 +102,27 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         );
     }
 
+	function setLoopring(address _loopringAddr)
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(_loopringAddr != address(0), "ZERO_ADDRESS");
+        // set loopring
+        state.loopringAddr = _loopringAddr;
+        state.loopring = ILoopringV3(_loopringAddr);
+    }
+
+    function getLoopring()
+        external
+        view
+        override
+        returns (address)
+    {
+        return state.loopringAddr;
+    }
+
     function setAgentRegistry(address _agentRegistry)
         external
         override

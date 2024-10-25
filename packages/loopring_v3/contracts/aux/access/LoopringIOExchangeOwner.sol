@@ -12,11 +12,11 @@ import "../../lib/Drainable.sol";
 import "../../lib/ERC1271.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
-import "./SelectorBasedAccessManager.sol";
+import "./DelayedSelectorBasedAccessManager.sol";
 import "./IBlockReceiver.sol";
 
 
-contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainable
+contract LoopringIOExchangeOwner is DelayedSelectorBasedAccessManager, ERC1271, Drainable
 {
     using AddressUtil       for address;
     using AddressUtil       for address payable;
@@ -53,8 +53,10 @@ contract LoopringIOExchangeOwner is SelectorBasedAccessManager, ERC1271, Drainab
     constructor(
         address _exchange
         )
-        SelectorBasedAccessManager(_exchange)
+        DelayedSelectorBasedAccessManager(_exchange, 3 days)
     {
+        setFunctionDelay(IExchangeV3.setLoopring.selector, 7 days);
+        setFunctionDelay(IExchangeV3.refreshBlockVerifier.selector, 7 days);
     }
 
     function openAccessToSubmitBlocks(bool _open)

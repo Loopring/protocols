@@ -131,6 +131,9 @@ abstract contract IExchangeV3 is Claimable
         virtual
         external;
 
+    function getLoopring() external view virtual returns (address);
+    function setLoopring(address loopringAddr) external virtual;
+
     /// @dev Initialized the agent registry contract used by the exchange.
     ///      Can only be called by the exchange owner once.
     /// @param agentRegistry The agent registry contract to be used

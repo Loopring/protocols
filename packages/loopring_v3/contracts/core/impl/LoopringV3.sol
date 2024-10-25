@@ -165,6 +165,10 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
+        require(
+            _forcedWithdrawalFee <= 0.5 ether,
+            "FORCED_WITHDRAWAL_FEE_TOO_HIGH"
+        );
 
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
