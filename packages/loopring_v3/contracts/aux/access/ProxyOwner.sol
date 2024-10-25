@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../../core/iface/ILoopringV3.sol";
 import "./DelayedOwner.sol";
 
 /// @title IProxy

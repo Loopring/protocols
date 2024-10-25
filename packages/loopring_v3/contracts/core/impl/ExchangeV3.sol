@@ -108,7 +108,7 @@ contract ExchangeV3 is IExchangeV3, ReentrancyGuard, ERC1155Holder, ERC721Holder
         nonReentrant
         onlyOwner
     {
-        require(loopringAddr != address(0), "ZERO_ADDRESS");
+        require(_loopringAddr != address(0), "ZERO_ADDRESS");
         // set loopring
         state.loopringAddr = _loopringAddr;
         state.loopring = ILoopringV3(_loopringAddr);

@@ -2,7 +2,6 @@
 // Copyright 2017 Loopring Technology Limited.
 pragma solidity ^0.7.0;
 
-import "../../core/iface/IExchangeV3.sol";
 import "../../lib/Claimable.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "./DelayedTransaction.sol";
@@ -12,14 +11,14 @@ import "./DelayedTransaction.sol";
 contract DelayedSelectorBasedAccessManager is DelayedTransaction, Claimable {
     using BytesUtil for bytes;
 
+    address public immutable target;
+    mapping(address => mapping(bytes4 => bool)) public permissions;
+
     event PermissionUpdate(
         address indexed user,
         bytes4 indexed selector,
         bool allowed
     );
-
-    address public target;
-    mapping(address => mapping(bytes4 => bool)) public permissions;
 
     modifier withAccess(bytes4 selector) {
         require(hasAccessTo(msg.sender, selector), "PERMISSION_DENIED");
@@ -34,6 +33,12 @@ contract DelayedSelectorBasedAccessManager is DelayedTransaction, Claimable {
         target = _target;
     }
 
+    receive() external payable {}
+
+    fallback() external payable {
+        transact(msg.data);
+    }
+
     function grantAccess(
         address user,
         bytes4 selector,
@@ -44,14 +49,8 @@ contract DelayedSelectorBasedAccessManager is DelayedTransaction, Claimable {
         emit PermissionUpdate(user, selector, granted);
     }
 
-    receive() external payable {}
-
-    fallback() external payable {
-        transact(msg.data);
-    }
-
     function transact(
-        bytes memory data
+        bytes calldata data
     ) public payable withAccess(data.toBytes4(0)) {
         transactInternal(target, msg.value, data);
     }
