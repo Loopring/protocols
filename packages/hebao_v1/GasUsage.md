@@ -1,6 +1,6 @@
 Gas usage comparison for a simple Ether/LRC transfer (v1.2.0)
 
-| TX Type | Token Transfered | Update Quota? | Reimburst in LRC? | Gas Used |
+| TX Type | Token Transfered | Update Quota? | Reimburse in LRC? | Gas Used |
 | :------ | :--------------: | ------------: | ----------------: | -------: |
 | MetaTx  |       ETH        |             N |                 N |    80118 |
 | MetaTx  |       ETH        |             N |                 Y |   100889 |

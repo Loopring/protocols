@@ -78,7 +78,7 @@ The circuit tests can be run with `npm run testc`. A single test can be run with
 - print info logs in tests: `npm run test -- -i`
 - print more detailed debug logs in tests: `npm run test -- -x`
 
-Running all tests takes around 1 hour on a modern PC with a CPU with 4 cores. Creating proofs is computationaly heavy and takes time even when multi-threading is used. Run individual tests when you can.
+Running all tests takes around 1 hour on a modern PC with a CPU with 4 cores. Creating proofs is computationally heavy and takes time even when multi-threading is used. Run individual tests when you can.
 
 Verifier/Prover keys are cached in the `keys` folder. When running `make` these keys are automatically deleted so they cannot be outdated.
 

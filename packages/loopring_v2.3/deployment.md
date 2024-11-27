@@ -7,7 +7,7 @@
 
 ## v2.2-release [main-net]:
 - Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
-- creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
+- creator: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - BrokerRegistry: [0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9](https://etherscan.io/address/0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9)
 - BurnRateTable: [0xA62ACd4ab0065daD489b6a459073ebfa50fEc46a](https://etherscan.io/address/0xA62ACd4ab0065daD489b6a459073ebfa50fEc46a)
 - OrderBook: [0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577](https://etherscan.io/address/0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577)
@@ -22,14 +22,14 @@
 
 ## v2.1-release [main-net]: [obsolete]
 - Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
-- creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
+- creator: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - RingSubmitter: [0xe9be8ec2153Cd594dFA2e4a24bB1D27d87C86e45](https://etherscan.io/address/0xe9be8ec2153Cd594dFA2e4a24bB1D27d87C86e45)
 - other contracts are the same as v2.1-release
 
 
 ## v2.1-release [main-net]: [obsolete]
 - Source code: https://github.com/Loopring/protocol2/releases/tag/2.1-release
-- creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
+- creator: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - BrokerRegistry: [0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9](https://etherscan.io/address/0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9)
 - BurnRateTable: [0x20D90aefBA13F044C5d23c48C3b07e2E43a006DB](https://etherscan.io/address/0x20D90aefBA13F044C5d23c48C3b07e2E43a006DB)
 - OrderBook: [0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577](https://etherscan.io/address/0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577)
@@ -43,7 +43,7 @@
 
 ## v2.0.1-snapshot [main-net]: [obsolete]
 - Source code: https://github.com/Loopring/protocol2/releases/tag/2.0.1-snapshot
-- creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
+- creator: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - BrokerRegistry: [0xb0cf9229B2C9D8781D13b9A17466cB398bA948F2](https://etherscan.io/address/0xb0cf9229B2C9D8781D13b9A17466cB398bA948F2)
 - BurnRateTable: [0x0a2b9a00b758B2C54254f7fCBEA43DA9341978D7](https://etherscan.io/address/0x0a2b9a00b758B2C54254f7fCBEA43DA9341978D7)
 - OrderBook: [0x1CE49b6D1De0CC1431dDBB01fffAbAe434576c7F](https://etherscan.io/address/0x1CE49b6D1De0CC1431dDBB01fffAbAe434576c7F)
@@ -57,7 +57,7 @@
 
 ## v2.0.1-snapshot [rinkeby]: [obsolete]
 - Source code: https://github.com/Loopring/protocol2/releases/tag/2.0.1-snapshot
-- creater: [0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa](https://rinkeby.etherscan.io/address/0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa)
+- creator: [0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa](https://rinkeby.etherscan.io/address/0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa)
 - BrokerRegistry: [0x9a43b7bd50b3bc130b92d2e8d65e278efe776d0b](https://rinkeby.etherscan.io/address/0x9a43b7bd50b3bc130b92d2e8d65e278efe776d0b)
 - OrderRegistry: [0x5c65817c4126256320c8c4db60c914502d5af5ff](https://rinkeby.etherscan.io/address/0x5c65817c4126256320c8c4db60c914502d5af5ff)
 - OrderBook: [0x058883bbfd72394e3238a4925712bf2138dbe53e](https://rinkeby.etherscan.io/address/0x058883bbfd72394e3238a4925712bf2138dbe53e)
