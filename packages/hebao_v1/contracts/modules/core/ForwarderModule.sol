@@ -183,7 +183,7 @@ abstract contract ForwarderModule is SecurityModule
                 2300; // 2*SLOAD+1*CALL = 2*800+1*700=2300
 
             if (metaTx.gasToken == address(0)) {
-                gasUsed -= 15000; // diff between an regular ERC20 transfer and an ETH send
+                gasUsed -= 15000; // diff between a regular ERC20 transfer and an ETH send
             }
 
             uint gasToReimburse = gasUsed <= metaTx.gasLimit ? gasUsed : metaTx.gasLimit;

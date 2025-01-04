@@ -72,7 +72,7 @@ contract BaseModule is ReentrancyGuard, Module
         Wallet(wallet).addModule(module);
     }
 
-    /// @dev This method will cause an re-entry to the same module contract.
+    /// @dev This method will cause a re-entry to the same module contract.
     function activate()
         external
         override
@@ -83,7 +83,7 @@ contract BaseModule is ReentrancyGuard, Module
         emit Activated(wallet);
     }
 
-    /// @dev This method will cause an re-entry to the same module contract.
+    /// @dev This method will cause a re-entry to the same module contract.
     function deactivate()
         external
         override

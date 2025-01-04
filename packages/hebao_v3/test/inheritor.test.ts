@@ -208,7 +208,7 @@ describe('inheritor test', () => {
     ).to.be.revertedWith('TOO_EARLY')
   })
 
-  it('inherit with a owner in guardians group', async () => {
+  it('inherit with an owner in guardians group', async () => {
     const test = async (removeGuardians: boolean): Promise<void> => {
       const { smartWallet, create2, entrypoint, sendUserOp } =
         await loadFixture(fixture)

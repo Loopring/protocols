@@ -75,7 +75,7 @@ contract WalletFactory is WalletDeploymentLib, Ownable, AddressSet
         addOperatorInternal(operator);
     }
 
-    /// @dev Removes a operator.
+    /// @dev Removes an operator.
     /// @param operator The operator to remove.
     function removeOperator(address operator)
         public
