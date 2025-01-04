@@ -327,7 +327,7 @@ describe('Gnosis Proxy', function () {
       '0x1626ba7e'
     )
 
-    // make an sig invalid
+    // make a sig invalid
     const badWallet = ethers.Wallet.createRandom()
     const badSig = await badWallet.signMessage(dataHash)
     expect(
