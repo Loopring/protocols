@@ -53,7 +53,7 @@ contract LoopringProtocol {
         uint            _cutoff
     );
 
-    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
+    /// @dev Cancel an order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
     /// @param addresses          owner, tokenS, tokenB, wallet, authAddr
     /// @param orderValues        amountS, amountB, validSince (second),
