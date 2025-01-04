@@ -59,7 +59,7 @@ contract LoopringProtocol {
     /// @param orderValues        amountS, amountB, validSince (second),
     ///                           validUntil (second), lrcFee, and cancelAmount.
     /// @param buyNoMoreThanAmountB -
-    ///                           This indicates when a order should be considered
+    ///                           This indicates when an order should be considered
     ///                           as 'completely filled'.
     /// @param marginSplitPercentage -
     ///                           Percentage of margin split to share with miner.
@@ -130,7 +130,7 @@ contract LoopringProtocol {
     ///                   AuthAddr, Wallet, RingR, RingS, RingV.
     ///               * Fee selections: Bits to indicate fee selections.
     ///                 `1` represents margin split and `0` represents LRC as fee.
-    ///               * BuyNoMoreThanAmountB: This indicates when a order should
+    ///               * BuyNoMoreThanAmountB: This indicates when an order should
     ///                 be considered as 'completely filled'.
     function submitRing(
         bytes data
