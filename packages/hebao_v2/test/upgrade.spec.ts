@@ -140,7 +140,7 @@ describe("wallet", () => {
       const implementationChangedEvent = executeReceipt.events[0].args;
       expect(implementationChangedEvent.newImpl).to.equal(newImpl);
 
-      // upgrade can not be executed agin:
+      // upgrade can not be executed again:
       try {
         await storage.executeUpgrade()
       } catch (err) {
