@@ -352,7 +352,7 @@ describe("wallet", () => {
       );
       expect(metaTxEvent.success).to.equal(true);
 
-      // Check if the funtion has been called
+      // Check if the function has been called
       const event = await getFirstEvent(
         TestContract,
         tx.blockNumber,
