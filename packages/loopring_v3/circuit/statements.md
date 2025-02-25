@@ -190,7 +190,7 @@ Examples:
   inWeight: {0..2^NUM_BITS_AMOUNT},
   outBalanceBefore: {0..2^NUM_BITS_AMOUNT},
   outBalanceAfter: {0..2^NUM_BITS_AMOUNT},
-  outWeight: {0..2^NUM_BITS_AMOUNT},
+  outweigh: {0..2^NUM_BITS_AMOUNT},
   ammFill: {0..2^NUM_BITS_AMOUNT}
   )
 
@@ -655,7 +655,7 @@ Notes:
 
 This gadget is a wrapper around `libsnark::comparison_gadget`, exposing `<`, `<=`, `==`, `>=` and `>` for simplicity (and sometimes efficiensy if the same comparison result can be reused e.g. when both `<` and `<=` are needed).
 
-One important limitation of `libsnark::comparison_gadget` is that it does not work for values close to the max field element value. This is an implementation detail as the gadget depends on there being an extra bit at MSB of the valules to be available. As the max field element is ~254 bits, only 253 bits can be used. And because the implementation needs an extra bit we can only compare values that take up at most 252 bits.
+One important limitation of `libsnark::comparison_gadget` is that it does not work for values close to the max field element value. This is an implementation detail as the gadget depends on there being an extra bit at MSB of the values to be available. As the max field element is ~254 bits, only 253 bits can be used. And because the implementation needs an extra bit we can only compare values that take up at most 252 bits.
 
 This is _not_ checked in the gadget itself, and it depends on the caller to specify a valid `n` which needs to be the max number of bits of the value passed into the gadget.
 
@@ -838,7 +838,7 @@ Notes:
 A valid instance of a MulDivGadget statement assures that given an input of:
 
 - value: {0..2^numBitsValue}
-- numerator: {0..2^numBitsNumerator}
+- numberator: {0..2^numBitsNumerator}
 - denominator: {0..2^numBitsDenominator}
 
 the prover knows an auxiliary input:
@@ -851,7 +851,7 @@ such that the following conditions hold:
 - denominator != 0
 - remainder < 2^numBitsDenominator (range check)
 - remainder < denominator
-- value \* numerator = denominator \* quotient + remainder
+- value \* numberator = denominator \* quotient + remainder
 
 Notes:
 
@@ -1059,7 +1059,7 @@ Notes:
 A valid instance of a SignedMulDiv statement assures that given an input of:
 
 - value: SignedF{0..2^numBitsValue}
-- numerator: SignedF{0..2^numBitsNumerator}
+- numberator: SignedF{0..2^numBitsNumerator}
 - denominator: {0..2^numBitsDenominator}
 
 the prover knows an auxiliary input:
@@ -1070,12 +1070,12 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- quotient = MulDiv(value.value, numerator.value, denominator)
-- sign = (quotient == 0) ? 0 : ((value.sign == numerator.sign) ? 1 : 0)
+- quotient = MulDiv(value.value, numberator.value, denominator)
+- sign = (quotient == 0) ? 0 : ((value.sign == numberator.sign) ? 1 : 0)
 
 Notes:
 
-- Calculates floor((value \* denominator) / denominator) with both the value and the numerator being signed field elements.
+- Calculates floor((value \* denominator) / denominator) with both the value and the numberator being signed field elements.
 - floor rounds always towards 0.
 
 ## Power statement
@@ -1119,7 +1119,7 @@ Notes:
 
 - \_x will always be in [0, 1] (in fixed point representation)
 - Results should never be able to overflow or underflow
-- Power approximation formule as found here: https://docs.balancer.finance/protocol/index/approxing
+- Power approximation formula, formulas as found here: https://docs.balancer.finance/protocol/index/approxing
 
 ### Description
 
@@ -1373,7 +1373,7 @@ such that the following conditions hold:
 
 ### Description
 
-Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). A 1 will be written to the storage after the transaction is used, making it impossible to re-use the transaction multiple times.
+Builds a simple parallel nonce system on top of the storage tree. Transactions can use any storage slot that contains 0 as data (after overwriting logic). A 1 will be written to the storage after the transaction is used, making it impossible to reuse the transaction multiple times.
 
 To make is easier to ignore this check, verify is added to make the statement always valid if necessary.
 
@@ -1740,7 +1740,7 @@ Verifies that the given fill amounts fill both orders in a valid way:
 A valid instance of a SpotPriceAMM statement assures that given an input of:
 
 - balanceIn: {0..2^NUM_BITS_AMOUNT}
-- weightIn: {0..2^NUM_BITS_AMOUNT}
+- weighting, weight in: {0..2^NUM_BITS_AMOUNT}
 - balanceOut: {0..2^NUM_BITS_AMOUNT}
 - weightOut: {0..2^NUM_BITS_AMOUNT}
 - feeBips: {0..2^NUM_BITS_AMM_BIPS}
@@ -1748,16 +1748,16 @@ A valid instance of a SpotPriceAMM statement assures that given an input of:
 the prover knows an auxiliary input:
 
 - result: {0..2^NUM_BITS_AMOUNT}
-- numer: F
+- number: F
 - denom: F
 - ratio: F
 - invFeeBips: F
 
 such that the following conditions hold:
 
-- numer = balanceIn \* weightOut
-- denom = balanceOut \* weightIn
-- ratio = (numer \* BASE_FIXED) / denom
+- number = balanceIn \* weightOut
+- denom = balanceOut \* weighting, weight in
+- ratio = (number \* BASE_FIXED) / denom
 - ratio < 2^NUM_BITS_AMOUNT (range check)
 - invFeeBips = BASE_BIPS - feeBips
 - result = (ratio \* BASE_BIPS) / invFeeBips
@@ -1771,7 +1771,7 @@ Formula from balancer (https://docs.balancer.finance/protocol/index#spot-price).
 A valid instance of a CalcOutGivenInAMM statement assures that given an input of:
 
 - balanceIn: {0..2^NUM_BITS_AMOUNT}
-- weightIn: {0..2^NUM_BITS_AMOUNT}
+- weighting, weight in: {0..2^NUM_BITS_AMOUNT}
 - balanceOut: {0..2^NUM_BITS_AMOUNT}
 - weightOut: {0..2^NUM_BITS_AMOUNT}
 - feeBips: {0..2^NUM_BITS_AMM_BIPS}
@@ -1787,7 +1787,7 @@ the prover knows an auxiliary input:
 
 such that the following conditions hold:
 
-- weightRatio = (weightIn \* BASE_FIXED) / weightOut
+- weightRatio = (weighting, weight in \* BASE_FIXED) / weightOut
 - weightRatio < 2^NUM_BITS_AMOUNT (range check)
 - fee = amountIn \* feeBips / BASE_BIPS
 - y = (balanceIn \* BASE_FIXED) / (balanceIn + (amountIn - fee))
@@ -1820,12 +1820,12 @@ such that the following conditions hold:
 
 - if data.amm == 1 then data.orderFeeBips == 0
 - if data.amm == 1 then ammData.inWeight != 0
-- if data.amm == 1 then ammData.outWeight != 0
+- if data.amm == 1 then ammData.outweigh != 0
 
-- maxFillS = CalcOutGivenInAMM(ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips, ammData.ammFill)
+- maxFillS = CalcOutGivenInAMM(ammData.inWeight, ammData.outBalanceBefore, ammData.outweigh, data.ammFeeBips, ammData.ammFill)
 - if data.amm == 1 then data.fillS <= maxFillS
-- price_before = SpotPriceAMM(ammData.inBalanceBefore, ammData.inWeight, ammData.outBalanceBefore, ammData.outWeight, data.ammFeeBips)
-- price_after = SpotPriceAMM(ammData.inBalanceAfter, ammData.inWeight, ammData.outBalanceAfter, ammData.outWeight, data.ammFeeBips)
+- price_before = SpotPriceAMM(ammData.inBalanceBefore, ammData.inWeight, ammData.outBalanceBefore, ammData.outweigh, data.ammFeeBips)
+- price_after = SpotPriceAMM(ammData.inBalanceAfter, ammData.inWeight, ammData.outBalanceAfter, ammData.outweigh, data.ammFeeBips)
 - if data.amm == 1 price_before <= price_after
 
 ### Description

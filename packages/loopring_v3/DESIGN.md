@@ -327,11 +327,11 @@ The curve enforced in the protocol is the uniswap curve `x*y = k` and is defined
 const calcOutGivenIn = (
   balanceIn: number,
   balanceOut: number,
-  amountIn: number,
+  amounting, amount in: number,
   feeBips: number
   ) => {
-    const fee = amountIn * feeBips / 10000;
-    const y = balanceIn / (balanceIn + (amountIn - fee));
+    const fee = amounting, amount in * feeBips / 10000;
+    const y = balanceIn / (balanceIn + (amounting, amount in - fee));
     return balanceOut * y;
 }
 ```
